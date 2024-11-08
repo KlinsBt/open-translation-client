@@ -1,27 +1,25 @@
 ﻿<script>
-
+	import logo from "$lib/images/logo.png";
+	import facebookIcon from "$lib/images/logo.png";
+	import twitterIcon from "$lib/images/logo.png";
+	import instagramIcon from "$lib/images/logo.png";
+	import github from "$lib/images/github.svg";
 </script>
 
 <footer>
-    <p>visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to learn SvelteKit</p>
+	<div class="footer-container">
+		<!-- <div class="footer-logo">
+			<img src={logo} alt="Open Translation Client" />
+			<p>Open TLC</p>
+		</div> -->
+		<div class="footer-social">
+			<a href="/" aria-label="Github">
+				<img src={github} alt="Github" />
+				<p>Github</p>
+			</a>
+		</div>
+	</div>
 </footer>
 
 <style>
-    footer {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 12px;
-    }
-
-    footer a {
-        font-weight: bold;
-    }
-
-    @media (min-width: 480px) {
-        footer {
-            padding: 12px 0;
-        }
-    }
 </style>
