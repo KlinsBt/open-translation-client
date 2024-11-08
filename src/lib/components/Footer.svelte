@@ -13,7 +13,10 @@
 			<p>Open TLC</p>
 		</div> -->
 		<div class="footer-social">
-			<a href="/" aria-label="Github">
+			<a
+				href="https://github.com/KlinsBt/open-translation-client"
+				aria-label="Github"
+			>
 				<img src={github} alt="Github" />
 				<p>Github</p>
 			</a>
