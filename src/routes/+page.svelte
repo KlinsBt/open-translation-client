@@ -56,7 +56,7 @@
 	<section class="contributions-section">
 		<h2>Open Source Contributions</h2>
 		<p>
-			Open TLC is an open-source project, and we welcome contributions from the
+			Open TLC is an open source project, and we welcome contributions from the
 			community! Whether you're a developer, translator, or just someone who
 			wants to improve the tool, we’d love your help.
 		</p>
@@ -64,8 +64,10 @@
 			You can contribute by adding features, fixing bugs, or improving
 			documentation. Head over to our GitHub repository to get started!
 		</p>
-		<a href="https://github.com/KlinsBt/open-translation-client" target="_blank" class="github-link"
-			>Visit our GitHub</a
+		<a
+			href="https://github.com/KlinsBt/open-translation-client"
+			target="_blank"
+			class="github-link">Visit our GitHub</a
 		>
 	</section>
 </div>
