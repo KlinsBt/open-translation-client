@@ -64,7 +64,7 @@
 			You can contribute by adding features, fixing bugs, or improving
 			documentation. Head over to our GitHub repository to get started!
 		</p>
-		<a href="https://github.com" target="_blank" class="github-link"
+		<a href="https://github.com/KlinsBt/open-translation-client" target="_blank" class="github-link"
 			>Visit our GitHub</a
 		>
 	</section>
