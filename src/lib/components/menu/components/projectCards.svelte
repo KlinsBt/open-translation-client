@@ -312,4 +312,252 @@
 </div>
 
 <style>
+	.project-card {
+		background: white;
+		padding: 1rem;
+		text-align: center;
+		position: relative;
+		width: 150px;
+		cursor: pointer;
+		overflow: hidden;
+		/* border-radius: 8px; */
+		/* box-shadow: 0 2px 4px var(--color-theme-1); */
+	}
+
+	.project-card:hover {
+		box-shadow: 0 1px 10px var(--color-theme-4);
+	}
+
+	.type-badge {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		background-color: #ffcc4d;
+		background-color: var(--color-theme-1);
+		color: #333;
+		border-radius: 3px;
+		padding: 2px 5px;
+		font-size: 0.7rem;
+	}
+
+	.words-badge {
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		background-color: var(--color-theme-3);
+		color: white;
+		border-radius: 3px;
+		padding: 2px 5px;
+		font-size: 0.7rem;
+	}
+
+	.progress-circle {
+		position: relative;
+		width: 100px;
+		height: 100px;
+		margin: 0 auto 1rem;
+	}
+
+	.progress-circle svg {
+		transform: rotate(-90deg);
+		width: 100px;
+		height: 100px;
+	}
+
+	.progress-circle circle {
+		fill: none;
+		stroke-width: 7;
+	}
+
+	.progress-circle .bg {
+		stroke: #e0e0e0;
+	}
+
+	.progress-circle .progress {
+		stroke: var(--color-theme-4);
+		stroke-dasharray: 252;
+		stroke-dashoffset: 252;
+		transition: stroke-dashoffset 0.3s;
+	}
+
+	.progress-circle span {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-size: 1.5rem;
+		color: var(--color-theme-4);
+		font-weight: bold;
+	}
+
+	h4 {
+		font-size: 1rem;
+		margin: 0.5rem 0;
+		color: var(--color-theme-6);
+	}
+
+	p {
+		font-size: 0.8rem;
+		color: #888;
+		margin: 0.5rem 0;
+	}
+
+	.text-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		padding: 0rem;
+		margin: 0px 0px 5px 0px;
+		border-radius: 5px;
+		font-size: 0.85rem;
+		color: #555;
+	}
+
+	.text-info > p {
+		margin: 0;
+		font-weight: 500;
+	}
+
+	.text-info > p > span {
+		font-weight: 500;
+		color: var(--color-theme-4);
+	}
+
+	.creation-date {
+		font-size: 0.7rem;
+		color: var(--color-theme-3);
+	}
+
+	.languages {
+		display: flex;
+		justify-content: space-evenly;
+		gap: 0rem;
+		padding: 2px 0px;
+		background-color: var(--color-theme-8);
+	}
+
+	.source-lang {
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		color: rgb(70, 196, 213);
+	}
+
+	.target-lang {
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		color: rgb(38, 102, 232);
+	}
+
+	.options-container {
+		display: flex;
+		justify-content: center;
+		align-items: start;
+		flex-wrap: wrap;
+		padding: 0px;
+	}
+
+	.options {
+		display: grid;
+		justify-items: center;
+		align-items: center;
+		transition: bottom 0.15s linear;
+	}
+
+	.option-buttons-container {
+		display: flex;
+		flex-direction: column;
+		gap: 0px;
+		margin: 0px;
+	}
+
+	.option-buttons-container > input {
+		padding: 10px;
+		margin: 5px 0px;
+		border: 1px solid var(--color-theme-4);
+		border-radius: 5px;
+	}
+
+	.deletion-confirmation {
+		font-size: 1.2rem;
+		font-weight: 600;
+		margin: 0px 0px 10px 0px;
+		color: var(--color-theme-4);
+		color: #c02b2b;
+		text-align: center;
+		max-width: 280px;
+	}
+
+	.main-buttons-container {
+		display: grid;
+		gap: 0px;
+	}
+
+	.main-buttons-container > .btn,
+	.option-buttons-container > .btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-theme-4);
+		color: white;
+		border: none;
+		font-size: 1.3rem;
+		border-radius: 5px;
+		padding: 10px;
+		margin: 5px 0px;
+		cursor: pointer;
+		width: 100%;
+		min-width: 250px;
+		transition: filter 0.2s linear;
+		position: relative;
+	}
+
+	.main-buttons-container > .btn > span,
+	.option-buttons-container > .btn > span {
+		margin: 0px 10px;
+	}
+
+	.main-buttons-container > .btn:hover,
+	.option-buttons-container > .btn:hover {
+		filter: brightness(1.1);
+	}
+
+	.language-selection {
+		display: grid;
+		justify-items: center;
+		gap: 10px;
+		margin: 0px 0px 5px 0px;
+		width: 100%;
+	}
+
+	select {
+		position: relative;
+		width: 100%;
+		padding: 5px;
+		border-radius: 5px;
+		border: 1px solid var(--color-theme-1);
+		color: var(--color-theme-5);
+		font-size: 0.8rem;
+		appearance: none;
+		cursor: pointer;
+		transition:
+			border-color 0.3s,
+			background-color 0.3s;
+	}
+
+	select:focus {
+		border-color: var(--color-theme-3);
+		outline: none;
+	}
+
+	option {
+		width: 100px;
+		padding: 10px 0px;
+		background-color: var(--color-theme-8);
+		color: var(--color-theme-5);
+	}
+
+	option:hover {
+		background-color: var(--color-theme-2);
+		color: white;
+	}
 </style>

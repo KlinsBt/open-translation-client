@@ -115,4 +115,126 @@
 </div>
 
 <style>
+	.segment {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		width: 100%;
+
+		display: grid;
+		justify-content: center;
+		grid-template-columns: 50% 50%;
+	}
+
+	.segment > textarea {
+		border: 2px solid var(--color-theme-7);
+	}
+
+	.segment > textarea:focus {
+		outline: none;
+		border: 2px solid var(--color-theme-3);
+	}
+
+	.field {
+		background-color: var(--color-theme-3);
+		display: block;
+		margin-block-start: 1em;
+		margin-block-end: 1em;
+		margin-inline-start: 0px;
+		margin-inline-end: 0px;
+		transition: all 0.1s linear;
+		margin: 2% 2%;
+		padding: 15px;
+		border-radius: 5px;
+		border: 1px solid #ccc;
+		border: 2px solid #bee5f6;
+	}
+
+	.left {
+		display: flex;
+		align-items: baseline;
+		background-color: #f0f0f0;
+		background-color: var(--color-theme-8);
+		background-color: #ecfdff;
+		color: var(--color-theme-5);
+		overflow-y: auto;
+	}
+
+	.left p {
+		margin: 0px 0px 0px 10px;
+	}
+
+	.segment-number-inner {
+		color: blueviolet;
+		color: var(--color-theme-4);
+		font-size: 1rem;
+		font-weight: 700;
+		margin: 0px 2px 0px 0px;
+	}
+
+	/* .segment-number-outer {
+		position: absolute;
+		color: blueviolet;
+		color: var(--color-theme-1);
+		font-size: 1rem;
+		font-weight: 700;
+		top: 15px;
+		left: 49%;
+	} */
+
+	.right {
+		background-color: #fff;
+		background-color: var(--color-theme-7);
+		color: #333;
+		resize: none;
+		font-size: 1rem;
+		font-weight: 500;
+		overflow: hidden !important;
+		/* min-height: calc(100% - 15px); */
+		min-height: -webkit-fill-available;
+	}
+
+	/* .right:focus {
+		border-color: #007bff;
+		box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+	} */
+
+	.toggle-container {
+		position: absolute;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		cursor: pointer;
+		border-radius: 5px;
+		transition: background-color 0.3s ease;
+		right: 0;
+		top: 0;
+	}
+
+	.locked {
+		background-color: #ff6b6b;
+		background-color: #c54141;
+	}
+
+	.locked:hover {
+		background-color: #e35353;
+	}
+
+	.unlocked {
+		background-color: #4caf50;
+	}
+
+	.unlocked:hover {
+		background-color: #6ada6e;
+	}
+
+	.locked > svg,
+	.unlocked > svg {
+		width: 100%;
+		height: 100%;
+		fill: #fff;
+		transition: fill 0.3s ease;
+	}
 </style>

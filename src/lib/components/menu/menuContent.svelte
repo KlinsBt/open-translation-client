@@ -146,4 +146,139 @@
 {/if}
 
 <style>
+	.dashboard {
+		display: grid;
+		align-content: center;
+		align-items: center;
+		padding: 50px 0px 50px 0px;
+		max-width: 1500px;
+	}
+
+	.order-bar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		font-weight: 600;
+		margin-bottom: 25px;
+		color: var(--color-theme-4);
+	}
+
+	.order-bar button {
+		border: none;
+		background: none;
+		cursor: pointer;
+		font-size: 1rem;
+		color: var(--color-theme-3);
+	}
+
+	.order-bar .active {
+		font-weight: bold;
+		border-bottom: 2px solid var(--color-theme-3);
+	}
+
+	.project-cards {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 1px;
+	}
+
+	/* .additional {
+		background-color: var(--color-theme-4);
+		color: white;
+		padding: 2px 5px;
+		border-radius: 3px;
+		font-size: 0.7rem;
+	} */
+
+	.add-project {
+		display: grid;
+		justify-items: center;
+		align-items: center;
+		background: white;
+		border: 2px dashed var(--color-theme-4);
+		/* border-radius: 8px; */
+		padding: 0px 14px;
+		width: 150px;
+		cursor: pointer;
+	}
+
+	.add-icon {
+		font-size: 5rem;
+		font-weight: 700;
+		color: var(--color-theme-4);
+		margin: 0px;
+	}
+
+	.add-project div {
+		display: flex;
+		flex-direction: column;
+		gap: 10px 0px;
+		margin-bottom: 20px;
+	}
+
+	.add-project button {
+		background-color: var(--color-theme-4);
+		color: white;
+		border: none;
+		border-radius: 5px;
+		padding: 10px;
+		cursor: pointer;
+		font-weight: bold;
+		width: 100%;
+	}
+
+	.add-project button:hover {
+		filter: brightness(1.1);
+	}
+
+	.new-file-container {
+		display: flex;
+		justify-content: center;
+		align-items: start;
+		flex-wrap: wrap;
+		padding: 0px;
+		gap: 1rem;
+		padding: 0px 0px 50px 0px;
+		min-height: 75vh;
+	}
+
+	.save-file-upload-container {
+		display: flex;
+		justify-content: center;
+		align-items: start;
+		flex-wrap: wrap;
+		padding: 0px;
+	}
+
+	.back-btn {
+		background-color: var(--color-theme-4);
+		color: white;
+		border: none;
+		border-radius: 5px;
+		padding: 10px 20px;
+		cursor: pointer;
+		font-weight: 600;
+		font-size: 1.3rem;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 0px 5px;
+		margin: 50px 0px;
+	}
+
+	.back-btn:hover {
+		filter: brightness(1.1);
+	}
+
+	@media (max-width: 774px) {
+		.order-bar {
+			justify-content: center;
+		}
+
+		.project-cards {
+			justify-content: center;
+		}
+	}
 </style>

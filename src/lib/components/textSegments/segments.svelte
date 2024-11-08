@@ -238,4 +238,172 @@ to have it stored locally and be able to import it later." -->
 </div>
 
 <style>
+	.toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		background-color: var(--color-theme-5);
+		padding: 10px 0;
+		width: 100%;
+		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+		position: sticky;
+		top: 0;
+		z-index: 1;
+	}
+
+	.toolbar-button {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 0px 8px;
+		background-color: var(--color-theme-4);
+		color: white;
+		border: none;
+		border-radius: 5px;
+		padding: 10px 20px;
+		margin-right: 15px;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 1rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.toolbar-button.export {
+		background-color: dodgerblue;
+	}
+
+	.toolbar-button:hover {
+		/* background-color: var(--color-theme-3); */
+		filter: brightness(1.1);
+		box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+	}
+
+	.toolbar-button:active {
+		transform: scale(0.98);
+		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+	}
+
+	.words-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: #ecf6f8;
+		padding: 0px;
+		width: 100%;
+		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+		position: sticky;
+		top: 58px;
+		z-index: 2;
+	}
+
+	.words-container > .middle-container {
+		margin: 10px 25%;
+		display: grid;
+		justify-items: center;
+		align-items: center;
+	}
+
+	.words-container > .middle-container > .top-stats {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-around;
+		align-items: center;
+		width: 100%;
+	}
+
+	.words-container > .middle-container > .top-stats > p {
+		margin: 0px;
+	}
+
+	.words-container > .middle-container > .top-stats > p > span {
+		font-weight: bold;
+		color: var(--color-theme-3);
+	}
+
+	.middle-container > div {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+		margin: 0px 0px 5px 0px;
+	}
+
+	.middle-container > div > button {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: var(--color-theme-4);
+		color: var(--color-theme-7);
+		border: none;
+		border-radius: 5px;
+		padding: 5px;
+		margin: 0px;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 0.8rem;
+		gap: 0px 10px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.middle-container > div > button:nth-child(1) {
+		padding: 5px 10px;
+	}
+
+	.middle-container > div > button:hover {
+		background-color: var(--color-theme-3);
+		filter: brightness(1.1);
+		box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+	}
+
+	.middle-container > div > button:active {
+		filter: brightness(0.95);
+		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+	}
+
+	.words-left > h1,
+	.words-right > h1 {
+		font-size: 1.3rem;
+		margin: 10px 0px 0px 0px;
+		text-transform: uppercase;
+	}
+
+	.words-left > h1 {
+		color: var(--color-theme-4);
+	}
+
+	.words-right > h1 {
+		color: var(--color-theme-4);
+	}
+
+	.words-left > p,
+	.words-right > p {
+		margin: 0px 0px 5px 0px;
+	}
+
+	.words-right > p > span,
+	.words-left > p > span {
+		font-weight: bold;
+		color: var(--color-theme-3);
+	}
+
+	.segments-container {
+		display: grid;
+		grid-template-columns: 1fr;
+		padding: 20px 25px;
+		max-height: 700px;
+		max-height: 65vh;
+		overflow-y: auto;
+		min-width: 95%;
+	}
+
+	@media (max-width: 997px) {
+		.words-container {
+			justify-content: space-evenly;
+		}
+
+		.words-container > .middle-container {
+			margin: 0%;
+		}
+	}
 </style>

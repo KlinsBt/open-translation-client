@@ -71,4 +71,193 @@
 </div>
 
 <style>
+	.landing-page {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		padding: 0;
+		margin: 0;
+	}
+
+	.top-section {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		align-items: start;
+		width: 100%;
+		height: 100vh;
+		padding: 0;
+		margin: 0;
+		background: linear-gradient(
+			135deg,
+			rgba(141, 234, 255, 0.3) 0%,
+			rgb(163, 232, 255, 0.3) 100%
+		);
+		overflow: hidden;
+		z-index: 1;
+	}
+
+	.background {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center;
+		opacity: 1;
+		/* filter: blur(2px); */
+		filter: hue-rotate(300deg);
+		z-index: -1;
+	}
+
+	.header {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding: 2rem;
+		color: white;
+		max-width: 600px;
+		background-color: rgba(13, 65, 112, 0);
+		margin: 10% 0px 0px 0px;
+
+		/* background-color: rgba(0, 0, 0, 0.3);
+		border-radius: 5px; */
+	}
+
+	.title {
+		font-size: 3rem;
+		font-weight: 700;
+		margin: 0.5rem 0px;
+		line-height: 1.2;
+		color: var(--color-theme-6);
+		text-shadow: 0px 0px 5px var(--color-theme-7);
+
+		color: white;
+		text-shadow: none;
+	}
+
+	.description {
+		margin: 1rem 0;
+		font-size: 1.2rem;
+		font-weight: 500;
+		color: rgb(50, 52, 53);
+		text-shadow: 0px 0px 5px var(--color-theme-7);
+
+		color: white;
+		text-shadow: none;
+	}
+
+	.cta-button {
+		padding: 0.8rem 3rem;
+		background-color: var(--color-theme-12);
+		border: 3px solid var(--color-theme-7);
+		border-radius: 5px;
+		color: white;
+		cursor: pointer;
+		text-decoration: none;
+		font-weight: bold;
+		transition: background-color 0.3s;
+	}
+
+	.cta-button:hover {
+		background-color: var(--color-theme-11);
+	}
+
+	.features-section {
+		display: flex;
+		flex-direction: column;
+		padding: 3rem 0rem;
+		max-width: 1200px;
+		width: 90%;
+		margin: 0 auto;
+		text-align: center;
+		/* background-color: var(--color-theme-5); */
+	}
+
+	.features-section h2 {
+		font-size: 2rem;
+		color: #333;
+		color: var(--color-theme-4);
+		margin-bottom: 1rem;
+		font-weight: bold;
+	}
+
+	.features-section p {
+		font-size: 1.1rem;
+		color: #555;
+		line-height: 1.6;
+		max-width: 800px;
+		margin: 2rem auto 2rem auto;
+	}
+
+	.features-grid {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 2rem;
+		margin: 4rem 0rem;
+	}
+
+	.feature-card {
+		background: white;
+		border-radius: 8px;
+		box-shadow: 0 4px 8px var(--color-theme-4);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		padding: 1rem;
+		width: 100%;
+		max-width: 300px;
+		text-align: center;
+		transition: all 0.2s linear;
+	}
+
+	.feature-card:hover {
+		box-shadow: 0 4px 8px var(--color-theme-4);
+	}
+
+	.feature-card h3 {
+		font-size: 1.2rem;
+		color: var(--color-theme-4);
+		margin-bottom: 0.5rem;
+	}
+
+	.contributions-section {
+		/* background-color: var(--color-theme-3); */
+		padding: 2rem;
+		margin: 0px;
+		text-align: center;
+	}
+
+	.contributions-section h2 {
+		font-size: 2rem;
+		color: #333;
+		color: var(--color-theme-4);
+		margin-bottom: 1rem;
+		font-weight: bold;
+	}
+
+	.contributions-section p {
+		font-size: 1.1rem;
+		color: #555;
+		line-height: 1.6;
+		max-width: 800px;
+		margin: 2rem auto 2rem auto;
+	}
+
+	.github-link {
+		display: inline-block;
+		padding: 0.8rem 2rem;
+		background-color: var(--color-theme-12);
+		border: none;
+		border-radius: 5px;
+		color: white;
+		font-weight: bold;
+		text-decoration: none;
+		transition: background-color 0.3s;
+	}
+
+	.github-link:hover {
+		background-color: var(--color-theme-11);
+	}
 </style>

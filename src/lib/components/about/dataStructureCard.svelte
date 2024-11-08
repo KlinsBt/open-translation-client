@@ -43,4 +43,63 @@
 </div>
 
 <style>
+	.project-card {
+		max-width: 800px;
+		margin: auto;
+		padding: 20px;
+		border-radius: 8px;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		background-color: #f8fcff;
+	}
+
+	.project-name {
+		font-size: 1.8rem;
+		margin-bottom: 10px;
+		color: #333;
+	}
+
+	.language-info p,
+	.project-card p {
+		font-size: 1rem;
+		margin: 5px 0;
+		color: #555;
+	}
+
+	.segments-table h2 {
+		margin-top: 20px;
+		font-size: 1.2rem;
+		color: #444;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-top: 10px;
+	}
+
+	th,
+	td {
+		padding: 10px;
+		border: 1px solid #ddd;
+		text-align: left;
+	}
+
+	th {
+		background-color: #f7f7f7;
+		font-weight: bold;
+	}
+
+	td {
+		font-size: 0.9rem;
+	}
+
+	input[type="checkbox"] {
+		margin: auto;
+	}
+
+	@media (max-width: 390px) {
+		.segments-table {
+			overflow-x: scroll;
+		}
+	}
 </style>

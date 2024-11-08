@@ -29,4 +29,51 @@
 </button>
 
 <style>
+	.input-button-container {
+		display: flex;
+		position: relative;
+		justify-content: center;
+		align-items: center;
+		background: var(--color-theme-1);
+		color: white;
+		border: none;
+		font-size: 1.3rem;
+		border-radius: 5px;
+		padding: 10px;
+		margin: 10px 0px;
+		cursor: pointer;
+		width: 100%;
+		transition: filter 0.2s linear;
+	}
+
+	.input-button-container:hover {
+		filter: brightness(1.1);
+	}
+
+	.input-button-container:active {
+		filter: brightness(1);
+		transform: scale(0.99);
+	}
+
+	.input-button-container > input[type="file"] {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+		opacity: 0;
+		pointer-events: none;
+		cursor: pointer;
+	}
+
+	.input-button-container > svg {
+		max-width: 30px;
+		max-height: 30px;
+		margin: 0px 10px 0px 0px;
+		padding: 0px;
+	}
+
+	.input-button-container > svg path {
+		fill: white;
+	}
 </style>

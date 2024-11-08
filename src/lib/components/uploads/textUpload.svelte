@@ -191,4 +191,148 @@
 </div>
 
 <style>
+	.container {
+		display: grid;
+		align-items: center;
+		justify-items: center;
+		gap: 0px;
+		border: 2px dashed var(--color-theme-4);
+		border-radius: 5px;
+		padding: 5px 20px;
+		transition: background-color 0.3s;
+		max-width: 270px;
+	}
+
+	.container.is-dragging {
+		background-color: rgba(0, 0, 0, 0.05);
+		border-color: var(--color-theme-3);
+	}
+
+	.name-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		margin: 10px 0px 25px 0px;
+	}
+
+	.name-container > .input-text {
+		width: 250px;
+		margin: 0px;
+		padding: 5px 10px;
+		border-radius: 5px;
+		color: var(--color-theme-5);
+		border: 1px solid var(--color-theme-1);
+		font-size: 0.8rem;
+	}
+
+	.name-container > .input-text:active {
+		border-color: var(--color-theme-1);
+	}
+
+	.language-selection {
+		display: flex;
+		justify-content: space-evenly;
+		gap: 0px 10px;
+		margin: 0px 0px 25px 0px;
+		width: 100%;
+	}
+
+	select {
+		position: relative;
+		width: 100%;
+		padding: 5px;
+		border-radius: 5px;
+		border: 1px solid var(--color-theme-1);
+		color: var(--color-theme-5);
+		font-size: 0.8rem;
+		appearance: none;
+		cursor: pointer;
+		transition:
+			border-color 0.3s,
+			background-color 0.3s;
+	}
+
+	select:focus {
+		border-color: var(--color-theme-3);
+		outline: none;
+	}
+
+	option {
+		width: 100px;
+		padding: 10px 0px;
+		background-color: var(--color-theme-8);
+		color: var(--color-theme-5);
+	}
+
+	option:hover {
+		background-color: var(--color-theme-2);
+		color: white;
+	}
+
+	textarea {
+		height: 70px;
+		margin: 0px;
+		resize: vertical;
+		width: 250px;
+		margin: 0px 0px 10px 0px;
+		padding: 5px 10px;
+		border-radius: 5px;
+		color: var(--color-theme-5);
+		border: 1px solid var(--color-theme-1);
+		font-size: 0.8rem;
+	}
+
+	.input-button-container,
+	.create-button-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-theme-4);
+		color: white;
+		border: none;
+		font-size: 1.3rem;
+		border-radius: 5px;
+		padding: 10px;
+		margin: 10px 0px;
+		cursor: pointer;
+		width: 100%;
+		transition: filter 0.2s linear;
+		position: relative;
+	}
+
+	.input-button-container:hover,
+	.create-button-container:hover {
+		filter: brightness(1.1);
+	}
+
+	.input-button-container:active,
+	.create-button-container:active {
+		filter: brightness(1);
+		transform: scale(0.99);
+	}
+
+	.create-button-container {
+		background: var(--color-theme-9);
+	}
+
+	.input-button-container > input[type="file"] {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.input-button-container > svg {
+		max-width: 30px;
+		max-height: 30px;
+		margin-right: 10px;
+	}
+
+	.input-button-container > svg path {
+		fill: white;
+	}
 </style>

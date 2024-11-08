@@ -31,4 +31,31 @@
 </section>
 
 <style>
+	section {
+		display: grid;
+		align-items: center;
+		padding: 0px;
+		margin: 0px;
+	}
+
+	.menu-container {
+		display: grid;
+		justify-items: center;
+		align-items: start;
+		/* padding: 0rem 2rem; */
+		min-height: 100vh;
+	}
+
+	.app-container {
+		display: grid;
+		justify-items: center;
+		align-items: center;
+		padding: 0px;
+	}
+
+	@keyframes load89234 {
+		100% {
+			background-position: -100% 0;
+		}
+	}
 </style>

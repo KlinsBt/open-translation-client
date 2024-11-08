@@ -143,4 +143,98 @@
 		</pre> -->
 
 <style>
+	section {
+		display: flex;
+		flex-direction: column;
+
+		padding: 5%;
+	}
+
+	.table-of-contents {
+		/* position: sticky; */
+		/* top: 10px; */
+		margin-bottom: 20px;
+		padding: 1rem;
+		background-color: var(--color-theme-5);
+		border-radius: 8px;
+	}
+
+	.table-of-contents > h2 {
+		font-size: 1.4rem;
+		margin-bottom: 0.5rem;
+		color: white;
+	}
+
+	.table-of-contents ol {
+		color: #b2e4ff;
+	}
+
+	.table-of-contents ol > li > a {
+		text-decoration: none;
+		color: var(--color-theme-4);
+		color: white;
+		font-size: 1rem;
+		margin-bottom: 0.5rem;
+		display: block;
+	}
+
+	.table-of-contents ol li a:hover {
+		/* filter: brightness(1.2); */
+		color: #b2e4ff;
+	}
+
+	.main-content {
+		max-width: 1500px;
+		margin-top: 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.text-column {
+		margin-bottom: 1rem;
+	}
+
+	/* Headings and Text */
+	h1 {
+		font-size: 2rem;
+		margin-bottom: 1rem;
+	}
+
+	h2 {
+		font-size: 1.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	h3 {
+		font-size: 1.2rem;
+		margin-bottom: 0.5rem;
+		font-weight: 500;
+	}
+
+	p {
+		font-size: 1rem;
+		margin: 0.5rem 0;
+		line-height: 1.6;
+	}
+
+	/* pre {
+		background-color: var(--color-theme-7);
+		padding: 0.5rem;
+		border-radius: 5px;
+		overflow-x: auto;
+		font-size: 0.9rem;
+		line-height: 1.4;
+	} */
+
+	@media (min-width: 768px) {
+		.table-of-contents {
+			min-width: 200px;
+			flex-shrink: 0;
+		}
+
+		.main-content {
+			flex: 1;
+		}
+	}
 </style>
