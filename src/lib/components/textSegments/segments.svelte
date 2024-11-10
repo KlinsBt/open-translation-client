@@ -123,9 +123,7 @@
 </script>
 
 {#snippet buttons()}
-	<div
-		style="display: grid; justify-items: center; width: 100%; gap: 10px 0px;"
-	>
+	<div class="buttons-container">
 		<button
 			style="width: 100%; margin: 0px"
 			class="toolbar-button"
@@ -199,7 +197,7 @@ to have it stored locally and be able to import it later." -->
 			</p>
 			<p>Progress: <span>{percentage}%</span></p>
 		</div>
-		<div>
+		<div class="segment-actions">
 			<button onclick={() => lockAllUnlockedSegments()}>
 				Lock Segments
 				<DocLock />
@@ -238,6 +236,13 @@ to have it stored locally and be able to import it later." -->
 </div>
 
 <style>
+	.buttons-container {
+		display: grid; 
+		justify-items: center; 
+		width: 100%; 
+		gap: 10px 0px;
+	}
+
 	.toolbar {
 		display: flex;
 		flex-wrap: wrap;
@@ -397,13 +402,93 @@ to have it stored locally and be able to import it later." -->
 		min-width: 95%;
 	}
 
-	@media (max-width: 997px) {
+	@media (max-width: 1170px) {
 		.words-container {
 			justify-content: space-evenly;
 		}
 
 		.words-container > .middle-container {
 			margin: 0%;
+		}
+	}
+
+	@media (max-width: 990px) {
+		.segments-container {
+			min-width: 90%;
+		}
+	}
+
+	@media (max-width: 515px) {
+		.segments-container {
+			min-width: auto;
+		}
+	}
+
+	@media (max-width: 690px) {
+		.toolbar {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: center;
+			align-items: center;
+			padding: 15px 0;
+			gap: 15px 0px;
+		}
+
+		.words-container > .middle-container > .top-stats {
+			display: grid;
+			justify-items: center;
+			align-items: center;
+			grid-template-columns: auto;
+			padding: 0px;
+			margin: 0px;
+			gap: 0px;
+		}
+
+		.words-container > .middle-container > .segment-actions {
+			display: grid;
+			justify-items: center;
+			align-items: center;
+			grid-template-columns: auto;
+			padding: 0px;
+			margin: 10px 0px;
+			gap: 10px 0px;
+		}
+	}
+
+	@media (max-width: 545px) {
+		.words-left > h1, .words-right > h1 {
+			font-size: 1rem;
+		}
+
+		.words-left > p, .words-right > p {
+			text-align: center;
+		}
+	}
+
+	@media (max-width: 400px) {
+		.words-left > h1, .words-right > h1 {
+			font-size: 0.8rem;
+		}
+
+		.words-container > .middle-container > .top-stats {
+			font-size: 0.7rem;
+		}
+
+		.words-container > .middle-container > .top-stats > p {
+			font-size: 0.8rem;
+		}
+
+		.words-container > .middle-container > .top-stats > p > span {
+			font-size: 0.7rem;
+		}
+
+		.words-left > p, .words-right > p {
+			text-align: center;
+			font-size: 0.7rem;
+		}
+
+		.words-container > .middle-container > .segment-actions > button {
+			font-size: 0.6rem;
 		}
 	}
 </style>

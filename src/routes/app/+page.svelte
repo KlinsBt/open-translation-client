@@ -36,6 +36,12 @@
 		align-items: center;
 		padding: 0px;
 		margin: 0px;
+
+		display: grid;
+		align-items: baseline;
+		padding: 0px;
+		margin: 0px;
+		min-height: 90vh;
 	}
 
 	.menu-container {
