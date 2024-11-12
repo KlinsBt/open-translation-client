@@ -1,11 +1,11 @@
-export function getXliffVersion(xliff: Document): string {
+export function getXliffVersion(xliff: Document): number {
 	const xliffElement = xliff.getElementsByTagName("xliff")[0];
-	if (!xliffElement) return "invalid";
+	if (!xliffElement) return 0;
 
 	const version = xliffElement.getAttribute("version");
-	if (!version) return "invalid";
+	if (!version) return 0;
 
-	return version;
+	return parseFloat(version);
 }
 
 export function validateXliff2_0Data(xliffDocument: Document): boolean {
@@ -13,7 +13,9 @@ export function validateXliff2_0Data(xliffDocument: Document): boolean {
 	const xliffElement = xliffDocument.getElementsByTagName("xliff")[0];
 	if (!xliffElement) return false;
 
-	if (xliffElement.getAttribute("version") !== "2.0") return false;
+	let version = xliffElement.getAttribute("version") ?? "0.0";
+
+	if (parseFloat(version) < 2.0) return false;
 
 	// Check srcLang and trgLang attributes
 	const srcLang = xliffElement.getAttribute("srcLang");
@@ -33,21 +35,21 @@ export function validateXliff2_0Data(xliffDocument: Document): boolean {
 	if (!metadataElements || metadataElements.length === 0) return false;
 	const metadataElement = metadataElements[0];
 
-	// Check metaGroup with category "open_trc_metadata"
+	// Check metaGroup with category "open_tlc_metadata"
 	const metaGroupElements =
 		metadataElement.getElementsByTagName("mda:metaGroup");
-	let openTrcMetaGroup: Element | null = null;
+	let openTlcMetaGroup: Element | null = null;
 	for (let i = 0; i < metaGroupElements.length; i++) {
 		const category = metaGroupElements[i].getAttribute("category");
-		if (category === "open_trc_metadata") {
-			openTrcMetaGroup = metaGroupElements[i];
+		if (category === "open_tlc_metadata") {
+			openTlcMetaGroup = metaGroupElements[i];
 			break;
 		}
 	}
-	if (!openTrcMetaGroup) return false;
+	if (!openTlcMetaGroup) return false;
 
 	// Check meta elements with types "name", "type", and "type_ref"
-	const metaElements = openTrcMetaGroup.getElementsByTagName("mda:meta");
+	const metaElements = openTlcMetaGroup.getElementsByTagName("mda:meta");
 	console.log(metaElements);
 	let hasName = false;
 	let hasType = false;
@@ -61,6 +63,8 @@ export function validateXliff2_0Data(xliffDocument: Document): boolean {
 	}
 
 	if (!hasName || !hasType || !hasTypeRef) return false;
+
+	console.log(true);
 
 	return true;
 }
@@ -92,6 +96,7 @@ export function extractXliff2_0Data(
 	const id = Number(idAttr);
 
 	let name = "Translation " + idAttr;
+	let checked: boolean[] = [];
 	let type = "text";
 	let typeRef: any = {};
 
@@ -103,13 +108,14 @@ export function extractXliff2_0Data(
 
 		for (let i = 0; i < metaGroupElements.length; i++) {
 			const category = metaGroupElements[i].getAttribute("category");
-			if (category === "open_trc_metadata") {
+			if (category === "open_tlc_metadata") {
 				const metaElements =
 					metaGroupElements[i].getElementsByTagName("mda:meta");
 				for (let j = 0; j < metaElements.length; j++) {
 					const typeAttr = metaElements[j].getAttribute("type");
 					const content = metaElements[j].textContent || "";
 					if (typeAttr === "name") name = content;
+					else if (typeAttr === "checked") checked = JSON.parse(content);
 					else if (typeAttr === "type") type = content;
 					else if (typeAttr === "type_ref") {
 						try {
@@ -125,6 +131,7 @@ export function extractXliff2_0Data(
 		}
 	}
 
+	console.log(checked);
 	// Extract segments
 	const units = fileElement.getElementsByTagName("unit");
 	const seg1: string[] = [];
@@ -151,7 +158,7 @@ export function extractXliff2_0Data(
 			creationDate: new Date().getTime().toString(),
 			seg1: seg1,
 			seg2: seg2,
-			checked: seg1.map(() => false),
+			checked: checked.length != seg1.length ? seg1.map(() => false) : checked,
 			type: type,
 			typeRef: typeRef,
 		},
@@ -159,31 +166,27 @@ export function extractXliff2_0Data(
 }
 
 export function validateXliff1_2Data(xliffDocument: Document): boolean {
-	// Check if xliff root element exists
 	const xliffElement = xliffDocument.getElementsByTagName("xliff")[0];
 	if (!xliffElement) return false;
 
-	// Check version attribute
-	if (xliffElement.getAttribute("version") !== "1.2") return false;
+	const version = xliffElement.getAttribute("version") ?? "0.0";
+	// Validate exact version 1.2
+	if (parseFloat(version) !== 1.2) return false;
 
-	// Check file element
 	const fileElement = xliffElement.getElementsByTagName("file")[0];
 	if (!fileElement) return false;
 
-	// Check source-language and target-language attributes
 	const srcLang = fileElement.getAttribute("source-language");
 	const trgLang = fileElement.getAttribute("target-language");
 	if (!srcLang || !trgLang) return false;
 
-	// Check body element
-	const bodyElement = fileElement.getElementsByTagName("body")[0];
-	if (!bodyElement) return false;
+	const headerElement = fileElement.getElementsByTagName("header")[0];
+	if (!headerElement) return false;
 
-	// Check group element
-	const groupElement = bodyElement.getElementsByTagName("group")[0];
+	const groupElement = headerElement.getElementsByTagName("group")[0];
 	if (!groupElement) return false;
 
-	// Check for custom metadata in sup:SourceInfo
+	// Handle namespaces with proper resolver
 	const namespaceResolver = xliffDocument.createNSResolver(
 		xliffDocument.documentElement,
 	);
@@ -197,7 +200,6 @@ export function validateXliff1_2Data(xliffDocument: Document): boolean {
 
 	if (!supSourceInfo) return false;
 
-	// Check for sup:Name, sup:Type, and sup:TypeRef elements
 	const supName = supSourceInfo.getElementsByTagNameNS(
 		"http://example.com/sup",
 		"Name",
@@ -213,43 +215,26 @@ export function validateXliff1_2Data(xliffDocument: Document): boolean {
 
 	if (!supName || !supType || !supTypeRef) return false;
 
+	console.log(true);
 	return true;
 }
 
-// Function to extract values from XLIFF 1.2
-export function extractValuesFromXliff1_2(xliff: Document): string[] {
-	const values: string[] = [];
-	const transUnits = xliff.getElementsByTagName("trans-unit");
-
-	for (let i = 0; i < transUnits.length; i++) {
-		const transUnit = transUnits[i];
-		const source =
-			transUnit.getElementsByTagName("source")[0]?.textContent || "";
-		const target =
-			transUnit.getElementsByTagName("target")[0]?.textContent || "";
-		values.push(source, target);
-	}
-
-	return values;
-}
-
-// Function to extract data from XLIFF 1.2
 export function extractXliff1_2Data(
 	xliffDocument: Document,
 	withCustomData: boolean,
 ): any {
 	const xliffElement = xliffDocument.getElementsByTagName("xliff")[0];
-
 	const fileElement = xliffElement.getElementsByTagName("file")[0];
 	const srcLang = fileElement.getAttribute("source-language");
 	const trgLang = fileElement.getAttribute("target-language");
 
+	let id = null;
 	let name = "Unnamed Translation";
+	let checked: boolean[] = [];
 	let type = "text";
 	let typeRef: any = {};
 
 	if (withCustomData) {
-		// Extract custom metadata
 		const namespaceResolver = xliffDocument.createNSResolver(
 			xliffDocument.documentElement,
 		);
@@ -262,9 +247,17 @@ export function extractXliff1_2Data(
 		).singleNodeValue as Element;
 
 		if (supSourceInfo) {
+			const supId = supSourceInfo.getElementsByTagNameNS(
+				"http://example.com/sup",
+				"Id",
+			)[0];
 			const supName = supSourceInfo.getElementsByTagNameNS(
 				"http://example.com/sup",
 				"Name",
+			)[0];
+			const supChecked = supSourceInfo.getElementsByTagNameNS(
+				"http://example.com/sup",
+				"Checked",
 			)[0];
 			const supType = supSourceInfo.getElementsByTagNameNS(
 				"http://example.com/sup",
@@ -275,10 +268,15 @@ export function extractXliff1_2Data(
 				"TypeRef",
 			)[0];
 
+			id = supId?.textContent || null;
 			name = supName?.textContent || name;
+			checked = JSON.parse(supChecked?.textContent!) || checked;
+			console.log(checked);
 			type = supType?.textContent || type;
-			const typeRefContent = supTypeRef?.textContent || "{}";
-
+			const typeRefContent = (supTypeRef?.textContent || "{}").replace(
+				/&quot;/g,
+				'"',
+			);
 			try {
 				typeRef = JSON.parse(typeRefContent);
 			} catch (e) {
@@ -304,7 +302,7 @@ export function extractXliff1_2Data(
 	}
 
 	// Generate a unique ID if none exists
-	const id = Date.now();
+	id = id === null ? Date.now() : parseInt(id);
 
 	return {
 		id: id,
@@ -315,7 +313,7 @@ export function extractXliff1_2Data(
 			creationDate: new Date().getTime().toString(),
 			seg1: seg1,
 			seg2: seg2,
-			checked: seg1.map(() => false),
+			checked: checked.length != seg1.length ? seg1.map(() => false) : checked,
 			type: type,
 			typeRef: typeRef,
 		},

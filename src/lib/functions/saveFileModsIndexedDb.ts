@@ -59,3 +59,12 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 	await updateTranslationOnIndexedDB(data);
 	userData.set(fullData);
 }
+
+export async function saveNewTranslationToUserDataFromSaveFile(
+	fullData: UserData[],
+	data: UserData,
+) {
+	fullData.push(data);
+	await updateTranslationOnIndexedDB(data);
+	userData.set(fullData);
+}

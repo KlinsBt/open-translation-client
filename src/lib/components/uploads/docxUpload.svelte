@@ -3,7 +3,7 @@
 	// import { saveAndOpenNewFileWithStringArray } from "$lib/functions/createNewTranslationOnLocalStorage";
 
 	// For indexedDB use
-	import { saveAndOpenNewFileWithStringArray } from "$lib/functions/createNewTranslationOnIndexedDb";
+	import { saveAndOpenNewFileWithStringArray } from "$lib/functions/saveTranslationOnIndexedDb";
 
 	import { createDocxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationDocx";
 	import { LANGUAGES } from "$lib/components/data/languages";

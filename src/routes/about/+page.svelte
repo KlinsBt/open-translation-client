@@ -25,12 +25,12 @@
 			<h2>About This Tool</h2>
 			<p>
 				Open Translation Client (Open TLC) is an open source CAT-Tool that was
-				initially developed as a master thesis project at the University of
-				Applied Sciences Anhalt, Germany. The goal of this project was to create
-				a web-based translation tool that is easy to use for anyone,
-				professional translators, teachers or students. The tool is designed to
-				be user-friendly and intuitive. It has all the necessary features that
-				are needed for a translation project such as support of multiple file
+				initially developed as a master thesis project at the Anhalt University
+				of Applied Sciences, Germany. The goal of this project was to create a
+				web-based translation tool that is easy to use for anyone, professional
+				translators, teachers or students. The tool is designed to be
+				user-friendly and intuitive. It has all the necessary features that are
+				needed for a translation project such as support of multiple file
 				formats, support of XLIFF 1.2 and 2.0 save files, various parsing
 				algorithms for different file formats for segmentation etc.
 			</p>
@@ -97,7 +97,7 @@
 				be imported into other CAT-Tools that support XLIFF formats.
 			</p>
 
-			<h3>Save File Data Strcuture</h3>
+			<h3>Save File Data Structure</h3>
 			<p>
 				Every project in Open TLC is stored in a specific data structure that
 				contains all the necessary information for a translation project. This

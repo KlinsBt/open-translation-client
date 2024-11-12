@@ -3,7 +3,7 @@
 	// import { saveAndOpenNewFileWithTextString } from "$lib/functions/createNewTranslationOnLocalStorage";
 
 	// For indexedDB use
-	import { saveAndOpenNewFileWithTextString } from "$lib/functions/createNewTranslationOnIndexedDb";
+	import { saveAndOpenNewFileWithTextString } from "$lib/functions/saveTranslationOnIndexedDb";
 
 	import { generateTextTranslation } from "$lib/functions/outputGeneration/outputGenerationText";
 	import { translationIdSelected } from "$lib/functions/saveData/stores.svelte";

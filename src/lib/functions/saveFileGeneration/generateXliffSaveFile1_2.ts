@@ -3,7 +3,7 @@ import type { UserData } from "$lib/types/types";
 // Function to generate the XLIFF XML string for version 1.2
 function generateXliff(userData: UserData): string {
 	const { translationData } = userData;
-	const { name, sourceLang, targetLang, seg1, seg2, type, typeRef } =
+	const { name, sourceLang, targetLang, seg1, seg2, checked, type, typeRef } =
 		translationData;
 
 	// XLIFF structure for version 1.2
@@ -12,18 +12,20 @@ function generateXliff(userData: UserData): string {
 	xliff += `        xmlns:sup="http://example.com/sup">\n`;
 	xliff += `  <file original="" source-language="${sourceLang}" target-language="${targetLang}" datatype="plaintext">\n`;
 	xliff += `    <header>\n`;
-	xliff += `    </header>\n`;
-	xliff += `    <body>\n`;
-
 	// Adds a <group> element to contain the custom metadata and translation units
 	xliff += `      <group>\n`;
 
 	// Includes custom metadata using 'sup' namespace elements within the <group>
 	xliff += `        <sup:SourceInfo>\n`;
+	xliff += `          <sup:Id>${escapeXml(userData.id!.toString() ?? "")}</sup:Id>\n`;
 	xliff += `          <sup:Name>${escapeXml(name)}</sup:Name>\n`;
+	xliff += `          <sup:Checked>${escapeXml(JSON.stringify(checked))}</sup:Checked>\n`;
 	xliff += `          <sup:Type>${escapeXml(type)}</sup:Type>\n`;
 	xliff += `          <sup:TypeRef>${escapeXml(JSON.stringify(typeRef))}</sup:TypeRef>\n`;
 	xliff += `        </sup:SourceInfo>\n`;
+	xliff += `      </group>\n`;
+	xliff += `    </header>\n`;
+	xliff += `    <body>\n`;
 
 	// Adding translation units (segments)
 	for (let i = 0; i < seg1.length; i++) {
@@ -36,7 +38,6 @@ function generateXliff(userData: UserData): string {
 		xliff += `        </trans-unit>\n`;
 	}
 
-	xliff += `      </group>\n`;
 	xliff += `    </body>\n`;
 	xliff += `  </file>\n`;
 	xliff += `</xliff>\n`;

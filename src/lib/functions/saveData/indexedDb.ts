@@ -1,7 +1,7 @@
 import { type UserData } from "../../types/types.js";
 import { userData } from "$lib/functions/saveData/stores.svelte";
 
-const DB_NAME = "OPEN_TRC_5432_DB";
+const DB_NAME = "OPEN_TLC_5432_DB";
 const DB_VERSION = 1; // No floats
 const DB_STORE_NAME = "UserData";
 const DURABILITY = "relaxed"; // "strict" or "relaxed"

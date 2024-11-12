@@ -3,7 +3,7 @@ import type { UserData } from "$lib/types/types";
 // Function to generate the XLIFF XML string
 function generateXliff(userData: UserData): string {
 	const { translationData } = userData;
-	const { name, sourceLang, targetLang, seg1, seg2, type, typeRef } =
+	const { name, sourceLang, targetLang, seg1, seg2, checked, type, typeRef } =
 		translationData;
 
 	// Builds the XLIFF structure
@@ -13,8 +13,9 @@ function generateXliff(userData: UserData): string {
 
 	// Adds a <mda:metadata> element to contain the custom metadata
 	xliff += `    <mda:metadata>\n`;
-	xliff += `      <mda:metaGroup category="open_trc_metadata">\n`;
+	xliff += `      <mda:metaGroup category="open_tlc_metadata">\n`;
 	xliff += `        <mda:meta type="name">${name}</mda:meta>\n`;
+	xliff += `        <mda:meta type="checked">${JSON.stringify(checked)}</mda:meta>\n`;
 	xliff += `        <mda:meta type="type">${type}</mda:meta>\n`;
 	xliff += `        <mda:meta type="type_ref">${JSON.stringify(typeRef)}</mda:meta>\n`;
 	xliff += `      </mda:metaGroup>\n`;

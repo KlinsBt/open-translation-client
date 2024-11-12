@@ -1,8 +1,9 @@
 <script lang="ts">
 	import {
 		saveAndOpenNewFileWithStringArray,
+		saveAndOpenNewFileWithStringArrayFromSaveFile,
 		updateAndOpenNewFileWithStringArray,
-	} from "$lib/functions/createNewTranslationOnIndexedDb";
+	} from "$lib/functions/saveTranslationOnIndexedDb.js";
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
 	import type { UserData } from "$lib/types/types.js";
@@ -43,7 +44,7 @@
 								console.log("ID is already defined.");
 								return (saveFileIdExists = true);
 							} else {
-								alert("New project");
+								alert("New project created");
 								createNewProjectWithSaveFile();
 							}
 						} else {
@@ -69,7 +70,7 @@
 							"application/xml",
 						);
 						let version = getXliffVersion(xliffDocument);
-						if (version === "1.2") {
+						if (version === 1.2) {
 							let withMetaData = validateXliff1_2Data(xliffDocument);
 							saveData = extractXliff1_2Data(xliffDocument, withMetaData);
 							console.log("xliffData: ", saveData);
@@ -78,11 +79,11 @@
 								console.log("ID is already defined.");
 								return (saveFileIdExists = true);
 							} else {
-								alert("New project");
+								alert("New project created");
 								createNewProjectWithSaveFile();
 							}
 							showLoading.set(false);
-						} else if (version === "2.0") {
+						} else if (version >= 2.0) {
 							let withMetaData = validateXliff2_0Data(xliffDocument);
 							saveData = extractXliff2_0Data(xliffDocument, withMetaData);
 							console.log("xliffData: ", saveData);
@@ -91,7 +92,7 @@
 								console.log("ID is already defined.");
 								return (saveFileIdExists = true);
 							} else {
-								alert("New project");
+								alert("New project created");
 								createNewProjectWithSaveFile();
 							}
 							showLoading.set(false);
@@ -140,7 +141,7 @@
 									console.log("ID is already defined.");
 									return (saveFileIdExists = true);
 								} else {
-									alert("New project");
+									alert("New project created");
 									createNewProjectWithSaveFile();
 								}
 								showLoading.set(false);
@@ -166,7 +167,7 @@
 								"application/xml",
 							);
 							let version = getXliffVersion(xliffDocument);
-							if (version === "1.2") {
+							if (version === 1.2) {
 								let withMetaData = validateXliff1_2Data(xliffDocument);
 								saveData = extractXliff1_2Data(xliffDocument, withMetaData);
 								console.log("xliffData: ", saveData);
@@ -175,11 +176,11 @@
 									console.log("ID is already defined.");
 									return (saveFileIdExists = true);
 								} else {
-									alert("New project");
+									alert("New project created");
 									createNewProjectWithSaveFile();
 								}
 								showLoading.set(false);
-							} else if (version === "2.0") {
+							} else if (version >= 2.0) {
 								let withMetaData = validateXliff2_0Data(xliffDocument);
 								saveData = extractXliff2_0Data(xliffDocument, withMetaData);
 								console.log("xliffData: ", saveData);
@@ -188,7 +189,7 @@
 									console.log("ID is already defined.");
 									return (saveFileIdExists = true);
 								} else {
-									alert("New project");
+									alert("New project created");
 									createNewProjectWithSaveFile();
 								}
 								showLoading.set(false);
@@ -213,15 +214,7 @@
 		const timestamp = new Date().valueOf().toString();
 		showLoading.set(true);
 		if (!saveData) return;
-		saveAndOpenNewFileWithStringArray(
-			saveData.translationData.name,
-			saveData.translationData.sourceLang,
-			saveData.translationData.targetLang,
-			timestamp,
-			saveData.translationData.seg1,
-			saveData.translationData.type,
-			saveData.translationData.typeRef,
-		);
+		saveAndOpenNewFileWithStringArrayFromSaveFile($userData, saveData);
 		showLoading.set(false);
 	}
 
