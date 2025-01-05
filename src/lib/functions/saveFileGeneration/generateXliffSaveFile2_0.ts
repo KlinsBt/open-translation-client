@@ -3,21 +3,33 @@ import type { UserData } from "$lib/types/types";
 // Function to generate the XLIFF XML string
 function generateXliff(userData: UserData): string {
 	const { translationData } = userData;
-	const { name, sourceLang, targetLang, seg1, seg2, checked, type, typeRef } =
-		translationData;
+	const {
+		name,
+		sourceLang,
+		targetLang,
+		seg1,
+		seg2,
+		checked,
+		type,
+		typeRef,
+		tm,
+		tb,
+	} = translationData;
 
 	// Builds the XLIFF structure
 	let xliff = `<?xml version="1.0" encoding="UTF-8"?>\n`;
 	xliff += `<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="${sourceLang}" trgLang="${targetLang}">\n`;
-	xliff += `  <file id="${userData.id}" original="">\n`;
+	xliff += `  <file id="${escapeXml(userData.id!.toString() ?? "")}" original="">\n`;
 
 	// Adds a <mda:metadata> element to contain the custom metadata
 	xliff += `    <mda:metadata>\n`;
 	xliff += `      <mda:metaGroup category="open_tlc_metadata">\n`;
-	xliff += `        <mda:meta type="name">${name}</mda:meta>\n`;
-	xliff += `        <mda:meta type="checked">${JSON.stringify(checked)}</mda:meta>\n`;
-	xliff += `        <mda:meta type="type">${type}</mda:meta>\n`;
-	xliff += `        <mda:meta type="type_ref">${JSON.stringify(typeRef)}</mda:meta>\n`;
+	xliff += `        <mda:meta type="name">${escapeXml(name)}</mda:meta>\n`;
+	xliff += `        <mda:meta type="checked">${escapeXml(JSON.stringify(checked))}</mda:meta>\n`;
+	xliff += `        <mda:meta type="type">${escapeXml(type)}</mda:meta>\n`;
+	xliff += `        <mda:meta type="type_ref">${escapeXml(JSON.stringify(typeRef))}</mda:meta>\n`;
+	xliff += `        <mda:meta type="tm">${escapeXml(JSON.stringify(tm))}</mda:meta>\n`;
+	xliff += `        <mda:meta type="tb">${escapeXml(JSON.stringify(tb))}</mda:meta>\n`;
 	xliff += `      </mda:metaGroup>\n`;
 	xliff += `    </mda:metadata>\n`;
 

@@ -1,4 +1,4 @@
-import type { TypeRef, UserData } from "$lib/types/types";
+import type { Type, TypeRef, UserData } from "$lib/types/types";
 import {
 	loadTranslationsUserDataFromIndexedDB,
 	updateTranslationOnIndexedDB,
@@ -24,7 +24,7 @@ export async function saveAndOpenNewFileWithTextString(
 	targetLang: string,
 	date: string,
 	fullText: string,
-	fileType?: string,
+	fileType: Type,
 	fileTypeRef?: TypeRef,
 ) {
 	let data: UserData[] = await loadTranslationsUserDataFromIndexedDB();
@@ -57,7 +57,7 @@ export async function saveAndOpenNewFileWithStringArray(
 	targetLang: string,
 	creationDate: string,
 	arrayOfStrings: string[],
-	fileType?: string,
+	fileType: Type,
 	fileTypeRef?: TypeRef,
 ) {
 	let data: UserData[] = await loadTranslationsUserDataFromIndexedDB();

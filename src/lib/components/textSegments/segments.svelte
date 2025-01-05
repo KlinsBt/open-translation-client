@@ -4,28 +4,63 @@
 	import DocLock from "../svg/docLock.svelte";
 	import SaveFile from "../svg/saveFile.svelte";
 	import RightArrow from "../svg/rightArrow.svelte";
-	import Export from "../svg/export.svelte";
+	import Export from "../svg/export2.svelte";
+	import TmTb from "../svg/tmTb.svelte";
 	import {
 		singleUserData,
 		openMenu,
 		seg1WordCount,
 		seg2WordCount,
+		showLoading,
+		tmData,
+		tbData,
+		singleTmData,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { functionCreateExportFile } from "$lib/functions/outputGeneration/handleTranslationExport";
 
 	import { generateJsonSaveFile } from "$lib/functions/saveFileGeneration/generateJsonSaveFile";
 	import { generateXliffSaveFile2_0 } from "$lib/functions/saveFileGeneration/generateXliffSaveFile2_0";
 	import { generateXliffSaveFile1_2 } from "$lib/functions/saveFileGeneration/generateXliffSaveFile1_2";
-	import { updateTranslationOnIndexedDB } from "$lib/functions/saveData/indexedDb";
+	import {
+		getTbNamesAndIds,
+		getTmNamesAndIds,
+		loadTbDataFromIndexedDB,
+		loadTmDataFromIndexedDB,
+		updateTranslationOnIndexedDB,
+	} from "$lib/functions/saveData/indexedDb";
 	import Modal from "../modal.svelte";
 	import {
 		calcPercentageOfTotalSegmentsChecked,
 		getTotalWordCount,
 	} from "$lib/functions/statistics";
+	import TranslationMemory from "../translationMemory/tmInSegments/translationMemory.svelte";
+	import TermBase from "../termBase/tbSegments/termBase.svelte";
+	import type { TbData, TmData } from "$lib/types/types";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
-	let segmentsContainer: HTMLElement | null = null;
+	let segmentsContainer: HTMLElement | null = $state(null);
+	let tmSelected: null | number = $derived(
+		$singleUserData.translationData.tm?.id ?? null,
+	);
+	let tmActive: boolean = $state(
+		$singleUserData.translationData.tm?.active ?? false,
+	);
+
+	let tbSelected: number | null = $state(
+		$singleUserData.translationData.tb?.id ?? null,
+	);
+	let tbActive: boolean = $state(
+		$singleUserData.translationData.tb?.active ?? false,
+	);
+
+	let showSaveFileModal: boolean = $state(false);
+	let showTmTbModal: boolean = $state(false);
+	let percentage: number = $derived(
+		calcPercentageOfTotalSegmentsChecked(
+			$singleUserData.translationData.checked,
+		),
+	);
 
 	function handleScroll() {
 		if (!segmentsContainer) return;
@@ -46,13 +81,6 @@
 			console.log(`Loaded ${visibleSegmentsCount} segments`);
 		}
 	}
-
-	let showSaveFileModal: boolean = $state(false);
-	let percentage: number = $derived(
-		calcPercentageOfTotalSegmentsChecked(
-			$singleUserData.translationData.checked,
-		),
-	);
 
 	function handleJsonSaveFileDownload() {
 		if (!$singleUserData) return console.log("Data not found");
@@ -113,16 +141,88 @@
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
 
+	function selectTmId(id: number | string, name: string) {
+		if (typeof id === "string") {
+			id = parseInt(id);
+		}
+		let newUserData = $singleUserData;
+		newUserData.translationData!.tm!.id = id;
+		newUserData.translationData!.tm!.name = name;
+		singleUserData.set(newUserData);
+		updateTranslationOnIndexedDB($singleUserData);
+		singleTmData.set($tmData.find((data) => data.id === id) as TmData);
+		console.log(`Selected TM Name: ${name}`);
+		console.log(`Selected TM Id: ${id}`);
+	}
+
+	function selectTbId(id: number | string, name: string) {
+		if (typeof id === "string") {
+			id = parseInt(id);
+		}
+		tbSelected = id;
+		let newUserData = $singleUserData;
+		newUserData.translationData!.tb!.id = id;
+		newUserData.translationData!.tb!.name = name;
+		singleUserData.set(newUserData);
+		updateTranslationOnIndexedDB($singleUserData);
+		console.log(`Selected TB Id: ${id}`);
+	}
+
+	async function getAllTmDataFromIndexedDB() {
+		showLoading.set(true);
+		if ($tmData.length > 0) {
+			showLoading.set(false);
+			return;
+		} else {
+			let data = await loadTmDataFromIndexedDB();
+			tmData.set(data as TmData[]);
+			showLoading.set(false);
+			console.log(tmData);
+		}
+	}
+
+	async function getAllTbDataFromIndexedDB() {
+		showLoading.set(true);
+		let data = await loadTbDataFromIndexedDB();
+		tbData.set(data as TbData[]);
+		showLoading.set(false);
+		console.log(tmData);
+	}
+
 	async function toggleSaveFileModal() {
 		showSaveFileModal = true;
+	}
+
+	async function toggleTmTbModal() {
+		getAllTmDataFromIndexedDB();
+		getAllTbDataFromIndexedDB();
+		showTmTbModal = true;
 	}
 
 	async function toggleMenu() {
 		openMenu.set(!$openMenu);
 	}
+
+	$effect(() => {
+		if (tmActive !== $singleUserData.translationData.tm?.active) {
+			console.log("TM Active changed: ", tmActive);
+			let newUserData = { ...$singleUserData };
+			newUserData.translationData!.tm!.active = tmActive;
+			singleUserData.set(newUserData);
+			updateTranslationOnIndexedDB(newUserData);
+		}
+
+		if (tbActive !== $singleUserData.translationData.tb?.active) {
+			console.log("TB Active changed: ", tbActive);
+			let newUserData = { ...$singleUserData };
+			newUserData.translationData!.tb!.active = tbActive;
+			singleUserData.set(newUserData);
+			updateTranslationOnIndexedDB(newUserData);
+		}
+	});
 </script>
 
-{#snippet buttons()}
+{#snippet exportMenu()}
 	<div class="buttons-container">
 		<button
 			style="width: 100%; margin: 0px"
@@ -148,33 +248,129 @@
 	</div>
 {/snippet}
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-	role="dialog"
-	class="modal-element-global {showSaveFileModal ? '' : 'close-modal-global'}"
-	onclick={() => (showSaveFileModal = false)}
->
-	<!-- message="Export a save file of this translation project in one of the following formats
-to have it stored locally and be able to import it later." -->
-	<Modal title="Export Save File" content={buttons} />
-</div>
+{#snippet tmTbMenu()}
+	<div class="manage-tm-tb-container">
+		<div class="manage-tm-container">
+			<div class="checkable">
+				<p class="header">Translation Memory</p>
+				<input
+					type="checkbox"
+					class="tm-checkbox"
+					bind:checked={tmActive}
+					title="Enable Translation Memory"
+				/>
+			</div>
+			<div class="tm-tb-selection-container">
+				<div
+					class="tm-tb-selection-overlay"
+					style={tmActive
+						? "display: background-color: rgba(230, 230, 230, 0); z-index: -1;"
+						: "background-color: rgba(230, 230, 230, 0.5); z-index: 2;"}
+				></div>
+				<select
+					class="tm-select"
+					onchange={(e) =>
+						selectTmId(
+							(e.target as HTMLSelectElement).value,
+							(e.target as HTMLSelectElement).selectedOptions[0].text,
+						)}
+				>
+					<option disabled selected value="">
+						{tmSelected !== null
+							? $singleUserData.translationData.tm?.name
+							: "Select Translation Memory"}
+					</option>
+					{#each $tmData as data}
+						<option value={data.id}>
+							{data.name}
+						</option>
+					{/each}
+				</select>
+			</div>
+		</div>
+
+		<div class="manage-tb-container">
+			<div class="checkable">
+				<p class="header">Term Base</p>
+				<input
+					type="checkbox"
+					class="tm-checkbox"
+					bind:checked={tbActive}
+					title="Enable Term Base"
+				/>
+			</div>
+			<div class="tm-tb-selection-container">
+				<div
+					class="tm-tb-selection-overlay"
+					style={tbActive
+						? "display: background-color: rgba(230, 230, 230, 0); z-index: -1;"
+						: "background-color: rgba(230, 230, 230, 0.5); z-index: 2;"}
+				></div>
+				<select
+					class="tm-select"
+					onchange={(e) =>
+						selectTbId(
+							(e.target as HTMLSelectElement).value,
+							(e.target as HTMLSelectElement).selectedOptions[0].text,
+						)}
+				>
+					<option disabled selected value="">
+						{tbSelected !== null
+							? $singleUserData.translationData.tb?.name
+							: "Select Term Base"}
+					</option>
+					{#each $tbData as data}
+						<option value={data.id}>
+							{data.name}
+						</option>
+					{/each}
+				</select>
+			</div>
+		</div>
+	</div>
+{/snippet}
+
+{#if showTmTbModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		role="dialog"
+		class="modal-element-global {showTmTbModal ? '' : 'close-modal-global'}"
+		onclick={() => (showTmTbModal = false)}
+	>
+		<Modal title="TM/TB Setup" content={tmTbMenu} />
+	</div>
+{:else if showSaveFileModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		role="dialog"
+		class="modal-element-global {showSaveFileModal ? '' : 'close-modal-global'}"
+		onclick={() => (showSaveFileModal = false)}
+	>
+		<Modal title="Export Save File" content={exportMenu} />
+	</div>
+{/if}
 
 <div class="toolbar">
 	<button class="toolbar-button back" onclick={() => toggleMenu()}>
 		<RightArrow />
 		Back
 	</button>
+	<button class="toolbar-button export" onclick={() => toggleTmTbModal()}>
+		Manage TM/TB
+		<TmTb />
+	</button>
 	<button class="toolbar-button save" onclick={() => toggleSaveFileModal()}>
-		<SaveFile />
 		Export Save File
+		<SaveFile marginBottom="0px" />
 	</button>
 	<button
 		class="toolbar-button export"
 		onclick={() => functionCreateExportFile($singleUserData)}
 	>
-		<Export />
 		Export Translation File
+		<Export marginBottom="2px" />
 	</button>
 	<!-- <button class="toolbar-button">Translate</button> -->
 </div>
@@ -199,11 +395,11 @@ to have it stored locally and be able to import it later." -->
 		</div>
 		<div class="segment-actions">
 			<button onclick={() => lockAllUnlockedSegments()}>
-				Lock Segments
+				Lock All Segments
 				<DocLock />
 			</button>
 			<button onclick={() => fillAllEmptySegments()}>
-				Fill Segments
+				Fill All Segments
 				<AutoFill />
 			</button>
 		</div>
@@ -222,6 +418,7 @@ to have it stored locally and be able to import it later." -->
 
 <div
 	class="segments-container"
+	style={tmActive || tbActive ? "max-height: 50vh;" : "741px"}
 	bind:this={segmentsContainer}
 	onscroll={handleScroll}
 >
@@ -235,11 +432,90 @@ to have it stored locally and be able to import it later." -->
 	{/each}
 </div>
 
+<div
+	class="tm-tb-container"
+	style={tmActive && tbActive
+		? "grid-template-columns: 70% 30%;"
+		: "display: flex;"}
+>
+	{#if tmActive}
+		<div class="translation-memory">
+			<TranslationMemory />
+		</div>
+	{/if}
+	{#if tbActive}
+		<div class="term-base">
+			<TermBase />
+		</div>
+	{/if}
+</div>
+
 <style>
+	.manage-tm-tb-container {
+		display: flex;
+		flex-direction: column;
+		gap: 40px 0px;
+		padding: 25px 0px;
+		border-radius: 8px;
+		width: 100%;
+		max-width: 400px;
+		margin: 0 auto;
+	}
+
+	.manage-tm-container,
+	.manage-tb-container {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.checkable {
+		display: flex;
+		justify-content: space-between;
+		align-items: start;
+	}
+
+	.header {
+		font-size: 1.1rem;
+		font-weight: bold;
+		color: var(--color-theme-4);
+		margin: 0px;
+	}
+
+	.tm-checkbox {
+		width: 20px;
+		height: 20px;
+		cursor: pointer;
+		accent-color: #007bff; /* Sets the color of the checkbox */
+	}
+
+	.tm-tb-selection-container {
+		position: relative;
+	}
+
+	.tm-tb-selection-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	.tm-select {
+		position: relative;
+		z-index: 1;
+		width: 100%;
+		padding: 10px;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		background-color: white;
+		font-size: 1rem;
+	}
+
 	.buttons-container {
-		display: grid; 
-		justify-items: center; 
-		width: 100%; 
+		display: grid;
+		justify-items: center;
+		width: 100%;
 		gap: 10px 0px;
 	}
 
@@ -287,6 +563,39 @@ to have it stored locally and be able to import it later." -->
 	.toolbar-button:active {
 		transform: scale(0.98);
 		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+	}
+
+	.tm-tb-container {
+		display: grid;
+		width: 100%;
+	}
+
+	.translation-memory {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		padding: 0px;
+		width: 100%;
+		height: 100%;
+		/* z-index: 2; */
+		border-top: 2px solid var(--color-theme-3);
+		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+		/* overflow-y: scroll; */
+	}
+
+	.term-base {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		padding: 0px;
+		width: 100%;
+		height: 100%;
+		/* z-index: 2; */
+		border-top: 2px solid var(--color-theme-3);
+		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+		/* overflow-y: scroll; */
 	}
 
 	.words-container {
@@ -396,8 +705,7 @@ to have it stored locally and be able to import it later." -->
 		display: grid;
 		grid-template-columns: 1fr;
 		padding: 20px 25px;
-		max-height: 700px;
-		max-height: 65vh;
+		/* max-height: 700px; */
 		overflow-y: auto;
 		min-width: 95%;
 	}
@@ -456,17 +764,42 @@ to have it stored locally and be able to import it later." -->
 	}
 
 	@media (max-width: 545px) {
-		.words-left > h1, .words-right > h1 {
+		.words-left > h1,
+		.words-right > h1 {
 			font-size: 1rem;
 		}
 
-		.words-left > p, .words-right > p {
+		.words-left > p,
+		.words-right > p {
 			text-align: center;
 		}
 	}
 
+	@media (min-width: 800px) and (max-width: 1500px) {
+		.segments-container {
+			gap: 15px 0px;
+		}
+	}
+
+	@media (min-width: 750px) and (max-width: 1100px) {
+		.segments-container {
+			gap: 20px 0px;
+		}
+	}
+
+	@media (min-width: 400px) and (max-width: 750px) {
+		.segments-container {
+			gap: 20px 0px;
+		}
+	}
+
 	@media (max-width: 400px) {
-		.words-left > h1, .words-right > h1 {
+		.segments-container {
+			gap: 30px 0px;
+		}
+
+		.words-left > h1,
+		.words-right > h1 {
 			font-size: 0.8rem;
 		}
 
@@ -482,7 +815,8 @@ to have it stored locally and be able to import it later." -->
 			font-size: 0.7rem;
 		}
 
-		.words-left > p, .words-right > p {
+		.words-left > p,
+		.words-right > p {
 			text-align: center;
 			font-size: 0.7rem;
 		}

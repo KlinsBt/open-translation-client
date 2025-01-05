@@ -3,8 +3,18 @@ import type { UserData } from "$lib/types/types";
 // Function to generate the XLIFF XML string for version 1.2
 function generateXliff(userData: UserData): string {
 	const { translationData } = userData;
-	const { name, sourceLang, targetLang, seg1, seg2, checked, type, typeRef } =
-		translationData;
+	const {
+		name,
+		sourceLang,
+		targetLang,
+		seg1,
+		seg2,
+		checked,
+		type,
+		typeRef,
+		tm,
+		tb,
+	} = translationData;
 
 	// XLIFF structure for version 1.2
 	let xliff = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -22,6 +32,8 @@ function generateXliff(userData: UserData): string {
 	xliff += `          <sup:Checked>${escapeXml(JSON.stringify(checked))}</sup:Checked>\n`;
 	xliff += `          <sup:Type>${escapeXml(type)}</sup:Type>\n`;
 	xliff += `          <sup:TypeRef>${escapeXml(JSON.stringify(typeRef))}</sup:TypeRef>\n`;
+	xliff += `          <sup:Tm>${escapeXml(JSON.stringify(tm))}</sup:Tm>\n`;
+	xliff += `          <sup:Tb>${escapeXml(JSON.stringify(tb))}</sup:Tb>\n`;
 	xliff += `        </sup:SourceInfo>\n`;
 	xliff += `      </group>\n`;
 	xliff += `    </header>\n`;

@@ -99,6 +99,8 @@ export function extractXliff2_0Data(
 	let checked: boolean[] = [];
 	let type = "text";
 	let typeRef: any = {};
+	let tm: any = {};
+	let tb: any = {};
 
 	if (withCustomData) {
 		// Extract metadata
@@ -119,10 +121,35 @@ export function extractXliff2_0Data(
 					else if (typeAttr === "type") type = content;
 					else if (typeAttr === "type_ref") {
 						try {
+							console.log("typeAttr:", typeAttr);
+							console.log("content:", content);
+							console.log("type_ref typeof:", typeof content);
 							typeRef = JSON.parse(content);
 						} catch (e) {
 							console.error("Invalid JSON in type_ref", e);
 							typeRef = null;
+						}
+					} else if (typeAttr === "tm") {
+						try {
+							tm = JSON.parse(content);
+						} catch (e) {
+							console.error("Invalid JSON in tm", e);
+							tm = {
+								id: null,
+								name: null,
+								active: false,
+							};
+						}
+					} else if (typeAttr === "tb") {
+						try {
+							tb = JSON.parse(content);
+						} catch (e) {
+							console.error("Invalid JSON in tb", e);
+							tm = {
+								id: null,
+								name: null,
+								active: false,
+							};
 						}
 					}
 				}
@@ -150,7 +177,7 @@ export function extractXliff2_0Data(
 	}
 
 	return {
-		id: id,
+		...(isNaN(id) ? {} : { id: id }), // Only include the id field if it's not NaN
 		translationData: {
 			name: name,
 			targetLang: srcLang,
@@ -158,9 +185,11 @@ export function extractXliff2_0Data(
 			creationDate: new Date().getTime().toString(),
 			seg1: seg1,
 			seg2: seg2,
-			checked: checked.length != seg1.length ? seg1.map(() => false) : checked,
+			checked: checked.length !== seg1.length ? seg1.map(() => false) : checked,
 			type: type,
 			typeRef: typeRef,
+			tm,
+			tb,
 		},
 	};
 }
@@ -233,6 +262,8 @@ export function extractXliff1_2Data(
 	let checked: boolean[] = [];
 	let type = "text";
 	let typeRef: any = {};
+	let tm: any = {};
+	let tb: any = {};
 
 	if (withCustomData) {
 		const namespaceResolver = xliffDocument.createNSResolver(
@@ -267,6 +298,14 @@ export function extractXliff1_2Data(
 				"http://example.com/sup",
 				"TypeRef",
 			)[0];
+			const supTm = supSourceInfo.getElementsByTagNameNS(
+				"http://example.com/sup",
+				"Tm",
+			)[0];
+			const supTb = supSourceInfo.getElementsByTagNameNS(
+				"http://example.com/sup",
+				"Tb",
+			)[0];
 
 			id = supId?.textContent || null;
 			name = supName?.textContent || name;
@@ -282,6 +321,28 @@ export function extractXliff1_2Data(
 			} catch (e) {
 				console.error("Invalid JSON in TypeRef", e);
 				typeRef = {};
+			}
+			const supTmContent = (supTm?.textContent || "{}").replace(/&quot;/g, '"');
+			try {
+				tm = JSON.parse(supTmContent);
+			} catch (e) {
+				console.error("Invalid JSON in Tm", e);
+				tm = {
+					id: null,
+					name: null,
+					active: false,
+				};
+			}
+			const supTbContent = (supTb?.textContent || "{}").replace(/&quot;/g, '"');
+			try {
+				tb = JSON.parse(supTbContent);
+			} catch (e) {
+				console.error("Invalid JSON in Tb", e);
+				tb = {
+					id: null,
+					name: null,
+					active: false,
+				};
 			}
 		}
 	}
@@ -316,13 +377,15 @@ export function extractXliff1_2Data(
 			checked: checked.length != seg1.length ? seg1.map(() => false) : checked,
 			type: type,
 			typeRef: typeRef,
+			tm,
+			tb,
 		},
 	};
 }
 
 export function validateJsonData(data: any): boolean {
 	if (!data) return false;
-	if (typeof data.id !== "number" || data.id <= 0) return false;
+	// if (typeof data.id !== "number" || data.id <= 0) return false;
 	if (!data.translationData || typeof data.translationData !== "object")
 		return false;
 
@@ -349,7 +412,8 @@ export function validateJsonData(data: any): boolean {
 	)
 		return false;
 	if (typeof td.type !== "string") return false;
-	if (typeof td.typeRef !== "object") return false;
+	if (typeof td.typeRef !== "string" && typeof td.typeRef !== "object")
+		return false;
 
 	return true;
 }

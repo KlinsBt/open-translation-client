@@ -93,5 +93,29 @@ button:focus:not(:focus-visible) {
 	outline: none;
 }
 
-@media (min-width: 720px) {
+button:disabled,
+button[disabled] {
+	background-color: #cccccc !important;
+	color: #666666 !important;
+	pointer-events: none;
+}
+
+.back-btn {
+	background-color: var(--color-theme-4);
+	color: white;
+	border: none;
+	border-radius: 5px;
+	padding: 10px 20px;
+	cursor: pointer;
+	font-weight: 600;
+	font-size: 1.3rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0px 5px;
+	margin: 0px;
+}
+
+.back-btn:hover {
+	filter: brightness(1.1);
 }

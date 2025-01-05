@@ -84,6 +84,7 @@
 		if (typeof id !== "number") return console.log("Invalid ID");
 		console.log("Deleting file with ID: ", id);
 		deleteTranslationFromIndexedDB(id);
+		confirmDeletionWindow = false;
 		show = false;
 	}
 
@@ -122,6 +123,21 @@
 			newTargetLang = lang;
 			console.log(newTargetLang);
 		}
+	}
+
+	function selectAndShowModal(id: number) {
+		show = true;
+		let data = $userData.find((d) => d.id === id);
+		console.log(data);
+		if (!data) {
+			console.log("Data not found");
+			showLoading.set(false);
+			return;
+		}
+		singleUserData.set(data);
+		translationIdSelected.set(id);
+		seg1WordCount.set(getTotalWordCount(data.translationData.seg1));
+		seg2WordCount.set(getTotalWordCount(data.translationData.seg2));
 	}
 </script>
 
@@ -258,7 +274,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="project-card" onclick={() => (show = true)}>
+<div class="project-card" onclick={() => selectAndShowModal(file.id!)}>
 	<span class="words-badge">
 		{getTotalWordCount(file.translationData.seg1)}
 	</span>

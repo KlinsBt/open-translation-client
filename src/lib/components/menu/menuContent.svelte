@@ -27,12 +27,13 @@
 	import { onMount } from "svelte";
 	import { getProjectsProgressStatistics } from "$lib/functions/statistics";
 	import Modal from "../modal.svelte";
+	import { goto } from "$app/navigation";
 
 	let newProject: number = $state(0);
 	let sortByName: boolean = $state(false); // default sort by date
 	let ascendingOrder: boolean = $state(true); // default ascending order
 
-	let show: boolean = $state(false);
+	let showUploadModal: boolean = $state(false);
 
 	onMount(async () => {
 		if ($userData.length === 0) {
@@ -83,8 +84,8 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
 	role="dialog"
-	class="modal-element-global {show ? '' : 'close-modal-global'}"
-	onclick={() => (show = false)}
+	class="modal-element-global {showUploadModal ? '' : 'close-modal-global'}"
+	onclick={() => (showUploadModal = false)}
 >
 	<Modal title="Import Save File" content={upload} />
 </div>
@@ -92,12 +93,29 @@
 {#if newProject === 0}
 	<div class="dashboard">
 		<div class="order-bar">
-			<span>Sort by:</span>
+			<!-- <span>Sort by:</span> -->
 			<button class:active={sortByName} onclick={toggleSortByName}>
 				Name {sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
 			</button>
 			<button class:active={!sortByName} onclick={toggleSortByDate}>
 				Date {!sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
+			</button>
+			<button
+				class="tm-btn"
+				onclick={() => {
+					goto("/tm");
+				}}
+			>
+				Translation Memory
+			</button>
+
+			<button
+				class="tm-btn"
+				onclick={() => {
+					goto("/tb");
+				}}
+			>
+				Term Base
 			</button>
 		</div>
 
@@ -117,23 +135,27 @@
 					>
 					<button
 						onclick={() => {
-							show = true;
+							showUploadModal = true;
 						}}>Upload project file</button
 					>
 				</div>
 			</div>
 		</div>
 	</div>
+	<div class="buttons-container">
+		<button
+			class="back-btn back"
+			onclick={() => {
+				goto("/");
+			}}
+		>
+			<!-- <RightArrow /> -->
+			Close App
+		</button>
+	</div>
 {:else if newProject === 1}
-	<button
-		class="back-btn back"
-		onclick={() => {
-			newProject = 0;
-		}}
-	>
-		<RightArrow />
-		Go Back
-	</button>
+	<h1 class="section-title">Create Translation Project</h1>
+
 	<div class="new-file-container">
 		<JsonUpload />
 		<DocxUpload />
@@ -143,6 +165,16 @@
 		<!-- <PdfUpload /> -->
 		<!-- <Compr /> -->
 	</div>
+
+	<button
+		class="back-btn back"
+		onclick={() => {
+			newProject = 0;
+		}}
+	>
+		<RightArrow />
+		Go Back
+	</button>
 {/if}
 
 <style>
@@ -156,11 +188,12 @@
 
 	.order-bar {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: center;
 		gap: 1rem;
 		font-weight: 600;
-		margin-bottom: 25px;
+		margin-bottom: 70px;
 		color: var(--color-theme-4);
 	}
 
@@ -265,11 +298,50 @@
 		justify-content: center;
 		align-items: center;
 		gap: 0px 5px;
-		margin: 50px 0px;
+		margin: 0px;
 	}
 
 	.back-btn:hover {
 		filter: brightness(1.1);
+	}
+
+	.buttons-container {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		align-items: center;
+		gap: 0px 20px;
+	}
+
+	.buttons-container > button {
+		margin: 10px 0px;
+	}
+
+	.section-title {
+		text-align: center;
+		font-size: 2rem;
+		font-weight: 600;
+		color: var(--color-theme-3);
+	}
+
+	.tm-btn {
+		background-color: var(--color-theme-4) !important;
+		color: white !important;
+		border-radius: 5px !important;
+		padding: 10px !important;
+		font-weight: 600;
+		font-size: 0.8rem !important;
+	}
+
+	.tm-btn:hover {
+		filter: brightness(1.1);
+	}
+
+	button:disabled,
+	button[disabled] {
+		background-color: #cccccc !important;
+		color: #666666 !important;
+		pointer-events: none;
 	}
 
 	@media (max-width: 774px) {

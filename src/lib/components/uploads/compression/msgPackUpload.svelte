@@ -4,35 +4,33 @@
 	let temporarySaveName: string = "";
 	let binaryFile: Uint8Array | null = null;
 	let jsonData: Record<string, unknown> | null = null;
+	const defaultFilename = "download";
 
-	// Function to handle JSON file upload and convert to MessagePack binary
+	function getDownloadFilename(extension: string): string {
+		return temporarySaveName.trim() || defaultFilename + extension;
+	}
+
 	export function handleJsonFileUpload(event: Event): void {
 		const inputElement = event.target as HTMLInputElement;
 		const file = inputElement.files ? inputElement.files[0] : null;
 
-		if (file && file.type === "application/json") {
+		if (file) {
 			const reader = new FileReader();
 			reader.onload = (e: ProgressEvent<FileReader>) => {
 				try {
 					if (e.target?.result) {
-						jsonData = JSON.parse(e.target.result as string) as Record<
-							string,
-							unknown
-						>;
+						jsonData = JSON.parse(e.target.result as string);
+						console.log("JSON Data Parsed:", jsonData);
 						binaryFile = msgpack.encode(jsonData);
-						downloadBinaryFile();
 					}
 				} catch (error) {
 					console.error("Invalid JSON file", error);
 				}
 			};
 			reader.readAsText(file);
-		} else {
-			console.error("Please upload a valid JSON file");
 		}
 	}
 
-	// Function to handle MessagePack binary file upload and convert to JSON
 	export function handleBinaryFileUpload(event: Event): void {
 		const inputElement = event.target as HTMLInputElement;
 		const file = inputElement.files ? inputElement.files[0] : null;
@@ -43,28 +41,27 @@
 				try {
 					if (e.target?.result) {
 						const arrayBuffer = e.target.result as ArrayBuffer;
-						const decodedData = msgpack.decode(new Uint8Array(arrayBuffer));
-						jsonData = decodedData as Record<string, unknown>;
-						downloadJsonFile();
+						jsonData = msgpack.decode(new Uint8Array(arrayBuffer)) as Record<
+							string,
+							unknown
+						>;
+						console.log("Decoded JSON from Binary:", jsonData);
 					}
 				} catch (error) {
 					console.error("Invalid MessagePack binary file", error);
 				}
 			};
 			reader.readAsArrayBuffer(file);
-		} else {
-			console.error("Please upload a valid MessagePack binary file");
 		}
 	}
 
-	// Function to download the binary file
 	function downloadBinaryFile(): void {
 		if (binaryFile) {
 			const blob = new Blob([binaryFile], { type: "application/octet-stream" });
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement("a");
 			link.href = url;
-			link.download = `${temporarySaveName}.bin`;
+			link.download = getDownloadFilename(".bin");
 			document.body.appendChild(link);
 			link.click();
 			document.body.removeChild(link);
@@ -72,7 +69,6 @@
 		}
 	}
 
-	// Function to download the JSON file
 	function downloadJsonFile(): void {
 		if (jsonData) {
 			const blob = new Blob([JSON.stringify(jsonData, null, 2)], {
@@ -81,7 +77,7 @@
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement("a");
 			link.href = url;
-			link.download = `${temporarySaveName}.json`;
+			link.download = getDownloadFilename(".json");
 			document.body.appendChild(link);
 			link.click();
 			document.body.removeChild(link);
@@ -91,43 +87,35 @@
 </script>
 
 <div class="container">
-	<h3 style="margin: 20px 0px 0px 0px">Name for save file</h3>
+	<h3>Name for save file</h3>
 	<input class="input-text" bind:value={temporarySaveName} type="text" />
 
-	<button
-		class="input-button-container"
-		onclick={() => document.getElementById("fileInputJson")?.click()}
-	>
-		<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 58 58">
-			<g> </g>
-		</svg>
+	<button onclick={() => document.getElementById("fileInputJson")?.click()}>
 		Upload JSON File
-		<input
-			id="fileInputJson"
-			type="file"
-			accept="application/json"
-			onchange={handleJsonFileUpload}
-		/>
 	</button>
+	<input
+		id="fileInputJson"
+		type="file"
+		accept="application/json"
+		onchange={handleJsonFileUpload}
+	/>
 
-	<button
-		class="input-button-container"
-		onclick={() => document.getElementById("fileInputBinary")?.click()}
-	>
-		<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 58 58">
-			<g> </g>
-		</svg>
-		Upload MessagePack Binary File
-		<input
-			id="fileInputBinary"
-			type="file"
-			accept=".bin"
-			onchange={handleBinaryFileUpload}
-		/>
+	<button onclick={() => document.getElementById("fileInputBinary")?.click()}>
+		Upload Binary File
 	</button>
+	<input
+		id="fileInputBinary"
+		type="file"
+		accept=".bin"
+		onchange={handleBinaryFileUpload}
+	/>
 
-	<button onclick={downloadBinaryFile}>Download Binary File</button>
-	<button onclick={downloadJsonFile}>Download JSON File</button>
+	<button onclick={downloadBinaryFile} disabled={!binaryFile}>
+		Download Binary File
+	</button>
+	<button onclick={downloadJsonFile} disabled={!jsonData}>
+		Download JSON File
+	</button>
 </div>
 
 <style>

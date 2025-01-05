@@ -2,8 +2,10 @@
 	import Header from "$lib/components/Header.svelte";
 	import Footer from "$lib/components/Footer.svelte";
 	import LodaingDisplay from "$lib/components/loading/dots.svelte";
-	import "../app.css";
+	import "../../app.css";
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
+
+	let { children } = $props();
 </script>
 
 <div class="app">
@@ -17,7 +19,7 @@
 		</div>
 	{/if}
 
-	<slot />
+	{@render children()};
 
 	<Footer />
 </div>

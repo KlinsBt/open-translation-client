@@ -5,9 +5,8 @@
 		updateAndOpenNewFileWithStringArray,
 	} from "$lib/functions/saveTranslationOnIndexedDb.js";
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
-	import { showLoading } from "$lib/functions/saveData/stores.svelte";
 	import type { UserData } from "$lib/types/types.js";
-	import { userData } from "$lib/functions/saveData/stores.svelte";
+	import { userData, showLoading } from "$lib/functions/saveData/stores.svelte";
 	import {
 		validateJsonData,
 		validateXliff2_0Data,
@@ -16,6 +15,7 @@
 		extractXliff1_2Data,
 		getXliffVersion,
 	} from "./saveFileFunctions.js";
+	import { setLoadingAndRender } from "$lib/functions/uiHelpers";
 
 	let isDragging = $state(false);
 
@@ -23,15 +23,13 @@
 	let saveData: UserData | null = null;
 	let saveFileIdExists: boolean = $state(false);
 
-	function handleTranslationFileUpload(event: Event): void {
+	async function handleTranslationFileUpload(event: Event): Promise<void> {
 		const inputElement = event.target as HTMLInputElement;
 		const file = inputElement.files ? inputElement.files[0] : null;
 
-		console.log("file: ", file);
-		console.log("file type: ", file?.type);
-
 		if (file && file.type === "application/json") {
 			const reader = new FileReader();
+			await setLoadingAndRender();
 
 			reader.onload = (e: ProgressEvent<FileReader>) => {
 				try {
@@ -42,6 +40,7 @@
 							console.log("saveData: ", saveData);
 							if (checkIfUniqueId(parsedData.id)) {
 								console.log("ID is already defined.");
+								showLoading.set(false);
 								return (saveFileIdExists = true);
 							} else {
 								alert("New project created");
@@ -50,11 +49,13 @@
 						} else {
 							alert("Invalid JSON file");
 							console.error("Invalid JSON structure");
+							showLoading.set(false);
 						}
 					}
 				} catch (error) {
 					alert("Invalid JSON file");
 					console.error("Invalid JSON file", error);
+					showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
@@ -77,6 +78,7 @@
 							if (!saveData) return;
 							if (checkIfUniqueId(saveData.id!)) {
 								console.log("ID is already defined.");
+								showLoading.set(false);
 								return (saveFileIdExists = true);
 							} else {
 								alert("New project created");
@@ -90,6 +92,7 @@
 							if (!saveData) return;
 							if (checkIfUniqueId(saveData.id!)) {
 								console.log("ID is already defined.");
+								showLoading.set(false);
 								return (saveFileIdExists = true);
 							} else {
 								alert("New project created");
@@ -101,12 +104,14 @@
 				} catch (error) {
 					alert("Invalid XLIFF file");
 					console.error("Invalid XLIFF file", error);
+					showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
 		} else {
 			alert("Please upload a valid JSON or XLIFF file");
 			console.error("Please upload a valid JSON or XLIFF file");
+			showLoading.set(false);
 		}
 	}
 
@@ -122,8 +127,8 @@
 	async function handleDrop(event: DragEvent): Promise<void> {
 		event.preventDefault();
 		isDragging = false;
-
 		const file = event.dataTransfer?.files ? event.dataTransfer.files[0] : null;
+		await setLoadingAndRender();
 
 		if (file) {
 			const fileName = file.name.toLowerCase();
@@ -139,6 +144,7 @@
 								console.log("data: ", saveData);
 								if (checkIfUniqueId(parsedData.id)) {
 									console.log("ID is already defined.");
+									showLoading.set(false);
 									return (saveFileIdExists = true);
 								} else {
 									alert("New project created");
@@ -148,10 +154,12 @@
 							} else {
 								alert("Invalid JSON file");
 								console.error("Invalid JSON structure");
+								showLoading.set(false);
 							}
 						}
 					} catch (error) {
 						console.error("Invalid JSON file", error);
+						showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
@@ -174,6 +182,7 @@
 								if (!saveData) return;
 								if (checkIfUniqueId(saveData.id!)) {
 									console.log("ID is already defined.");
+									showLoading.set(false);
 									return (saveFileIdExists = true);
 								} else {
 									alert("New project created");
@@ -187,6 +196,7 @@
 								if (!saveData) return;
 								if (checkIfUniqueId(saveData.id!)) {
 									console.log("ID is already defined.");
+									showLoading.set(false);
 									return (saveFileIdExists = true);
 								} else {
 									alert("New project created");
@@ -198,29 +208,31 @@
 					} catch (error) {
 						alert("Invalid XLIFF file");
 						console.error("Invalid XLIFF file", error);
+						showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
 			} else {
 				alert("Please drop a valid JSON or XLIFF file");
 				console.error("Please drop a valid JSON or XLIFF file");
+				showLoading.set(false);
 			}
 		} else {
 			console.error("No file dropped");
+			showLoading.set(false);
 		}
 	}
 
 	function createNewProjectWithSaveFile() {
-		const timestamp = new Date().valueOf().toString();
-		showLoading.set(true);
 		if (!saveData) return;
-		saveAndOpenNewFileWithStringArrayFromSaveFile($userData, saveData);
+		let data: UserData = JSON.parse(JSON.stringify(saveData));
+		delete data.id;
+		saveAndOpenNewFileWithStringArrayFromSaveFile($userData, data);
 		showLoading.set(false);
 	}
 
 	function updateExistingProjectWithSaveFile() {
 		const timestamp = new Date().valueOf().toString();
-		showLoading.set(true);
 		if (!saveData) return;
 		saveData.translationData.creationDate = timestamp;
 		updateAndOpenNewFileWithStringArray(saveData);

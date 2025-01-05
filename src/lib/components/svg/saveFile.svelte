@@ -1,4 +1,9 @@
-<script>
+<script lang="ts">
+	let {
+		marginBottom = "0px",
+	}: {
+		marginBottom?: string;
+	} = $props();
 </script>
 
 <svg
@@ -8,6 +13,7 @@
 	id="Layer_1"
 	viewBox="0 0 512 512"
 	xml:space="preserve"
+	style={`margin-bottom: ${marginBottom}`}
 >
 	<g>
 		<g>

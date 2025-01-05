@@ -50,6 +50,7 @@
 		align-items: start;
 		/* padding: 0rem 2rem; */
 		min-height: 100vh;
+		min-height: 75vh;
 	}
 
 	.app-container {

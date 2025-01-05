@@ -2,13 +2,15 @@
 	import bg from "$lib/images/bg14.jpg";
 </script>
 
+<svelte:head></svelte:head>
+
 <div class="landing-page">
 	<section class="top-section">
 		<div class="header">
 			<img class="background" src={bg} alt="Background" />
 			<h1 class="title">Open Translation Client</h1>
 			<p class="description">An open source CAT-Tool for everyone.</p>
-			<a href="/app" class="cta-button">Start Tool</a>
+			<a href="/app" class="cta-button">Start App</a>
 		</div>
 	</section>
 
@@ -90,11 +92,12 @@
 		height: 100vh;
 		padding: 0;
 		margin: 0;
-		background: linear-gradient(
+		/* background: linear-gradient(
 			135deg,
 			rgba(141, 234, 255, 0.3) 0%,
 			rgb(163, 232, 255, 0.3) 100%
-		);
+		); */
+		background-color: var(--color-theme-10);
 		overflow: hidden;
 		z-index: 1;
 	}

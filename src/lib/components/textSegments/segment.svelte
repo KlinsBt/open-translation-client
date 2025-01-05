@@ -1,10 +1,19 @@
 <script lang="ts">
 	import { updateTranslationOnIndexedDB } from "$lib/functions/saveData/indexedDb";
+	// import { getTranslationMemoryMatches } from "$lib/components/translationMemory/tmFunctions";
 	import {
 		singleUserData,
 		seg2WordCount,
+		singleTmData,
+		tmData,
+		tbData,
+		singleTbData,
+		selectedSegmentId,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { getTotalWordCount } from "$lib/functions/statistics";
+	import { searchForMatches } from "$lib/components/translationMemory/tmFunctions";
+	import { getTermMatches } from "$lib/components/termBase/tbFunctions";
+	import type { TbData, TmData } from "$lib/types/types";
 
 	let {
 		id,
@@ -17,6 +26,23 @@
 		textSegment2: string;
 		checked: boolean;
 	} = $props();
+
+	let tmMatchesFound: { segment: string; match: string; percentage: string }[] =
+		$state([]);
+	let tbMatchesFound: {
+		searchEntry: string;
+		foundEntry: string;
+		notes: string[];
+	}[] = $state([]);
+	let sourceLang: string = $derived(
+		getLanguageCode($singleUserData.translationData.sourceLang),
+	);
+	let targetLang: string = $derived(
+		getLanguageCode($singleUserData.translationData.targetLang),
+	);
+	let rightToLeftTargetLang: boolean = $derived(
+		["ar", "he", "dv", "fa", "ur"].includes(targetLang),
+	);
 
 	function toggleLockSegment() {
 		if (checked) {
@@ -38,9 +64,36 @@
 	}
 
 	function updateSegmentText() {
+		selectedSegmentId.set(id);
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
 		newUserData.translationData.seg2[id] = textSegment2;
+		singleUserData.set(newUserData);
+		updateTranslationOnIndexedDB($singleUserData);
+		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
+	}
+
+	function fillTargetSegmentText() {
+		if (!$singleUserData) return console.log("Data not found");
+		if (textSegment1 === "") return console.log("No text to add");
+		if (textSegment2 !== "") return console.log("Target segment is not empty");
+		let newUserData = $singleUserData;
+		newUserData.translationData.seg2[id] = textSegment1;
+		singleUserData.set(newUserData);
+		updateTranslationOnIndexedDB($singleUserData);
+		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
+	}
+
+	function fillAllEmptySegments() {
+		if (!$singleUserData) return console.log("Data not found");
+		let newUserData = $singleUserData;
+		newUserData.translationData.seg2 = newUserData.translationData.seg2.map(
+			(segment, i) => {
+				if (segment === "") return newUserData.translationData.seg1[i];
+				return segment;
+			},
+		);
+		console.log(newUserData.translationData.seg2);
 		singleUserData.set(newUserData);
 		updateTranslationOnIndexedDB($singleUserData);
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
@@ -67,9 +120,67 @@
 			},
 		};
 	}
+
+	function updateTmMatches(textSegment1: string) {
+		console.log("TM Data: ", $tmData);
+		let id = $singleUserData.translationData.tm?.id;
+		console.log("ID: ", id);
+		singleTmData.set($tmData.find((data) => data.id === id) as TmData);
+		console.log("Single TM Data: ", $singleTmData);
+		tmMatchesFound = searchForMatches($singleTmData, textSegment1);
+	}
+
+	function updateTbMatches(textSegment1: string) {
+		console.log("TB Data: ", $tbData);
+		let id = $singleUserData.translationData.tb?.id;
+		console.log("ID: ", id);
+		singleTbData.set($tbData.find((data) => data.id === id) as TbData);
+		console.log("Single TB Data: ", $singleTbData);
+		tbMatchesFound = getTermMatches(
+			$singleTbData,
+			textSegment1,
+			sourceLang,
+			targetLang,
+		);
+		console.log("TB Matches: ", tbMatchesFound);
+	}
+
+	function getLanguageCode(lang: string): string {
+		// Extract language code from full name like "English (en)" or return as-is
+		const match = lang.match(/\(([^)]+)\)/);
+		return match![1] !== undefined && match ? match[1] : lang; // If no match, return the original string
+	}
+
+	async function tmIdExists(id: number | null): Promise<boolean> {
+		if (id === null) return false;
+		return !!$tmData.find((data) => data.id === id);
+	}
+
+	async function tbIdExists(id: number | null): Promise<boolean> {
+		if (id === null) return false;
+		return !!$tbData.find((data) => data.id === id);
+	}
+
+	async function checkIfElligibleForTmOrTbSearch(textSegment1: string) {
+		selectedSegmentId.set(id);
+		if (
+			$singleUserData.translationData.tm?.active &&
+			$singleUserData.translationData.tm?.id !== null &&
+			(await tmIdExists($singleUserData.translationData.tm?.id))
+		) {
+			updateTmMatches(textSegment1);
+		}
+		if (
+			$singleUserData.translationData.tb?.active &&
+			$singleUserData.translationData.tb?.id !== null &&
+			(await tbIdExists($singleUserData.translationData.tb?.id))
+		) {
+			updateTbMatches(textSegment1);
+		}
+	}
 </script>
 
-<div class="segment">
+<div class="segment" lang={targetLang}>
 	<button
 		class="toggle-container {checked ? 'locked' : 'unlocked'}"
 		onclick={toggleLockSegment}
@@ -93,7 +204,17 @@
 
 	<!-- <span class="segment-number-outer">{id + 1}</span> -->
 
-	<div class="field left">
+	<div class="field left source-text">
+		<div class="left-buttons-container">
+			<button class="translate-btn" onclick={() => fillTargetSegmentText()}>
+				Fill
+				<span>→</span>
+			</button>
+			<button class="translate-btn ml" disabled>
+				AI
+				<span>→</span>
+			</button>
+		</div>
 		<span class="segment-number-inner">{id + 1}.</span>
 		<p>{textSegment1}</p>
 	</div>
@@ -104,8 +225,16 @@
 		</p>
 	{:else}
 		<textarea
+			lang={targetLang}
+			spellcheck="false"
+			onfocus={async () => {
+				checkIfElligibleForTmOrTbSearch(textSegment1);
+			}}
 			onchange={updateSegmentText}
 			class="field right"
+			style="
+				direction: {rightToLeftTargetLang ? 'rtl' : 'ltr'}; 
+				"
 			bind:value={textSegment2}
 			placeholder="Translate the text here..."
 			use:useAutoHeight
@@ -150,6 +279,53 @@
 		border: 2px solid #bee5f6;
 	}
 
+	/* .middle {
+		display: flex;
+		flex-direction: column;
+		padding: 20px 0px;
+		gap: 5px 0px;
+	} */
+
+	.left-buttons-container {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.translate-btn {
+		gap: 0px 5px;
+		background-color: var(--color-theme-4);
+		color: white;
+		border: none;
+		padding: 5px;
+		font-weight: bold;
+		font-size: 0.7rem;
+
+		position: absolute;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 60px;
+		height: 18px;
+		cursor: pointer;
+		border-radius: 5px;
+		transition: background-color 0.3s ease;
+		right: 13px;
+		top: -35px;
+	}
+
+	.translate-btn > span {
+		font-size: 0.8rem;
+		height: 17px;
+	}
+
+	.translate-btn.ml {
+		right: 75px;
+	}
+
+	.translate-btn:hover {
+		filter: brightness(1.1);
+	}
+
 	.left {
 		display: flex;
 		align-items: baseline;
@@ -157,7 +333,18 @@
 		background-color: var(--color-theme-8);
 		background-color: #ecfdff;
 		color: var(--color-theme-5);
-		overflow-y: auto;
+		/* overflow-y: auto; */
+	}
+
+	.source-text {
+		position: relative;
+	}
+
+	.left-buttons-container {
+		position: absolute;
+		display: block;
+		justify-content: space-between;
+		width: 100%;
 	}
 
 	.left p {
