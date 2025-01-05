@@ -14,7 +14,7 @@
 			</div>
 		</div>
 	{/if}
-	{@render children()};
+	{@render children()}
 </div>
 
 <style>
