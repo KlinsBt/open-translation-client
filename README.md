@@ -4,12 +4,12 @@
     <img alt="Logo Banner" src="./static/md-pictures/banner.png"/>
     <br/>
     <br/>
-    <a href="https://github.com/KlinsBt/open-translation-client">
+    <a href="https://github.com/KlinsBt/open-translation-client?tab=MPL-2.0-1-ov-file">
         <img alt="MPL 2.0 License" src="./static/md-pictures/license.svg"/>
     </a>
-    <a href="https://github.com/KlinsBt/open-translation-client/releases">
+    <!-- <a href="https://github.com/KlinsBt/open-translation-client/releases">
         <img alt="Current Release" src="./static/md-pictures/version.svg"/>
-    </a>
+    </a> -->
 </div>
 
 ---
