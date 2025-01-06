@@ -211,7 +211,7 @@
 				<span>→</span>
 			</button>
 			<button class="translate-btn ml" disabled>
-				AI
+				MT
 				<span>→</span>
 			</button>
 		</div>

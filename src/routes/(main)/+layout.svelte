@@ -19,7 +19,7 @@
 		</div>
 	{/if}
 
-	{@render children()};
+	{@render children()}
 
 	<Footer />
 </div>
