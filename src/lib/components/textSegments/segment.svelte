@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { updateTranslationOnIndexedDB } from "$lib/functions/saveData/indexedDb";
+	import {
+		updateTmOnIndexedDB,
+		updateTranslationOnIndexedDB,
+	} from "$lib/functions/saveData/indexedDb";
 	// import { getTranslationMemoryMatches } from "$lib/components/translationMemory/tmFunctions";
 	import {
 		singleUserData,
@@ -43,6 +46,9 @@
 	let rightToLeftTargetLang: boolean = $derived(
 		["ar", "he", "dv", "fa", "ur"].includes(targetLang),
 	);
+	let tmActive: boolean = $derived(
+		$singleUserData.translationData.tm?.active ?? false,
+	);
 
 	function toggleLockSegment() {
 		if (checked) {
@@ -84,20 +90,20 @@
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
 
-	function fillAllEmptySegments() {
-		if (!$singleUserData) return console.log("Data not found");
-		let newUserData = $singleUserData;
-		newUserData.translationData.seg2 = newUserData.translationData.seg2.map(
-			(segment, i) => {
-				if (segment === "") return newUserData.translationData.seg1[i];
-				return segment;
-			},
-		);
-		console.log(newUserData.translationData.seg2);
-		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
-		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
-	}
+	// function fillAllEmptySegments() {
+	// 	if (!$singleUserData) return console.log("Data not found");
+	// 	let newUserData = $singleUserData;
+	// 	newUserData.translationData.seg2 = newUserData.translationData.seg2.map(
+	// 		(segment, i) => {
+	// 			if (segment === "") return newUserData.translationData.seg1[i];
+	// 			return segment;
+	// 		},
+	// 	);
+	// 	console.log(newUserData.translationData.seg2);
+	// 	singleUserData.set(newUserData);
+	// 	updateTranslationOnIndexedDB($singleUserData);
+	// 	seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
+	// }
 
 	function useAutoHeight(node: HTMLTextAreaElement) {
 		function adjustHeight() {
@@ -122,27 +128,27 @@
 	}
 
 	function updateTmMatches(textSegment1: string) {
-		console.log("TM Data: ", $tmData);
+		// console.log("TM Data: ", $tmData);
 		let id = $singleUserData.translationData.tm?.id;
-		console.log("ID: ", id);
+		// console.log("ID: ", id);
 		singleTmData.set($tmData.find((data) => data.id === id) as TmData);
-		console.log("Single TM Data: ", $singleTmData);
-		tmMatchesFound = searchForMatches($singleTmData, textSegment1);
+		// console.log("Single TM Data: ", $singleTmData);
+		tmMatchesFound = searchForMatches($singleTmData, textSegment1, "en", "de");
 	}
 
 	function updateTbMatches(textSegment1: string) {
-		console.log("TB Data: ", $tbData);
+		// console.log("TB Data: ", $tbData);
 		let id = $singleUserData.translationData.tb?.id;
-		console.log("ID: ", id);
+		// console.log("ID: ", id);
 		singleTbData.set($tbData.find((data) => data.id === id) as TbData);
-		console.log("Single TB Data: ", $singleTbData);
+		// console.log("Single TB Data: ", $singleTbData);
 		tbMatchesFound = getTermMatches(
 			$singleTbData,
 			textSegment1,
 			sourceLang,
 			targetLang,
 		);
-		console.log("TB Matches: ", tbMatchesFound);
+		// console.log("TB Matches: ", tbMatchesFound);
 	}
 
 	function getLanguageCode(lang: string): string {
@@ -178,6 +184,35 @@
 			updateTbMatches(textSegment1);
 		}
 	}
+
+	async function addTranslationUnit(
+		sourceSentence: string,
+		targetSentence: string,
+	) {
+		if (!$singleTmData) return console.log("TM Data not found");
+		let localTmData = $singleTmData;
+		console.log("Local TM Data: ", localTmData);
+		console.log("sourceLang: ", sourceLang);
+		console.log("targetLang: ", targetLang);
+
+		localTmData.terms.push({
+			// id: localTmData.terms.length + 1,
+			source: {
+				lang: sourceLang,
+				segment: sourceSentence,
+			},
+			target: [
+				{
+					lang: targetLang,
+					segment: targetSentence,
+				},
+			],
+		});
+		singleTmData.set(localTmData);
+		console.log("SingleTmData: ", $singleTmData);
+		await updateTmOnIndexedDB($singleTmData);
+		alert("Translation unit added to TM successfully!");
+	}
 </script>
 
 <div class="segment" lang={targetLang}>
@@ -210,9 +245,16 @@
 				Fill
 				<span>→</span>
 			</button>
-			<button class="translate-btn ml" disabled>
+			<!-- <button class="translate-btn ml" disabled>
 				MT
 				<span>→</span>
+			</button> -->
+			<button
+				class="tm-btn save"
+				disabled={tmActive ? false : true}
+				onclick={() => addTranslationUnit(textSegment1, textSegment2)}
+			>
+				TM<span>+</span>
 			</button>
 		</div>
 		<span class="segment-number-inner">{id + 1}.</span>
@@ -291,7 +333,8 @@
 		justify-content: space-between;
 	}
 
-	.translate-btn {
+	.translate-btn,
+	.tm-btn {
 		gap: 0px 5px;
 		background-color: var(--color-theme-4);
 		color: white;
@@ -318,12 +361,23 @@
 		height: 17px;
 	}
 
-	.translate-btn.ml {
+	/* .translate-btn.ml {
+		right: 75px;
+	} */
+
+	.tm-btn {
+		right: 137px;
 		right: 75px;
 	}
 
-	.translate-btn:hover {
+	.translate-btn:hover,
+	.tm-btn:hover {
 		filter: brightness(1.1);
+	}
+
+	.tm-btn > span {
+		font-size: 0.85rem;
+		height: 14px;
 	}
 
 	.left {

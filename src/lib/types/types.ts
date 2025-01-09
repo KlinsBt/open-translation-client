@@ -35,7 +35,7 @@ export interface TmData {
 	id?: number;
 	name?: string;
 	terms: {
-		id: number;
+		// id: number;
 		source: {
 			lang: string;
 			segment: string;
@@ -57,7 +57,7 @@ export interface TbData {
 	id?: number;
 	name?: string;
 	entries: {
-		id: number;
+		// id: number;
 		terms: {
 			lang: string;
 			term: string;

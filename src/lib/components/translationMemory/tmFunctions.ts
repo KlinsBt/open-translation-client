@@ -14,7 +14,7 @@ export function getTranslationMemoryMatches(
 		const similarity = similarityPercentage(segment, sourceSegments[i]);
 		if (similarity >= threshold) {
 			matches.push({
-				segment,
+				segment: sourceSegments[i],
 				match: targetSegments[i],
 				percentage: `${similarity.toFixed(2)}%`,
 			});
@@ -69,32 +69,61 @@ const translationMemory = [
 	"If you have any questions, please fill out the form below and we'll get back to you soon.",
 ];
 
-function tmDataToTmArray(tmData: TmData): string[][] {
-	let sourceTextArray = [];
-	let targetTextArray = [];
-	for (let i = 0; i < tmData.terms.length; i++) {
-		sourceTextArray.push(tmData.terms[i].source.segment);
-		for (let j = 0; j < tmData.terms[i].target.length; j++) {
-			targetTextArray.push(tmData.terms[i].target[j].segment);
+function tmDataToLangFilteredArrays(
+	tmData: TmData,
+	sourceLang: string,
+	targetLang: string,
+): [string[], string[]] {
+	const sourceTextArray: string[] = [];
+	const targetTextArray: string[] = [];
+
+	// Iterate over each entry in the translation memory
+	for (const term of tmData.terms) {
+		// Check if the source language matches
+		if (term.source.lang === sourceLang) {
+			const sourceSegment = term.source.segment;
+
+			// Iterate over all target segments
+			for (const target of term.target) {
+				if (target.lang === targetLang) {
+					// Add matching source and target segments to the arrays
+					sourceTextArray.push(sourceSegment);
+					targetTextArray.push(target.segment);
+				}
+			}
 		}
 	}
+
 	return [sourceTextArray, targetTextArray];
 }
 
 export function searchForMatches(
 	translationMemory: TmData,
 	textSegment1: string,
+	sourceLang: string,
+	targetLang: string,
 ) {
-	console.log("Searching for matches...");
-	let extractedStringArray = tmDataToTmArray(translationMemory);
-	console.log("extractedStringArray: ", extractedStringArray);
-	let tmMatchesFound = getTranslationMemoryMatches(
-		extractedStringArray[0],
-		extractedStringArray[1],
+	// Extract only the terms matching the chosen sourceLang and targetLang
+	const [sourceTextArray, targetTextArray] = tmDataToLangFilteredArrays(
+		translationMemory,
+		sourceLang,
+		targetLang,
+	);
+
+	// console.log("Filtered Source Terms: ", sourceTextArray);
+	// console.log("Filtered Target Terms: ", targetTextArray);
+
+	// Perform fuzzy matching with the specified threshold
+	const tmMatchesFound = getTranslationMemoryMatches(
+		sourceTextArray,
+		targetTextArray,
 		textSegment1,
 		55,
 	);
-	console.log(tmMatchesFound);
+
+	// console.log("Matches Found: ", tmMatchesFound);
+
+	// Update the store and return the results
 	tmMatches.set(tmMatchesFound);
 	return tmMatchesFound;
 }

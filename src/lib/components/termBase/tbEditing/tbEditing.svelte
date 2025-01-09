@@ -67,7 +67,7 @@
 
 	async function addNewEntry() {
 		localTbData.entries.push({
-			id: localTbData.entries.length + 1,
+			// id: localTbData.entries.length + 1,
 			terms: [
 				{
 					lang: "",
@@ -95,6 +95,9 @@
 	}
 	async function deleteEntry(unitId: number, termId: number) {
 		localTbData.entries[unitId].terms.splice(termId, 1);
+		if (localTbData.entries[unitId].terms.length === 0) {
+			return deleteTermUnit(unitId);
+		}
 		showModal = false;
 		await updateTbOnIndexedDB(localTbData);
 	}
@@ -167,7 +170,7 @@
 		bind:this={segmentsContainer}
 		onscroll={handleScroll}
 	>
-		{#each filteredData.slice(0, visibleSegmentsCount) as unit, i}
+		{#each filteredData.slice(0, visibleSegmentsCount) as unit, unitId}
 			<div class="tu-header">
 				<h3>
 					Term Unit <span
@@ -176,26 +179,26 @@
 							border: 2px solid var(--color-theme-5); 
 							padding: 1px 5px 1px 4px; 
 							border-radius: 5px; 
-							background-color: var(--color-theme-5);">{unit.id}</span
+							background-color: var(--color-theme-5);">{unitId + 1}</span
 					>
 				</h3>
 				<button
 					class="edit-btn"
 					style="background-color: limegreen;"
-					onclick={() => addNewTerm(unit.id - 1)}
+					onclick={() => addNewTerm(unitId)}
 				>
 					Add Entry +
 				</button>
 			</div>
 			<div class="translation-unit">
-				{#each unit.terms as term, i}
+				{#each unit.terms as term, termId}
 					<div class="segment-group">
 						<div class="language-selection">
 							<select
 								class="lang-select"
-								disabled={!editMode.get(`target-${unit.id - 1}-${i}`)}
+								disabled={!editMode.get(`target-${unitId}-${termId}`)}
 								style="background-color: {editMode.get(
-									`target-${unit.id - 1}-${i}`,
+									`target-${unitId}-${termId}`,
 								)
 									? 'white'
 									: 'var(--color-theme-8)'}"
@@ -211,13 +214,13 @@
 							<button
 								class="edit-btn"
 								style="background-color: {editMode.get(
-									`target-${unit.id - 1}-${i}`,
+									`target-${unitId}-${termId}`,
 								)
 									? 'limegreen'
 									: '#2c5e82'}"
-								onclick={() => toggleEditMode(`target-${unit.id - 1}-${i}`)}
+								onclick={() => toggleEditMode(`target-${unitId}-${termId}`)}
 							>
-								{#if editMode.get(`target-${unit.id - 1}-${i}`)}
+								{#if editMode.get(`target-${unitId}-${termId}`)}
 									Save <SaveFile marginBottom="-2px" />
 								{:else}
 									Edit <Edit marginBottom="-2px" />
@@ -225,13 +228,13 @@
 							</button>
 							<button
 								class="edit-btn delete"
-								onclick={() => ShowModal(unit.id - 1, i)}
+								onclick={() => ShowModal(unitId, termId)}
 							>
 								Delete <Delete marginBottom="-2px" />
 							</button>
 						</div>
 						<div class="term-field">
-							{#if !editMode.get(`target-${unit.id - 1}-${i}`)}
+							{#if !editMode.get(`target-${unitId}-${termId}`)}
 								<p class="field locked">{term.term}</p>
 							{:else}
 								<textarea
@@ -246,7 +249,7 @@
 							<p>Note:</p>
 							{#if term.notes.length > 0}
 								{#each term.notes as note, j}
-									{#if !editMode.get(`target-${unit.id - 1}-${i}`)}
+									{#if !editMode.get(`target-${unitId}-${termId}`)}
 										<p class="field locked">{note}</p>
 									{:else}
 										<textarea
@@ -257,7 +260,7 @@
 										></textarea>
 									{/if}
 								{/each}
-							{:else if !editMode.get(`target-${unit.id - 1}-${i}`)}
+							{:else if !editMode.get(`target-${unitId}-${termId}`)}
 								<p class="field locked"></p>
 							{:else}
 								<textarea

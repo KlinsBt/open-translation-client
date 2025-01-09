@@ -24,7 +24,7 @@
 				visibleSegmentsCount + AMOUNT_OF_SEGMENTS_TO_LOAD,
 				$singleTmData.terms.length,
 			);
-			console.log(`Loaded ${visibleSegmentsCount} segments`);
+			// console.log(`Loaded ${visibleSegmentsCount} segments`);
 		}
 	}
 
@@ -32,6 +32,8 @@
 	let localTmData = $state({ ...$singleTmData });
 
 	let showModal: boolean = $state(false);
+	let showTuDeletionModal: boolean = $state(false);
+	let showSegmentDeletionModal: boolean = $state(false);
 	let selectedTmId: number = $state(0);
 	let selectedTmTargetId: number = $state(0);
 
@@ -70,7 +72,7 @@
 	}
 
 	function addTranslationSegment(termId: number) {
-		let srcLang = localTmData.terms[termId].source.lang;
+		// let srcLang = localTmData.terms[termId].source.lang;
 		localTmData.terms[termId].target.push({ lang: "en", segment: "" });
 	}
 
@@ -81,7 +83,7 @@
 		}));
 
 		localTmData.terms.push({
-			id: localTmData.terms.length,
+			// id: localTmData.terms.length + 1,
 			source: {
 				lang: localTmData.terms[0].source.lang,
 				segment: "",
@@ -90,15 +92,32 @@
 		});
 	}
 
-	async function deleteSegment(termId: number, segId: number) {
-		localTmData.terms[termId].target.splice(segId, 1);
+	async function deleteTu(tuId: number) {
+		localTmData.terms.splice(tuId, 1);
+		showSegmentDeletionModal = false;
 		showModal = false;
 		await updateTmOnIndexedDB(localTmData);
 	}
 
-	function ShowModal(termId: number, trgId: number) {
+	async function deleteSegment(termId: number, segId: number) {
+		localTmData.terms[termId].target.splice(segId, 1);
+		showSegmentDeletionModal = false;
+		showModal = false;
+		await updateTmOnIndexedDB(localTmData);
+	}
+
+	function showTuDelModal(tuId: number) {
+		selectedTmId = tuId;
+		showSegmentDeletionModal = false;
+		showTuDeletionModal = true;
+		showModal = true;
+	}
+
+	function showSegDelModal(termId: number, trgId: number) {
 		selectedTmId = termId;
 		selectedTmTargetId = trgId;
+		showTuDeletionModal = false;
+		showSegmentDeletionModal = true;
 		showModal = true;
 	}
 
@@ -118,7 +137,21 @@
 	}
 </script>
 
-{#snippet deletionConfirmation()}
+{#snippet deletionConfirmationTu()}
+	<div class="deletion-confirmation-container">
+		<p class="deletion-confirmation">
+			Are you sure you want to delete this entire Translation Unit?
+		</p>
+		<button class="btn delete" onclick={() => deleteTu(selectedTmId)}>
+			Delete
+		</button>
+		<button class="btn update" onclick={() => (showModal = false)}>
+			Cancel
+		</button>
+	</div>
+{/snippet}
+
+{#snippet deletionConfirmationSegment()}
 	<div class="deletion-confirmation-container">
 		<p class="deletion-confirmation">
 			Are you sure you want to delete this segment?
@@ -142,8 +175,11 @@
 	class="modal-element-global {showModal ? '' : 'close-modal-global'}"
 	onclick={() => (showModal = false)}
 >
-	{#if showModal}
-		<Modal title="Confirm" content={deletionConfirmation} />
+	{#if showTuDeletionModal}
+		<Modal title="Confirm" content={deletionConfirmationTu} />
+	{/if}
+	{#if showSegmentDeletionModal}
+		<Modal title="Confirm" content={deletionConfirmationSegment} />
 	{/if}
 </div>
 
@@ -164,7 +200,7 @@
 		bind:this={segmentsContainer}
 		onscroll={handleScroll}
 	>
-		{#each filteredData.slice(0, visibleSegmentsCount) as unit}
+		{#each filteredData.slice(0, visibleSegmentsCount) as unit, unitIndex}
 			<div class="tu-header">
 				<h3>
 					Translation Unit <span
@@ -173,24 +209,32 @@
 							border: 2px solid var(--color-theme-5); 
 							padding: 1px 5px 1px 4px; 
 							border-radius: 5px; 
-							background-color: var(--color-theme-5);">{unit.id}</span
+							background-color: var(--color-theme-5);">{unitIndex + 1}</span
 					>
 				</h3>
-				<button
-					class="edit-btn"
-					style="background-color: limegreen;"
-					onclick={() => addTranslationSegment(unit.id - 1)}
-				>
-					Add Segment +
-				</button>
+				<div>
+					<button
+						class="edit-btn delete"
+						onclick={() => showTuDelModal(unitIndex)}
+					>
+						Delete <Delete marginBottom="-2px" />
+					</button>
+					<button
+						class="edit-btn"
+						style="background-color: limegreen;"
+						onclick={() => addTranslationSegment(unitIndex)}
+					>
+						Add Segment +
+					</button>
+				</div>
 			</div>
 			<div class="translation-unit">
 				<div class="segment-group source">
 					<div class="language-selection">
 						<select
 							class="lang-select"
-							disabled={!editMode.get(`source-${unit.id - 1}`)}
-							style="background-color: {editMode.get(`source-${unit.id - 1}`)
+							disabled={!editMode.get(`source-${unitIndex}`)}
+							style="background-color: {editMode.get(`source-${unitIndex}`)
 								? 'white'
 								: 'var(--color-theme-8)'}"
 							bind:value={unit.source.lang}
@@ -204,12 +248,12 @@
 						</select>
 						<button
 							class="edit-btn"
-							style="background-color: {editMode.get(`source-${unit.id - 1}`)
+							style="background-color: {editMode.get(`source-${unitIndex}`)
 								? 'limegreen'
 								: '#2c5e82'}"
-							onclick={() => toggleEditMode(`source-${unit.id - 1}`)}
+							onclick={() => toggleEditMode(`source-${unitIndex}`)}
 						>
-							{#if editMode.get(`source-${unit.id - 1}`)}
+							{#if editMode.get(`source-${unitIndex}`)}
 								Save <SaveFile marginBottom="-2px" />
 							{:else}
 								Edit <Edit marginBottom="-2px" />
@@ -218,7 +262,7 @@
 					</div>
 
 					<div class="segment-field">
-						{#if !editMode.get(`source-${unit.id - 1}`)}
+						{#if !editMode.get(`source-${unitIndex}`)}
 							<p class="field locked">{unit.source.segment}</p>
 						{:else}
 							<textarea
@@ -237,9 +281,9 @@
 						<div class="language-selection">
 							<select
 								class="lang-select"
-								disabled={!editMode.get(`target-${unit.id - 1}-${trgIndex}`)}
+								disabled={!editMode.get(`target-${unitIndex}-${trgIndex}`)}
 								style="background-color: {editMode.get(
-									`target-${unit.id - 1}-${trgIndex}`,
+									`target-${unitIndex}-${trgIndex}`,
 								)
 									? 'white'
 									: 'var(--color-theme-8)'}"
@@ -255,14 +299,14 @@
 							<button
 								class="edit-btn"
 								style="background-color: {editMode.get(
-									`target-${unit.id - 1}-${trgIndex}`,
+									`target-${unitIndex}-${trgIndex}`,
 								)
 									? 'limegreen'
 									: '#2c5e82'}"
 								onclick={() =>
-									toggleEditMode(`target-${unit.id - 1}-${trgIndex}`)}
+									toggleEditMode(`target-${unitIndex}-${trgIndex}`)}
 							>
-								{#if editMode.get(`target-${unit.id - 1}-${trgIndex}`)}
+								{#if editMode.get(`target-${unitIndex}-${trgIndex}`)}
 									Save <SaveFile marginBottom="-2px" />
 								{:else}
 									Edit <Edit marginBottom="-2px" />
@@ -270,13 +314,13 @@
 							</button>
 							<button
 								class="edit-btn delete"
-								onclick={() => ShowModal(unit.id - 1, trgIndex)}
+								onclick={() => showSegDelModal(unitIndex, trgIndex)}
 							>
 								Delete <Delete marginBottom="-2px" />
 							</button>
 						</div>
 						<div class="segment-field">
-							{#if !editMode.get(`target-${unit.id - 1}-${trgIndex}`)}
+							{#if !editMode.get(`target-${unitIndex}-${trgIndex}`)}
 								<p class="field locked">{trg.segment}</p>
 							{:else}
 								<textarea
