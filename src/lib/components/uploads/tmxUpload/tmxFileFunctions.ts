@@ -93,7 +93,7 @@ export function extractTmxData(tmxDocument: Document): TmData {
 
 	for (let i = 0; i < tus.length; i++) {
 		const tu = tus[i];
-		const tuid = parseInt(tu.getAttribute("tuid") || (i + 1).toString(), 10); // Assign ID or fallback to index
+		// const tuid = parseInt(tu.getAttribute("tuid") || (i + 1).toString(), 10); // Assign ID or fallback to index
 
 		const tuvs = tu.getElementsByTagName("tuv");
 
@@ -117,7 +117,7 @@ export function extractTmxData(tmxDocument: Document): TmData {
 
 		if (sourceSegment) {
 			terms.push({
-				id: tuid,
+				// id: tuid,
 				source: sourceSegment,
 				target: targetSegments,
 			});

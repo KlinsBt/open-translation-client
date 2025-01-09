@@ -172,7 +172,7 @@
 		editTm.set(true);
 		showTmxModal.set(false);
 		tmxDataIdExists = false;
-		// showLoading.set(false);
+		showLoading.set(false);
 	}
 
 	function cancelOverwrite() {
@@ -185,7 +185,7 @@
 			name: temporarySaveName,
 			terms: [
 				{
-					id: 1,
+					// id: 1,
 					source: {
 						lang: "en",
 						segment: "",

@@ -92,18 +92,18 @@ export function extractTbxData(tbxDocument: Document): TbData {
 
 	for (let i = 0; i < conceptEntries.length; i++) {
 		const conceptEntry = conceptEntries[i];
-		const conceptId = conceptEntry.getAttribute("id") || (i + 1).toString();
+		// const conceptId = conceptEntry.getAttribute("id") || (i + 1).toString();
 		const langSecs = conceptEntry.getElementsByTagName("langSec");
 
 		const entryData: {
-			id: number;
+			// id: number;
 			terms: {
 				lang: string;
 				term: string;
 				notes: string[];
 			}[];
 		} = {
-			id: parseInt(conceptId, 10) || i + 1,
+			// id: parseInt(conceptId, 10) || i + 1,
 			terms: [],
 		};
 
