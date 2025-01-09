@@ -108,6 +108,8 @@
 		display: flex;
 		flex-direction: column;
 		overflow-y: auto;
+		max-height: 27vh;
+		max-height: 27dvh;
 		overflow-y: scroll;
 	}
 
@@ -178,5 +180,35 @@
 		font-weight: 600;
 		text-align: left;
 		color: var(--color-theme-5);
+	}
+
+	@media (max-width: 548px) {
+		.tb-container > h1 {
+			font-size: 0.55rem;
+		}
+		.header-id,
+		.header-target {
+			font-size: 0.55rem;
+		}
+
+		.id {
+			font-size: 0.55rem;
+		}
+
+		.term > p {
+			font-size: 0.55rem;
+		}
+
+		.term > p:nth-child(2) {
+			font-size: 0.55rem;
+		}
+
+		.notes-container {
+			font-size: 0.5rem;
+		}
+
+		.note {
+			font-size: 0.5rem;
+		}
 	}
 </style>

@@ -21,7 +21,10 @@ export function getTranslationMemoryMatches(
 		}
 	}
 
-	return matches;
+	let sortedMatches = matches.sort((a, b) => {
+		return parseFloat(b.percentage) - parseFloat(a.percentage);
+	});
+	return sortedMatches;
 }
 
 // Helper function to calculate Levenshtein distance

@@ -227,6 +227,8 @@
 		display: flex;
 		flex-direction: column;
 		overflow-y: auto;
+		max-height: 27vh;
+		max-height: 27dvh;
 		overflow-y: scroll;
 	}
 
@@ -298,5 +300,31 @@
 
 	.segment-memory-container:hover {
 		background-color: #eaf2ff;
+	}
+
+	@media (max-width: 548px) {
+		.translation-memory-container > h1 {
+			font-size: 0.55rem;
+		}
+
+		.header-id,
+		.header-source,
+		.header-match,
+		.header-target {
+			font-size: 0.55rem;
+		}
+
+		.id {
+			font-size: 0.55rem;
+		}
+
+		.target-segment,
+		.source-segment {
+			font-size: 0.55rem;
+		}
+
+		.matches {
+			font-size: 0.55rem;
+		}
 	}
 </style>

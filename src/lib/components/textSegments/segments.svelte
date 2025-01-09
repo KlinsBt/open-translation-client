@@ -183,10 +183,15 @@
 
 	async function getAllTbDataFromIndexedDB() {
 		showLoading.set(true);
-		let data = await loadTbDataFromIndexedDB();
-		tbData.set(data as TbData[]);
-		showLoading.set(false);
-		console.log(tmData);
+		if ($tbData.length > 0) {
+			showLoading.set(false);
+			return;
+		} else {
+			let data = await loadTbDataFromIndexedDB();
+			tbData.set(data as TbData[]);
+			showLoading.set(false);
+			console.log(tmData);
+		}
 	}
 
 	async function toggleSaveFileModal() {
@@ -708,6 +713,9 @@
 		/* max-height: 700px; */
 		overflow-y: auto;
 		min-width: 95%;
+
+		padding: 20px 20px;
+		min-width: 96%;
 	}
 
 	@media (max-width: 1170px) {

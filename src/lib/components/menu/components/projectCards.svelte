@@ -3,7 +3,7 @@
 		getTotalWordCount,
 		calcPercentageOfTotalSegmentsChecked,
 	} from "$lib/functions/statistics";
-	import type { UserData } from "$lib/types/types.js";
+	import type { TbData, TmData, UserData } from "$lib/types/types.js";
 	import OpenFile from "../../svg/openFile.svelte";
 	import Options from "../../svg/options.svelte";
 	import Delete from "../../svg/delete.svelte";
@@ -18,9 +18,13 @@
 		translationIdSelected,
 		showLoading,
 		userData,
+		tmData,
+		tbData,
 	} from "$lib/functions/saveData/stores.svelte";
 	import {
 		deleteTranslationFromIndexedDB,
+		loadTbDataFromIndexedDB,
+		loadTmDataFromIndexedDB,
 		updateTranslationOnIndexedDB,
 	} from "$lib/functions/saveData/indexedDb";
 	import Modal from "../../modal.svelte";
@@ -47,6 +51,26 @@
 			showLoading.set(false);
 			return;
 		}
+		if (data.translationData.tm) {
+			if (
+				typeof data.translationData.tm.id === "number" &&
+				data.translationData.tm.active
+			) {
+				console.log("Loading TM data");
+				// await loadTmDataOfProject(data.translationData.tm.id);
+				getAllTmDataFromIndexedDB();
+			}
+		}
+		if (data.translationData.tb) {
+			if (
+				typeof data.translationData.tb.id === "number" &&
+				data.translationData.tb.active
+			) {
+				console.log("Loading TB data");
+				// await loadTbDataOfProject(data.translationData.tb.id);
+				getAllTbDataFromIndexedDB();
+			}
+		}
 		singleUserData.set(data);
 		translationIdSelected.set(id);
 		seg1WordCount.set(getTotalWordCount(data.translationData.seg1));
@@ -54,6 +78,46 @@
 		openMenu.set(false);
 		showLoading.set(false);
 	}
+
+	async function getAllTmDataFromIndexedDB() {
+		showLoading.set(true);
+		if ($tmData.length > 0) {
+			showLoading.set(false);
+			return;
+		} else {
+			let data = await loadTmDataFromIndexedDB();
+			tmData.set(data as TmData[]);
+			showLoading.set(false);
+			console.log(tmData);
+		}
+	}
+
+	async function getAllTbDataFromIndexedDB() {
+		showLoading.set(true);
+		if ($tbData.length > 0) {
+			showLoading.set(false);
+			return;
+		} else {
+			let data = await loadTbDataFromIndexedDB();
+			tbData.set(data as TbData[]);
+			showLoading.set(false);
+			console.log(tmData);
+		}
+	}
+
+	// async function loadTmDataOfProject(tmId: number) {
+	// 	let tm = await getTmDataById(tmId);
+	// 	if (!tm) return console.log("TM data not found");
+	// 	singleTmData.set(tm);
+	// 	console.log($singleTmData);
+	// }
+
+	// async function loadTbDataOfProject(tbId: number) {
+	// 	let tb = await getTbDataById(tbId);
+	// 	if (!tb) return console.log("TB data not found");
+	// 	singleTbData.set(tb);
+	// 	console.log($singleTbData);
+	// }
 
 	function updateFileName(newName: string) {
 		console.log("Updating file name to: ", newName);

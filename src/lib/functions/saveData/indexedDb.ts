@@ -254,6 +254,28 @@ export async function getTmNamesAndIds(): Promise<
 	}
 }
 
+export async function getTmDataById(id: number): Promise<TmData | null> {
+	const db = await openDatabase();
+	return new Promise((resolve, reject) => {
+		const transaction = db.transaction(DB_TM_NAME, "readonly");
+		const store = transaction.objectStore(DB_TM_NAME);
+		const request = store.get(id);
+
+		request.onsuccess = (event) => {
+			const result = (event.target as IDBRequest).result as TmData | undefined;
+			resolve(result || null);
+		};
+
+		request.onerror = (event) => {
+			console.error(
+				"Error fetching TMData by ID:",
+				(event.target as IDBRequest).error,
+			);
+			reject((event.target as IDBRequest).error);
+		};
+	});
+}
+
 export async function saveNewTmToIndexedDB(tm: TmData): Promise<void> {
 	const db = await openDatabase();
 	return new Promise((resolve, reject) => {
@@ -372,6 +394,28 @@ export async function getTbNamesAndIds(): Promise<
 		console.error("Error fetching TB Names and IDs:", error);
 		return [];
 	}
+}
+
+export async function getTbDataById(id: number): Promise<TbData | null> {
+	const db = await openDatabase();
+	return new Promise((resolve, reject) => {
+		const transaction = db.transaction(DB_TB_NAME, "readonly");
+		const store = transaction.objectStore(DB_TB_NAME);
+		const request = store.get(id);
+
+		request.onsuccess = (event) => {
+			const result = (event.target as IDBRequest).result as TbData | undefined;
+			resolve(result || null);
+		};
+
+		request.onerror = (event) => {
+			console.error(
+				"Error fetching TBData by ID:",
+				(event.target as IDBRequest).error,
+			);
+			reject((event.target as IDBRequest).error);
+		};
+	});
 }
 
 export async function saveNewTbToIndexedDB(tb: TbData): Promise<void> {
