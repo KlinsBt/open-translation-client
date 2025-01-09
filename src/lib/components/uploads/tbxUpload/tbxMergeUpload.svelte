@@ -46,12 +46,14 @@
 				} catch (error) {
 					alert("Invalid TBX file");
 					console.error("Invalid TBX file", error);
+					return showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
 		} else {
 			alert("Please upload a valid TBX file");
 			console.error("Please upload a valid TBX file");
+			return showLoading.set(false);
 		}
 	}
 
@@ -93,37 +95,26 @@
 					} catch (error) {
 						alert("Invalid TBX file");
 						console.error("Invalid TBX file", error);
+						return showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
 			} else {
 				alert("Please drop a valid TBX file");
 				console.error("Please drop a valid TBX file");
+				return showLoading.set(false);
 			}
 		} else {
 			console.error("No file dropped");
+			return showLoading.set(false);
 		}
 	}
 
 	async function mergeTbxFiles() {
-		let idCounter: number = 1;
-		// console.log($singleTbData);
-		// console.log(extractedTbxData);
 		let part1 = JSON.parse(JSON.stringify($singleTbData));
 		let part2 = JSON.parse(JSON.stringify(extractedTbxData));
-		for (let i = 0; i < part1.entries.length; i++) {
-			// console.log(part1.terms[i]);
-			let entry = part1.entries[i];
-			entry.id = idCounter++;
-			combinedTbxData.entries.push(entry);
-		}
-		for (let i = 0; i < part2.entries.length; i++) {
-			// console.log(part2.terms[i]);
-			let entry = part2.entries[i];
-			entry.id = idCounter++;
-			combinedTbxData.entries.push(entry);
-		}
-		// console.log("Merged data: ", combinedTbxData);
+		combinedTbxData.entries.push(...part1.entries, ...part2.entries);
+		console.log("Merged data: ", combinedTbxData);
 	}
 
 	async function createNewProjectWithTbxFile() {

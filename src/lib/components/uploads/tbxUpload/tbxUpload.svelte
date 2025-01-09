@@ -167,7 +167,7 @@
 		tbIdSelected.set(newTb.id!);
 		editTb.set(true);
 		showTbxModal.set(false);
-		showLoading.set(false);
+		// showLoading.set(false);
 	}
 
 	function updateExistingProjectWithTbxFile() {
@@ -191,7 +191,7 @@
 			name: temporarySaveName,
 			entries: [
 				{
-					id: 1,
+					// id: 1,
 					terms: [
 						{
 							lang: "",

@@ -161,13 +161,13 @@
 		showTbxModal.set(false);
 	}
 
-	// function getUniqueTargetLanguages(tb: TbData) {
-	// 	return [
-	// 		...new Set(
-	// 			tb.flatMap((tb) => tb.term.lang.map((l) => trg.lang)),
-	// 		),
-	// 	];
-	// }
+	function getUniqueTargetLanguages(tb: TbData) {
+		return [
+			...new Set(
+				tb.entries.flatMap((entry) => entry.terms.map((term) => term.lang)),
+			),
+		];
+	}
 </script>
 
 <!-- ######################################################################################################### -->
@@ -307,10 +307,9 @@
 		{#each filteredData as tb}
 			<div class="table-row">
 				<div class="languages">
-					{#each tb.entries.slice(0, 5) as t, j}
-						{#if t.terms[j]?.lang}
-							<span class="language-tag">{t.terms[j].lang}</span>
-						{/if}
+					<span class="language-tag">{tb.entries[0].terms[0].lang}</span>
+					{#each getUniqueTargetLanguages(tb).slice(0, 5) as uniqueLang}
+						<span class="language-tag">{uniqueLang}</span>
 					{/each}
 				</div>
 				<div class="tb-name">{tb.name}</div>

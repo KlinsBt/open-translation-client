@@ -46,12 +46,14 @@
 				} catch (error) {
 					alert("Invalid TMX file");
 					console.error("Invalid TMX file", error);
+					showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
 		} else {
 			alert("Please upload a valid TMX file");
 			console.error("Please upload a valid TMX file");
+			showLoading.set(false);
 		}
 	}
 
@@ -93,37 +95,26 @@
 					} catch (error) {
 						alert("Invalid TMX file");
 						console.error("Invalid TMX file", error);
+						showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
 			} else {
 				alert("Please drop a valid TMX file");
 				console.error("Please drop a valid TMX file");
+				showLoading.set(false);
 			}
 		} else {
 			console.error("No file dropped");
+			showLoading.set(false);
 		}
 	}
 
 	async function mergeTmxFiles() {
-		let idCounter: number = 1;
-		// console.log($singleTmData);
-		// console.log(extractedTmxData);
 		let part1 = JSON.parse(JSON.stringify($singleTmData));
 		let part2 = JSON.parse(JSON.stringify(extractedTmxData));
-		for (let i = 0; i < part1.terms.length; i++) {
-			// console.log(part1.terms[i]);
-			let term = part1.terms[i];
-			term.id = idCounter++;
-			combinedTmxData.terms.push(term);
-		}
-		for (let i = 0; i < part2.terms.length; i++) {
-			// console.log(part2.terms[i]);
-			let term = part2.terms[i];
-			term.id = idCounter++;
-			combinedTmxData.terms.push(term);
-		}
-		// console.log("Merged data: ", combinedTmxData);
+		combinedTmxData.terms.push(...part1.terms, ...part2.terms);
+		console.log("Merged data: ", combinedTmxData);
 	}
 
 	async function createNewProjectWithTmxFile() {
