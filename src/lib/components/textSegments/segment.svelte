@@ -133,7 +133,12 @@
 		// console.log("ID: ", id);
 		singleTmData.set($tmData.find((data) => data.id === id) as TmData);
 		// console.log("Single TM Data: ", $singleTmData);
-		tmMatchesFound = searchForMatches($singleTmData, textSegment1, "en", "de");
+		tmMatchesFound = searchForMatches(
+			$singleTmData,
+			textSegment1,
+			sourceLang,
+			targetLang,
+		);
 	}
 
 	function updateTbMatches(textSegment1: string) {

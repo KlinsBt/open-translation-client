@@ -423,7 +423,7 @@
 
 <div
 	class="segments-container"
-	style={tmActive || tbActive ? "max-height: 50vh;" : "741px"}
+	style={tmActive || tbActive ? "max-height: 50vh;" : "max-height: 741px;"}
 	bind:this={segmentsContainer}
 	onscroll={handleScroll}
 >
@@ -714,8 +714,7 @@
 		overflow-y: auto;
 		min-width: 95%;
 
-		padding: 20px 20px;
-		min-width: 96%;
+		min-width: 97%;
 	}
 
 	@media (max-width: 1170px) {
