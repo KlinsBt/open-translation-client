@@ -48,10 +48,7 @@
 						if (!extractedTbxData) throw Error;
 
 						if (extractedTbxData) {
-							if (
-								checkIfIdExists(extractedTbxData.id) ||
-								extractedTbxData.id !== undefined
-							) {
+							if (checkIfIdExists(extractedTbxData.id)) {
 								console.log("ID is already defined.");
 								tbxDataIdExists = true;
 								return showLoading.set(false);
@@ -80,6 +77,7 @@
 	function checkIfIdExists(id: number | undefined): boolean {
 		if (!id) return false;
 		const singleData: TbData | undefined = $tbData.find((d) => d.id === id);
+		console.log("singleData: ", singleData);
 		sameIdTbData = singleData || null;
 		return !!singleData;
 	}
@@ -117,13 +115,10 @@
 							extractedTbxData = extractTbxData(tbxFile);
 							if (!extractedTbxData) throw Error;
 							console.log("tbxData: ", extractedTbxData);
-							if (!extractedTbxData) return showLoading.set(false);
+							// if (!extractedTbxData) return showLoading.set(false);
 
 							if (extractedTbxData) {
-								if (
-									checkIfIdExists(extractedTbxData.id) ||
-									extractedTbxData.id !== undefined
-								) {
+								if (checkIfIdExists(extractedTbxData.id)) {
 									console.log("ID is already defined.");
 									tbxDataIdExists = true;
 									return showLoading.set(false);
