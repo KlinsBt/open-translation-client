@@ -713,11 +713,10 @@
 		/* max-height: 700px; */
 		overflow-y: auto;
 		min-width: 95%;
-
-		min-width: 97%;
+		/* min-width: 97%; */
 	}
 
-	@media (max-width: 1170px) {
+	@media (max-width: 1228px) {
 		.words-container {
 			justify-content: space-evenly;
 		}
