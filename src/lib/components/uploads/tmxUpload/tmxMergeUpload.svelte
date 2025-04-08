@@ -44,7 +44,7 @@
 						return showLoading.set(false);
 					}
 				} catch (error) {
-					alert("Invalid TMX file");
+					alert("Invalid TMX file or has not at least two language pairs");
 					console.error("Invalid TMX file", error);
 					showLoading.set(false);
 				}
@@ -93,7 +93,7 @@
 							return showLoading.set(false);
 						}
 					} catch (error) {
-						alert("Invalid TMX file");
+						alert("Invalid TMX file or has not at least two language pairs");
 						console.error("Invalid TMX file", error);
 						showLoading.set(false);
 					}

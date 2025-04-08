@@ -58,7 +58,14 @@ export function validateTmxFile(tmxDocument: Document): boolean {
 
 		// Validate <tuv> elements inside each <tu>
 		const tuvs = tu.getElementsByTagName("tuv");
-		if (tuvs.length < 2) return false; // Minimum of 2 languages required
+		// if (tuvs.length < 2) return false; // Minimum of 2 languages required
+
+		if (tuvs.length < 2) {
+			console.warn(
+				`Skipping TU with tuid="${tuid}" – only one language found.`,
+			);
+			continue;
+		}
 
 		for (let j = 0; j < tuvs.length; j++) {
 			const tuv = tuvs[j];
@@ -77,6 +84,8 @@ export function extractTmxData(tmxDocument: Document): TmData {
 	const tmxElement = tmxDocument.getElementsByTagName("tmx")[0];
 	const headerElement = tmxElement.getElementsByTagName("header")[0];
 
+	console.log(headerElement);
+
 	// Extract metadata from the header
 	const id = parseInt(
 		headerElement.querySelector('prop[type="id"]')?.textContent || "0",
@@ -86,6 +95,8 @@ export function extractTmxData(tmxDocument: Document): TmData {
 		headerElement.querySelector('prop[type="name"]')?.textContent || "New TM";
 
 	const srcLang = headerElement.getAttribute("srclang") || "unknown";
+
+	console.log(srcLang);
 
 	// Extract translation units (TUs)
 	const tus = tmxElement.getElementsByTagName("tu");
@@ -100,6 +111,8 @@ export function extractTmxData(tmxDocument: Document): TmData {
 		// Extract source and target segments
 		let sourceSegment: { lang: string; segment: string } | null = null;
 		const targetSegments: { lang: string; segment: string }[] = [];
+
+		console.log(tuvs);
 
 		for (let j = 0; j < tuvs.length; j++) {
 			const tuv = tuvs[j];
