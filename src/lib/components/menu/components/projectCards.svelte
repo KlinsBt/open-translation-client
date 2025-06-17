@@ -190,6 +190,7 @@
 	}
 
 	function selectAndShowModal(id: number) {
+		optionsOpen = false;
 		show = true;
 		let data = $userData.find((d) => d.id === id);
 		console.log(data);
