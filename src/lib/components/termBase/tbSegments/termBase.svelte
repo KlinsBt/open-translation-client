@@ -21,6 +21,18 @@
 		updateTranslationOnIndexedDB($singleUserData);
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
+
+	type RawNote = string | { type: string; text: string };
+
+	function renderNote(n: RawNote): string {
+		if (typeof n === "string") return n.trim() || "(empty note)";
+
+		const { type, text } = n;
+		if (type && text) return `${type}: ${text}`;
+		if (text) return text;
+		if (type) return type;
+		return "(empty note)";
+	}
 </script>
 
 <div class="tb-container">
@@ -45,7 +57,7 @@
 					{#if match.notes.length > 0 && match.notes[0] !== ""}
 						<div class="notes-container">
 							{#each match.notes as note}
-								<p class="note">{note}</p>
+								<p class="note">{renderNote(note)}</p>
 							{/each}
 						</div>
 					{/if}
@@ -119,7 +131,7 @@
 		justify-content: center;
 		padding: 0px;
 		width: 100%;
-		height: 100%;
+		/* height: 100%; */
 		border-top: 2px solid var(--color-theme-3);
 		cursor: pointer;
 	}

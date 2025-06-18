@@ -20,20 +20,23 @@ function generateTbx(sourceLang: string, tbxData: TbData): string {
 	tbxContent += `    <body>\n`;
 
 	// Iterates through terms and construct TBX content
-	tbxData.entries.forEach((concept) => {
-		tbxContent += `      <conceptEntry id="C${concept.id}">\n`;
-		concept.terms.forEach((term) => {
+	for (let i = 0; i < tbxData.entries.length; i++) {
+		// tbxData.entries.forEach((concept) => {
+		tbxContent += `      <conceptEntry id="C${i + 1}">\n`;
+		tbxData.entries[i].terms.forEach((term) => {
 			tbxContent += `        <langSec xml:lang="${term.lang}">\n`;
 			tbxContent += `          <termSec>\n`;
 			tbxContent += `            <term>${escapeXml(term.term)}</term>\n`;
 			term.notes.forEach((note) => {
-				tbxContent += `            <note>${escapeXml(note)}</note>\n`;
+				tbxContent += `            ${convertNotesToXml(note)}\n`;
+				// tbxContent += `            <note>${escapeXml(note[i].text)}</note>\n`;
 			});
 			tbxContent += `          </termSec>\n`;
 			tbxContent += `        </langSec>\n`;
 		});
 		tbxContent += `      </conceptEntry>\n`;
-	});
+		// });
+	}
 	tbxContent += `    </body>\n`;
 	tbxContent += `  </text>\n`;
 	tbxContent += `</tbx>\n`;
@@ -118,6 +121,26 @@ export async function generateTbxSaveFile(sourceLang: string, tbxData: TbData) {
 		await generateTbxFileDownload(tbxContent, tbxData.name || "TBX_Save_File");
 	} catch (error) {
 		console.error("Failed to generate TBX save file:", error);
+	}
+}
+
+/**
+ * Convert notes to XML strings.
+ * If note.type is empty, create a <note> element.
+ * If note.type is present, create a <termNote type="..."> element.
+ */
+function convertNotesToXml(
+	note: string | { type: string; text: string },
+): string {
+	if (typeof note === "string") {
+		return `<note>${escapeXml(note)}</note>`;
+	}
+	const escapedText = escapeXml(note.text);
+	if (!note.type.trim()) {
+		return `<note>${escapedText}</note>`;
+	} else {
+		const escapedType = escapeXml(note.type);
+		return `<termNote type="${escapedType}">${escapedText}</termNote>`;
 	}
 }
 

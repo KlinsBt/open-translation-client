@@ -72,7 +72,7 @@
 				{
 					lang: "",
 					term: "",
-					notes: [""],
+					notes: [],
 				},
 			],
 		});
@@ -83,8 +83,52 @@
 		localTbData.entries[termId].terms.push({
 			lang: "",
 			term: "",
-			notes: [""],
+			notes: [],
 		});
+		await updateTbOnIndexedDB(localTbData);
+	}
+
+	async function addNewNote(unitId: number, termId: number) {
+		console.log("Adding new note to unitId:", unitId, "termId:", termId);
+
+		const term = localTbData.entries[unitId].terms[termId];
+
+		// Check if notes is an array of strings (legacy format)
+		if (term.notes.length > 0 && typeof term.notes[0] === "string") {
+			// Convert string[] to structured format
+			const converted: { type: string; text: string }[] = [];
+			for (let i = 0; i < term.notes.length; i++) {
+				converted.push({ type: "", text: term.notes[i] as string });
+			}
+			term.notes = converted;
+		}
+
+		// Push a new empty note
+		(term.notes as { type: string; text: string }[]).push({
+			type: "",
+			text: "",
+		});
+
+		await updateTbOnIndexedDB(localTbData);
+	}
+
+	async function deleteNote(unitId: number, termId: number, noteIndex: number) {
+		console.log(
+			"Deleting note at unitId:",
+			unitId,
+			"termId:",
+			termId,
+			"noteId:",
+			noteIndex,
+		);
+
+		const term = localTbData.entries[unitId].terms[termId];
+
+		if (term.notes.length > noteIndex) {
+			// Simple remove using splice
+			term.notes.splice(noteIndex, 1);
+		}
+
 		await updateTbOnIndexedDB(localTbData);
 	}
 
@@ -93,6 +137,7 @@
 		showModal = false;
 		await updateTbOnIndexedDB(localTbData);
 	}
+
 	async function deleteEntry(unitId: number, termId: number) {
 		localTbData.entries[unitId].terms.splice(termId, 1);
 		if (localTbData.entries[unitId].terms.length === 0) {
@@ -173,14 +218,17 @@
 		{#each filteredData.slice(0, visibleSegmentsCount) as unit, unitId}
 			<div class="tu-header">
 				<h3>
-					Term Unit <span
+					Term Unit
+					<span
 						style="
 							color: white; 
 							border: 2px solid var(--color-theme-5); 
 							padding: 1px 5px 1px 4px; 
 							border-radius: 5px; 
-							background-color: var(--color-theme-5);">{unitId + 1}</span
+							background-color: var(--color-theme-5);"
 					>
+						{unitId + 1}
+					</span>
 				</h3>
 				<button
 					class="edit-btn"
@@ -246,29 +294,81 @@
 							{/if}
 						</div>
 						<div class="notes-field">
-							<p>Note:</p>
+							<p>Notes:</p>
 							{#if term.notes.length > 0}
 								{#each term.notes as note, j}
-									{#if !editMode.get(`target-${unitId}-${termId}`)}
-										<p class="field locked">{note}</p>
+									{#if typeof note === "string"}
+										<!-- {#if !editMode.get(`target-${unitId}-${termId}`)}
+											<p class="field locked">{note}</p>
+										{:else}
+											<textarea
+												class="field unlocked"
+												bind:value={term.notes[j]}
+												use:useAutoHeight
+												placeholder="Add Note"
+											></textarea>
+										{/if} -->
+									{:else if !editMode.get(`target-${unitId}-${termId}`)}
+										{#if note.type === "" && note.text === ""}
+											<div class="note-with-attr-container-locked">
+												<p
+													class="field locked"
+													style="height: 17.8px; width: 10%;"
+												></p>
+											</div>
+										{:else if note.type !== "" && note.text === ""}
+											<div class="note-with-attr-container-locked">
+												<p class="field locked">
+													{note.type}
+												</p>
+											</div>
+										{:else if note.type === "" && note.text !== ""}
+											<div class="note-with-attr-container-locked">
+												<p class="field locked">
+													{note.text}
+												</p>
+											</div>
+										{:else}
+											<div class="note-with-attr-container-locked">
+												<p class="field locked">{note.type}</p>
+												<p>:</p>
+												<p class="field locked">{note.text}</p>
+											</div>
+										{/if}
 									{:else}
-										<textarea
-											class="field unlocked"
-											bind:value={term.notes[j]}
-											use:useAutoHeight
-											placeholder="Add Note"
-										></textarea>
+										<div class="note-with-attr-container-open">
+											<input class="field" type="text" bind:value={note.type} />
+											<textarea
+												class="field unlocked"
+												bind:value={note.text}
+												use:useAutoHeight
+												placeholder="Add Note"
+											></textarea>
+											<button
+												class="delete-note-btn delete"
+												onclick={() => deleteNote(unitId, termId, j)}
+												><Delete marginBottom="-2px" /></button
+											>
+										</div>
 									{/if}
 								{/each}
 							{:else if !editMode.get(`target-${unitId}-${termId}`)}
-								<p class="field locked"></p>
+								<p>No notes available</p>
 							{:else}
-								<textarea
-									class="field unlocked"
-									bind:value={term.notes[0]}
-									use:useAutoHeight
-									placeholder="Add Note"
-								></textarea>
+								<p>No notes available</p>
+							{/if}
+							{#if editMode.get(`target-${unitId}-${termId}`)}
+								<button
+									class="edit-btn"
+									style="background-color: {editMode.get(
+										`target-${unitId}-${termId}`,
+									)
+										? 'limegreen'
+										: '#2c5e82'}"
+									onclick={() => addNewNote(unitId, termId)}
+								>
+									Add Note +
+								</button>
 							{/if}
 						</div>
 					</div>
@@ -431,22 +531,75 @@
 	.notes-field {
 		display: grid;
 		gap: 0px;
+		margin-bottom: 25px;
 	}
 
 	.notes-field > p:nth-child(1) {
-		margin: 0px 0px 0px 0px;
-		padding: 0px 0px 0px 5px;
+		margin: 0px 0px 5px 0px;
+		padding: 5px 0px;
 		font-weight: 600;
-		font-size: 0.6rem;
+		font-size: 1rem;
 		color: var(--color-theme-5);
 	}
 
 	.notes-field > p {
 		margin: 0px 0px 0px 0px;
 		padding: 5px 0px 5px 5px;
-		font-weight: 500;
-		font-size: 0.7rem;
 		color: var(--color-theme-5);
+	}
+
+	.note-with-attr-container-locked {
+		display: flex;
+		justify-content: left;
+		text-align: left;
+		margin: 0px 0px 10px 0px;
+		width: 100%;
+	}
+
+	.note-with-attr-container-locked > p {
+		margin: 0px;
+		padding: 5px;
+		font-weight: 500;
+		font-size: 0.8rem;
+		color: var(--color-theme-5);
+	}
+
+	.note-with-attr-container-locked > p:nth-child(2) {
+		margin: 0px;
+	}
+
+	.note-with-attr-container-open {
+		position: relative;
+		display: grid;
+		align-items: center;
+		margin: 0px 0px 10px 0px;
+	}
+
+	.note-with-attr-container-open > input {
+		margin: 0px;
+		padding: 5px;
+		font-weight: 500;
+		font-size: 0.8rem;
+		color: var(--color-theme-5);
+		background-color: #f3fdff;
+		border: 2px solid rgba(255, 255, 255, 0.5);
+	}
+
+	.note-with-attr-container-open > input:focus {
+		border: 2px solid var(--color-theme-1);
+		outline: none;
+	}
+
+	.note-with-attr-container-open > textarea {
+		margin: 0px;
+		padding: 5px;
+		font-weight: 500;
+		font-size: 0.8rem;
+		color: var(--color-theme-5);
+	}
+
+	.note-with-attr-container-open:last-child {
+		margin: 0px;
 	}
 
 	.locked {
@@ -467,6 +620,20 @@
 	textarea:focus {
 		outline: none;
 		border: 2px solid var(--color-theme-3);
+	}
+
+	.delete-note-btn {
+		position: absolute;
+		top: 15px;
+		right: 0;
+		color: white;
+		border: none;
+		border-radius: 5px;
+		padding: 5px 10px;
+		cursor: pointer;
+		font-size: 0.8rem;
+		/* grid-column: 2 / 3; */
+		/* grid-row: 1 / 3; */
 	}
 
 	.edit-btn {

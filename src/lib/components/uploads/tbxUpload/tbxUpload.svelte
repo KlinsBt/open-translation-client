@@ -91,7 +91,7 @@
 		isDragging = false;
 	}
 
-	async function handleDrop(event: DragEvent): Promise<void> {
+	async function handleDropUpload(event: DragEvent): Promise<void> {
 		event.preventDefault();
 		isDragging = false;
 		showLoading.update((v) => true);
@@ -124,6 +124,7 @@
 									return showLoading.set(false);
 								} else {
 									alert("New TBX file created");
+									// console.log("tbxFile: ", tbxFile);
 									createNewProjectWithTbxFile().then(() => {
 										showLoading.set(false);
 									});
@@ -191,7 +192,7 @@
 						{
 							lang: "",
 							term: "",
-							notes: [""],
+							notes: [],
 						},
 					],
 				},
@@ -224,7 +225,7 @@
 		class="container"
 		ondragover={handleDragOver}
 		ondragleave={handleDragLeave}
-		ondrop={handleDrop}
+		ondrop={handleDropUpload}
 		class:is-dragging={isDragging}
 	>
 		<div class="name-container">
