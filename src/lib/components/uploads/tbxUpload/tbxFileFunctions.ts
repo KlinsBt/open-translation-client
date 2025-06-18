@@ -201,8 +201,8 @@ function validateTbxMartif(doc: Document): boolean {
 		for (const langSet of langSets) {
 			if (!langSet.getAttribute("xml:lang")) return false;
 
-			const tigs = langSet.getElementsByTagName("tig");
-			if (tigs.length === 0) return false;
+			// const tigs = langSet.getElementsByTagName("tig");
+			// if (tigs.length === 0) return false;
 
 			// for (const tig of tigs) {
 			// 	const term = tig.getElementsByTagName("term")[0];
@@ -213,154 +213,115 @@ function validateTbxMartif(doc: Document): boolean {
 	return true;
 }
 
-function extractFromMartif(tbxDocument: Document): TbData {
-	const martif = tbxDocument.getElementsByTagName("martif")[0];
+function getText(node: Element | undefined | null): string {
+	return node?.textContent?.trim() ?? "";
+}
+
+function collectLangSetNotes(
+	langSet: Element,
+): { type: string; text: string }[] {
+	const result: { type: string; text: string }[] = [];
+	const descripEls = langSet.getElementsByTagName("descrip");
+	for (let i = 0; i < descripEls.length; i++) {
+		const el = descripEls[i];
+		result.push({
+			type: el.getAttribute("type") ?? "",
+			text: getText(el),
+		});
+	}
+	return result;
+}
+
+function extractFromMartif(doc: Document): TbData {
+	/* ---------- header & metadata ---------- */
+	const martif = doc.getElementsByTagName("martif")[0];
 	const title =
-		martif.getElementsByTagName("title")[0]?.textContent?.trim() ||
-		"Untitled TBX File";
+		getText(martif.getElementsByTagName("title")[0]) || "Untitled TBX File";
 
-	const textElement = martif.getElementsByTagName("text")[0];
-	const bodyElement = textElement.getElementsByTagName("body")[0];
-
-	// Extract term entries
-	const termEntries = bodyElement.getElementsByTagName("termEntry");
+	/* ---------- walk <termEntry> ---------- */
+	const termEntries = martif
+		.getElementsByTagName("body")[0]
+		.getElementsByTagName("termEntry");
 	const entries: TbData["entries"] = [];
 
 	for (let i = 0; i < termEntries.length; i++) {
 		const termEntry = termEntries[i];
-		// const descrip = termEntry.getElementsByTagName("descrip");
 		const langSets = termEntry.getElementsByTagName("langSet");
 
 		const entryData: {
-			// id: number;
 			terms: {
 				lang: string;
 				term: string;
-				notes: {
-					type: string;
-					text: string;
-				}[];
+				notes: { type: string; text: string }[];
 			}[];
-		} = {
-			// id: parseInt(conceptId, 10) || i + 1,
-			terms: [],
-		};
+		} = { terms: [] };
 
 		for (let j = 0; j < langSets.length; j++) {
 			const langSet = langSets[j];
-			let lang = langSet.getAttribute("xml:lang") || "";
+			let lang = langSet.getAttribute("xml:lang") ?? "";
 			lang = normalizeLang(lang);
 
-			const termTig = langSet.getElementsByTagName("tig");
-			// for (let k = 0; k < termTig.length; k++) {
-			// 	const termSec = termTig[k];
-			// 	const term =
-			// 		termSec.getElementsByTagName("term")[0]?.textContent?.trim() || "";
+			/* notes that apply to the whole langSet (e.g. <descripGrp>) */
+			const langLevelNotes = collectLangSetNotes(langSet);
 
-			// 	const notes = Array.from(termSec.getElementsByTagName("termNote")).map(
-			// 		(note) => {
-			// 			const type = note.getAttribute("type") || "";
-			// 			const text = note.textContent?.trim() || "";
-			// 			return { type, text };
-			// 		},
-			// 	);
+			/* A) try <tig> (generic TBX) */
+			let tigs: HTMLCollectionOf<Element> = langSet.getElementsByTagName("tig");
 
-			// 	entryData.terms.push({
-			// 		lang,
-			// 		term,
-			// 		notes,
-			// 	});
-			// }
+			/* B) else fallback to <ntig> (Microsoft flavour) */
+			if (tigs.length === 0) tigs = langSet.getElementsByTagName("ntig");
 
-			for (let k = 0; k < termTig.length; k++) {
-				const tig = termTig[k];
+			/* C) if neither <tig> nor <ntig> exist, look for bare <term> */
+			if (tigs.length === 0) {
+				const bareTerms = langSet.getElementsByTagName("term");
+				for (let t = 0; t < bareTerms.length; t++) {
+					entryData.terms.push({
+						lang,
+						term: getText(bareTerms[t]),
+						notes: langLevelNotes,
+					});
+				}
+				continue; // done with this langSet
+			}
 
-				// Extract the <term> value, or fallback to first <termNote>
-				let term = "";
-				const termElement = tig.getElementsByTagName("term")[0];
-				if (termElement?.textContent?.trim()) {
-					term = termElement.textContent.trim();
-				} else {
-					const fallbackTermNote = tig.getElementsByTagName("termNote")[0];
-					if (fallbackTermNote?.textContent?.trim()) {
-						term = fallbackTermNote.textContent.trim();
-					}
+			/* iterate over each <tig>/<ntig> */
+			for (let k = 0; k < tigs.length; k++) {
+				const tig = tigs[k];
+
+				/* term: <termGrp><term>…</term></termGrp> or direct <term> */
+				const termEl =
+					tig.getElementsByTagName("term")[0] ??
+					tig.querySelector("termGrp term"); /* MS export */
+
+				const term = getText(termEl);
+
+				/* term-level notes */
+				const notes: { type: string; text: string }[] = [...langLevelNotes];
+
+				/* <termNote> */
+				const termNoteEls = tig.getElementsByTagName("termNote");
+				for (let n = 0; n < termNoteEls.length; n++) {
+					const el = termNoteEls[n];
+					notes.push({
+						type: el.getAttribute("type") ?? "",
+						text: getText(el),
+					});
 				}
 
-				// Extract all <termNote> elements
-				const notes: { type: string; text: string }[] = [];
-
-				const termNoteElements = tig.getElementsByTagName("termNote");
-				for (let n = 0; n < termNoteElements.length; n++) {
-					const noteElement = termNoteElements[n];
-					const type = noteElement.getAttribute("type") || "";
-					const text = noteElement.textContent?.trim() || "";
-					notes.push({ type, text });
+				/* plain <note> (rare, but allowed) */
+				const plainNoteEls = tig.getElementsByTagName("note");
+				for (let n = 0; n < plainNoteEls.length; n++) {
+					notes.push({ type: "", text: getText(plainNoteEls[n]) });
 				}
 
-				entryData.terms.push({
-					lang,
-					term,
-					notes,
-				});
+				entryData.terms.push({ lang, term, notes });
 			}
 		}
 
 		entries.push(entryData);
 	}
 
-	const tbData: TbData = {
-		name: title,
-		entries,
-	};
-
-	// if (id !== 0) {
-	// 	tbData.id = id;
-	// }
-
-	return tbData;
+	return { name: title, entries };
 }
-
-// function extractFromMartif(doc: Document): TbData {
-// 	const martif = doc.getElementsByTagName("martif")[0];
-
-// 	/* metadata -------------------------------------------------------------- */
-// 	// <martif> files rarely contain a title – fall back gracefully
-// 	const name =
-// 		martif.getElementsByTagName("title")[0]?.textContent?.trim() ||
-// 		"Untitled TBX File";
-
-// 	/* entries --------------------------------------------------------------- */
-// 	const body = martif
-// 		.getElementsByTagName("text")[0]
-// 		.getElementsByTagName("body")[0];
-// 	const termEntries = body.getElementsByTagName("termEntry");
-
-// 	const entries: TbData["entries"] = [];
-
-// 	for (const termEntry of Array.from(termEntries)) {
-// 		const entryTerms: TbData["entries"][number]["terms"] = [];
-
-// 		for (const langSet of Array.from(
-// 			termEntry.getElementsByTagName("langSet"),
-// 		)) {
-// 			const lang = langSet.getAttribute("xml:lang") ?? "";
-
-// 			for (const tig of Array.from(langSet.getElementsByTagName("tig"))) {
-// 				const term =
-// 					tig.getElementsByTagName("term")[0]?.textContent?.trim() ?? "";
-// 				const notes = Array.from(tig.getElementsByTagName("termNote")).map(
-// 					(n) => n.textContent?.trim() ?? "",
-// 				);
-
-// 				entryTerms.push({ lang, term, notes });
-// 			}
-// 		}
-// 		entries.push({ terms: entryTerms });
-// 	}
-
-// 	return { name, entries };
-// }
 
 export function validateTbxFile(doc: Document): boolean {
 	const root = doc.documentElement;
