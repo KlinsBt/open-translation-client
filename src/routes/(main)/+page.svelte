@@ -1,5 +1,53 @@
-<script>
+<script lang="ts">
 	import bg from "$lib/images/bg14.jpg";
+	// import { onMount } from "svelte";
+	// import { browser } from "$app/environment";
+
+	// let deeplPluginDownladLink: string | null = $state(null);
+
+	// function checkWhatBrowserUserIsUsing() {
+	// 	if (!browser) return; // prevent SSR error
+
+	// 	if (
+	// 		navigator.userAgent.indexOf("Opera") !== -1 ||
+	// 		navigator.userAgent.indexOf("OPR") !== -1
+	// 	) {
+	// 		console.log("Opera detected");
+	// 		deeplPluginDownladLink = "https://www.deepl.com/en/chrome-extension";
+	// 	} else if (navigator.userAgent.indexOf("Edg") !== -1) {
+	// 		console.log("Microsoft Edge detected");
+	// 		deeplPluginDownladLink = "https://www.deepl.com/en/edge-extension";
+	// 	} else if (
+	// 		// Check for Brave (has navigator.brave object)
+	// 		navigator.userAgent.indexOf("Chrome") !== -1 &&
+	// 		typeof (navigator as any).brave === "object"
+	// 	) {
+	// 		console.log("Brave detected");
+	// 		deeplPluginDownladLink = "https://www.deepl.com/en/chrome-extension";
+	// 	} else if (navigator.userAgent.indexOf("Chrome") !== -1) {
+	// 		console.log("Chrome detected");
+	// 		deeplPluginDownladLink = "https://www.deepl.com/en/chrome-extension";
+	// 	} else if (navigator.userAgent.indexOf("Safari") !== -1) {
+	// 		console.log("Safari detected");
+	// 		deeplPluginDownladLink = "Safari";
+	// 	} else if (navigator.userAgent.indexOf("Firefox") !== -1) {
+	// 		console.log("Firefox detected");
+	// 		deeplPluginDownladLink = "https://www.deepl.com/en/firefox-extension";
+	// 	} else if (
+	// 		navigator.userAgent.indexOf("MSIE") !== -1 ||
+	// 		(document as any).documentMode
+	// 	) {
+	// 		console.log("Internet Explorer detected");
+	// 		deeplPluginDownladLink = "https://www.deepl.com/en/edge-extension";
+	// 	} else {
+	// 		console.log("Unknown browser detected");
+	// 		deeplPluginDownladLink = "https://www.deepl.com/en/edge-extension";
+	// 	}
+	// }
+
+	// onMount(() => {
+	// 	checkWhatBrowserUserIsUsing();
+	// });
 </script>
 
 <svelte:head></svelte:head>
@@ -10,7 +58,13 @@
 			<img class="background" src={bg} alt="Background" />
 			<h1 class="title">Open Translation Client</h1>
 			<p class="description">An open source CAT-Tool for everyone.</p>
-			<a href="/app" class="cta-button">Start App</a>
+			<div class="buttons-container">
+				<a href="/app" class="cta-button">Start App</a>
+				<a
+					href="https://support.deepl.com/hc/en-us/articles/4407516019218-Get-started-DeepL-browser-extensions"
+					class="cta-button">Get DeepL Plugin</a
+				>
+			</div>
 		</div>
 	</section>
 
@@ -154,6 +208,14 @@
 		text-shadow: none;
 	}
 
+	.buttons-container {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 1rem;
+		margin: 1.5rem;
+	}
+
 	.cta-button {
 		padding: 0.8rem 3rem;
 		background-color: var(--color-theme-12);
@@ -166,8 +228,16 @@
 		transition: background-color 0.3s;
 	}
 
+	.cta-button:nth-child(2) {
+		background-color: var(--color-theme-6);
+	}
+
 	.cta-button:hover {
 		background-color: var(--color-theme-11);
+	}
+
+	.cta-button:nth-child(2):hover {
+		background-color: var(--color-theme-5);
 	}
 
 	.features-section {
