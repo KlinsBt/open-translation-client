@@ -12,6 +12,7 @@
 		showLoading,
 		translationIdSelected,
 	} from "$lib/functions/saveData/stores.svelte";
+	import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
 
 	let temporarySaveName: string = "";
 	let values: string[] = [];
@@ -19,6 +20,7 @@
 	let sourceLanguage = "";
 	let targetLanguage = "";
 	let jsonData: Record<string, unknown> | null = null;
+	let segmentMeta: number[] = [];
 
 	export function handleJsonTranslationFileUpload(event: Event): void {
 		const inputElement = event.target as HTMLInputElement;
@@ -34,7 +36,9 @@
 							string,
 							unknown
 						>;
-						values = extractValues(jsonData);
+						const result = extractValuesWithSegmentation(jsonData);
+						values = result.values;
+						segmentMeta = result.meta;
 						console.log(values);
 					}
 				} catch (error) {
@@ -48,21 +52,34 @@
 		}
 	}
 
-	function extractValues(jsonData: Record<string, any>): string[] {
+	function extractValuesWithSegmentation(jsonData: Record<string, any>): {
+		values: string[];
+		meta: number[];
+	} {
 		const values: string[] = [];
+		const meta: number[] = [];
 
 		function traverse(obj: any): void {
 			for (const key in obj) {
 				if (typeof obj[key] === "object" && obj[key] !== null) {
 					traverse(obj[key]);
 				} else {
-					values.push(String(obj[key]));
+					const text = String(obj[key]);
+					const pieces = splitTextWithPreferences(text).filter(
+						(p) => p.text.trim().length > 0,
+					);
+					meta.push(pieces.length > 0 ? pieces.length : 1);
+					if (pieces.length === 0) {
+						values.push(text);
+					} else {
+						pieces.forEach((p) => values.push(`${p.text}${p.separator ?? ""}`));
+					}
 				}
 			}
 		}
 
 		traverse(jsonData);
-		return values;
+		return { values, meta };
 	}
 
 	function handleDragOver(event: DragEvent): void {
@@ -91,7 +108,9 @@
 							string,
 							unknown
 						>;
-						values = extractValues(jsonData);
+						const result = extractValuesWithSegmentation(jsonData);
+						values = result.values;
+						segmentMeta = result.meta;
 						console.log(values);
 						showLoading.set(false);
 					}
@@ -128,7 +147,10 @@
 			timestamp,
 			values,
 			"json",
-			jsonData as Record<string, any>,
+			{
+				data: jsonData as unknown as string | Blob,
+				segMeta: segmentMeta as unknown as string | Blob,
+			},
 		);
 		showLoading.set(false);
 	}

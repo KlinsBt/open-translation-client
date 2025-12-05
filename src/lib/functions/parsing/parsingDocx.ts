@@ -1,3 +1,9 @@
+import {
+	splitTextWithPreferences,
+	type SplitPiece,
+} from "./splitWithPreferences";
+import { getActiveTokens } from "./parsingPreferences";
+
 export interface DocxSegmentFragment {
 	node: Element;
 	start: number;
@@ -109,7 +115,11 @@ export function segmentDocxXml(documentXml: string): DocxSegmentationResult {
 		if (paragraphText.trim().length === 0) continue;
 
 		const nodeRanges = buildNodeRanges(textNodes);
-		const splitSegments = splitParagraphIntoSegments(paragraphText);
+		const tokens = getActiveTokens();
+		const splitSegments =
+			tokens.length > 0
+				? (splitTextWithPreferences(paragraphText) as SplitPiece[])
+				: splitParagraphIntoSegments(paragraphText);
 
 		if (splitSegments.length === 0) continue;
 
@@ -149,10 +159,15 @@ export function applyTranslationsToDocxXml(
 	const serializer = new XMLSerializer();
 	const nodePieces = new Map<Element, string[]>();
 
+	const ensureWithSeparator = (text: string, separator?: string) => {
+		if (!separator) return text;
+		return text.endsWith(separator) ? text : `${text}${separator}`;
+	};
+
 	for (let i = 0; i < segments.length; i++) {
 		const segment = segments[i];
 		const translatedText = translatedSegments[i] ?? segment.text;
-		const replacement = `${translatedText}${segment.separator ?? ""}`;
+		const replacement = ensureWithSeparator(translatedText, segment.separator);
 		const totalSpan =
 			segment.fragments.reduce(
 				(sum, fragment) => sum + (fragment.end - fragment.start),

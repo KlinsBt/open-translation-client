@@ -1,3 +1,7 @@
+
+import { splitTextWithPreferences, type SplitPiece } from "./splitWithPreferences";
+import { getActiveTokens } from "./parsingPreferences";
+
 export interface SharedStringFragment {
 	node: Element;
 	start: number;
@@ -6,6 +10,7 @@ export interface SharedStringFragment {
 
 export interface SharedStringSegment {
 	text: string;
+	separator: string;
 	fragments: SharedStringFragment[];
 }
 
@@ -28,6 +33,7 @@ export interface InlineStringFragment {
 
 export interface InlineStringSegment {
 	text: string;
+	separator: string;
 	sheetPath: string;
 	fragments: InlineStringFragment[];
 }
@@ -75,6 +81,7 @@ export function segmentSharedStringsXml(
 	const xmlDoc = parser.parseFromString(sharedStringsXml, "application/xml");
 	const siElements = Array.from(xmlDoc.getElementsByTagName("si"));
 	const segments: SharedStringSegment[] = [];
+	const tokens = getActiveTokens();
 
 	for (const si of siElements) {
 		const textNodes = Array.from(si.getElementsByTagName("t"));
@@ -85,16 +92,42 @@ export function segmentSharedStringsXml(
 			.join("");
 
 		const ranges = buildNodeRanges(textNodes);
-		const fragments = ranges.map((range) => ({
-			node: range.node,
-			start: range.start,
-			end: range.end,
-		}));
+		const pieces =
+			tokens.length > 0
+				? (splitTextWithPreferences(combinedText) as SplitPiece[])
+				: [
+						{
+							text: combinedText,
+							start: 0,
+							end: combinedText.length,
+							separator: "",
+						},
+					];
 
-		segments.push({
-			text: combinedText,
-			fragments,
-		});
+		for (const piece of pieces) {
+			const fragments = ranges
+				.map((range) => {
+					const overlapStart = Math.max(range.start, piece.start);
+					const overlapEnd = Math.min(range.end, piece.end);
+					if (overlapStart < overlapEnd) {
+						return {
+							node: range.node,
+							start: overlapStart - range.start,
+							end: overlapEnd - range.start,
+						};
+					}
+					return null;
+				})
+				.filter(Boolean) as SharedStringFragment[];
+
+			if (fragments.length === 0) continue;
+
+			segments.push({
+				text: piece.text,
+				separator: piece.separator,
+				fragments,
+			});
+		}
 	}
 
 	return { xmlDoc, segments };
@@ -109,6 +142,7 @@ function segmentInlineStringsInSheet(
 	const cellElements = Array.from(xmlDoc.getElementsByTagName("c"));
 	const inlineSegments: InlineStringSegment[] = [];
 	const valueSegments: ValueCellSegment[] = [];
+	const tokens = getActiveTokens();
 
 	for (const cell of cellElements) {
 		const type = cell.getAttribute("t");
@@ -121,13 +155,43 @@ function segmentInlineStringsInSheet(
 			if (!combinedText) continue;
 
 			const ranges = buildNodeRanges(tNodes);
-			const fragments = ranges.map((range) => ({
-				node: range.node,
-				start: range.start,
-				end: range.end,
-			}));
+			const pieces =
+				tokens.length > 0
+					? (splitTextWithPreferences(combinedText) as SplitPiece[])
+					: [
+							{
+								text: combinedText,
+								start: 0,
+								end: combinedText.length,
+								separator: "",
+							},
+						];
 
-			inlineSegments.push({ text: combinedText, sheetPath, fragments });
+			for (const piece of pieces) {
+				const fragments = ranges
+					.map((range) => {
+						const overlapStart = Math.max(range.start, piece.start);
+						const overlapEnd = Math.min(range.end, piece.end);
+						if (overlapStart < overlapEnd) {
+							return {
+								node: range.node,
+								start: overlapStart - range.start,
+								end: overlapEnd - range.start,
+							};
+						}
+						return null;
+					})
+					.filter(Boolean) as InlineStringFragment[];
+
+				if (fragments.length === 0) continue;
+
+				inlineSegments.push({
+					text: piece.text,
+					separator: piece.separator,
+					sheetPath,
+					fragments,
+				});
+			}
 		}
 
 		// Plain string cells: t="str" with <v>text</v>
@@ -136,10 +200,32 @@ function segmentInlineStringsInSheet(
 			if (!vNode) continue;
 			const text = vNode.textContent || "";
 			if (!text) continue;
-			const fragments: InlineStringFragment[] = [
-				{ node: vNode, start: 0, end: text.length },
-			];
-			inlineSegments.push({ text, sheetPath, fragments });
+			const pieces =
+				tokens.length > 0
+					? (splitTextWithPreferences(text) as SplitPiece[])
+					: [
+							{
+								text,
+								start: 0,
+								end: text.length,
+								separator: "",
+							},
+						];
+			for (const piece of pieces) {
+				const fragments: InlineStringFragment[] = [
+					{
+						node: vNode,
+						start: Math.max(0, piece.start),
+						end: Math.min(text.length, piece.end),
+					},
+				];
+				inlineSegments.push({
+					text: piece.text,
+					separator: piece.separator,
+					sheetPath,
+					fragments,
+				});
+			}
 		}
 
 		// Other cells with values (numeric, formula results, booleans, dates, etc.)
@@ -177,9 +263,11 @@ export function segmentWorkbookStrings(
 	);
 
 	const allSegments: string[] = [
-		...shared.segments.map((segment) => segment.text),
+		...shared.segments.map((segment) => `${segment.text}${segment.separator ?? ""}`),
 		...sheets.flatMap((sheet) => [
-			...sheet.inlineSegments.map((segment) => segment.text),
+			...sheet.inlineSegments.map(
+				(segment) => `${segment.text}${segment.separator ?? ""}`,
+			),
 			...sheet.valueSegments.map((segment) => segment.text),
 		]),
 	];
@@ -197,9 +285,15 @@ export function applyTranslationsToSharedStringsXml(
 	const serializer = new XMLSerializer();
 	const nodePieces = new Map<Element, string[]>();
 
+	const ensureWithSeparator = (text: string, separator?: string) => {
+		if (!separator) return text;
+		return text.endsWith(separator) ? text : `${text}${separator}`;
+	};
+
 	for (let i = 0; i < segments.length; i++) {
 		const segment = segments[i];
 		const translatedText = translatedSegments[i] ?? segment.text;
+		const replacement = ensureWithSeparator(translatedText, segment.separator);
 		const fragments = segment.fragments;
 		const totalSpan =
 			fragments.reduce(
@@ -213,10 +307,10 @@ export function applyTranslationsToSharedStringsXml(
 			const fragmentLength = fragment.end - fragment.start;
 			const isLast = index === fragments.length - 1;
 			const takeLength = isLast
-				? translatedText.length - consumed
-				: Math.round((fragmentLength / totalSpan) * translatedText.length);
+				? replacement.length - consumed
+				: Math.round((fragmentLength / totalSpan) * replacement.length);
 			const nextConsumed = Math.max(consumed + takeLength, consumed);
-			const piece = translatedText.slice(consumed, nextConsumed);
+			const piece = replacement.slice(consumed, nextConsumed);
 			consumed = nextConsumed;
 
 			const existing = nodePieces.get(fragment.node) || [];
@@ -249,10 +343,15 @@ function applyTranslationsToInlineSegments(
 	const serializer = new XMLSerializer();
 	const nodePieces = new Map<Element, string[]>();
 	let cursor = startIndex;
+	const ensureWithSeparator = (text: string, separator?: string) => {
+		if (!separator) return text;
+		return text.endsWith(separator) ? text : `${text}${separator}`;
+	};
 
 	for (let i = 0; i < inlineSegments.length; i++) {
 		const segment = inlineSegments[i];
 		const translatedText = translatedSegments[cursor] ?? segment.text;
+		const replacement = ensureWithSeparator(translatedText, segment.separator);
 		cursor++;
 
 		const fragments = segment.fragments;
@@ -268,10 +367,10 @@ function applyTranslationsToInlineSegments(
 			const fragmentLength = fragment.end - fragment.start;
 			const isLast = index === fragments.length - 1;
 			const takeLength = isLast
-				? translatedText.length - consumed
-				: Math.round((fragmentLength / totalSpan) * translatedText.length);
+				? replacement.length - consumed
+				: Math.round((fragmentLength / totalSpan) * replacement.length);
 			const nextConsumed = Math.max(consumed + takeLength, consumed);
-			const piece = translatedText.slice(consumed, nextConsumed);
+			const piece = replacement.slice(consumed, nextConsumed);
 			consumed = nextConsumed;
 
 			const existing = nodePieces.get(fragment.node) || [];

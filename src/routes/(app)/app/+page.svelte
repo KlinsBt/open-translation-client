@@ -51,6 +51,8 @@
 		/* padding: 0rem 2rem; */
 		min-height: 100vh;
 		min-height: 75vh;
+		margin: 0;
+		padding: 0;
 	}
 
 	.app-container {

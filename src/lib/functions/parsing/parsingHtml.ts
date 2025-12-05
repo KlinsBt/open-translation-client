@@ -1,3 +1,9 @@
+import {
+	splitTextWithPreferences,
+	type SplitPiece,
+} from "./splitWithPreferences";
+import { getActiveTokens } from "./parsingPreferences";
+
 export interface HtmlTextSegment {
 	node: Text;
 	text: string;
@@ -34,7 +40,14 @@ function splitTextWithSeparators(text: string): SplitSegment[] {
 
 		for (let i = cursor; i < length; i++) {
 			const char = text[i];
-			if (char === "." || char === "?" || char === "!" || char === "。" || char === "！" || char === "？") {
+			if (
+				char === "." ||
+				char === "?" ||
+				char === "!" ||
+				char === "。" ||
+				char === "！" ||
+				char === "？"
+			) {
 				boundary = i + 1;
 				break;
 			}
@@ -62,7 +75,10 @@ function splitTextWithSeparators(text: string): SplitSegment[] {
 
 	// Fallback: if nothing matched punctuation, split by whitespace
 	if (segments.length === 0) {
-		const tokens = text.trim().split(/\s+/).filter((token) => token.length > 0);
+		const tokens = text
+			.trim()
+			.split(/\s+/)
+			.filter((token) => token.length > 0);
 		for (let i = 0; i < tokens.length; i++) {
 			const sep = i === tokens.length - 1 ? "" : " ";
 			segments.push({ text: tokens[i], separator: sep });
@@ -95,13 +111,19 @@ export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
 	const textSegments: HtmlTextSegment[] = [];
 	const attributeSegments: HtmlAttributeSegment[] = [];
 	const attributesToCheck = ["placeholder", "value", "alt", "title"];
+	const tokens = getActiveTokens();
 
 	function walk(node: Node) {
 		if (node.nodeType === Node.TEXT_NODE) {
 			if (isInsideSkippedTag(node)) return;
 			const text = node.textContent ?? "";
-			const pieces = splitTextWithSeparators(text);
+			if (!text.trim()) return;
+			const pieces =
+				tokens.length > 0
+					? (splitTextWithPreferences(text) as SplitPiece[])
+					: splitTextWithSeparators(text);
 			for (const piece of pieces) {
+				if (!piece.text.trim()) continue;
 				textSegments.push({
 					node: node as Text,
 					text: piece.text,
@@ -120,8 +142,13 @@ export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
 			for (const attr of attributesToCheck) {
 				const attrValue = el.getAttribute(attr);
 				if (!attrValue) continue;
-				const pieces = splitTextWithSeparators(attrValue);
+				if (!attrValue.trim()) continue;
+				const pieces =
+					tokens.length > 0
+						? (splitTextWithPreferences(attrValue) as SplitPiece[])
+						: splitTextWithSeparators(attrValue);
 				for (const piece of pieces) {
+					if (!piece.text.trim()) continue;
 					attributeSegments.push({
 						element: el,
 						attribute: attr,
@@ -149,8 +176,13 @@ export function applyTranslationsToHtml(
 	htmlContent: string,
 	translatedSegments: string[],
 ): string {
-	const { doc, textSegments, attributeSegments } = segmentHtmlContent(htmlContent);
+	const { doc, textSegments, attributeSegments } =
+		segmentHtmlContent(htmlContent);
 	const serializer = new XMLSerializer();
+	const ensureWithSeparator = (text: string, separator?: string) => {
+		if (!separator) return text;
+		return text.endsWith(separator) ? text : `${text}${separator}`;
+	};
 
 	// Update text nodes
 	const nodePieces = new Map<Text, string[]>();
@@ -159,7 +191,7 @@ export function applyTranslationsToHtml(
 		const translated = translatedSegments[cursor] ?? segment.text;
 		cursor++;
 		const arr = nodePieces.get(segment.node) || [];
-		arr.push(`${translated}${segment.separator}`);
+		arr.push(ensureWithSeparator(translated, segment.separator));
 		nodePieces.set(segment.node, arr);
 	}
 
@@ -172,9 +204,10 @@ export function applyTranslationsToHtml(
 	for (const segment of attributeSegments) {
 		const translated = translatedSegments[cursor] ?? segment.text;
 		cursor++;
-		const attrMap = attrPieces.get(segment.element) || new Map<string, string[]>();
+		const attrMap =
+			attrPieces.get(segment.element) || new Map<string, string[]>();
 		const arr = attrMap.get(segment.attribute) || [];
-		arr.push(`${translated}${segment.separator}`);
+		arr.push(ensureWithSeparator(translated, segment.separator));
 		attrMap.set(segment.attribute, arr);
 		attrPieces.set(segment.element, attrMap);
 	}

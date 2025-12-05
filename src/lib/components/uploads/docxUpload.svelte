@@ -94,7 +94,9 @@
 	// Parse text strings from the XML string generated from a .docx file
 	function parseTextStringsFromXML(xmlDocument: string): string[] {
 		const { segments } = segmentDocxXml(xmlDocument);
-		const parsedSegments = segments.map((segment) => segment.text);
+		const parsedSegments = segments.map(
+			(segment) => `${segment.text}${segment.separator ?? ""}`,
+		);
 		console.log("Extracted text strings:", parsedSegments);
 		return parsedSegments;
 	}

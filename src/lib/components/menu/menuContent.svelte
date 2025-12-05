@@ -28,12 +28,19 @@
 	import { getProjectsProgressStatistics } from "$lib/functions/statistics";
 	import Modal from "../modal.svelte";
 	import { goto } from "$app/navigation";
+	import {
+		loadParsingPreferences,
+		type ParsingPreference,
+	} from "$lib/functions/parsing/parsingPreferences";
+	import ParsingPreferencesModal from "./components/parsingPreferencesModal.svelte";
 
 	let newProject: number = $state(0);
 	let sortByName: boolean = $state(false); // default sort by date
 	let ascendingOrder: boolean = $state(true); // default ascending order
 
 	let showUploadModal: boolean = $state(false);
+	let showParsingModal: boolean = $state(false);
+	let parsingPreferences: ParsingPreference[] = $state([]);
 
 	onMount(async () => {
 		if ($userData.length === 0) {
@@ -43,6 +50,7 @@
 		await loadTranslationsUserDataFromIndexedDB();
 		userDataStatistics.set(getProjectsProgressStatistics($userData));
 		showLoading.set(false);
+		parsingPreferences = loadParsingPreferences();
 	});
 
 	function toggleSortByName() {
@@ -90,15 +98,22 @@
 	<Modal title="Import Save File" content={upload} />
 </div>
 
+<ParsingPreferencesModal bind:show={showParsingModal} bind:parsingPreferences />
+
 {#if newProject === 0}
 	<div class="dashboard">
-		<div class="order-bar">
-			<!-- <span>Sort by:</span> -->
+		<div class="order-bar" style="margin: 0 0 20px 0;">
 			<button class:active={sortByName} onclick={toggleSortByName}>
 				Name {sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
 			</button>
 			<button class:active={!sortByName} onclick={toggleSortByDate}>
 				Date {!sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
+			</button>
+		</div>
+		<div class="order-bar">
+			<!-- <span>Sort by:</span> -->
+			<button class="tm-btn" onclick={() => (showParsingModal = true)}>
+				Parsing preferences
 			</button>
 			<button
 				class="tm-btn"
@@ -182,7 +197,7 @@
 		display: grid;
 		align-content: center;
 		align-items: center;
-		padding: 50px 0px 50px 0px;
+		padding: 20px 0px 50px 0px;
 		max-width: 1500px;
 	}
 

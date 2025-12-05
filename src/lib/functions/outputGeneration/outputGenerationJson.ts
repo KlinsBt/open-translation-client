@@ -26,13 +26,13 @@ async function generateJsonFileDownload(jsonData: JSON, name: string) {
 export async function generateJsonTranslation(translation: UserData) {
 	console.log("userData: ", translation);
 	const name: string = translation.translationData.name || "translation_file";
-	const typeRefData: JSON = JSON.parse(
-		JSON.stringify(translation.translationData.typeRef),
-	);
-	console.log("typeRefData", typeRefData);
+	const typeRef: any = translation.translationData.typeRef;
+	const sourceData = (typeRef && typeRef.data) || translation.translationData.typeRef;
+	const segMeta: number[] = (typeRef && typeRef.segMeta) || [];
 	let newJsonObject: Object = reconstructJsonFromValues(
-		typeRefData,
+		sourceData as Record<string, any>,
 		translation.translationData.seg2,
+		segMeta,
 	);
 	await generateJsonFileDownload(
 		JSON.parse(JSON.stringify(newJsonObject)),
@@ -43,15 +43,22 @@ export async function generateJsonTranslation(translation: UserData) {
 function reconstructJsonFromValues(
 	jsonData: Record<string, any>,
 	values: string[],
+	segMeta: number[] = [],
 ): Record<string, any> {
 	let valueIndex = 0;
+	let metaIndex = 0;
 
 	function traverse(obj: any): void {
 		for (const key in obj) {
 			if (typeof obj[key] === "object" && obj[key] !== null) {
 				traverse(obj[key]);
 			} else {
-				obj[key] = values[valueIndex++];
+				const takeCount =
+					segMeta.length > metaIndex ? segMeta[metaIndex] : 1;
+				const parts = values.slice(valueIndex, valueIndex + takeCount);
+				obj[key] = parts.join("");
+				valueIndex += takeCount;
+				metaIndex++;
 			}
 		}
 	}
