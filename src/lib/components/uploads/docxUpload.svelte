@@ -11,6 +11,7 @@
 
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
 	import JSZip from "jszip";
+	import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
 
 	let wordFile: File | null = null;
 	let temporarySaveName: string = "";
@@ -92,18 +93,10 @@
 
 	// Parse text strings from the XML string generated from a .docx file
 	function parseTextStringsFromXML(xmlDocument: string): string[] {
-		const parser = new DOMParser();
-		const xmlDoc = parser.parseFromString(xmlDocument, "application/xml");
-
-		const textNodes = xmlDoc.getElementsByTagName("w:t");
-		let stringArray = [];
-
-		for (let i = 0; i < textNodes.length; i++) {
-			stringArray.push(textNodes[i].textContent || "");
-		}
-
-		console.log("Extracted text strings:", stringArray);
-		return stringArray;
+		const { segments } = segmentDocxXml(xmlDocument);
+		const parsedSegments = segments.map((segment) => segment.text);
+		console.log("Extracted text strings:", parsedSegments);
+		return parsedSegments;
 	}
 
 	function handleDragOver(event: DragEvent): void {

@@ -1,4 +1,5 @@
 import type { UserData } from "$lib/types/types";
+import { applyTranslationsToDocxXml } from "$lib/functions/parsing/parsingDocx";
 import JSZip from "jszip";
 
 export async function createDocxFromModifiedXmlText(translation: UserData) {
@@ -58,15 +59,6 @@ export async function createDocxFromModifiedXmlText(translation: UserData) {
 
 // Replace text strings in the XML string with the modified ones
 function replaceTextStrings(documentXml: any, textArray: string[]) {
-	const parser = new DOMParser();
-	const xmlDoc = parser.parseFromString(documentXml, "application/xml");
-
-	const textNodes = xmlDoc.getElementsByTagName("w:t");
-
-	for (let i = 0; i < textNodes.length && i < textArray.length; i++) {
-		textNodes[i].textContent = textArray[i];
-	}
-
-	const serializer = new XMLSerializer();
-	return serializer.serializeToString(xmlDoc); // Return the modified XML string
+	if (typeof documentXml !== "string") return documentXml;
+	return applyTranslationsToDocxXml(documentXml, textArray);
 }

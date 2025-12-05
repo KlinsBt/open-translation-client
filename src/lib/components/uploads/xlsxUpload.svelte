@@ -8,6 +8,7 @@
 	import { LANGUAGES } from "$lib/components/data/languages";
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import JSZip from "jszip";
+	import { segmentWorkbookStrings } from "$lib/functions/parsing/parsingXlsx";
 
 	// let excelFile: File | null = null;
 
@@ -16,7 +17,7 @@
 	let isDragging = false;
 	let sourceLanguage = "";
 	let targetLanguage = "";
-	let extractedXmlContent: { [key: string]: string } = {};
+	let extractedXmlContent: { [key: string]: string | Blob } = {};
 
 	// Handle file upload and extract the XML structure
 	async function handleFileUpload(event: Event) {
@@ -40,24 +41,19 @@
 	async function extractXmlStructure(arrayBuffer: ArrayBuffer): Promise<void> {
 		const zip = new JSZip();
 		const content = await zip.loadAsync(arrayBuffer);
-		const sheetData: string[] = [];
 
-		// Iterate through all files and store relevant XML files in extractedXmlContent
+		// Iterate through all files and store relevant XML or media files in extractedXmlContent
 		for (const filePath in content.files) {
-			{
-				const fileContent = await content.files[filePath].async("string");
-				extractedXmlContent[filePath] = fileContent;
+			const zipEntry = content.files[filePath];
 
-				// If it's a sheet file, parse it for text strings
-				if (filePath.startsWith("xl/worksheets/sheet")) {
-					const parsedStrings = parseTextStringsFromSheet(
-						fileContent,
-						extractedStrings,
-					);
-					sheetData.push(...parsedStrings); // Aggregate strings from each sheet
-					console.log(`Parsed strings from ${filePath}:`, parsedStrings);
-				}
+			if (filePath.startsWith("xl/media")) {
+				const fileContent = await zipEntry.async("blob");
+				extractedXmlContent[filePath] = fileContent;
+				continue;
 			}
+
+			const fileContent = await zipEntry.async("string");
+			extractedXmlContent[filePath] = fileContent;
 		}
 
 		// Log the presence of critical relationship files
@@ -79,117 +75,10 @@
 			console.warn("xl/_rels/workbook.xml.rels file not found!");
 		}
 
-		// Parse shared strings if available
-		const sharedStringsXml = extractedXmlContent["xl/sharedStrings.xml"];
-		if (sharedStringsXml) {
-			extractedStrings = parseSharedStrings(sharedStringsXml);
-			console.log("Shared Strings:", extractedStrings);
-		} else {
-			console.warn("xl/sharedStrings.xml file not found!");
-		}
-
-		// Final output with all extracted strings
-		console.log("All extracted strings from sheets:", sheetData);
-	}
-
-	// Parse shared strings from sharedStrings.xml
-	function parseSharedStrings(sharedStringsXml: string): string[] {
-		const parser = new DOMParser();
-		const xmlDoc = parser.parseFromString(sharedStringsXml, "application/xml");
-		const siElements = xmlDoc.getElementsByTagName("si");
-		const strings: string[] = [];
-
-		for (let i = 0; i < siElements.length; i++) {
-			const si = siElements[i];
-			// Handle rich text by concatenating all <t> elements within <si>
-			let text = "";
-			const tElements = si.getElementsByTagName("t");
-			for (let j = 0; j < tElements.length; j++) {
-				text += tElements[j].textContent || "";
-			}
-			strings.push(text);
-		}
-
-		return strings;
-	}
-
-	function parseTextStringsFromSheet(
-		sheetXml: string,
-		sharedStrings: string[],
-	): string[] {
-		const parser = new DOMParser();
-		const xmlDoc = parser.parseFromString(sheetXml, "application/xml");
-
-		const rowElements = xmlDoc.getElementsByTagName("row");
-		const stringArray: string[] = [];
-
-		for (let i = 0; i < rowElements.length; i++) {
-			const row = rowElements[i];
-			const cellElements = row.getElementsByTagName("c");
-
-			for (let j = 0; j < cellElements.length; j++) {
-				const cell = cellElements[j];
-				const type = cell.getAttribute("t");
-				const valueElement = cell.getElementsByTagName("v")[0];
-				const value = valueElement ? valueElement.textContent || "" : "";
-
-				if (type === "s") {
-					// Shared string - look up in sharedStrings array
-					const index = parseInt(value, 10);
-					const sharedString = sharedStrings[index] || "";
-					stringArray.push(sharedString);
-				} else if (type === "n" || !type) {
-					// Numeric or direct value
-					stringArray.push(value);
-				} else {
-					// Handle other types as needed (booleans, dates, etc.)
-					stringArray.push(value);
-				}
-			}
-		}
-
-		console.log("Parsed strings from sheet:", stringArray);
-		return stringArray;
-	}
-
-	// Parse text strings from the XML string generated from a .xlsx file
-	function parseTextStringsFromXML(
-		xmlDocument: string,
-		sharedStrings: string[],
-	): string[] {
-		const parser = new DOMParser();
-		const xmlDoc = parser.parseFromString(xmlDocument, "application/xml");
-
-		const rowElements = xmlDoc.getElementsByTagName("row");
-		let stringArray: string[] = [];
-
-		for (let i = 0; i < rowElements.length; i++) {
-			const row = rowElements[i];
-			const cElements = row.getElementsByTagName("c"); // 'c' elements represent cells
-
-			for (let j = 0; j < cElements.length; j++) {
-				const c = cElements[j];
-				const t = c.getAttribute("t"); // type attribute
-				const vElement = c.getElementsByTagName("v")[0];
-				const value = vElement ? vElement.textContent || "" : "";
-
-				if (t === "s") {
-					// Shared string
-					const index = parseInt(value, 10);
-					const sharedString = sharedStrings[index] || "";
-					if (sharedString) {
-						// Only add if it's a non-empty string
-						stringArray.push(sharedString);
-					}
-				} else if (value) {
-					// Other types (e.g., numbers, booleans) - only add if value is non-empty
-					stringArray.push(value);
-				}
-			}
-		}
-
-		console.log("Extracted text strings:", stringArray);
-		return stringArray;
+		// Build combined segments from shared strings + inline strings across all sheets
+		const { allSegments } = segmentWorkbookStrings(extractedXmlContent);
+		extractedStrings = allSegments;
+		console.log("All extracted strings:", extractedStrings);
 	}
 
 	function handleDragOver(event: DragEvent): void {

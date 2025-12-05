@@ -1,12 +1,13 @@
 import type { UserData } from "$lib/types/types";
+import { applyTranslationsToWorkbook } from "$lib/functions/parsing/parsingXlsx";
 import JSZip from "jszip";
 
 export async function createXlsxFromModifiedXmlText(translation: UserData) {
 	let xmlContentMap: any = translation.translationData.typeRef;
 
-	// Replaces the contents of sharedStrings.xml with new translations
-	xmlContentMap["xl/sharedStrings.xml"] = replaceSharedStrings(
-		xmlContentMap["xl/sharedStrings.xml"],
+	// Apply translations to shared strings and inline strings across all sheets
+	xmlContentMap = applyTranslationsToWorkbook(
+		xmlContentMap,
 		translation.translationData.seg2,
 	);
 
@@ -25,14 +26,7 @@ export async function createXlsxFromModifiedXmlText(translation: UserData) {
 	// Add all the XML files to the ZIP
 	for (const filePath in xmlContentMap) {
 		const content = xmlContentMap[filePath];
-		if (typeof content === "string") {
-			zip.file(filePath, content);
-		} else {
-			console.error(
-				`Invalid content type for file ${filePath}:`,
-				typeof content,
-			);
-		}
+		zip.file(filePath, content as any);
 	}
 
 	// Generates the updated XLSX as a Blob
@@ -45,26 +39,4 @@ export async function createXlsxFromModifiedXmlText(translation: UserData) {
 	document.body.appendChild(link);
 	link.click();
 	document.body.removeChild(link);
-}
-
-// Replaces contents in sharedStrings.xml with the new translations
-function replaceSharedStrings(
-	sharedStringsXml: string,
-	textArray: string[],
-): string {
-	console.log("Before modification:", sharedStringsXml);
-	const parser = new DOMParser();
-	const xmlDoc = parser.parseFromString(sharedStringsXml, "application/xml");
-
-	const siElements = xmlDoc.getElementsByTagName("si");
-
-	for (let i = 0; i < siElements.length && i < textArray.length; i++) {
-		const tElement = siElements[i].getElementsByTagName("t")[0];
-		if (tElement) {
-			tElement.textContent = textArray[i];
-		}
-	}
-
-	const serializer = new XMLSerializer();
-	return serializer.serializeToString(xmlDoc); // Return the modified XML string
 }
