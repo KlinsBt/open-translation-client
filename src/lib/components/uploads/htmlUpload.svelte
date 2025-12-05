@@ -8,6 +8,7 @@
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 
 	import { createHtmlFromModifiedText } from "$lib/functions/outputGeneration/outputGenerationHtml";
+	import { segmentHtmlContent } from "$lib/functions/parsing/parsingHtml";
 	import {
 		userData,
 		translationIdSelected,
@@ -28,39 +29,10 @@
 		if (input.files && input.files[0]) {
 			htmlFile = input.files[0];
 			originalHtmlContent = await htmlFile.text();
-			extractedText = extractTextFromHtml(originalHtmlContent);
+			const { allSegments } = segmentHtmlContent(originalHtmlContent);
+			extractedText = allSegments;
 			console.log("Extracted Text:", extractedText);
 		}
-	}
-
-	// Extract text nodes and attribute values from the HTML content
-	function extractTextFromHtml(htmlContent: string): string[] {
-		const parser = new DOMParser();
-		const doc = parser.parseFromString(htmlContent, "text/html");
-		const textArray: string[] = [];
-
-		// Recursive function to extract text content and relevant attributes
-		function extractTextNodes(element: Node) {
-			if (element.nodeType === Node.TEXT_NODE) {
-				const text = element.textContent?.trim();
-				if (text) {
-					textArray.push(text);
-				}
-			} else if (element.nodeType === Node.ELEMENT_NODE) {
-				const el = element as HTMLElement;
-				const attributesToCheck = ["placeholder", "value", "alt", "title"];
-				attributesToCheck.forEach((attr) => {
-					const attrValue = el.getAttribute(attr);
-					if (attrValue && attrValue.trim()) {
-						textArray.push(attrValue.trim());
-					}
-				});
-				element.childNodes.forEach((child) => extractTextNodes(child));
-			}
-		}
-
-		extractTextNodes(doc.body);
-		return textArray;
 	}
 
 	function handleDragOver(event: DragEvent): void {
@@ -84,7 +56,8 @@
 				// Read the HTML file content
 				const fileContent = await file.text();
 				originalHtmlContent = fileContent;
-				extractedText = extractTextFromHtml(originalHtmlContent);
+				const { allSegments } = segmentHtmlContent(originalHtmlContent);
+				extractedText = allSegments;
 				console.log("Extracted Text:", extractedText);
 			} catch (error) {
 				console.error("Error reading the HTML file", error);
