@@ -50,6 +50,7 @@
 	let tmActive: boolean = $derived(
 		$singleUserData.translationData.tm?.active ?? false,
 	);
+	let isSelected: boolean = $derived($selectedSegmentId === id);
 
 	function toggleLockSegment() {
 		if (checked) {
@@ -230,6 +231,7 @@ function getLanguageCode(lang?: string): string {
 	lang={targetLang}
 	data-segment-id={id}
 	tabindex="0"
+	class:selected={isSelected}
 	onclick={() => selectedSegmentId.set(id)}
 	onfocus={() => selectedSegmentId.set(id)}
 >
@@ -279,7 +281,7 @@ function getLanguageCode(lang?: string): string {
 	</div>
 
 	{#if checked}
-		<p class="field left">
+		<p class="field left target-field">
 			{textSegment2}
 		</p>
 	{:else}
@@ -291,6 +293,7 @@ function getLanguageCode(lang?: string): string {
 			}}
 			onchange={updateSegmentText}
 			class="field right"
+			class:target-field={true}
 			style="
 				direction: {rightToLeftTargetLang ? 'rtl' : 'ltr'}; 
 				"
@@ -321,6 +324,15 @@ function getLanguageCode(lang?: string): string {
 	.segment > textarea:focus {
 		outline: none;
 		border: 2px solid var(--color-theme-3);
+	}
+
+	.target-field {
+		border: 2px solid #bee5f6;
+	}
+
+	.segment.selected .target-field {
+		border: 2px solid var(--color-theme-3);
+		box-shadow: 0 0 0 2px var(--color-theme-1);
 	}
 
 	.field {
