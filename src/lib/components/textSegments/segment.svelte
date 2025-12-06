@@ -107,6 +107,12 @@
 	// 	seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	// }
 
+	function handleInput(event: Event) {
+		const value = (event.target as HTMLTextAreaElement).value;
+		textSegment2 = value;
+		updateSegmentText();
+	}
+
 	function useAutoHeight(node: HTMLTextAreaElement) {
 		function adjustHeight() {
 			// Reset the height so the scrollHeight can be recalculated properly
@@ -291,7 +297,7 @@ function getLanguageCode(lang?: string): string {
 			onfocus={async () => {
 				checkIfElligibleForTmOrTbSearch(textSegment1);
 			}}
-			onchange={updateSegmentText}
+			oninput={handleInput}
 			class="field right"
 			class:target-field={true}
 			style="
