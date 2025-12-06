@@ -165,8 +165,12 @@ export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
 	walk(doc.body);
 
 	const allSegments: string[] = [
-		...textSegments.map((segment) => segment.text),
-		...attributeSegments.map((segment) => segment.text),
+		...textSegments.map(
+			(segment) => `${segment.text}${segment.separator ?? ""}`,
+		),
+		...attributeSegments.map(
+			(segment) => `${segment.text}${segment.separator ?? ""}`,
+		),
 	];
 
 	return { doc, textSegments, attributeSegments, allSegments };

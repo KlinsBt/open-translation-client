@@ -33,12 +33,14 @@
 		type ParsingPreference,
 	} from "$lib/functions/parsing/parsingPreferences";
 	import ParsingPreferencesModal from "./components/parsingPreferencesModal.svelte";
+	import UniversalUpload from "$lib/components/uploads/universalUpload.svelte";
 
 	let newProject: number = $state(0);
 	let sortByName: boolean = $state(false); // default sort by date
 	let ascendingOrder: boolean = $state(true); // default ascending order
 
 	let showUploadModal: boolean = $state(false);
+	let showNewProjectModal: boolean = $state(false);
 	let showParsingModal: boolean = $state(false);
 	let parsingPreferences: ParsingPreference[] = $state([]);
 
@@ -99,6 +101,7 @@
 </div>
 
 <ParsingPreferencesModal bind:show={showParsingModal} bind:parsingPreferences />
+<UniversalUpload bind:show={showNewProjectModal} />
 
 {#if newProject === 0}
 	<div class="dashboard">
@@ -145,7 +148,7 @@
 				<div>
 					<button
 						onclick={() => {
-							newProject = 1;
+							showNewProjectModal = true;
 						}}>Create new project</button
 					>
 					<button

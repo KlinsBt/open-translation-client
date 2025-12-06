@@ -1,4 +1,5 @@
 import type { UserData } from "$lib/types/types";
+import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
 
 async function generateJsonFileDownload(jsonData: JSON, name: string) {
 	// Converts JSON data to a Blob
@@ -28,7 +29,8 @@ export async function generateJsonTranslation(translation: UserData) {
 	const name: string = translation.translationData.name || "translation_file";
 	const typeRef: any = translation.translationData.typeRef;
 	const sourceData = (typeRef && typeRef.data) || translation.translationData.typeRef;
-	const segMeta: number[] = (typeRef && typeRef.segMeta) || [];
+	const segMeta: number[] =
+		(typeRef && typeRef.segMeta) || buildSegMetaFromData(sourceData);
 	let newJsonObject: Object = reconstructJsonFromValues(
 		sourceData as Record<string, any>,
 		translation.translationData.seg2,
@@ -67,4 +69,25 @@ function reconstructJsonFromValues(
 	traverse(newJson);
 	console.log("newJson", newJson);
 	return newJson;
+}
+
+function buildSegMetaFromData(jsonData: Record<string, any>): number[] {
+	const meta: number[] = [];
+
+	function traverse(obj: any): void {
+		for (const key in obj) {
+			if (typeof obj[key] === "object" && obj[key] !== null) {
+				traverse(obj[key]);
+			} else {
+				const text = String(obj[key]);
+				const pieces = splitTextWithPreferences(text).filter(
+					(p) => (p.text + (p.separator ?? "")).trim().length > 0,
+				);
+				meta.push(pieces.length > 0 ? pieces.length : 1);
+			}
+		}
+	}
+
+	traverse(jsonData);
+	return meta;
 }

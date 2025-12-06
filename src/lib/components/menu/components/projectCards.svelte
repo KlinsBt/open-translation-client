@@ -334,7 +334,12 @@
 	class="modal-element-global {show ? '' : 'close-modal-global'}"
 	onclick={() => (show = false)}
 >
-	<Modal title={file.translationData.name} content={options} />
+	<Modal
+		title={file.translationData.name.length > 15
+			? file.translationData.name.slice(0, 15) + "..."
+			: file.translationData.name}
+		content={options}
+	/>
 </div>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -368,7 +373,11 @@
 			></circle>
 		</svg>
 	</div>
-	<h4>{file.translationData.name}</h4>
+	<h4>
+		{file.translationData.name.length > 15
+			? file.translationData.name.slice(0, 15) + "..."
+			: file.translationData.name}
+	</h4>
 	<div class="text-info">
 		<!-- <p>
 								<span>{getTotalWordCount(file.translationData.seg1)}</span> /
