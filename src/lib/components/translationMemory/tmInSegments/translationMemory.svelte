@@ -8,6 +8,7 @@
 		singleUserData,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { getTotalWordCount } from "$lib/functions/statistics";
+	import { notifySuccess } from "$lib/components/notifications/toastStore";
 
 	let showConfirmationModal: boolean = false;
 	let tempTargetText: string = "";
@@ -20,6 +21,7 @@
 		updateTranslationOnIndexedDB($singleUserData);
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 		showConfirmationModal = false;
+		notifySuccess("Segment filled from TM");
 	}
 
 	function checkIfConfirmationIsNeeded(tm: string) {

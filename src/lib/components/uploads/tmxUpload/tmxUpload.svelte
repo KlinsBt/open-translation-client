@@ -15,6 +15,10 @@
 		saveNewTmToIndexedDB,
 		updateTmOnIndexedDB,
 	} from "$lib/functions/saveData/indexedDb";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	let temporarySaveName: string = $state("");
 
@@ -53,7 +57,7 @@
 								tmxDataIdExists = true;
 								return showLoading.set(false);
 							} else {
-								alert("New TMX file created");
+								notifySuccess("New TMX file created");
 								createNewProjectWithTmxFile().then(() => {
 									showLoading.set(false);
 								});
@@ -61,14 +65,14 @@
 						}
 					}
 				} catch (error) {
-					alert("Invalid TMX file");
+					notifyError("Invalid TMX file");
 					console.error("Invalid TMX file", error);
 					showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
 		} else {
-			alert("Please upload a valid TMX file");
+			notifyError("Please upload a valid TMX file");
 			console.error("Please upload a valid TMX file");
 			showLoading.set(false);
 		}
@@ -122,7 +126,7 @@
 									tmxDataIdExists = true;
 									return showLoading.set(false);
 								} else {
-									alert("New TMX file created");
+									notifySuccess("New TMX file created");
 									createNewProjectWithTmxFile().then(() => {
 										showLoading.set(false);
 									});
@@ -130,14 +134,14 @@
 							}
 						}
 					} catch (error) {
-						alert("Invalid TMX file");
+						notifyError("Invalid TMX file");
 						console.error("Invalid TMX file", error);
 						showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
 			} else {
-				alert("Please drop a valid TMX file");
+				notifyError("Please drop a valid TMX file");
 				console.error("Please drop a valid TMX file");
 				showLoading.set(false);
 			}

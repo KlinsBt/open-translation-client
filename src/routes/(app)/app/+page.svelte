@@ -7,6 +7,7 @@
 	import { openMenu, userData } from "$lib/functions/saveData/stores.svelte";
 	import TopData from "$lib/components/menu/components/topData.svelte";
 	import Menu from "$lib/components/menu/menuContent.svelte";
+	import ToastContainer from "$lib/components/notifications/ToastContainer.svelte";
 </script>
 
 <svelte:head>
@@ -18,6 +19,7 @@
 </svelte:head>
 
 <section>
+	<ToastContainer />
 	{#if $openMenu}
 		<TopData />
 		<div class="menu-container">

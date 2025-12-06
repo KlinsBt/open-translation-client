@@ -6,6 +6,11 @@
 	import Edit from "$lib/components/svg/edit.svelte";
 	import Delete from "$lib/components/svg/delete2.svelte";
 	import Modal from "$lib/components/modal.svelte";
+	import {
+		notifySuccess,
+		notifyInfo,
+		notifyError,
+	} from "$lib/components/notifications/toastStore";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -55,6 +60,7 @@
 		if (!editMode.get(key)) {
 			singleTbData.set(localTbData);
 			await updateTbOnIndexedDB(localTbData);
+			notifyInfo("Entry saved");
 		}
 
 		editMode = new Map(editMode);
@@ -77,6 +83,7 @@
 			],
 		});
 		await updateTbOnIndexedDB(localTbData);
+		notifySuccess("Entry added");
 	}
 
 	async function addNewTerm(termId: number) {
@@ -86,6 +93,7 @@
 			notes: [],
 		});
 		await updateTbOnIndexedDB(localTbData);
+		notifySuccess("Term added");
 	}
 
 	async function addNewNote(unitId: number, termId: number) {
@@ -110,6 +118,7 @@
 		});
 
 		await updateTbOnIndexedDB(localTbData);
+		notifySuccess("Note added");
 	}
 
 	async function deleteNote(unitId: number, termId: number, noteIndex: number) {
@@ -130,12 +139,14 @@
 		}
 
 		await updateTbOnIndexedDB(localTbData);
+		notifyError("Note deleted");
 	}
 
 	async function deleteTermUnit(unitId: number) {
 		localTbData.entries.splice(unitId, 1);
 		showModal = false;
 		await updateTbOnIndexedDB(localTbData);
+		notifyError("Term unit deleted");
 	}
 
 	async function deleteEntry(unitId: number, termId: number) {
@@ -145,6 +156,7 @@
 		}
 		showModal = false;
 		await updateTbOnIndexedDB(localTbData);
+		notifyError("Entry deleted");
 	}
 
 	function ShowModal(termId: number, trgId: number) {

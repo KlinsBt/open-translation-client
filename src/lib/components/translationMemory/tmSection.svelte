@@ -28,6 +28,11 @@
 	import Export from "$lib/components/svg/export2.svelte";
 	import Edit from "$lib/components/svg/edit.svelte";
 	import { setLoadingAndRender } from "$lib/functions/uiHelpers";
+	import {
+		notifySuccess,
+		notifyInfo,
+		notifyError,
+	} from "$lib/components/notifications/toastStore";
 
 	let showTmUploadModal: boolean = $state(false);
 	let showSelectModal: boolean = $state(false);
@@ -121,6 +126,7 @@
 		showDeletionConfirmationModal = false;
 		showTmxModal.set(false);
 		showLoading.set(false);
+		notifyError("Translation Memory deleted");
 	}
 
 	async function downloadTmx(id: number) {
@@ -131,6 +137,7 @@
 		console.log("TM Data:", tm);
 		generateTmxSaveFile(tm.terms[0].source.lang, tm);
 		showLoading.set(false);
+		notifySuccess("Translation Memory downloaded");
 	}
 
 	async function selectTmToEdit(id: number) {
@@ -162,6 +169,7 @@
 		showSelectModal = false;
 		mergeTmModal = false;
 		showTmxModal.set(false);
+		notifyInfo("Translation Memory name updated");
 	}
 
 	function getUniqueTargetLanguages(tm: TmData) {

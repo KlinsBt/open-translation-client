@@ -36,6 +36,11 @@
 	import TranslationMemory from "../translationMemory/tmInSegments/translationMemory.svelte";
 	import TermBase from "../termBase/tbSegments/termBase.svelte";
 	import type { TbData, TmData } from "$lib/types/types";
+	import {
+		notifySuccess,
+		notifyInfo,
+		notifyError,
+	} from "$lib/components/notifications/toastStore";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -153,6 +158,7 @@
 		singleTmData.set($tmData.find((data) => data.id === id) as TmData);
 		console.log(`Selected TM Name: ${name}`);
 		console.log(`Selected TM Id: ${id}`);
+		notifyInfo(`Translation Memory selected: ${name}`);
 	}
 
 	function selectTbId(id: number | string, name: string) {
@@ -166,6 +172,7 @@
 		singleUserData.set(newUserData);
 		updateTranslationOnIndexedDB($singleUserData);
 		console.log(`Selected TB Id: ${id}`);
+		notifyInfo(`Term Base selected: ${name}`);
 	}
 
 	async function getAllTmDataFromIndexedDB() {
@@ -215,6 +222,11 @@
 			newUserData.translationData!.tm!.active = tmActive;
 			singleUserData.set(newUserData);
 			updateTranslationOnIndexedDB(newUserData);
+			if (tmActive) {
+				notifySuccess(`Translation Memory activated`);
+			} else {
+				notifyError(`Translation Memory deactivated`);
+			}
 		}
 
 		if (tbActive !== $singleUserData.translationData.tb?.active) {
@@ -223,6 +235,11 @@
 			newUserData.translationData!.tb!.active = tbActive;
 			singleUserData.set(newUserData);
 			updateTranslationOnIndexedDB(newUserData);
+			if (tbActive) {
+				notifySuccess(`Term Base activated`);
+			} else {
+				notifyError(`Term Base deactivated`);
+			}
 		}
 	});
 </script>

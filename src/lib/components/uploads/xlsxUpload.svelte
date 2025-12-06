@@ -9,6 +9,7 @@
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import JSZip from "jszip";
 	import { segmentWorkbookStrings } from "$lib/functions/parsing/parsingXlsx";
+	import { notifySuccess } from "$lib/components/notifications/toastStore";
 
 	// let excelFile: File | null = null;
 
@@ -136,6 +137,7 @@
 			"xlsx",
 			extractedXmlContent,
 		);
+		notifySuccess("Project created");
 	}
 </script>
 

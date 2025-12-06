@@ -9,6 +9,10 @@
 	import { translationIdSelected } from "$lib/functions/saveData/stores.svelte";
 	import { LANGUAGES } from "$lib/components/data/languages";
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	let outputTextFormat1: boolean = true;
 
@@ -84,7 +88,7 @@
 
 	function createNewProject() {
 		if (fullInputText.length > 0 && fullText.length > 0) {
-			alert("Please only use one input method");
+			notifyError("Please only use one input method");
 			return;
 		}
 		let timestamp = new Date().valueOf().toString();
@@ -96,6 +100,7 @@
 			fullInputText.length > 0 ? fullInputText : fullText,
 			"text",
 		);
+		notifySuccess("Project created");
 	}
 </script>
 

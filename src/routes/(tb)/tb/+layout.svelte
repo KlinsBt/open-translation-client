@@ -1,12 +1,14 @@
 <script>
 	import LodaingDisplay from "$lib/components/loading/dots.svelte";
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
+	import ToastContainer from "$lib/components/notifications/ToastContainer.svelte";
 	import "../../../app.css";
 
 	let { children } = $props();
 </script>
 
 <div class="app">
+	<ToastContainer />
 	{#if $showLoading}
 		<div class="loading-display">
 			<div>

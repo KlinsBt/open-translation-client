@@ -6,6 +6,11 @@
 	import Edit from "$lib/components/svg/edit.svelte";
 	import Delete from "$lib/components/svg/delete2.svelte";
 	import Modal from "$lib/components/modal.svelte";
+	import {
+		notifySuccess,
+		notifyInfo,
+		notifyError,
+	} from "$lib/components/notifications/toastStore";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -61,6 +66,7 @@
 		if (!editMode.get(key)) {
 			singleTmData.set(localTmData);
 			await updateTmOnIndexedDB(localTmData);
+			notifyInfo("Entry saved");
 		}
 
 		editMode = new Map(editMode);
@@ -74,6 +80,7 @@
 	function addTranslationSegment(termId: number) {
 		// let srcLang = localTmData.terms[termId].source.lang;
 		localTmData.terms[termId].target.push({ lang: "en", segment: "" });
+		notifySuccess("Segment added");
 	}
 
 	function addTranslationUnit() {
@@ -90,6 +97,7 @@
 			},
 			target: targetLanguages,
 		});
+		notifySuccess("Translation unit added");
 	}
 
 	async function deleteTu(tuId: number) {
@@ -97,6 +105,7 @@
 		showSegmentDeletionModal = false;
 		showModal = false;
 		await updateTmOnIndexedDB(localTmData);
+		notifyError("Translation unit deleted");
 	}
 
 	async function deleteSegment(termId: number, segId: number) {
@@ -104,6 +113,7 @@
 		showSegmentDeletionModal = false;
 		showModal = false;
 		await updateTmOnIndexedDB(localTmData);
+		notifyError("Segment deleted");
 	}
 
 	function showTuDelModal(tuId: number) {

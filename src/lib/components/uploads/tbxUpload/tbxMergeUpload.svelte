@@ -14,6 +14,10 @@
 		loadTbDataFromIndexedDB,
 		saveNewTbToIndexedDB,
 	} from "$lib/functions/saveData/indexedDb";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	let isDragging = $state(false);
 
@@ -44,14 +48,14 @@
 						return showLoading.set(false);
 					}
 				} catch (error) {
-					alert("Invalid TBX file");
+					notifyError("Invalid TBX file");
 					console.error("Invalid TBX file", error);
 					return showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
 		} else {
-			alert("Please upload a valid TBX file");
+			notifyError("Please upload a valid TBX file");
 			console.error("Please upload a valid TBX file");
 			return showLoading.set(false);
 		}
@@ -93,14 +97,14 @@
 							return showLoading.set(false);
 						}
 					} catch (error) {
-						alert("Invalid TBX file");
+						notifyError("Invalid TBX file");
 						console.error("Invalid TBX file", error);
 						return showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
 			} else {
-				alert("Please drop a valid TBX file");
+				notifyError("Please drop a valid TBX file");
 				console.error("Please drop a valid TBX file");
 				return showLoading.set(false);
 			}
@@ -131,6 +135,7 @@
 		editTb.set(true);
 		showTbxModal.set(false);
 		showLoading.set(false);
+		notifySuccess("Term Base merged successfully");
 	}
 </script>
 

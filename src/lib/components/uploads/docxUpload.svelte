@@ -12,6 +12,7 @@
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
 	import JSZip from "jszip";
 	import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
+	import { notifySuccess } from "$lib/components/notifications/toastStore";
 
 	let wordFile: File | null = null;
 	let temporarySaveName: string = "";
@@ -154,6 +155,7 @@
 			extractedXmlContent,
 		);
 		showLoading.set(false);
+		notifySuccess("Project created");
 	}
 </script>
 

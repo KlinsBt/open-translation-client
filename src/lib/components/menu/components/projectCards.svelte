@@ -29,6 +29,12 @@
 	} from "$lib/functions/saveData/indexedDb";
 	import Modal from "../../modal.svelte";
 	import { LANGUAGES } from "$lib/components/data/languages";
+	import {
+		notifySuccess,
+		notifyWarning,
+		notifyInfo,
+		notifyError,
+	} from "$lib/components/notifications/toastStore";
 
 	let optionsOpen: boolean = $state(false);
 	let editNameWindow: boolean = $state(false);
@@ -101,7 +107,7 @@
 			let data = await loadTbDataFromIndexedDB();
 			tbData.set(data as TbData[]);
 			showLoading.set(false);
-			console.log(tmData);
+			console.log(tbData);
 		}
 	}
 
@@ -129,12 +135,15 @@
 		updateTranslationOnIndexedDB($singleUserData);
 		editNameWindow = false;
 		show = false;
+		notifyInfo("Project name updated");
 	}
 
 	function updateFileLanguages() {
 		if (!$singleUserData) return console.log("Data not found");
-		if (newTargetLang === "" || newSourceLang === "")
-			return console.log("Invalid languages");
+		if (newTargetLang === "" || newSourceLang === "") {
+			notifyError("Please select both source and target languages");
+			return;
+		}
 		let newUserData = $singleUserData;
 		newUserData.translationData.sourceLang = newSourceLang;
 		newUserData.translationData.targetLang = newTargetLang;
@@ -142,6 +151,7 @@
 		updateTranslationOnIndexedDB($singleUserData);
 		editLanguagesWindow = false;
 		show = false;
+		notifyInfo("Project languages updated");
 	}
 
 	function handleSaveFileDeletion(id: number) {
@@ -150,6 +160,7 @@
 		deleteTranslationFromIndexedDB(id);
 		confirmDeletionWindow = false;
 		show = false;
+		notifyError("Project deleted");
 	}
 
 	let show: boolean = $state(false);

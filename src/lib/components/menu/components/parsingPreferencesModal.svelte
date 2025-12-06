@@ -7,6 +7,11 @@
 		deleteParsingPreference,
 		updateParsingPreference,
 	} from "$lib/functions/parsing/parsingPreferences";
+	import {
+		notifySuccess,
+		notifyInfo,
+		notifyError,
+	} from "$lib/components/notifications/toastStore";
 
 	let {
 		show = $bindable(),
@@ -52,8 +57,10 @@
 				newParsingLabel.trim(),
 				tokens,
 			);
+			notifyInfo("Preset updated");
 		} else {
 			parsingPreferences = addParsingPreference(newParsingLabel.trim(), tokens);
+			notifySuccess("Preset added");
 		}
 		newParsingLabel = "";
 		tokens = [];
@@ -63,10 +70,12 @@
 
 	function handleActivateParsingPreference(id: string) {
 		parsingPreferences = setActiveParsingPreference(id);
+		notifySuccess("Preset activated");
 	}
 
 	function handleDeleteParsingPreference(id: string) {
 		parsingPreferences = deleteParsingPreference(id);
+		notifyError("Preset deleted");
 	}
 
 	function handleEditParsingPreference(pref: ParsingPreference) {
@@ -226,7 +235,7 @@
 		align-items: stretch;
 		gap: 20px;
 		padding: 0px;
-		min-width: 380px;
+		/* min-width: 380px; */
 		max-width: 500px;
 		max-height: 70vh;
 		overflow: hidden;

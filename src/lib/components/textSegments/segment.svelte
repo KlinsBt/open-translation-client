@@ -17,6 +17,7 @@
 	import { searchForMatches } from "$lib/components/translationMemory/tmFunctions";
 	import { getTermMatches } from "$lib/components/termBase/tbFunctions";
 	import type { TbData, TmData } from "$lib/types/types";
+	import { notifySuccess } from "$lib/components/notifications/toastStore";
 
 	let {
 		id,
@@ -156,10 +157,11 @@
 		// console.log("TB Matches: ", tbMatchesFound);
 	}
 
-	function getLanguageCode(lang: string): string {
+	function getLanguageCode(lang?: string): string {
 		// Extract language code from full name like "English (en)" or return as-is
+		if (!lang) return "";
 		const match = lang.match(/\(([^)]+)\)/);
-		return match![1] !== undefined && match ? match[1] : lang; // If no match, return the original string
+		return match?.[1] ?? lang;
 	}
 
 	async function tmIdExists(id: number | null): Promise<boolean> {
@@ -216,7 +218,7 @@
 		singleTmData.set(localTmData);
 		console.log("SingleTmData: ", $singleTmData);
 		await updateTmOnIndexedDB($singleTmData);
-		alert("Translation unit added to TM successfully!");
+		notifySuccess("Translation unit added to TM successfully!");
 	}
 </script>
 

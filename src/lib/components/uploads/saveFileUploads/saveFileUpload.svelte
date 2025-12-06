@@ -16,6 +16,10 @@
 		getXliffVersion,
 	} from "./saveFileFunctions.js";
 	import { setLoadingAndRender } from "$lib/functions/uiHelpers";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	let isDragging = $state(false);
 
@@ -43,17 +47,17 @@
 								showLoading.set(false);
 								return (saveFileIdExists = true);
 							} else {
-								alert("New project created");
+								notifySuccess("New project created");
 								createNewProjectWithSaveFile();
 							}
 						} else {
-							alert("Invalid JSON file");
+							notifyError("Invalid JSON file");
 							console.error("Invalid JSON structure");
 							showLoading.set(false);
 						}
 					}
 				} catch (error) {
-					alert("Invalid JSON file");
+					notifyError("Invalid JSON file");
 					console.error("Invalid JSON file", error);
 					showLoading.set(false);
 				}
@@ -81,7 +85,7 @@
 								showLoading.set(false);
 								return (saveFileIdExists = true);
 							} else {
-								alert("New project created");
+								notifySuccess("New project created");
 								createNewProjectWithSaveFile();
 							}
 							showLoading.set(false);
@@ -95,21 +99,21 @@
 								showLoading.set(false);
 								return (saveFileIdExists = true);
 							} else {
-								alert("New project created");
+								notifySuccess("New project created");
 								createNewProjectWithSaveFile();
 							}
 							showLoading.set(false);
 						}
 					}
 				} catch (error) {
-					alert("Invalid XLIFF file");
+					notifyError("Invalid XLIFF file");
 					console.error("Invalid XLIFF file", error);
 					showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
 		} else {
-			alert("Please upload a valid JSON or XLIFF file");
+			notifyError("Please upload a valid JSON or XLIFF file");
 			console.error("Please upload a valid JSON or XLIFF file");
 			showLoading.set(false);
 		}
@@ -147,12 +151,12 @@
 									showLoading.set(false);
 									return (saveFileIdExists = true);
 								} else {
-									alert("New project created");
+									notifySuccess("New project created");
 									createNewProjectWithSaveFile();
 								}
 								showLoading.set(false);
 							} else {
-								alert("Invalid JSON file");
+								notifyError("Invalid JSON file");
 								console.error("Invalid JSON structure");
 								showLoading.set(false);
 							}
@@ -185,7 +189,7 @@
 									showLoading.set(false);
 									return (saveFileIdExists = true);
 								} else {
-									alert("New project created");
+									notifySuccess("New project created");
 									createNewProjectWithSaveFile();
 								}
 								showLoading.set(false);
@@ -199,21 +203,21 @@
 									showLoading.set(false);
 									return (saveFileIdExists = true);
 								} else {
-									alert("New project created");
+									notifySuccess("New project created");
 									createNewProjectWithSaveFile();
 								}
 								showLoading.set(false);
 							}
 						}
 					} catch (error) {
-						alert("Invalid XLIFF file");
+						notifyError("Invalid XLIFF file");
 						console.error("Invalid XLIFF file", error);
 						showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
 			} else {
-				alert("Please drop a valid JSON or XLIFF file");
+				notifyError("Please drop a valid JSON or XLIFF file");
 				console.error("Please drop a valid JSON or XLIFF file");
 				showLoading.set(false);
 			}

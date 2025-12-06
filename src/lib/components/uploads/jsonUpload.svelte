@@ -13,6 +13,7 @@
 		translationIdSelected,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
+	import { notifySuccess } from "$lib/components/notifications/toastStore";
 
 	let temporarySaveName: string = "";
 	let values: string[] = [];
@@ -153,6 +154,7 @@
 			},
 		);
 		showLoading.set(false);
+		notifySuccess("Project created");
 	}
 </script>
 

@@ -14,6 +14,10 @@
 		loadTmDataFromIndexedDB,
 		saveNewTmToIndexedDB,
 	} from "$lib/functions/saveData/indexedDb";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	let isDragging = $state(false);
 
@@ -44,14 +48,16 @@
 						return showLoading.set(false);
 					}
 				} catch (error) {
-					alert("Invalid TMX file or has not at least two language pairs");
+					notifyError(
+						"Invalid TMX file or has not at least two language pairs",
+					);
 					console.error("Invalid TMX file", error);
 					showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
 		} else {
-			alert("Please upload a valid TMX file");
+			notifyError("Please upload a valid TMX file");
 			console.error("Please upload a valid TMX file");
 			showLoading.set(false);
 		}
@@ -93,14 +99,16 @@
 							return showLoading.set(false);
 						}
 					} catch (error) {
-						alert("Invalid TMX file or has not at least two language pairs");
+						notifyError(
+							"Invalid TMX file or has not at least two language pairs",
+						);
 						console.error("Invalid TMX file", error);
 						showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
 			} else {
-				alert("Please drop a valid TMX file");
+				notifyError("Please drop a valid TMX file");
 				console.error("Please drop a valid TMX file");
 				showLoading.set(false);
 			}
@@ -131,6 +139,7 @@
 		editTm.set(true);
 		showTmxModal.set(false);
 		showLoading.set(false);
+		notifySuccess("TMX files merged successfully");
 	}
 </script>
 

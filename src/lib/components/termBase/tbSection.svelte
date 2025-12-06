@@ -25,6 +25,11 @@
 	import Export from "$lib/components/svg/export2.svelte";
 	import Edit from "$lib/components/svg/edit.svelte";
 	import { setLoadingAndRender } from "$lib/functions/uiHelpers";
+	import {
+		notifySuccess,
+		notifyInfo,
+		notifyError,
+	} from "$lib/components/notifications/toastStore";
 
 	let showTbUploadModal: boolean = $state(false);
 	let showSelectModal: boolean = $state(false);
@@ -118,6 +123,7 @@
 		showDeletionConfirmationModal = false;
 		showTbxModal.set(false);
 		showLoading.set(false);
+		notifyError("Term Base deleted");
 	}
 
 	async function downloadTbx(id: number) {
@@ -128,6 +134,7 @@
 		console.log("TB Data:", tb);
 		generateTbxSaveFile(tb.entries[0].terms[0].lang, tb);
 		showLoading.set(false);
+		notifySuccess("Term Base downloaded");
 	}
 
 	async function selectTbToEdit(id: number) {
@@ -159,6 +166,7 @@
 		showSelectModal = false;
 		mergeTbModal = false;
 		showTbxModal.set(false);
+		notifyInfo("Term Base name updated");
 	}
 
 	function getUniqueTargetLanguages(tb: TbData) {

@@ -14,6 +14,7 @@
 		translationIdSelected,
 		showLoading,
 	} from "$lib/functions/saveData/stores.svelte";
+	import { notifySuccess } from "$lib/components/notifications/toastStore";
 
 	let htmlFile: File | null = null;
 	let temporarySaveName: string = "";
@@ -92,6 +93,7 @@
 			originalHtmlContent,
 		);
 		showLoading.set(false);
+		notifySuccess("Project created");
 	}
 
 	// // Function to trigger the HTML download with the updated content

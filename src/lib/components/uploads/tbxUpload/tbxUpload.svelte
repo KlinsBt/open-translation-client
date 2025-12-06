@@ -15,6 +15,10 @@
 		saveNewTbToIndexedDB,
 		updateTbOnIndexedDB,
 	} from "$lib/functions/saveData/indexedDb";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	let temporarySaveName: string = $state("");
 
@@ -53,7 +57,7 @@
 								tbxDataIdExists = true;
 								return showLoading.set(false);
 							} else {
-								alert("New TBX file created");
+								notifySuccess("New TBX file created");
 								createNewProjectWithTbxFile().then(() => {
 									showLoading.set(false);
 								});
@@ -61,14 +65,14 @@
 						}
 					}
 				} catch (error) {
-					alert("Invalid TBX file");
+					notifyError("Invalid TBX file");
 					console.error("Invalid TBX file", error);
 					showLoading.set(false);
 				}
 			};
 			reader.readAsText(file);
 		} else {
-			alert("Please upload a valid TBX file");
+			notifyError("Please upload a valid TBX file");
 			console.error("Please upload a valid TBX file");
 			showLoading.set(false);
 		}
@@ -123,7 +127,7 @@
 									tbxDataIdExists = true;
 									return showLoading.set(false);
 								} else {
-									alert("New TBX file created");
+									notifySuccess("New TBX file created");
 									// console.log("tbxFile: ", tbxFile);
 									createNewProjectWithTbxFile().then(() => {
 										showLoading.set(false);
@@ -132,14 +136,14 @@
 							}
 						}
 					} catch (error) {
-						alert("Invalid TBX file");
+						notifyError("Invalid TBX file");
 						console.error("Invalid TBX file", error);
 						showLoading.set(false);
 					}
 				};
 				reader.readAsText(file);
 			} else {
-				alert("Please drop a valid TBX file");
+				notifyError("Please drop a valid TBX file");
 				console.error("Please drop a valid TBX file");
 				showLoading.set(false);
 			}

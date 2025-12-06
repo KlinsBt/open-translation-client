@@ -9,6 +9,10 @@
 	import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
 	import { segmentWorkbookStrings } from "$lib/functions/parsing/parsingXlsx";
 	import { segmentHtmlContent } from "$lib/functions/parsing/parsingHtml";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	let {
 		show = $bindable(),
@@ -102,7 +106,7 @@
 
 	async function processAndCreateProject() {
 		if (!uploadedFile || !sourceLanguage || !targetLanguage) {
-			alert("Please fill all required fields");
+			notifyError("Please fill all required fields");
 			return;
 		}
 
@@ -124,21 +128,22 @@
 					break;
 				case "XLSX":
 					await processXlsx(uploadedFile, timestamp);
-					break;
-				case "HTML":
-					await processHtml(uploadedFile, timestamp);
-					break;
-				default:
-					alert("Unsupported file type");
-					showLoading.set(false);
-					return;
+				break;
+			case "HTML":
+				await processHtml(uploadedFile, timestamp);
+				break;
+			default:
+				notifyError("Unsupported file type");
+				showLoading.set(false);
+				return;
 			}
 
+			notifySuccess("Project created");
 			show = false;
 			resetForm();
 		} catch (error) {
 			console.error("Error processing file:", error);
-			alert("Error processing file. Please try again.");
+			notifyError("Error processing file. Please try again.");
 		} finally {
 			isProcessing = false;
 			showLoading.set(false);
