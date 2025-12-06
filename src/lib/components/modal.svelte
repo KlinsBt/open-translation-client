@@ -25,7 +25,7 @@
 		display: grid;
 		justify-items: center;
 		min-width: 280px;
-		max-width: 500px;
+		/* max-width: 500px; */
 		border-radius: 5px;
 		padding: 25px;
 		margin: 0px 10px;

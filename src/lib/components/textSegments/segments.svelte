@@ -30,25 +30,30 @@
 		updateTranslationOnIndexedDB,
 	} from "$lib/functions/saveData/indexedDb";
 	import Modal from "../modal.svelte";
-	import {
-		calcPercentageOfTotalSegmentsChecked,
-		getTotalWordCount,
-	} from "$lib/functions/statistics";
-	import TranslationMemory from "../translationMemory/tmInSegments/translationMemory.svelte";
-	import TermBase from "../termBase/tbSegments/termBase.svelte";
-	import type { TbData, TmData } from "$lib/types/types";
-	import {
-		notifySuccess,
-		notifyInfo,
-		notifyError,
-	} from "$lib/components/notifications/toastStore";
+import {
+	calcPercentageOfTotalSegmentsChecked,
+	getTotalWordCount,
+} from "$lib/functions/statistics";
+import TranslationMemory from "../translationMemory/tmInSegments/translationMemory.svelte";
+import TermBase from "../termBase/tbSegments/termBase.svelte";
+import TmxUpload from "../uploads/tmxUpload/tmxUpload.svelte";
+import TbxUpload from "../uploads/tbxUpload/tbxUpload.svelte";
+import TmEditing from "../translationMemory/tmEditing/tmEditing.svelte";
+import TbEditing from "../termBase/tbEditing/tbEditing.svelte";
+import type { TbData, TmData } from "$lib/types/types";
+import {
+	notifySuccess,
+	notifyInfo,
+	notifyError,
+} from "$lib/components/notifications/toastStore";
+import { editTm, editTb } from "$lib/functions/saveData/stores.svelte";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
-	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
-	let segmentsContainer: HTMLElement | null = $state(null);
-	let tmSelected: null | number = $derived(
-		$singleUserData.translationData.tm?.id ?? null,
-	);
+let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
+let segmentsContainer: HTMLElement | null = $state(null);
+let tmSelected: null | number = $derived(
+	$singleUserData.translationData.tm?.id ?? null,
+);
 	let tmActive: boolean = $state(
 		$singleUserData.translationData.tm?.active ?? false,
 	);
@@ -56,13 +61,15 @@
 	let tbSelected: number | null = $state(
 		$singleUserData.translationData.tb?.id ?? null,
 	);
-	let tbActive: boolean = $state(
-		$singleUserData.translationData.tb?.active ?? false,
-	);
-	let lastSelectedSegmentId: number = $state(0);
+let tbActive: boolean = $state(
+	$singleUserData.translationData.tb?.active ?? false,
+);
+let lastSelectedSegmentId: number = $state(0);
 
 	let showSaveFileModal: boolean = $state(false);
 	let showTmTbModal: boolean = $state(false);
+	let showTmAddModal: boolean = $state(false);
+	let showTbAddModal: boolean = $state(false);
 	let percentage: number = $derived(
 		calcPercentageOfTotalSegmentsChecked(
 			$singleUserData.translationData.checked,
@@ -274,30 +281,30 @@
 	}
 
 	async function getAllTmDataFromIndexedDB() {
-		showLoading.set(true);
-		if ($tmData.length > 0) {
-			showLoading.set(false);
-			return;
-		} else {
-			let data = await loadTmDataFromIndexedDB();
-			tmData.set(data as TmData[]);
-			showLoading.set(false);
-			console.log(tmData);
-		}
+	showLoading.set(true);
+	if ($tmData.length > 0) {
+		showLoading.set(false);
+		return;
+	} else {
+		let data = await loadTmDataFromIndexedDB();
+		tmData.set(data as TmData[]);
+		showLoading.set(false);
+		console.log(tmData);
 	}
+}
 
 	async function getAllTbDataFromIndexedDB() {
-		showLoading.set(true);
-		if ($tbData.length > 0) {
-			showLoading.set(false);
-			return;
-		} else {
-			let data = await loadTbDataFromIndexedDB();
-			tbData.set(data as TbData[]);
-			showLoading.set(false);
-			console.log(tmData);
-		}
+	showLoading.set(true);
+	if ($tbData.length > 0) {
+		showLoading.set(false);
+		return;
+	} else {
+		let data = await loadTbDataFromIndexedDB();
+		tbData.set(data as TbData[]);
+		showLoading.set(false);
+		console.log(tmData);
 	}
+}
 
 	async function toggleSaveFileModal() {
 		showSaveFileModal = true;
@@ -413,6 +420,30 @@
 					{/each}
 				</select>
 			</div>
+			<button
+				class="toolbar-button save"
+				style="width: 100%; margin-top: 10px;"
+				onclick={() => {
+					editTm.set(false);
+					showTmTbModal = false;
+					showTmAddModal = true;
+				}}
+			>
+				+ Add TM
+			</button>
+			<button
+				class="toolbar-button export"
+				style="width: 100%; margin-top: 6px;"
+				disabled={tmSelected === null}
+				onclick={() => {
+					if (tmSelected === null) return;
+					editTm.set(true);
+					showTmTbModal = false;
+					showTmAddModal = true;
+				}}
+			>
+				Edit TM
+			</button>
 		</div>
 
 		<div class="manage-tb-container">
@@ -452,7 +483,51 @@
 					{/each}
 				</select>
 			</div>
+			<button
+				class="toolbar-button save"
+				style="width: 100%; margin-top: 10px;"
+				onclick={() => {
+					editTb.set(false);
+					showTmTbModal = false;
+					showTbAddModal = true;
+				}}
+			>
+				+ Add TB
+			</button>
+			<button
+				class="toolbar-button export"
+				style="width: 100%; margin-top: 6px;"
+				disabled={tbSelected === null}
+				onclick={() => {
+					if (tbSelected === null) return;
+					editTb.set(true);
+					showTmTbModal = false;
+					showTbAddModal = true;
+				}}
+			>
+				Edit TB
+			</button>
 		</div>
+	</div>
+{/snippet}
+
+{#snippet tmAddMenu()}
+	<div class="tm-add-container">
+		{#if $editTm}
+			<TmEditing />
+		{:else}
+			<TmxUpload />
+		{/if}
+	</div>
+{/snippet}
+
+{#snippet tbAddMenu()}
+	<div class="tb-add-container">
+		{#if $editTb}
+			<TbEditing />
+		{:else}
+			<TbxUpload />
+		{/if}
 	</div>
 {/snippet}
 
@@ -475,6 +550,32 @@
 		onclick={() => (showSaveFileModal = false)}
 	>
 		<Modal title="Export Save File" content={exportMenu} />
+	</div>
+{:else if showTmAddModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		role="dialog"
+		class="modal-element-global {showTmAddModal ? '' : 'close-modal-global'}"
+		onclick={() => {
+			showTmAddModal = false;
+			editTm.set(false);
+		}}
+	>
+		<Modal title="Add Translation Memory" content={tmAddMenu} />
+	</div>
+{:else if showTbAddModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		role="dialog"
+		class="modal-element-global {showTbAddModal ? '' : 'close-modal-global'}"
+		onclick={() => {
+			showTbAddModal = false;
+			editTb.set(false);
+		}}
+	>
+		<Modal title="Add Term Base" content={tbAddMenu} />
 	</div>
 {/if}
 

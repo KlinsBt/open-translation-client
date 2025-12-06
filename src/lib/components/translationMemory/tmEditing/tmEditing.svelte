@@ -180,18 +180,20 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-	role="dialog"
-	class="modal-element-global {showModal ? '' : 'close-modal-global'}"
-	onclick={() => (showModal = false)}
->
-	{#if showTuDeletionModal}
-		<Modal title="Confirm" content={deletionConfirmationTu} />
-	{/if}
-	{#if showSegmentDeletionModal}
-		<Modal title="Confirm" content={deletionConfirmationSegment} />
-	{/if}
-</div>
+{#if showModal}
+	<div
+		role="dialog"
+		class="modal-element-global"
+		onclick={() => (showModal = false)}
+	>
+		{#if showTuDeletionModal}
+			<Modal title="Confirm" content={deletionConfirmationTu} />
+		{/if}
+		{#if showSegmentDeletionModal}
+			<Modal title="Confirm" content={deletionConfirmationSegment} />
+		{/if}
+	</div>
+{/if}
 
 <h2 class="tm-name">{localTmData.name}</h2>
 
@@ -399,7 +401,7 @@
 		font-weight: bold;
 		color: var(--color-theme-4);
 		display: flex;
-		padding: 10px;
+		/* padding: 10px; */
 		border-radius: 5px 5px 0px 0px;
 		background-color: var(--color-theme-7);
 	}
@@ -529,6 +531,19 @@
 	.edit-btn:hover {
 		filter: brightness(1.1);
 	}
+
+	/* Ensure confirmation modal fills viewport when embedded */
+.modal-element-global {
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 3000;
+}
 
 	.add-btn {
 		color: white;
