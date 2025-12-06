@@ -157,12 +157,12 @@
 		// console.log("TB Matches: ", tbMatchesFound);
 	}
 
-	function getLanguageCode(lang?: string): string {
-		// Extract language code from full name like "English (en)" or return as-is
-		if (!lang) return "";
-		const match = lang.match(/\(([^)]+)\)/);
-		return match?.[1] ?? lang;
-	}
+function getLanguageCode(lang?: string): string {
+	// Extract language code from full name like "English (en)" or return as-is
+	if (!lang) return "";
+	const match = lang.match(/\(([^)]+)\)/);
+	return match?.[1] ?? lang;
+}
 
 	async function tmIdExists(id: number | null): Promise<boolean> {
 		if (id === null) return false;
@@ -222,7 +222,17 @@
 	}
 </script>
 
-<div class="segment" lang={targetLang}>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div
+	class="segment"
+	lang={targetLang}
+	data-segment-id={id}
+	tabindex="0"
+	onclick={() => selectedSegmentId.set(id)}
+	onfocus={() => selectedSegmentId.set(id)}
+>
 	<button
 		class="toggle-container {checked ? 'locked' : 'unlocked'}"
 		onclick={toggleLockSegment}

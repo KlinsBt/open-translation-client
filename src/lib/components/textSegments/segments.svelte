@@ -15,6 +15,7 @@
 		tmData,
 		tbData,
 		singleTmData,
+		selectedSegmentId,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { functionCreateExportFile } from "$lib/functions/outputGeneration/handleTranslationExport";
 
@@ -58,6 +59,7 @@
 	let tbActive: boolean = $state(
 		$singleUserData.translationData.tb?.active ?? false,
 	);
+	let lastSelectedSegmentId: number = $state(0);
 
 	let showSaveFileModal: boolean = $state(false);
 	let showTmTbModal: boolean = $state(false);
@@ -129,6 +131,102 @@
 		newUserData.translationData.checked =
 			newUserData.translationData.checked.map(() => false);
 		singleUserData.set(newUserData);
+	}
+
+	function focusSegment(idx: number) {
+		const el = document.querySelector<HTMLElement>(
+			`[data-segment-id="${idx}"]`,
+		);
+		if (!el) return;
+		// Prefer the translation textarea inside the segment
+		const input =
+			el.querySelector<HTMLTextAreaElement>("textarea") ??
+			el.querySelector<HTMLElement>("[tabindex]");
+		(input ?? el).focus();
+		(input ?? el).scrollIntoView({ block: "center", behavior: "smooth" });
+	}
+
+	function selectSegmentByOffset(offset: number) {
+		const total = $singleUserData.translationData.seg1.length;
+		if (total === 0) return;
+		let current = $selectedSegmentId;
+		if (current === null || current === undefined) {
+			current = 0;
+			selectedSegmentId.set(0);
+		}
+		let next = current + offset;
+		if (next < 0) next = 0;
+		if (next >= total) next = total - 1;
+		lastSelectedSegmentId = next;
+		selectedSegmentId.set(next);
+		focusSegment(next);
+	}
+
+	function toggleLockCurrentSegment() {
+		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
+		if (!$singleUserData) return;
+		const total = $singleUserData.translationData.checked.length;
+		if (idx < 0 || idx >= total) return;
+		const newUserData = { ...$singleUserData };
+		newUserData.translationData.checked = [
+			...newUserData.translationData.checked,
+		];
+		newUserData.translationData.checked[idx] =
+			!newUserData.translationData.checked[idx];
+		singleUserData.set(newUserData);
+		updateTranslationOnIndexedDB(newUserData);
+		notifyInfo(
+			`Segment ${idx + 1} ${newUserData.translationData.checked[idx] ? "locked" : "unlocked"}`,
+		);
+	}
+
+	function fillCurrentSegment() {
+		if (!$singleUserData) return;
+		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
+		const total = $singleUserData.translationData.seg1.length;
+		if (idx < 0 || idx >= total) return;
+
+		// Only fill if target is empty
+		if ($singleUserData.translationData.seg2[idx] !== "") return;
+
+		const newUserData = { ...$singleUserData };
+		newUserData.translationData.seg2 = [...newUserData.translationData.seg2];
+		newUserData.translationData.seg2[idx] =
+			newUserData.translationData.seg1[idx];
+		singleUserData.set(newUserData);
+		updateTranslationOnIndexedDB(newUserData);
+		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+		notifySuccess(`Filled segment ${idx + 1}`);
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		const target = event.target as HTMLElement | null;
+		const tag = target?.tagName?.toLowerCase();
+
+		if (!event.ctrlKey && !event.metaKey) return;
+
+		switch (event.key) {
+			case "ArrowDown":
+				event.preventDefault();
+				selectSegmentByOffset(1);
+				break;
+			case "ArrowUp":
+				event.preventDefault();
+				selectSegmentByOffset(-1);
+				break;
+			case "l":
+				event.preventDefault();
+				toggleLockCurrentSegment();
+				break;
+			case "m":
+				event.preventDefault();
+				toggleTmTbModal();
+				break;
+			case "f":
+				event.preventDefault();
+				fillCurrentSegment();
+				break;
+		}
 	}
 
 	function fillAllEmptySegments() {
@@ -216,6 +314,10 @@
 	}
 
 	$effect(() => {
+		if ($selectedSegmentId !== null && $selectedSegmentId !== undefined) {
+			lastSelectedSegmentId = $selectedSegmentId;
+		}
+
 		if (tmActive !== $singleUserData.translationData.tm?.active) {
 			console.log("TM Active changed: ", tmActive);
 			let newUserData = { ...$singleUserData };
@@ -243,6 +345,8 @@
 		}
 	});
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 {#snippet exportMenu()}
 	<div class="buttons-container">
@@ -393,6 +497,31 @@
 	>
 		Export Translation File
 		<Export marginBottom="2px" />
+	</button>
+	<button class="toolbar-help" aria-label="Keyboard shortcuts" tabindex="0">
+		<span>i</span>
+		<div class="shortcut-popover">
+			<p>
+				<strong>Ctrl/Cmd + ↓ / ↑:</strong>
+				<br />
+				<span>Select next/previous segment</span>
+			</p>
+			<p>
+				<strong>Ctrl/Cmd + L:</strong>
+				<br />
+				<span>Lock/Unlock current segment</span>
+			</p>
+			<p>
+				<strong>Ctrl/Cmd + F:</strong>
+				<br />
+				<span>Fill current segment (if empty)</span>
+			</p>
+			<p>
+				<strong>Ctrl/Cmd + M:</strong>
+				<br />
+				<span>Open TM/TB manager</span>
+			</p>
+		</div>
 	</button>
 	<!-- <button class="toolbar-button">Translate</button> -->
 </div>
@@ -551,7 +680,7 @@
 		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 		position: sticky;
 		top: 0;
-		z-index: 1;
+		z-index: 70;
 	}
 
 	.toolbar-button {
@@ -585,6 +714,107 @@
 	.toolbar-button:active {
 		transform: scale(0.98);
 		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+	}
+
+	.toolbar-help {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: var(--color-theme-4);
+		color: white;
+		border: 2px solid white;
+		border-radius: 50%;
+		width: 35px;
+		height: 35px;
+		padding: 0;
+		margin: 0px;
+		top: 3px;
+		font-weight: bold;
+		font-size: 1.5rem;
+		font-style: italic;
+		cursor: help;
+		transition: all 0.3s ease;
+		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+		flex-shrink: 0;
+	}
+
+	.toolbar-help span {
+		user-select: none;
+		line-height: 1;
+	}
+
+	.toolbar-help:hover {
+		background-color: var(--color-theme-3);
+		transform: scale(1.05);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+	}
+
+	.toolbar-help:active {
+		transform: scale(1.05);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+
+	.toolbar-help .shortcut-popover {
+		position: absolute;
+		top: calc(100% + 8px);
+		right: -12px;
+		min-width: 200px;
+		background: white;
+		color: var(--color-theme-6);
+		border: 2px solid var(--color-theme-4);
+		border-radius: 5px;
+		padding: 10px;
+		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transform: translateY(-8px);
+		transition: all 0.2s ease;
+		z-index: 10;
+	}
+
+	.toolbar-help .shortcut-popover::before {
+		content: "";
+		position: absolute;
+		top: -8px;
+		right: 20px;
+		width: 0;
+		height: 0;
+		border-left: 8px solid transparent;
+		border-right: 8px solid transparent;
+		border-bottom: 8px solid var(--color-theme-4);
+	}
+
+	.toolbar-help:hover .shortcut-popover,
+	.toolbar-help:focus-within .shortcut-popover {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		transform: translateY(0);
+	}
+
+	.shortcut-popover p {
+		margin: 5px 0;
+		font-size: 0.95rem;
+		line-height: 1.5;
+		font-weight: 500;
+		text-align: left;
+	}
+
+	.shortcut-popover p:first-child {
+		margin-top: 0;
+	}
+
+	.shortcut-popover p:last-child {
+		margin-bottom: 0;
+	}
+
+	.shortcut-popover strong {
+		display: inline-block;
+		min-width: 140px;
+		color: var(--color-theme-4);
+		font-weight: 700;
 	}
 
 	.tm-tb-container {
