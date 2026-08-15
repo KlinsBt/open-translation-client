@@ -118,23 +118,36 @@
 
 	function handleSourceMouseUp(event: MouseEvent) {
 		const sel = window.getSelection();
-		if (!sel || sel.rangeCount === 0) return;
-		const range = sel.getRangeAt(0);
-		if (!range.commonAncestorContainer) return;
 		const container = event.currentTarget as HTMLElement;
-		if (!container.contains(range.commonAncestorContainer)) return;
-		const selectionLength = range.toString().length;
-		if (selectionLength === 0) {
+		const caretNode = sel?.focusNode;
+		if (!sel || !caretNode || !container.contains(caretNode)) {
 			splitOffset = null;
 			onMarkSplit?.({ index: id, offset: null });
 			return;
 		}
-		const offset = range.endOffset;
+
+		const rangeToCaret = document.createRange();
+		rangeToCaret.selectNodeContents(container);
+		try {
+			rangeToCaret.setEnd(caretNode, sel.focusOffset);
+		} catch {
+			splitOffset = null;
+			onMarkSplit?.({ index: id, offset: null });
+			return;
+		}
+
+		const offset = rangeToCaret.toString().length;
+		if (offset <= 0 || offset >= textSegment1.length) {
+			splitOffset = null;
+			onMarkSplit?.({ index: id, offset: null });
+			return;
+		}
+
 		splitOffset = offset;
 		onMarkSplit?.({ index: id, offset });
 	}
 
-	function splitAtSelection() {
+	function splitAtCaret() {
 		if (splitOffset === null) return;
 		onSplitSegment?.({ index: id, offset: splitOffset });
 	}
@@ -317,9 +330,9 @@
 			</button>
 			<button
 				class="tm-btn save split-btn"
-				onclick={splitAtSelection}
+				onclick={splitAtCaret}
 				disabled={splitOffset === null}
-				title="Select text in source to enable split"
+				title="Place the caret inside the source text to enable split"
 			>
 				Split
 			</button>

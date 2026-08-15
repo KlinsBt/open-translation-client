@@ -14,6 +14,7 @@
 	} from "$lib/functions/saveData/stores.svelte";
 	import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
 	import { notifySuccess } from "$lib/components/notifications/toastStore";
+	import type { JsonSegmentMeta } from "$lib/types/types";
 
 	let temporarySaveName: string = "";
 	let values: string[] = [];
@@ -21,7 +22,7 @@
 	let sourceLanguage = "";
 	let targetLanguage = "";
 	let jsonData: Record<string, unknown> | null = null;
-	let segmentMeta: number[] = [];
+	let segmentMeta: JsonSegmentMeta[] = [];
 
 	export function handleJsonTranslationFileUpload(event: Event): void {
 		const inputElement = event.target as HTMLInputElement;
@@ -55,25 +56,34 @@
 
 	function extractValuesWithSegmentation(jsonData: Record<string, any>): {
 		values: string[];
-		meta: number[];
+		meta: JsonSegmentMeta[];
 	} {
 		const values: string[] = [];
-		const meta: number[] = [];
+		const meta: JsonSegmentMeta[] = [];
+		const path: string[] = [];
 
 		function traverse(obj: any): void {
 			for (const key in obj) {
 				if (typeof obj[key] === "object" && obj[key] !== null) {
+					path.push(key);
 					traverse(obj[key]);
+					path.pop();
 				} else {
 					const text = String(obj[key]);
 					const pieces = splitTextWithPreferences(text).filter(
 						(p) => p.text.trim().length > 0,
 					);
-					meta.push(pieces.length > 0 ? pieces.length : 1);
 					if (pieces.length === 0) {
 						values.push(text);
+						meta.push({ path: [...path, key], separator: "" });
 					} else {
-						pieces.forEach((p) => values.push(`${p.text}${p.separator ?? ""}`));
+						pieces.forEach((piece) => {
+							values.push(`${piece.text}${piece.separator ?? ""}`);
+							meta.push({
+								path: [...path, key],
+								separator: piece.separator ?? "",
+							});
+						});
 					}
 				}
 			}
@@ -152,6 +162,7 @@
 				data: jsonData as unknown as string | Blob,
 				segMeta: segmentMeta as unknown as string | Blob,
 			},
+			segmentMeta,
 		);
 		showLoading.set(false);
 		notifySuccess("Project created");

@@ -13,15 +13,30 @@ export interface DocxFragmentMeta {
 	end: number;
 }
 
-export type SegmentMeta =
+export interface DocxSegmentMeta {
+	separator?: string;
+	fragments: DocxFragmentMeta[];
+}
+
+export interface JsonSegmentMeta {
+	path: string[];
+	separator?: string;
+}
+
+export type HtmlSegmentMeta =
 	| {
+			kind: "text";
+			path: number[];
 			separator?: string;
-			fragments: DocxFragmentMeta[];
 	  }
 	| {
-			path: string[];
+			kind: "attribute";
+			path: number[];
+			attribute: string;
 			separator?: string;
 	  };
+
+export type SegmentMeta = DocxSegmentMeta | JsonSegmentMeta | HtmlSegmentMeta;
 
 export interface UserData {
 	id?: number;

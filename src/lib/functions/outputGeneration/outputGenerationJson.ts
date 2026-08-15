@@ -30,9 +30,10 @@ export async function generateJsonTranslation(translation: UserData) {
 	const typeRef: any = translation.translationData.typeRef;
 	const sourceData =
 		(typeRef && typeRef.data) || translation.translationData.typeRef;
-	const segMeta: number[] =
-		(typeRef && (typeRef.segMeta || typeRef.meta)) ||
-		buildFlatSegMeta(sourceData);
+	const segMeta = resolveJsonSegmentMeta(
+		translation.translationData,
+		sourceData,
+	);
 	let newJsonObject: Object = reconstructJsonFromValues(
 		sourceData as Record<string, any>,
 		translation.translationData.seg2,
@@ -45,6 +46,28 @@ export async function generateJsonTranslation(translation: UserData) {
 }
 
 export type JsonMetaEntry = { path: string[]; separator?: string } | number;
+
+export function resolveJsonSegmentMeta(
+	translationData: UserData["translationData"],
+	sourceData: Record<string, any>,
+): JsonMetaEntry[] {
+	const structuralMeta = translationData.segmentsMeta;
+	const hasValidStructuralMeta =
+		structuralMeta?.length === translationData.seg2.length &&
+		structuralMeta.every(
+			(entry) =>
+				"path" in entry &&
+				Array.isArray(entry.path) &&
+				entry.path.every((part) => typeof part === "string"),
+		);
+	if (hasValidStructuralMeta) return structuralMeta as JsonMetaEntry[];
+
+	const typeRef: any = translationData.typeRef;
+	return (
+		(typeRef && (typeRef.segMeta || typeRef.meta)) ||
+		buildFlatSegMeta(sourceData)
+	);
+}
 
 export function reconstructJsonFromValues(
 	jsonData: Record<string, any>,

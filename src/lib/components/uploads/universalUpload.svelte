@@ -234,6 +234,7 @@
 			values,
 			"json",
 			{ data: jsonData, meta } as any,
+			meta,
 		);
 	}
 

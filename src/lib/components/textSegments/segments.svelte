@@ -49,8 +49,7 @@
 	import { editTm, editTb } from "$lib/functions/saveData/stores.svelte";
 	import {
 		splitSegmentData,
-		combineSegmentData,
-		findSplitPoint,
+		combineSegmentRangeData,
 	} from "$lib/functions/parsing/segmentationLogic";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
@@ -82,12 +81,6 @@
 			$singleUserData.translationData.checked,
 		),
 	);
-
-	function isJsonMetaEntry(
-		entry: any,
-	): entry is { path: string[]; separator?: string } {
-		return entry && typeof entry === "object" && Array.isArray(entry.path);
-	}
 
 	function handleScroll() {
 		if (!segmentsContainer) return;
@@ -223,7 +216,7 @@
 		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 		const offset = pendingSplitOffsets.get(idx);
 		if (offset === undefined) {
-			notifyError("Select text in a source segment first to split.");
+			notifyError("Place the caret inside a source segment first.");
 			return;
 		}
 		splitAtOffset(idx, offset);
@@ -237,7 +230,7 @@
 		const offsetFromStore =
 			customOffset ?? pendingSplitOffsets.get(idx) ?? null;
 		if (offsetFromStore === null) {
-			notifyError("Select text in this segment to choose a split point.");
+			notifyError("Place the caret inside this source segment first.");
 			return;
 		}
 
@@ -247,6 +240,10 @@
 			idx,
 			splitAt,
 		);
+		if (result.error) {
+			notifyError(result.error);
+			return;
+		}
 		const newUserData = { ...$singleUserData, translationData: result.data };
 		singleUserData.set(newUserData);
 		updateTranslationOnIndexedDB(newUserData);
@@ -254,47 +251,24 @@
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 		pendingSplitOffsets.clear();
-		notifyInfo(
-			"Warning: splitting segments can change export output alignment.",
-		);
+		combineSelection = new Set();
+		notifySuccess(`Split segment ${idx + 1} at the source caret.`);
 	}
 
 	function combineWithNextSegment() {
 		if (!$singleUserData) return;
 
-		// Require at least two selected segments
-		const selected = Array.from(combineSelection.values()).sort(
-			(a, b) => a - b,
-		);
+		let selected = Array.from(combineSelection.values()).sort((a, b) => a - b);
 		if (selected.length < 2) {
-			notifyError("Select at least two consecutive segments to combine.");
-			return;
+			const current =
+				selected[0] ?? $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
+			selected = [current, current + 1];
 		}
 
-		// Ensure contiguous
-		for (let i = 1; i < selected.length; i++) {
-			if (selected[i] !== selected[i - 1] + 1) {
-				notifyError("Selected segments must be consecutive to combine.");
-				return;
-			}
-		}
-
-		let base = selected[0];
-		for (let i = 0; i < selected.length - 1; i++) {
-			mergePair(base);
-		}
-		combineSelection = new Set();
-		selectedSegmentId.set(base);
-		notifyInfo(
-			"Warning: combining segments can change export output alignment.",
+		const result = combineSegmentRangeData(
+			$singleUserData.translationData,
+			selected,
 		);
-	}
-
-	function mergePair(idx: number) {
-		if (idx < 0 || idx >= $singleUserData.translationData.seg1.length - 1)
-			return;
-
-		const result = combineSegmentData($singleUserData.translationData, idx);
 		if (result.error) {
 			notifyError(result.error);
 			return;
@@ -305,17 +279,21 @@
 		updateTranslationOnIndexedDB(newUserData);
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+		combineSelection = new Set();
+		pendingSplitOffsets.clear();
+		selectedSegmentId.set(selected[0]);
+		notifySuccess(`Joined ${selected.length} consecutive segments.`);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (!event.ctrlKey && !event.metaKey) return;
 
-		switch (event.key) {
-			case "ArrowDown":
+		switch (event.key.toLowerCase()) {
+			case "arrowdown":
 				event.preventDefault();
 				selectSegmentByOffset(1);
 				break;
-			case "ArrowUp":
+			case "arrowup":
 				event.preventDefault();
 				selectSegmentByOffset(-1);
 				break;
@@ -331,11 +309,11 @@
 				event.preventDefault();
 				fillCurrentSegment();
 				break;
-			case "s":
+			case "e":
 				event.preventDefault();
 				splitCurrentSegment();
 				break;
-			case "b":
+			case "j":
 				event.preventDefault();
 				combineWithNextSegment();
 				break;
@@ -733,14 +711,14 @@
 				<span>Open TM/TB manager</span>
 			</p>
 			<p>
-				<strong>Ctrl/Cmd + S:</strong>
+				<strong>Ctrl/Cmd + E:</strong>
 				<br />
 				<span>Split current segment</span>
 			</p>
 			<p>
-				<strong>Ctrl/Cmd + B:</strong>
+				<strong>Ctrl/Cmd + J:</strong>
 				<br />
-				<span>Combine with next segment</span>
+				<span>Join selected segments or current + next</span>
 			</p>
 		</div>
 	</button>
@@ -771,7 +749,7 @@
 			</button>
 			<button
 				onclick={splitCurrentSegment}
-				title="Split current segment at selection (Ctrl/Cmd+S)"
+				title="Split current segment at source caret (Ctrl/Cmd+E)"
 				disabled={!pendingSplitOffsets.has(
 					$selectedSegmentId ?? lastSelectedSegmentId ?? 0,
 				)}
@@ -784,10 +762,10 @@
 			</button>
 			<button
 				onclick={combineWithNextSegment}
-				title="Combine selected segments (Ctrl/Cmd+B)"
-				disabled={combineSelection.size < 2}
+				title="Join selected segments or current + next (Ctrl/Cmd+J)"
+				disabled={$singleUserData.translationData.seg1.length < 2}
 			>
-				Combine Segments
+				Join Segments
 			</button>
 		</div>
 	</div>

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
 	buildFlatSegMeta,
 	reconstructJsonFromValues,
+	resolveJsonSegmentMeta,
 } from "./outputGenerationJson";
+import { makeUserData } from "../../../test/fixtures";
 
 describe("JSON output reconstruction", () => {
 	it("reconstructs legacy count-based segments without mutating source data", () => {
@@ -40,6 +42,28 @@ describe("JSON output reconstruction", () => {
 	it("builds one fallback metadata entry per primitive leaf", () => {
 		expect(buildFlatSegMeta({ a: 1, nested: { b: true, c: "text" } })).toEqual([
 			1, 1, 1,
+		]);
+	});
+
+	it("prefers edited segment metadata over the immutable upload metadata", () => {
+		const source = { message: "One. Two!" };
+		const translation = makeUserData({
+			type: "json",
+			typeRef: {
+				data: source,
+				meta: [
+					{ path: ["message"], separator: ". " },
+					{ path: ["message"], separator: "!" },
+				],
+			} as any,
+			seg1: ["One. Two!"],
+			seg2: ["Eins. Zwei!"],
+			checked: [false],
+			segmentsMeta: [{ path: ["message"], separator: "!" }],
+		}).translationData;
+
+		expect(resolveJsonSegmentMeta(translation, source)).toEqual([
+			{ path: ["message"], separator: "!" },
 		]);
 	});
 });
