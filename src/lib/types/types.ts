@@ -38,6 +38,20 @@ export type HtmlSegmentMeta =
 
 export type SegmentMeta = DocxSegmentMeta | JsonSegmentMeta | HtmlSegmentMeta;
 
+export interface SegmentJoinBoundary {
+	sourceOffset: number;
+	targetOffset: number | null;
+	firstMeta?: SegmentMeta;
+	secondMeta?: SegmentMeta;
+	firstChecked?: boolean;
+	secondChecked?: boolean;
+}
+
+export interface SegmentJoinState {
+	targetSnapshot: string;
+	boundaries: SegmentJoinBoundary[];
+}
+
 export interface UserData {
 	id?: number;
 	translationData: {
@@ -51,6 +65,7 @@ export interface UserData {
 		type: Type;
 		typeRef: TypeRef;
 		segmentsMeta?: SegmentMeta[];
+		segmentJoinStates?: Array<SegmentJoinState | null>;
 		tm: null | {
 			id: null | number;
 			name: null | string;

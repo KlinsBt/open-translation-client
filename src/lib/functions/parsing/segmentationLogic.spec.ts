@@ -17,6 +17,7 @@ import {
 	combineSegmentData,
 	combineSegmentRangeData,
 	findSplitPoint,
+	getSegmentJoinBoundaryOffsets,
 	splitSegmentData,
 } from "./segmentationLogic";
 
@@ -89,10 +90,17 @@ describe("segment splitting", () => {
 		).toEqual({ message: "Hallo. " });
 
 		const joinedAgain = combineSegmentData(result.data, 0);
-		expect(joinedAgain.data.seg2).toEqual(["Hallo. "]);
+		expect(joinedAgain.data.seg2).toEqual(["Hallo"]);
 		expect(joinedAgain.data.segmentsMeta).toEqual([
 			{ path: ["message"], separator: ". " },
 		]);
+		expect(
+			reconstructJsonFromValues(
+				sourceJson,
+				joinedAgain.data.seg2,
+				joinedAgain.data.segmentsMeta as JsonMetaEntry[],
+			),
+		).toEqual({ message: "Hallo. " });
 	});
 
 	it("preserves complete HTML attribute metadata on both halves", () => {
@@ -180,6 +188,90 @@ describe("segment joining", () => {
 		expect(result.data.checked).toEqual([false]);
 	});
 
+	it("restores both source and target halves when splitting at a join boundary", () => {
+		const data = makeUserData({
+			seg1: ["One ", "two"],
+			seg2: ["Eins ", "zwei"],
+			checked: [true, false],
+		}).translationData;
+		const joined = combineSegmentData(data, 0);
+
+		expect(joined.data.segmentJoinStates).toEqual([
+			{
+				targetSnapshot: "Eins zwei",
+				boundaries: [
+					{
+						sourceOffset: 4,
+						targetOffset: 5,
+						firstChecked: true,
+						secondChecked: false,
+					},
+				],
+			},
+		]);
+
+		const restored = splitSegmentData(joined.data, 0, 4);
+		expect(restored.restoredJoinBoundary).toBe(true);
+		expect(restored.data.seg1).toEqual(["One ", "two"]);
+		expect(restored.data.seg2).toEqual(["Eins ", "zwei"]);
+		expect(restored.data.checked).toEqual([true, false]);
+		expect(restored.data.segmentJoinStates).toEqual([null, null]);
+	});
+
+	it("does not invent punctuation when joining untranslated structured segments", () => {
+		const data = makeUserData({
+			type: "json",
+			seg1: ["One. ", "Two!"],
+			seg2: ["", ""],
+			checked: [false, false],
+			segmentsMeta: [
+				{ path: ["message"], separator: ". " },
+				{ path: ["message"], separator: "!" },
+			],
+		}).translationData;
+
+		const joined = combineSegmentData(data, 0);
+		expect(joined.error).toBeUndefined();
+		expect(joined.data.seg2).toEqual([""]);
+	});
+
+	it("does not use a stale target offset after the joined target was edited", () => {
+		const data = makeUserData({
+			seg1: ["One ", "two"],
+			seg2: ["Eins ", "zwei"],
+			checked: [false, false],
+		}).translationData;
+		const joined = combineSegmentData(data, 0);
+		const edited = {
+			...joined.data,
+			seg2: ["Vollständig bearbeitet"],
+		};
+
+		const split = splitSegmentData(edited, 0, 4);
+		expect(split.restoredJoinBoundary).toBe(false);
+		expect(split.data.seg2).toEqual(["Vollständig bearbeitet", ""]);
+		expect(split.data.segmentJoinStates).toEqual([null, null]);
+	});
+
+	it("ignores malformed persisted join boundaries", () => {
+		const data = makeUserData({
+			seg1: ["One two"],
+			seg2: ["Eins zwei"],
+			checked: [false],
+			segmentJoinStates: [
+				{
+					targetSnapshot: "Eins zwei",
+					boundaries: [{ sourceOffset: 99, targetOffset: -1 }],
+				},
+			],
+		}).translationData;
+
+		expect(getSegmentJoinBoundaryOffsets(data, 0)).toEqual([]);
+		const split = splitSegmentData(data, 0, 4);
+		expect(split.restoredJoinBoundary).toBe(false);
+		expect(split.data.seg2).toEqual(["Eins zwei", ""]);
+	});
+
 	it("retains the final JSON separator and reconstructs the field", () => {
 		const sourceJson = { message: "One. Two!" };
 		const data = makeUserData({
@@ -189,7 +281,7 @@ describe("segment joining", () => {
 			seg2: ["Eins. ", "Zwei!"],
 			checked: [true, true],
 			segmentsMeta: [
-				{ path: ["message"], separator: " " },
+				{ path: ["message"], separator: ". " },
 				{ path: ["message"], separator: "!" },
 			],
 		}).translationData;
@@ -205,6 +297,14 @@ describe("segment joining", () => {
 				result.data.segmentsMeta as JsonMetaEntry[],
 			),
 		).toEqual({ message: "Eins. Zwei!" });
+
+		const restored = splitSegmentData(result.data, 0, 5);
+		expect(restored.restoredJoinBoundary).toBe(true);
+		expect(restored.data.seg2).toEqual(["Eins. ", "Zwei!"]);
+		expect(restored.data.segmentsMeta).toEqual([
+			{ path: ["message"], separator: ". " },
+			{ path: ["message"], separator: "!" },
+		]);
 	});
 
 	it("rejects joining different JSON fields without mutating input", () => {
@@ -316,7 +416,43 @@ describe("segment joining", () => {
 		expect(result.data.seg1).toEqual(["One two three"]);
 		expect(result.data.seg2).toEqual(["Eins zwei drei"]);
 		expect(result.data.checked).toEqual([true]);
+		expect(result.data.segmentJoinStates?.[0]?.boundaries).toMatchObject([
+			{ sourceOffset: 4, targetOffset: 5 },
+			{ sourceOffset: 8, targetOffset: 10 },
+		]);
 		expect(data.seg1).toHaveLength(3);
+	});
+
+	it("retains remaining reversible boundaries while unjoining a range", () => {
+		const data = makeUserData({
+			seg1: ["A ", "B ", "C"],
+			seg2: ["X ", "Y ", "Z"],
+			checked: [false, false, false],
+		}).translationData;
+		const joined = combineSegmentRangeData(data, [0, 1, 2]);
+		const firstSplit = splitSegmentData(joined.data, 0, 2);
+
+		expect(firstSplit.restoredJoinBoundary).toBe(true);
+		expect(firstSplit.data.seg2).toEqual(["X ", "Y Z"]);
+		expect(firstSplit.data.segmentJoinStates).toEqual([
+			null,
+			{
+				targetSnapshot: "Y Z",
+				boundaries: [
+					{
+						sourceOffset: 2,
+						targetOffset: 2,
+						firstChecked: false,
+						secondChecked: false,
+					},
+				],
+			},
+		]);
+
+		const secondSplit = splitSegmentData(firstSplit.data, 1, 2);
+		expect(secondSplit.restoredJoinBoundary).toBe(true);
+		expect(secondSplit.data.seg1).toEqual(["A ", "B ", "C"]);
+		expect(secondSplit.data.seg2).toEqual(["X ", "Y ", "Z"]);
 	});
 
 	it("returns the original data if a later range pair is incompatible", () => {

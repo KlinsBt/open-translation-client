@@ -98,6 +98,7 @@ export function extractXliff2_0Data(
 	let typeRef: any = {};
 	let tm: any = {};
 	let tb: any = {};
+	let editingState: any = {};
 
 	if (withCustomData) {
 		// Extract metadata
@@ -145,6 +146,13 @@ export function extractXliff2_0Data(
 								active: false,
 							};
 						}
+					} else if (typeAttr === "editing_state") {
+						try {
+							editingState = JSON.parse(content);
+						} catch (e) {
+							console.error("Invalid JSON in editing_state", e);
+							editingState = {};
+						}
 					}
 				}
 				break;
@@ -181,6 +189,9 @@ export function extractXliff2_0Data(
 			checked: checked.length !== seg1.length ? seg1.map(() => false) : checked,
 			type: type,
 			typeRef: typeRef,
+			segmentsMeta: editingState.segmentsMeta,
+			segmentJoinStates: editingState.segmentJoinStates,
+			parsingTokens: editingState.parsingTokens,
 			tm,
 			tb,
 		},
@@ -256,6 +267,7 @@ export function extractXliff1_2Data(
 	let typeRef: any = {};
 	let tm: any = {};
 	let tb: any = {};
+	let editingState: any = {};
 
 	if (withCustomData) {
 		const namespaceResolver = xliffDocument.createNSResolver(
@@ -298,6 +310,10 @@ export function extractXliff1_2Data(
 				"http://example.com/sup",
 				"Tb",
 			)[0];
+			const supEditingState = supSourceInfo.getElementsByTagNameNS(
+				"http://example.com/sup",
+				"EditingState",
+			)[0];
 
 			id = supId?.textContent || null;
 			name = supName?.textContent || name;
@@ -335,6 +351,15 @@ export function extractXliff1_2Data(
 					active: false,
 				};
 			}
+			const editingStateContent = (
+				supEditingState?.textContent || "{}"
+			).replace(/&quot;/g, '"');
+			try {
+				editingState = JSON.parse(editingStateContent);
+			} catch (e) {
+				console.error("Invalid JSON in EditingState", e);
+				editingState = {};
+			}
 		}
 	}
 
@@ -368,6 +393,9 @@ export function extractXliff1_2Data(
 			checked: checked.length != seg1.length ? seg1.map(() => false) : checked,
 			type: type,
 			typeRef: typeRef,
+			segmentsMeta: editingState.segmentsMeta,
+			segmentJoinStates: editingState.segmentJoinStates,
+			parsingTokens: editingState.parsingTokens,
 			tm,
 			tb,
 		},

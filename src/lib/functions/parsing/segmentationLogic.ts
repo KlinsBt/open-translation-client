@@ -3,6 +3,7 @@ import type {
 	DocxSegmentMeta,
 	HtmlSegmentMeta,
 	JsonSegmentMeta,
+	SegmentJoinState,
 	SegmentMeta,
 	UserData,
 } from "$lib/types/types";
@@ -12,6 +13,7 @@ type TranslationData = UserData["translationData"];
 export interface SegmentEditResult {
 	data: TranslationData;
 	error?: string;
+	restoredJoinBoundary?: boolean;
 }
 
 export type SplitResult = SegmentEditResult;
@@ -184,11 +186,135 @@ function stripOwnedSeparator(value: string, entry: SegmentMeta | undefined) {
 		: value;
 }
 
-function ensureOwnedSeparator(value: string, entry: SegmentMeta | undefined) {
-	const separator = entry?.separator ?? "";
-	return separator && !value.endsWith(separator)
-		? `${value}${separator}`
-		: value;
+function cloneSegmentMeta(
+	entry: SegmentMeta | undefined,
+): SegmentMeta | undefined {
+	if (!entry) return undefined;
+	if (isDocxMetaEntry(entry)) {
+		return {
+			...entry,
+			fragments: entry.fragments.map((fragment) => ({ ...fragment })),
+		};
+	}
+	if (isJsonMetaEntry(entry)) return { ...entry, path: [...entry.path] };
+	if (isHtmlMetaEntry(entry)) return { ...entry, path: [...entry.path] };
+	return undefined;
+}
+
+function cloneJoinState(
+	state: SegmentJoinState | null,
+): SegmentJoinState | null {
+	return state
+		? {
+				targetSnapshot: state.targetSnapshot,
+				boundaries: state.boundaries.map((boundary) => ({
+					...boundary,
+					firstMeta: cloneSegmentMeta(boundary.firstMeta),
+					secondMeta: cloneSegmentMeta(boundary.secondMeta),
+				})),
+			}
+		: null;
+}
+
+function isValidJoinState(
+	state: SegmentJoinState | null | undefined,
+	source: string,
+): state is SegmentJoinState {
+	return (
+		!!state &&
+		typeof state.targetSnapshot === "string" &&
+		Array.isArray(state.boundaries) &&
+		state.boundaries.every(
+			(boundary) =>
+				!!boundary &&
+				typeof boundary === "object" &&
+				Number.isInteger(boundary.sourceOffset) &&
+				boundary.sourceOffset > 0 &&
+				boundary.sourceOffset < source.length &&
+				(boundary.targetOffset === null ||
+					(Number.isInteger(boundary.targetOffset) &&
+						boundary.targetOffset >= 0 &&
+						boundary.targetOffset <= state.targetSnapshot.length)),
+		)
+	);
+}
+
+function normalizedJoinStates(
+	translation: TranslationData,
+): Array<SegmentJoinState | null> {
+	if (translation.segmentJoinStates?.length === translation.seg1.length) {
+		return translation.segmentJoinStates.map((state, index) =>
+			isValidJoinState(state, translation.seg1[index])
+				? cloneJoinState(state)
+				: null,
+		);
+	}
+	return new Array(translation.seg1.length).fill(null);
+}
+
+export function getSegmentJoinBoundaryOffsets(
+	translation: TranslationData,
+	idx: number,
+): number[] {
+	const state = translation.segmentJoinStates?.[idx];
+	return isValidJoinState(state, translation.seg1[idx] ?? "")
+		? state.boundaries.map((boundary) => boundary.sourceOffset)
+		: [];
+}
+
+function shiftedJoinBoundaries(
+	state: SegmentJoinState | null,
+	currentTarget: string,
+	sourceOffset: number,
+	targetOffset: number,
+) {
+	if (!state) return [];
+	const targetOffsetsAreCurrent = state.targetSnapshot === currentTarget;
+	return state.boundaries.map((boundary) => ({
+		...boundary,
+		sourceOffset: boundary.sourceOffset + sourceOffset,
+		targetOffset:
+			targetOffsetsAreCurrent && boundary.targetOffset !== null
+				? boundary.targetOffset + targetOffset
+				: null,
+	}));
+}
+
+function splitJoinState(
+	state: SegmentJoinState,
+	sourceSplitAt: number,
+	targetSplitAt: number,
+	firstTarget: string,
+	secondTarget: string,
+): [SegmentJoinState | null, SegmentJoinState | null] {
+	const firstBoundaries = state.boundaries
+		.filter((boundary) => boundary.sourceOffset < sourceSplitAt)
+		.map((boundary) => ({
+			...boundary,
+			firstMeta: cloneSegmentMeta(boundary.firstMeta),
+			secondMeta: cloneSegmentMeta(boundary.secondMeta),
+		}));
+	const secondBoundaries = state.boundaries
+		.filter((boundary) => boundary.sourceOffset > sourceSplitAt)
+		.map((boundary) => ({
+			...boundary,
+			sourceOffset: boundary.sourceOffset - sourceSplitAt,
+			targetOffset:
+				boundary.targetOffset === null
+					? null
+					: boundary.targetOffset - targetSplitAt,
+			firstMeta: cloneSegmentMeta(boundary.firstMeta),
+			secondMeta: cloneSegmentMeta(boundary.secondMeta),
+		}));
+
+	return [
+		firstBoundaries.length > 0
+			? { targetSnapshot: firstTarget, boundaries: firstBoundaries }
+			: null,
+		secondBoundaries.length > 0
+			? { targetSnapshot: secondTarget, boundaries: secondBoundaries }
+			: null,
+	];
 }
 
 function samePath(
@@ -330,20 +456,70 @@ export function splitSegmentData(
 	const newMeta = translation.segmentsMeta
 		? [...translation.segmentsMeta]
 		: undefined;
+	const hasAlignedJoinStates =
+		translation.segmentJoinStates?.length === translation.seg1.length;
+	const newJoinStates = hasAlignedJoinStates
+		? normalizedJoinStates(translation)
+		: undefined;
+	const currentJoinState = newJoinStates?.[idx] ?? null;
+	const matchingJoinBoundary = currentJoinState?.boundaries.find(
+		(boundary) => boundary.sourceOffset === splitAt,
+	);
+	const canRestoreJoinedTargets =
+		!!currentJoinState &&
+		currentJoinState.targetSnapshot === translation.seg2[idx] &&
+		matchingJoinBoundary?.targetOffset !== null &&
+		matchingJoinBoundary?.targetOffset !== undefined;
+	const targetSplitAt = canRestoreJoinedTargets
+		? matchingJoinBoundary!.targetOffset!
+		: null;
+	const firstTarget =
+		targetSplitAt === null
+			? stripOwnedSeparator(
+					translation.seg2[idx],
+					translation.segmentsMeta?.[idx],
+				)
+			: translation.seg2[idx].slice(0, targetSplitAt);
+	const secondTarget =
+		targetSplitAt === null ? "" : translation.seg2[idx].slice(targetSplitAt);
+	const restoredMeta =
+		canRestoreJoinedTargets &&
+		matchingJoinBoundary?.firstMeta &&
+		matchingJoinBoundary.secondMeta
+			? {
+					first: cloneSegmentMeta(matchingJoinBoundary.firstMeta)!,
+					second: cloneSegmentMeta(matchingJoinBoundary.secondMeta)!,
+				}
+			: undefined;
+	const effectiveSplitMeta = restoredMeta ?? splitMeta;
+	const restoredChecks =
+		canRestoreJoinedTargets &&
+		typeof matchingJoinBoundary?.firstChecked === "boolean" &&
+		typeof matchingJoinBoundary.secondChecked === "boolean"
+			? [matchingJoinBoundary.firstChecked, matchingJoinBoundary.secondChecked]
+			: [false, false];
 
 	newSeg1.splice(idx, 1, source.slice(0, splitAt), source.slice(splitAt));
 	// A character offset in one language is not a meaningful target split point.
 	// Keep the translatable target on the first half; its structural separator is
 	// owned by metadata and moves to the second half.
-	newSeg2.splice(
-		idx,
-		1,
-		stripOwnedSeparator(translation.seg2[idx], translation.segmentsMeta?.[idx]),
-		"",
-	);
-	newChecked.splice(idx, 1, false, false);
-	if (newMeta && splitMeta) {
-		newMeta.splice(idx, 1, splitMeta.first, splitMeta.second);
+	newSeg2.splice(idx, 1, firstTarget, secondTarget);
+	newChecked.splice(idx, 1, ...restoredChecks);
+	if (newMeta && effectiveSplitMeta) {
+		newMeta.splice(idx, 1, effectiveSplitMeta.first, effectiveSplitMeta.second);
+	}
+	if (newJoinStates) {
+		const splitStates =
+			canRestoreJoinedTargets && currentJoinState && targetSplitAt !== null
+				? splitJoinState(
+						currentJoinState,
+						splitAt,
+						targetSplitAt,
+						firstTarget,
+						secondTarget,
+					)
+				: ([null, null] as const);
+		newJoinStates.splice(idx, 1, ...splitStates);
 	}
 
 	return {
@@ -353,7 +529,9 @@ export function splitSegmentData(
 			seg2: newSeg2,
 			checked: newChecked,
 			segmentsMeta: newMeta,
+			segmentJoinStates: newJoinStates,
 		},
+		restoredJoinBoundary: canRestoreJoinedTargets,
 	};
 }
 
@@ -367,7 +545,6 @@ export function combineSegmentData(
 	if (!Number.isInteger(idx) || idx < 0 || idx >= translation.seg1.length - 1) {
 		return { data: translation, error: "Invalid segment index." };
 	}
-
 	const combinedMeta = combineMetaEntries(translation, idx);
 	if (combinedMeta.error) {
 		return { data: translation, error: combinedMeta.error };
@@ -379,14 +556,37 @@ export function combineSegmentData(
 	const newMeta = translation.segmentsMeta
 		? [...translation.segmentsMeta]
 		: undefined;
+	const newJoinStates = normalizedJoinStates(translation);
+	const currentSourceLength = newSeg1[idx].length;
+	const currentTargetLength = newSeg2[idx].length;
+	const joinedTarget = newSeg2[idx] + newSeg2[idx + 1];
+	const firstMeta = cloneSegmentMeta(newMeta?.[idx]);
+	const secondMeta = cloneSegmentMeta(newMeta?.[idx + 1]);
+	const joinedState: SegmentJoinState = {
+		targetSnapshot: joinedTarget,
+		boundaries: [
+			...shiftedJoinBoundaries(newJoinStates[idx], newSeg2[idx], 0, 0),
+			{
+				sourceOffset: currentSourceLength,
+				targetOffset: currentTargetLength,
+				...(firstMeta ? { firstMeta } : {}),
+				...(secondMeta ? { secondMeta } : {}),
+				firstChecked: newChecked[idx],
+				secondChecked: newChecked[idx + 1],
+			},
+			...shiftedJoinBoundaries(
+				newJoinStates[idx + 1],
+				newSeg2[idx + 1],
+				currentSourceLength,
+				currentTargetLength,
+			),
+		].sort((first, second) => first.sourceOffset - second.sourceOffset),
+	};
 
 	newSeg1.splice(idx, 2, newSeg1[idx] + newSeg1[idx + 1]);
-	newSeg2.splice(
-		idx,
-		2,
-		ensureOwnedSeparator(newSeg2[idx] + newSeg2[idx + 1], combinedMeta.entry),
-	);
+	newSeg2.splice(idx, 2, joinedTarget);
 	newChecked.splice(idx, 2, newChecked[idx] && newChecked[idx + 1]);
+	newJoinStates.splice(idx, 2, joinedState);
 	if (newMeta && combinedMeta.entry) {
 		newMeta.splice(idx, 2, combinedMeta.entry);
 	}
@@ -398,6 +598,7 @@ export function combineSegmentData(
 			seg2: newSeg2,
 			checked: newChecked,
 			segmentsMeta: newMeta,
+			segmentJoinStates: newJoinStates,
 		},
 	};
 }

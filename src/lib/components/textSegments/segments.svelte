@@ -50,6 +50,7 @@
 	import {
 		splitSegmentData,
 		combineSegmentRangeData,
+		getSegmentJoinBoundaryOffsets,
 	} from "$lib/functions/parsing/segmentationLogic";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
@@ -250,9 +251,13 @@
 		selectedSegmentId.set(idx + 1);
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
-		pendingSplitOffsets.clear();
+		pendingSplitOffsets = new Map();
 		combineSelection = new Set();
-		notifySuccess(`Split segment ${idx + 1} at the source caret.`);
+		notifySuccess(
+			result.restoredJoinBoundary
+				? `Restored the original source and target segments at boundary ${idx + 1}.`
+				: `Split segment ${idx + 1}; its existing target remains in the first half.`,
+		);
 	}
 
 	function combineWithNextSegment() {
@@ -280,9 +285,11 @@
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 		combineSelection = new Set();
-		pendingSplitOffsets.clear();
+		pendingSplitOffsets = new Map();
 		selectedSegmentId.set(selected[0]);
-		notifySuccess(`Joined ${selected.length} consecutive segments.`);
+		notifySuccess(
+			`Joined ${selected.length} consecutive segments. The dashed source marker can restore the boundary.`,
+		);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -794,6 +801,11 @@
 			textSegment2={$singleUserData.translationData.seg2[i]}
 			checked={$singleUserData.translationData.checked[i]}
 			combineSelected={combineSelection.has(i)}
+			joinBoundaries={getSegmentJoinBoundaryOffsets(
+				$singleUserData.translationData,
+				i,
+			)}
+			splitOffset={pendingSplitOffsets.get(i) ?? null}
 			onMarkSplit={(detail) => {
 				const next = new Map(pendingSplitOffsets);
 				if (detail.offset === null || detail.offset === undefined) {

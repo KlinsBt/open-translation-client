@@ -25,6 +25,8 @@
 		textSegment2,
 		checked,
 		combineSelected = false,
+		joinBoundaries = [],
+		splitOffset = null,
 		onMarkSplit,
 		onSplitSegment,
 		onToggleCombine,
@@ -34,6 +36,8 @@
 		textSegment2: string;
 		checked: boolean;
 		combineSelected?: boolean;
+		joinBoundaries?: number[];
+		splitOffset?: number | null;
 		onMarkSplit?: (detail: { index: number; offset: number | null }) => void;
 		onSplitSegment?: (detail: { index: number; offset: number }) => void;
 		onToggleCombine?: (detail: { index: number }) => void;
@@ -59,7 +63,33 @@
 		$singleUserData.translationData.tm?.active ?? false,
 	);
 	let isSelected: boolean = $derived($selectedSegmentId === id);
-	let splitOffset: number | null = $state(null);
+	type SourceDisplayPart = { text: string; markerOffset: number | null };
+	let sourceDisplayParts: SourceDisplayPart[] = $derived.by(() => {
+		const offsets = new Set(
+			joinBoundaries.filter(
+				(offset) => offset > 0 && offset < textSegment1.length,
+			),
+		);
+		if (
+			splitOffset !== null &&
+			splitOffset > 0 &&
+			splitOffset < textSegment1.length
+		) {
+			offsets.add(splitOffset);
+		}
+
+		const parts: SourceDisplayPart[] = [];
+		let cursor = 0;
+		for (const offset of [...offsets].sort((a, b) => a - b)) {
+			parts.push({
+				text: textSegment1.slice(cursor, offset),
+				markerOffset: offset,
+			});
+			cursor = offset;
+		}
+		parts.push({ text: textSegment1.slice(cursor), markerOffset: null });
+		return parts;
+	});
 
 	function toggleLockSegment() {
 		if (checked) {
@@ -121,7 +151,6 @@
 		const container = event.currentTarget as HTMLElement;
 		const caretNode = sel?.focusNode;
 		if (!sel || !caretNode || !container.contains(caretNode)) {
-			splitOffset = null;
 			onMarkSplit?.({ index: id, offset: null });
 			return;
 		}
@@ -131,25 +160,32 @@
 		try {
 			rangeToCaret.setEnd(caretNode, sel.focusOffset);
 		} catch {
-			splitOffset = null;
 			onMarkSplit?.({ index: id, offset: null });
 			return;
 		}
 
 		const offset = rangeToCaret.toString().length;
 		if (offset <= 0 || offset >= textSegment1.length) {
-			splitOffset = null;
 			onMarkSplit?.({ index: id, offset: null });
 			return;
 		}
 
-		splitOffset = offset;
 		onMarkSplit?.({ index: id, offset });
 	}
 
 	function splitAtCaret() {
 		if (splitOffset === null) return;
 		onSplitSegment?.({ index: id, offset: splitOffset });
+	}
+
+	function selectSplitOffset(offset: number) {
+		onMarkSplit?.({ index: id, offset });
+	}
+
+	function handleMarkerKeydown(event: KeyboardEvent, offset: number) {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		selectSplitOffset(offset);
 	}
 
 	function toggleCombineSelect() {
@@ -347,7 +383,29 @@
 		<span class="segment-number-inner">{id + 1}.</span>
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<p class="source-select" onmouseup={handleSourceMouseUp}>
-			{textSegment1}
+			{#each sourceDisplayParts as part}
+				{part.text}{#if part.markerOffset !== null}<span
+						class="source-split-marker"
+						class:active-split-marker={splitOffset === part.markerOffset}
+						class:join-boundary-marker={joinBoundaries.includes(
+							part.markerOffset,
+						)}
+						role="button"
+						tabindex="0"
+						aria-label={joinBoundaries.includes(part.markerOffset)
+							? "Select original join boundary for splitting"
+							: "Selected split position"}
+						title={joinBoundaries.includes(part.markerOffset)
+							? "Original join boundary — click to split here"
+							: "Segment will split here"}
+						onclick={(event) => {
+							event.stopPropagation();
+							selectSplitOffset(part.markerOffset!);
+						}}
+						onkeydown={(event) =>
+							handleMarkerKeydown(event, part.markerOffset!)}
+					></span>{/if}
+			{/each}
 		</p>
 	</div>
 
@@ -410,6 +468,30 @@
 
 	.source-select {
 		user-select: text;
+	}
+
+	.source-split-marker {
+		display: inline-block;
+		width: 0;
+		height: 1.25em;
+		margin: 0 2px;
+		border-left: 2px solid var(--color-theme-4);
+		vertical-align: -0.25em;
+		cursor: pointer;
+		opacity: 0.65;
+	}
+
+	.source-split-marker.join-boundary-marker {
+		border-left-style: dashed;
+		border-left-width: 3px;
+		opacity: 0.9;
+	}
+
+	.source-split-marker.active-split-marker {
+		border-left-color: #c54141;
+		border-left-style: solid;
+		opacity: 1;
+		filter: drop-shadow(0 0 2px rgb(197 65 65 / 45%));
 	}
 
 	.combine-toggle-checkbox {

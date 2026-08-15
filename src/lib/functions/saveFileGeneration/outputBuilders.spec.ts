@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { makeUserData } from "../../../test/fixtures";
 import { validateTbxFile } from "$lib/components/uploads/tbxUpload/tbxFileFunctions";
 import { validateTmxFile } from "$lib/components/uploads/tmxUpload/tmxFileFunctions";
-import { validateXliff2_0Data } from "$lib/components/uploads/saveFileUploads/saveFileFunctions";
+import {
+	extractXliff2_0Data,
+	validateXliff2_0Data,
+} from "$lib/components/uploads/saveFileUploads/saveFileFunctions";
 import { buildTextTranslation } from "../outputGeneration/outputGenerationText";
 import { buildTbx } from "./generateTbx3SaveFile";
 import { buildTmx } from "./generateTmxSaveFile1_4";
@@ -27,6 +30,34 @@ describe("translation output builders", () => {
 
 		expect(metadata.namespaceURI).toBe("urn:oasis:names:tc:xliff:metadata:2.0");
 		expect(validateXliff2_0Data(doc)).toBe(true);
+	});
+
+	it("round-trips segment metadata and reversible join boundaries in XLIFF", () => {
+		const userData = makeUserData({
+			type: "json",
+			seg1: ["One. Two!"],
+			seg2: ["Eins. Zwei!"],
+			checked: [true],
+			segmentsMeta: [{ path: ["message"], separator: "!" }],
+			segmentJoinStates: [
+				{
+					targetSnapshot: "Eins. Zwei!",
+					boundaries: [{ sourceOffset: 5, targetOffset: 6 }],
+				},
+			],
+			parsingTokens: [".", "!"],
+		});
+		const output = buildXliff2_0(userData);
+		const doc = new DOMParser().parseFromString(output, "application/xml");
+		const restored = extractXliff2_0Data(doc, true).translationData;
+
+		expect(restored.segmentsMeta).toEqual(
+			userData.translationData.segmentsMeta,
+		);
+		expect(restored.segmentJoinStates).toEqual(
+			userData.translationData.segmentJoinStates,
+		);
+		expect(restored.parsingTokens).toEqual([".", "!"]);
 	});
 
 	it("does not throw when optional XLIFF IDs are absent", () => {

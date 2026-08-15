@@ -14,7 +14,11 @@ export function buildXliff1_2(userData: UserData): string {
 		typeRef,
 		tm,
 		tb,
+		segmentsMeta,
+		segmentJoinStates,
+		parsingTokens,
 	} = translationData;
+	const editingState = { segmentsMeta, segmentJoinStates, parsingTokens };
 
 	// XLIFF structure for version 1.2
 	let xliff = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -34,6 +38,7 @@ export function buildXliff1_2(userData: UserData): string {
 	xliff += `          <sup:TypeRef>${escapeXml(JSON.stringify(typeRef))}</sup:TypeRef>\n`;
 	xliff += `          <sup:Tm>${escapeXml(JSON.stringify(tm))}</sup:Tm>\n`;
 	xliff += `          <sup:Tb>${escapeXml(JSON.stringify(tb))}</sup:Tb>\n`;
+	xliff += `          <sup:EditingState>${escapeXml(JSON.stringify(editingState))}</sup:EditingState>\n`;
 	xliff += `        </sup:SourceInfo>\n`;
 	xliff += `      </group>\n`;
 	xliff += `    </header>\n`;
