@@ -48,6 +48,9 @@ Open an <a href="https://github.com/KlinsBt/open-translation-client/issues">Issu
 
 No formal guidelines are implemented yet, but ontributions are always welcomed. If you open a pull request we will review and discuss it until formal guidelines are in place.
 
+See the [file-format implementation plan](./README_FILE_FORMAT_IMPLEMENTATION_PLAN.md)
+for the prioritized import/export roadmap and its completion criteria.
+
 ---
 
 #### Prerequisites
