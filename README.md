@@ -80,6 +80,17 @@ Then run the application using:
 
 `npm run dev`
 
+#### Running Automated Verification
+
+Run the complete formatting, type/accessibility, unit, integration, output, and
+production-build checks with:
+
+`npm run verify`
+
+Run only the automated test suite with:
+
+`npm test`
+
 <br/>
 
 #### Running the Production Environment
