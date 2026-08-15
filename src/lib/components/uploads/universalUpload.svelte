@@ -4,11 +4,13 @@
 	import { LANGUAGES } from "$lib/components/data/languages";
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
-	import JSZip from "jszip";
-	import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
-	import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
-	import { segmentWorkbookStrings } from "$lib/functions/parsing/parsingXlsx";
-	import { segmentHtmlContent } from "$lib/functions/parsing/parsingHtml";
+	import {
+		detectFormat,
+		getFormatAcceptValue,
+		getFormatAdapter,
+		getSupportedFormatLabels,
+	} from "$lib/formats/registry";
+	import type { FormatId } from "$lib/formats/formatIds";
 	import {
 		notifyError,
 		notifySuccess,
@@ -25,54 +27,38 @@
 	let sourceLanguage: string = $state("");
 	let targetLanguage: string = $state("");
 	let isDragging: boolean = $state(false);
-	let detectedFileType: string = $state("");
+	let detectedFormatId: FormatId | null = $state(null);
+	let detectionComplete: boolean = $state(false);
 	let isProcessing: boolean = $state(false);
+	const acceptedFormats = getFormatAcceptValue();
+	const supportedFormatLabels = getSupportedFormatLabels();
 
-	// Supported file types
-	const SUPPORTED_TYPES = {
-		"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-			"DOCX",
-		"application/json": "JSON",
-		"text/plain": "TXT",
-		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "XLSX",
-		"application/vnd.ms-excel": "XLS",
-		"text/html": "HTML",
-	};
+	function getDetectedFormatLabel(): string {
+		return detectedFormatId
+			? getFormatAdapter(detectedFormatId).label
+			: "UNSUPPORTED";
+	}
 
-	function detectFileType(file: File): string {
-		// Check MIME type first
-		if (SUPPORTED_TYPES[file.type as keyof typeof SUPPORTED_TYPES]) {
-			return SUPPORTED_TYPES[file.type as keyof typeof SUPPORTED_TYPES];
-		}
+	async function selectFile(file: File) {
+		uploadedFile = file;
+		detectionComplete = false;
+		const detected = await detectFormat(file);
+		if (uploadedFile !== file) return;
+		detectedFormatId = detected?.id ?? null;
+		detectionComplete = true;
+		temporarySaveName = file.name.replace(/\.[^/.]+$/, "");
+	}
 
-		// Fallback to extension check
-		const extension = file.name.split(".").pop()?.toLowerCase();
-		switch (extension) {
-			case "docx":
-				return "DOCX";
-			case "json":
-				return "JSON";
-			case "txt":
-				return "TXT";
-			case "xlsx":
-			case "xls":
-				return "XLSX";
-			case "html":
-			case "htm":
-				return "HTML";
-			default:
-				return "UNSUPPORTED";
-		}
+	function clearSelectedFile() {
+		uploadedFile = null;
+		detectedFormatId = null;
+		detectionComplete = false;
 	}
 
 	async function handleFileSelect(event: Event) {
 		const inputElement = event.target as HTMLInputElement;
 		const file = inputElement.files ? inputElement.files[0] : null;
-		if (file) {
-			uploadedFile = file;
-			detectedFileType = detectFileType(file);
-			temporarySaveName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-		}
+		if (file) await selectFile(file);
 	}
 
 	function handleDragOver(event: DragEvent) {
@@ -89,11 +75,7 @@
 		isDragging = false;
 
 		const file = event.dataTransfer?.files ? event.dataTransfer.files[0] : null;
-		if (file) {
-			uploadedFile = file;
-			detectedFileType = detectFileType(file);
-			temporarySaveName = file.name.replace(/\.[^/.]+$/, "");
-		}
+		if (file) await selectFile(file);
 	}
 
 	function check(opt: number, lang: string) {
@@ -105,7 +87,12 @@
 	}
 
 	async function processAndCreateProject() {
-		if (!uploadedFile || !sourceLanguage || !targetLanguage) {
+		if (
+			!uploadedFile ||
+			!detectedFormatId ||
+			!sourceLanguage ||
+			!targetLanguage
+		) {
 			notifyError("Please fill all required fields");
 			return;
 		}
@@ -115,27 +102,34 @@
 
 		try {
 			const timestamp = new Date().valueOf().toString();
+			const adapter = getFormatAdapter(detectedFormatId);
+			const validation = await adapter.validate(uploadedFile);
+			if (!validation.valid) {
+				throw new Error(validation.reason ?? `Invalid ${adapter.label} file.`);
+			}
 
-			switch (detectedFileType) {
-				case "DOCX":
-					await processDocx(uploadedFile, timestamp);
-					break;
-				case "JSON":
-					await processJson(uploadedFile, timestamp);
-					break;
-				case "TXT":
-					await processText(uploadedFile, timestamp);
-					break;
-				case "XLSX":
-					await processXlsx(uploadedFile, timestamp);
-					break;
-				case "HTML":
-					await processHtml(uploadedFile, timestamp);
-					break;
-				default:
-					notifyError("Unsupported file type");
-					showLoading.set(false);
-					return;
+			const imported = await adapter.importFile(uploadedFile);
+			if (imported.kind === "text") {
+				await saveAndOpenNewFileWithTextString(
+					temporarySaveName,
+					sourceLanguage,
+					targetLanguage,
+					timestamp,
+					imported.text,
+					adapter.id,
+					imported.typeRef,
+				);
+			} else {
+				await saveAndOpenNewFileWithStringArray(
+					temporarySaveName,
+					sourceLanguage,
+					targetLanguage,
+					timestamp,
+					imported.segments,
+					adapter.id,
+					imported.typeRef,
+					imported.segmentsMeta,
+				);
 			}
 
 			notifySuccess("Project created");
@@ -150,161 +144,13 @@
 		}
 	}
 
-	async function processDocx(file: File, timestamp: string) {
-		const arrayBuffer = await file.arrayBuffer();
-		const zip = new JSZip();
-		const content = await zip.loadAsync(arrayBuffer);
-
-		const extractedXmlContent: { [key: string]: string | Blob } = {};
-
-		for (const filePath in content.files) {
-			if (filePath.startsWith("word/media")) {
-				const fileContent = await content.files[filePath].async("blob");
-				extractedXmlContent[filePath] = fileContent;
-			} else {
-				const fileContent = await content.files[filePath].async("string");
-				extractedXmlContent[filePath] = fileContent;
-			}
-		}
-
-		const documentXml = extractedXmlContent["word/document.xml"] as string;
-		if (!documentXml) throw new Error("No document.xml found");
-
-		const { segments, meta } = segmentDocxXml(documentXml);
-		const parsedSegments = segments.map(
-			(segment) => `${segment.text}${segment.separator ?? ""}`,
-		);
-
-		await saveAndOpenNewFileWithStringArray(
-			temporarySaveName,
-			sourceLanguage,
-			targetLanguage,
-			timestamp,
-			parsedSegments,
-			"docx",
-			extractedXmlContent as any,
-			meta,
-		);
-	}
-
-	async function processJson(file: File, timestamp: string) {
-		const text = await file.text();
-		const jsonData = JSON.parse(text);
-
-		const values: string[] = [];
-		const meta: any[] = [];
-
-		const pathStack: string[] = [];
-
-		function traverse(obj: any): void {
-			for (const key in obj) {
-				const val = obj[key];
-				if (typeof val === "object" && val !== null) {
-					pathStack.push(key);
-					traverse(val);
-					pathStack.pop();
-				} else {
-					const textVal = String(val);
-					const pieces = splitTextWithPreferences(textVal).filter(
-						(p) => p.text.trim().length > 0,
-					);
-					if (pieces.length === 0) {
-						values.push(textVal);
-						meta.push({ path: [...pathStack, key], separator: "" });
-					} else {
-						for (const p of pieces) {
-							values.push(`${p.text}${p.separator ?? ""}`);
-							meta.push({
-								path: [...pathStack, key],
-								separator: p.separator ?? "",
-							});
-						}
-					}
-				}
-			}
-		}
-
-		traverse(jsonData);
-
-		await saveAndOpenNewFileWithStringArray(
-			temporarySaveName,
-			sourceLanguage,
-			targetLanguage,
-			timestamp,
-			values,
-			"json",
-			{ data: jsonData, meta } as any,
-			meta,
-		);
-	}
-
-	async function processText(file: File, timestamp: string) {
-		const fullText = await file.text();
-
-		await saveAndOpenNewFileWithTextString(
-			temporarySaveName,
-			sourceLanguage,
-			targetLanguage,
-			timestamp,
-			fullText,
-			"text",
-		);
-	}
-
-	async function processXlsx(file: File, timestamp: string) {
-		const arrayBuffer = await file.arrayBuffer();
-		const zip = new JSZip();
-		const content = await zip.loadAsync(arrayBuffer);
-
-		const extractedXmlContent: { [key: string]: string | Blob } = {};
-
-		for (const filePath in content.files) {
-			const zipEntry = content.files[filePath];
-
-			if (filePath.startsWith("xl/media")) {
-				const fileContent = await zipEntry.async("blob");
-				extractedXmlContent[filePath] = fileContent;
-			} else {
-				const fileContent = await zipEntry.async("string");
-				extractedXmlContent[filePath] = fileContent;
-			}
-		}
-
-		const { allSegments } = segmentWorkbookStrings(extractedXmlContent);
-
-		await saveAndOpenNewFileWithStringArray(
-			temporarySaveName,
-			sourceLanguage,
-			targetLanguage,
-			timestamp,
-			allSegments,
-			"xlsx",
-			extractedXmlContent as any,
-		);
-	}
-
-	async function processHtml(file: File, timestamp: string) {
-		const htmlText = await file.text();
-		const { allSegments, meta } = segmentHtmlContent(htmlText);
-
-		await saveAndOpenNewFileWithStringArray(
-			temporarySaveName,
-			sourceLanguage,
-			targetLanguage,
-			timestamp,
-			allSegments,
-			"html",
-			htmlText,
-			meta,
-		);
-	}
-
 	function resetForm() {
 		uploadedFile = null;
 		temporarySaveName = "";
 		sourceLanguage = "";
 		targetLanguage = "";
-		detectedFileType = "";
+		detectedFormatId = null;
+		detectionComplete = false;
 	}
 </script>
 
@@ -326,18 +172,18 @@
 					<input
 						id="file-input"
 						type="file"
-						accept=".docx,.json,.txt,.xlsx,.xls,.html,.htm"
+						accept={acceptedFormats}
 						onchange={handleFileSelect}
 						style="display: none;"
 					/>
 				</label>
-				<p class="supported-formats">Supported: DOCX, JSON, TXT, XLSX, HTML</p>
+				<p class="supported-formats">Supported: {supportedFormatLabels}</p>
 			</div>
 		{:else}
 			<div class="file-info">
 				<div class="file-details">
-					<div class="file-icon {detectedFileType.toLowerCase()}">
-						{detectedFileType}
+					<div class="file-icon {getDetectedFormatLabel().toLowerCase()}">
+						{detectionComplete ? getDetectedFormatLabel() : "CHECKING"}
 					</div>
 					<div class="file-name-section">
 						<p class="file-name" title={uploadedFile.name}>
@@ -347,16 +193,16 @@
 							{(uploadedFile.size / 1024).toFixed(2)} KB
 						</p>
 					</div>
-					<button class="btn-remove" onclick={() => (uploadedFile = null)}>
+					<button class="btn-remove" onclick={clearSelectedFile}>
 						Remove
 					</button>
 				</div>
 
-				{#if detectedFileType === "UNSUPPORTED"}
+				{#if detectionComplete && !detectedFormatId}
 					<div class="error-message">
 						This file type is not supported. Please upload a valid file.
 					</div>
-				{:else}
+				{:else if detectionComplete}
 					<div class="form-section">
 						<input
 							type="text"

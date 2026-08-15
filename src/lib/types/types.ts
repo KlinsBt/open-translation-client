@@ -1,10 +1,12 @@
-﻿export interface Sgmt {
+﻿import type { FormatId } from "$lib/formats/formatIds";
+
+export interface Sgmt {
 	segment: string;
 	checked: boolean;
 }
 
 export type TypeRef = string | { [key: string]: string | Blob | any[] };
-export type Type = "text" | "json" | "docx" | "xlsx" | "html";
+export type Type = FormatId;
 
 export interface DocxFragmentMeta {
 	paragraphIndex: number;

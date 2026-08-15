@@ -43,11 +43,15 @@ must be removed until a real XLS converter exists.
 
 ## Architecture required before adding more extensions
 
-- [ ] **FF-000 — Introduce a format-adapter registry.** Replace MIME switches,
+- [x] **FF-000 — Introduce a format-adapter registry.** Replace MIME switches,
       the hard-coded `Type` union, and the export `if` chain with adapters that
       declare IDs, extensions, MIME types, signature sniffing, capabilities,
       import options, importer, exporter, and validator. Keep MIME and extension
       hints, but never trust either without content sniffing.
+      Completed 2026-08-16: the active upload/import/export path now uses the
+      registry, all five current formats have adapters and validation hooks, and
+      focused registry/import tests pass. Deeper signature enforcement remains
+      tracked by FF-006 so existing uploads are not changed silently here.
 - [ ] **FF-001 — Define a rich neutral document model.** Represent stable unit
       IDs, source and target fragments, paired/standalone inline codes, context,
       notes, state, plural/variant relationships, translatability, whitespace,

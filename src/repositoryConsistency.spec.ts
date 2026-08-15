@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { relative, resolve } from "node:path";
+import { FORMAT_IDS } from "$lib/formats/formatIds";
+import { FORMAT_ADAPTERS, getFormatAdapter } from "$lib/formats/registry";
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -47,24 +49,12 @@ describe("repository consistency", () => {
 		expect(missing).toEqual([]);
 	});
 
-	it("keeps all configured translation types connected to export handlers", () => {
-		const types = readFileSync(resolve(root, "src/lib/types/types.ts"), "utf8");
-		const dispatcher = readFileSync(
-			resolve(
-				root,
-				"src/lib/functions/outputGeneration/handleTranslationExport.ts",
-			),
-			"utf8",
-		);
-		const match = types.match(/export type Type = ([^;]+);/);
-		expect(match).not.toBeNull();
-		const configuredTypes = Array.from(
-			match![1].matchAll(/"([^"]+)"/g),
-			(item) => item[1],
-		);
-		const missing = configuredTypes.filter(
-			(type) => !dispatcher.includes(`translationData.type === "${type}"`),
-		);
-		expect(missing).toEqual([]);
+	it("keeps all configured translation types connected to adapters", () => {
+		expect(FORMAT_ADAPTERS.map((adapter) => adapter.id)).toEqual(FORMAT_IDS);
+		for (const id of FORMAT_IDS) {
+			const adapter = getFormatAdapter(id);
+			expect(adapter.importFile).toBeTypeOf("function");
+			expect(adapter.exportFile).toBeTypeOf("function");
+		}
 	});
 });
