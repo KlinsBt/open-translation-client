@@ -5,11 +5,13 @@ export interface ParsingPreference {
 	active: boolean;
 }
 
+export const DEFAULT_TOKENS = [".", "?", "!", "。", "！", "？"];
+
 const STORAGE_KEY = "parsing-preferences";
 const DEFAULT_PREF: ParsingPreference = {
 	id: "default",
 	label: "Default (sentence-based)",
-	tokens: [".", "?", "!", "。", "！", "？"],
+	tokens: DEFAULT_TOKENS,
 	active: true,
 };
 
@@ -26,9 +28,7 @@ function ensureDefaultPref(prefs: ParsingPreference[]): ParsingPreference[] {
 	} else {
 		// Keep default tokens/label immutable, but preserve active state
 		updated = prefs.map((p) =>
-			p.id === DEFAULT_PREF.id
-				? { ...DEFAULT_PREF, active: p.active }
-				: p,
+			p.id === DEFAULT_PREF.id ? { ...DEFAULT_PREF, active: p.active } : p,
 		);
 	}
 
@@ -66,7 +66,7 @@ export function loadParsingPreferences(): ParsingPreference[] {
 }
 
 export function saveParsingPreferences(preferences: ParsingPreference[]) {
-	writeStore(preferences);
+	writeStore(ensureDefaultPref(preferences));
 }
 
 export function addParsingPreference(
@@ -88,10 +88,11 @@ export function addParsingPreference(
 }
 
 export function setActiveParsingPreference(id: string): ParsingPreference[] {
-	const prefs = ensureDefaultPref(readStore()).map((p) => ({
+	const selected = ensureDefaultPref(readStore()).map((p) => ({
 		...p,
 		active: p.id === id,
 	}));
+	const prefs = ensureDefaultPref(selected);
 	writeStore(prefs);
 	return prefs;
 }
@@ -134,4 +135,8 @@ export function getActiveTokens(): string[] {
 	const prefs = ensureDefaultPref(readStore());
 	const active = prefs.find((p) => p.active);
 	return active ? active.tokens : DEFAULT_PREF.tokens;
+}
+
+export function getDefaultTokens(): string[] {
+	return [...DEFAULT_TOKENS];
 }

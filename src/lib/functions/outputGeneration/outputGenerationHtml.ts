@@ -1,5 +1,8 @@
 import type { UserData } from "$lib/types/types";
-import { applyTranslationsToHtml } from "$lib/functions/parsing/parsingHtml";
+import {
+	applyTranslationsToHtml,
+	segmentHtmlContent,
+} from "$lib/functions/parsing/parsingHtml";
 
 async function generateHtmlFileDownload(htmlContent: string, name: string) {
 	const blob: Blob = new Blob([htmlContent], {
@@ -21,9 +24,32 @@ async function generateHtmlFileDownload(htmlContent: string, name: string) {
 export async function createHtmlFromModifiedText(translation: UserData) {
 	let originalHtmlContent = translation.translationData.typeRef as string;
 	console.log("html: ", originalHtmlContent);
+	const tokens = translation.translationData.parsingTokens;
+	let meta = translation.translationData.segmentsMeta;
+
+	// If meta is missing or misaligned, regenerate from the stored HTML using the saved tokens
+	if (!meta || meta.length !== translation.translationData.seg2.length) {
+		try {
+			const { meta: regenMeta, allSegments } = segmentHtmlContent(
+				originalHtmlContent,
+				tokens,
+			);
+			if (allSegments.length === translation.translationData.seg2.length) {
+				meta = regenMeta.map((htmlMeta) => ({
+					...htmlMeta,
+					fragments: [],
+				}));
+			}
+		} catch (e) {
+			console.error("Failed to regenerate HTML meta", e);
+		}
+	}
+
 	const updatedHtmlContent = replaceTextStrings(
 		originalHtmlContent,
 		translation.translationData.seg2,
+		tokens,
+		meta,
 	);
 	await generateHtmlFileDownload(
 		updatedHtmlContent,
@@ -31,6 +57,11 @@ export async function createHtmlFromModifiedText(translation: UserData) {
 	);
 }
 
-function replaceTextStrings(htmlContent: string, textArray: string[]): string {
-	return applyTranslationsToHtml(htmlContent, textArray);
+function replaceTextStrings(
+	htmlContent: string,
+	textArray: string[],
+	tokens?: string[],
+	meta?: any[],
+): string {
+	return applyTranslationsToHtml(htmlContent, textArray, tokens, meta);
 }

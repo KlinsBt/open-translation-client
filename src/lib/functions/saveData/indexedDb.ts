@@ -1,4 +1,6 @@
 import { type TbData, type TmData, type UserData } from "../../types/types.js";
+import { getDefaultTokens } from "$lib/functions/parsing/parsingPreferences";
+import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
 import {
 	tbData,
 	tmData,
@@ -67,7 +69,40 @@ export async function loadTranslationsUserDataFromIndexedDB(): Promise<
 		const request = store.getAll();
 
 		request.onsuccess = (event) => {
-			const result = (event.target as IDBRequest).result as UserData[];
+			let result = (event.target as IDBRequest).result as UserData[];
+			// Backfill parsingTokens with default tokens if missing
+			result = result.map((item) => {
+				if (!item.translationData.parsingTokens) {
+					item.translationData.parsingTokens = getDefaultTokens();
+				}
+				if (!item.translationData.segmentsMeta) {
+					item.translationData.segmentsMeta = [];
+				}
+				// Recompute docx segmentsMeta if missing but document.xml available
+				if (
+					item.translationData.type === "docx" &&
+					Array.isArray(item.translationData.segmentsMeta) &&
+					item.translationData.segmentsMeta.length === 0 &&
+					item.translationData.typeRef &&
+					(item.translationData.typeRef as any)["word/document.xml"]
+				) {
+					const docXml = (item.translationData.typeRef as any)[
+						"word/document.xml"
+					] as string;
+					try {
+						const { meta, segments } = segmentDocxXml(
+							docXml,
+							item.translationData.parsingTokens,
+						);
+						if (segments.length === item.translationData.seg1.length) {
+							item.translationData.segmentsMeta = meta;
+						}
+					} catch (e) {
+						console.error("Failed to regenerate docx meta", e);
+					}
+				}
+				return item;
+			});
 			userData.set(result);
 			resolve(result);
 			return result;
@@ -109,6 +144,7 @@ export async function saveNewTranslationToIndexedDB(
 			checked: checkedSegments,
 			type: fileType,
 			typeRef: fileTypeRef as any,
+			parsingTokens: getDefaultTokens(),
 			tm: {
 				id: null,
 				name: null,

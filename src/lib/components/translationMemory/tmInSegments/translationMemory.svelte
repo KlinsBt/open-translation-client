@@ -64,6 +64,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
 	role="dialog"
+	tabindex="-1"
 	class="modal-element-global {showConfirmationModal
 		? ''
 		: 'close-modal-global'}"

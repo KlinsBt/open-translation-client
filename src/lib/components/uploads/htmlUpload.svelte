@@ -23,6 +23,7 @@
 	let targetLanguage = "";
 	let extractedText: string[] = [];
 	let originalHtmlContent: string = "";
+	let htmlMeta: any[] = [];
 
 	// Handle file upload and extract the HTML content
 	async function handleFileUpload(event: Event) {
@@ -30,8 +31,9 @@
 		if (input.files && input.files[0]) {
 			htmlFile = input.files[0];
 			originalHtmlContent = await htmlFile.text();
-			const { allSegments } = segmentHtmlContent(originalHtmlContent);
+			const { allSegments, meta } = segmentHtmlContent(originalHtmlContent);
 			extractedText = allSegments;
+			htmlMeta = meta;
 			console.log("Extracted Text:", extractedText);
 		}
 	}
@@ -57,8 +59,9 @@
 				// Read the HTML file content
 				const fileContent = await file.text();
 				originalHtmlContent = fileContent;
-				const { allSegments } = segmentHtmlContent(originalHtmlContent);
+				const { allSegments, meta } = segmentHtmlContent(originalHtmlContent);
 				extractedText = allSegments;
+				htmlMeta = meta;
 				console.log("Extracted Text:", extractedText);
 			} catch (error) {
 				console.error("Error reading the HTML file", error);
@@ -91,6 +94,7 @@
 			extractedText,
 			"html",
 			originalHtmlContent,
+			htmlMeta,
 		);
 		showLoading.set(false);
 		notifySuccess("Project created");

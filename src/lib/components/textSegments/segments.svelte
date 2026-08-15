@@ -30,30 +30,35 @@
 		updateTranslationOnIndexedDB,
 	} from "$lib/functions/saveData/indexedDb";
 	import Modal from "../modal.svelte";
-import {
-	calcPercentageOfTotalSegmentsChecked,
-	getTotalWordCount,
-} from "$lib/functions/statistics";
-import TranslationMemory from "../translationMemory/tmInSegments/translationMemory.svelte";
-import TermBase from "../termBase/tbSegments/termBase.svelte";
-import TmxUpload from "../uploads/tmxUpload/tmxUpload.svelte";
-import TbxUpload from "../uploads/tbxUpload/tbxUpload.svelte";
-import TmEditing from "../translationMemory/tmEditing/tmEditing.svelte";
-import TbEditing from "../termBase/tbEditing/tbEditing.svelte";
-import type { TbData, TmData } from "$lib/types/types";
-import {
-	notifySuccess,
-	notifyInfo,
-	notifyError,
-} from "$lib/components/notifications/toastStore";
-import { editTm, editTb } from "$lib/functions/saveData/stores.svelte";
+	import {
+		calcPercentageOfTotalSegmentsChecked,
+		getTotalWordCount,
+	} from "$lib/functions/statistics";
+	import TranslationMemory from "../translationMemory/tmInSegments/translationMemory.svelte";
+	import TermBase from "../termBase/tbSegments/termBase.svelte";
+	import TmxUpload from "../uploads/tmxUpload/tmxUpload.svelte";
+	import TbxUpload from "../uploads/tbxUpload/tbxUpload.svelte";
+	import TmEditing from "../translationMemory/tmEditing/tmEditing.svelte";
+	import TbEditing from "../termBase/tbEditing/tbEditing.svelte";
+	import type { TbData, TmData } from "$lib/types/types";
+	import {
+		notifySuccess,
+		notifyInfo,
+		notifyError,
+	} from "$lib/components/notifications/toastStore";
+	import { editTm, editTb } from "$lib/functions/saveData/stores.svelte";
+	import {
+		splitSegmentData,
+		combineSegmentData,
+		findSplitPoint,
+	} from "$lib/functions/parsing/segmentationLogic";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
-let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
-let segmentsContainer: HTMLElement | null = $state(null);
-let tmSelected: null | number = $derived(
-	$singleUserData.translationData.tm?.id ?? null,
-);
+	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
+	let segmentsContainer: HTMLElement | null = $state(null);
+	let tmSelected: null | number = $derived(
+		$singleUserData.translationData.tm?.id ?? null,
+	);
 	let tmActive: boolean = $state(
 		$singleUserData.translationData.tm?.active ?? false,
 	);
@@ -61,20 +66,28 @@ let tmSelected: null | number = $derived(
 	let tbSelected: number | null = $state(
 		$singleUserData.translationData.tb?.id ?? null,
 	);
-let tbActive: boolean = $state(
-	$singleUserData.translationData.tb?.active ?? false,
-);
-let lastSelectedSegmentId: number = $state(0);
+	let tbActive: boolean = $state(
+		$singleUserData.translationData.tb?.active ?? false,
+	);
+	let lastSelectedSegmentId: number = $state(0);
 
 	let showSaveFileModal: boolean = $state(false);
 	let showTmTbModal: boolean = $state(false);
 	let showTmAddModal: boolean = $state(false);
 	let showTbAddModal: boolean = $state(false);
+	let combineSelection: Set<number> = $state(new Set());
+	let pendingSplitOffsets: Map<number, number> = $state(new Map());
 	let percentage: number = $derived(
 		calcPercentageOfTotalSegmentsChecked(
 			$singleUserData.translationData.checked,
 		),
 	);
+
+	function isJsonMetaEntry(
+		entry: any,
+	): entry is { path: string[]; separator?: string } {
+		return entry && typeof entry === "object" && Array.isArray(entry.path);
+	}
 
 	function handleScroll() {
 		if (!segmentsContainer) return;
@@ -206,10 +219,95 @@ let lastSelectedSegmentId: number = $state(0);
 		notifySuccess(`Filled segment ${idx + 1}`);
 	}
 
-	function handleKeydown(event: KeyboardEvent) {
-		const target = event.target as HTMLElement | null;
-		const tag = target?.tagName?.toLowerCase();
+	function splitCurrentSegment() {
+		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
+		const offset = pendingSplitOffsets.get(idx);
+		if (offset === undefined) {
+			notifyError("Select text in a source segment first to split.");
+			return;
+		}
+		splitAtOffset(idx, offset);
+	}
 
+	function splitAtOffset(customIdx?: number, customOffset?: number) {
+		if (!$singleUserData) return;
+		const idx = customIdx ?? $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
+		if (idx < 0 || idx >= $singleUserData.translationData.seg1.length) return;
+
+		const offsetFromStore =
+			customOffset ?? pendingSplitOffsets.get(idx) ?? null;
+		if (offsetFromStore === null) {
+			notifyError("Select text in this segment to choose a split point.");
+			return;
+		}
+
+		const splitAt = offsetFromStore;
+		const result = splitSegmentData(
+			$singleUserData.translationData,
+			idx,
+			splitAt,
+		);
+		const newUserData = { ...$singleUserData, translationData: result.data };
+		singleUserData.set(newUserData);
+		updateTranslationOnIndexedDB(newUserData);
+		selectedSegmentId.set(idx + 1);
+		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
+		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+		pendingSplitOffsets.clear();
+		notifyInfo(
+			"Warning: splitting segments can change export output alignment.",
+		);
+	}
+
+	function combineWithNextSegment() {
+		if (!$singleUserData) return;
+
+		// Require at least two selected segments
+		const selected = Array.from(combineSelection.values()).sort(
+			(a, b) => a - b,
+		);
+		if (selected.length < 2) {
+			notifyError("Select at least two consecutive segments to combine.");
+			return;
+		}
+
+		// Ensure contiguous
+		for (let i = 1; i < selected.length; i++) {
+			if (selected[i] !== selected[i - 1] + 1) {
+				notifyError("Selected segments must be consecutive to combine.");
+				return;
+			}
+		}
+
+		let base = selected[0];
+		for (let i = 0; i < selected.length - 1; i++) {
+			mergePair(base);
+		}
+		combineSelection = new Set();
+		selectedSegmentId.set(base);
+		notifyInfo(
+			"Warning: combining segments can change export output alignment.",
+		);
+	}
+
+	function mergePair(idx: number) {
+		if (idx < 0 || idx >= $singleUserData.translationData.seg1.length - 1)
+			return;
+
+		const result = combineSegmentData($singleUserData.translationData, idx);
+		if (result.error) {
+			notifyError(result.error);
+			return;
+		}
+
+		const newUserData = { ...$singleUserData, translationData: result.data };
+		singleUserData.set(newUserData);
+		updateTranslationOnIndexedDB(newUserData);
+		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
+		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
 		if (!event.ctrlKey && !event.metaKey) return;
 
 		switch (event.key) {
@@ -232,6 +330,14 @@ let lastSelectedSegmentId: number = $state(0);
 			case "f":
 				event.preventDefault();
 				fillCurrentSegment();
+				break;
+			case "s":
+				event.preventDefault();
+				splitCurrentSegment();
+				break;
+			case "b":
+				event.preventDefault();
+				combineWithNextSegment();
 				break;
 		}
 	}
@@ -281,30 +387,30 @@ let lastSelectedSegmentId: number = $state(0);
 	}
 
 	async function getAllTmDataFromIndexedDB() {
-	showLoading.set(true);
-	if ($tmData.length > 0) {
-		showLoading.set(false);
-		return;
-	} else {
-		let data = await loadTmDataFromIndexedDB();
-		tmData.set(data as TmData[]);
-		showLoading.set(false);
-		console.log(tmData);
+		showLoading.set(true);
+		if ($tmData.length > 0) {
+			showLoading.set(false);
+			return;
+		} else {
+			let data = await loadTmDataFromIndexedDB();
+			tmData.set(data as TmData[]);
+			showLoading.set(false);
+			console.log(tmData);
+		}
 	}
-}
 
 	async function getAllTbDataFromIndexedDB() {
-	showLoading.set(true);
-	if ($tbData.length > 0) {
-		showLoading.set(false);
-		return;
-	} else {
-		let data = await loadTbDataFromIndexedDB();
-		tbData.set(data as TbData[]);
-		showLoading.set(false);
-		console.log(tmData);
+		showLoading.set(true);
+		if ($tbData.length > 0) {
+			showLoading.set(false);
+			return;
+		} else {
+			let data = await loadTbDataFromIndexedDB();
+			tbData.set(data as TbData[]);
+			showLoading.set(false);
+			console.log(tmData);
+		}
 	}
-}
 
 	async function toggleSaveFileModal() {
 		showSaveFileModal = true;
@@ -536,6 +642,7 @@ let lastSelectedSegmentId: number = $state(0);
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		role="dialog"
+		tabindex="-1"
 		class="modal-element-global {showTmTbModal ? '' : 'close-modal-global'}"
 		onclick={() => (showTmTbModal = false)}
 	>
@@ -546,6 +653,7 @@ let lastSelectedSegmentId: number = $state(0);
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		role="dialog"
+		tabindex="-1"
 		class="modal-element-global {showSaveFileModal ? '' : 'close-modal-global'}"
 		onclick={() => (showSaveFileModal = false)}
 	>
@@ -556,6 +664,7 @@ let lastSelectedSegmentId: number = $state(0);
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		role="dialog"
+		tabindex="-1"
 		class="modal-element-global {showTmAddModal ? '' : 'close-modal-global'}"
 		onclick={() => {
 			showTmAddModal = false;
@@ -569,6 +678,7 @@ let lastSelectedSegmentId: number = $state(0);
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		role="dialog"
+		tabindex="-1"
 		class="modal-element-global {showTbAddModal ? '' : 'close-modal-global'}"
 		onclick={() => {
 			showTbAddModal = false;
@@ -622,9 +732,18 @@ let lastSelectedSegmentId: number = $state(0);
 				<br />
 				<span>Open TM/TB manager</span>
 			</p>
+			<p>
+				<strong>Ctrl/Cmd + S:</strong>
+				<br />
+				<span>Split current segment</span>
+			</p>
+			<p>
+				<strong>Ctrl/Cmd + B:</strong>
+				<br />
+				<span>Combine with next segment</span>
+			</p>
 		</div>
 	</button>
-	<!-- <button class="toolbar-button">Translate</button> -->
 </div>
 
 <div class="words-container">
@@ -650,9 +769,25 @@ let lastSelectedSegmentId: number = $state(0);
 				Lock All Segments
 				<DocLock />
 			</button>
+			<button
+				onclick={splitCurrentSegment}
+				title="Split current segment at selection (Ctrl/Cmd+S)"
+				disabled={!pendingSplitOffsets.has(
+					$selectedSegmentId ?? lastSelectedSegmentId ?? 0,
+				)}
+			>
+				Split Segment
+			</button>
 			<button onclick={() => fillAllEmptySegments()}>
 				Fill All Segments
 				<AutoFill />
+			</button>
+			<button
+				onclick={combineWithNextSegment}
+				title="Combine selected segments (Ctrl/Cmd+B)"
+				disabled={combineSelection.size < 2}
+			>
+				Combine Segments
 			</button>
 		</div>
 	</div>
@@ -680,6 +815,28 @@ let lastSelectedSegmentId: number = $state(0);
 			textSegment1={$singleUserData.translationData.seg1[i]}
 			textSegment2={$singleUserData.translationData.seg2[i]}
 			checked={$singleUserData.translationData.checked[i]}
+			combineSelected={combineSelection.has(i)}
+			onMarkSplit={(detail) => {
+				const next = new Map(pendingSplitOffsets);
+				if (detail.offset === null || detail.offset === undefined) {
+					next.delete(detail.index);
+				} else {
+					next.set(detail.index, detail.offset);
+				}
+				pendingSplitOffsets = next;
+				selectedSegmentId.set(detail.index);
+			}}
+			onSplitSegment={(detail) => splitAtOffset(detail.index, detail.offset)}
+			onToggleCombine={(detail) => {
+				const idx = detail.index;
+				const next = new Set(combineSelection);
+				if (next.has(idx)) {
+					next.delete(idx);
+				} else {
+					next.add(idx);
+				}
+				combineSelection = next;
+			}}
 		/>
 	{/each}
 </div>
@@ -826,13 +983,12 @@ let lastSelectedSegmentId: number = $state(0);
 		color: white;
 		border: 2px solid white;
 		border-radius: 50%;
-		width: 35px;
-		height: 35px;
+		width: 32px;
+		height: 32px;
 		padding: 0;
-		margin: 0px;
-		top: 3px;
+		margin-right: 15px;
 		font-weight: bold;
-		font-size: 1.5rem;
+		font-size: 1.1rem;
 		font-style: italic;
 		cursor: help;
 		transition: all 0.3s ease;
@@ -847,8 +1003,9 @@ let lastSelectedSegmentId: number = $state(0);
 
 	.toolbar-help:hover {
 		background-color: var(--color-theme-3);
-		transform: scale(1.05);
+		transform: scale(1.1);
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+		z-index: 100;
 	}
 
 	.toolbar-help:active {
@@ -988,10 +1145,14 @@ let lastSelectedSegmentId: number = $state(0);
 		color: var(--color-theme-3);
 	}
 
-	.middle-container > div {
+	.segment-actions {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 10px;
+		margin: 0px 0px 5px 0px;
+	}
+
+	.middle-container > .top-stats {
 		margin: 0px 0px 5px 0px;
 	}
 
@@ -1026,6 +1187,18 @@ let lastSelectedSegmentId: number = $state(0);
 	.middle-container > div > button:active {
 		filter: brightness(0.95);
 		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+	}
+
+	.middle-container > div > button:disabled {
+		background-color: #ccc;
+		color: #666;
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+
+	.middle-container > div > button:disabled:hover {
+		filter: none;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
 	.words-left > h1,

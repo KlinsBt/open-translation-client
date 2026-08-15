@@ -1,14 +1,14 @@
 import type { TmData } from "../../types/types";
 
 // Function to generate the TMX XML string
-function generateTmx(sourceLang: string, tm: TmData): string {
+export function buildTmx(sourceLang: string, tm: TmData): string {
 	let currentTimeInUnix = Math.floor(Date.now() / 1000);
 	let tmx = `<?xml version="1.0" encoding="UTF-8"?>\n`;
 	tmx += `<tmx version="1.4">\n`;
-	tmx += `  <header creationtool="Open Translation Client" creationtoolversion="1.0" datatype="unknown" segtype="sentence" adminlang="en-us" srclang="${getLanguageCode(sourceLang)}" o-tmf="OpenTLCTM" creationdate="${unixToCustomFormat(currentTimeInUnix)}" creationid="System" changedate="${unixToCustomFormat(currentTimeInUnix)}" changeid="System">\n`;
+	tmx += `  <header creationtool="Open Translation Client" creationtoolversion="1.0" datatype="unknown" segtype="sentence" adminlang="en-us" srclang="${escapeXml(getLanguageCode(sourceLang))}" o-tmf="OpenTLCTM" creationdate="${unixToCustomFormat(currentTimeInUnix)}" creationid="System" changedate="${unixToCustomFormat(currentTimeInUnix)}" changeid="System">\n`;
 	// tmx += `    <note>This is a generated TMX file</note>\n`;
-	tmx += `    <prop type="id">${tm.id}</prop>\n`;
-	tmx += `    <prop type="name">${tm.name}</prop>\n`;
+	tmx += `    <prop type="id">${escapeXml(String(tm.id ?? ""))}</prop>\n`;
+	tmx += `    <prop type="name">${escapeXml(tm.name ?? "")}</prop>\n`;
 	tmx += `  </header>\n`;
 	tmx += `  <body>\n`;
 
@@ -17,11 +17,11 @@ function generateTmx(sourceLang: string, tm: TmData): string {
 		const sourceSeg = tm.terms[i].source.segment;
 
 		tmx += `    <tu tuid="${i + 1}">\n`;
-		tmx += `      <tuv xml:lang="${getLanguageCode(sourceLang)}">\n`;
+		tmx += `      <tuv xml:lang="${escapeXml(getLanguageCode(sourceLang))}">\n`;
 		tmx += `        <seg>${escapeXml(sourceSeg)}</seg>\n`;
 		tmx += `      </tuv>\n`;
 		for (let j = 0; j < tm.terms[i].target.length; j++) {
-			tmx += `      <tuv xml:lang="${getLanguageCode(tm.terms[i].target[j].lang || "")}">\n`;
+			tmx += `      <tuv xml:lang="${escapeXml(getLanguageCode(tm.terms[i].target[j].lang || ""))}">\n`;
 			tmx += `        <seg>${escapeXml(tm.terms[i].target[j].segment || "")}</seg>\n`;
 			tmx += `      </tuv>\n`;
 		}
@@ -105,7 +105,7 @@ function customFormatToUnix(customTime: string): number {
 export async function generateTmxSaveFile(sourceLang: string, tmData: TmData) {
 	try {
 		// Generate the TMX content from UserData
-		const tmxContent = generateTmx(sourceLang, tmData);
+		const tmxContent = buildTmx(sourceLang, tmData);
 
 		// Trigger download
 		await generateTmxFileDownload(tmxContent, tmData.name || "TMX Save File");

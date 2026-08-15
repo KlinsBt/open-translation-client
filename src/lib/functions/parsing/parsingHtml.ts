@@ -22,12 +22,26 @@ export interface HtmlSegmentation {
 	textSegments: HtmlTextSegment[];
 	attributeSegments: HtmlAttributeSegment[];
 	allSegments: string[];
+	meta: HtmlMeta[];
 }
 
 interface SplitSegment {
 	text: string;
 	separator: string;
 }
+
+export type HtmlMeta =
+	| {
+			kind: "text";
+			path: number[];
+			separator: string;
+	  }
+	| {
+			kind: "attribute";
+			path: number[];
+			attribute: string;
+			separator: string;
+	  };
 
 // Split text into sentence-like pieces while keeping trailing whitespace as separator
 function splitTextWithSeparators(text: string): SplitSegment[] {
@@ -104,14 +118,32 @@ function isInsideSkippedTag(node: Node): boolean {
 }
 
 // Traverse DOM to collect text and attribute segments
-export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
+export function segmentHtmlContent(
+	htmlContent: string,
+	tokensOverride?: string[],
+): HtmlSegmentation {
 	const parser = new DOMParser();
 	const doc = parser.parseFromString(htmlContent, "text/html");
 
 	const textSegments: HtmlTextSegment[] = [];
 	const attributeSegments: HtmlAttributeSegment[] = [];
+	const combinedSegments: string[] = [];
 	const attributesToCheck = ["placeholder", "value", "alt", "title"];
-	const tokens = getActiveTokens();
+	const tokens = tokensOverride ?? getActiveTokens();
+	const meta: HtmlMeta[] = [];
+
+	function buildPath(node: Node): number[] {
+		const path: number[] = [];
+		let current: Node | null = node;
+		// Build path relative to body to avoid doctype/html offsets
+		while (current && current.parentNode && current !== doc.body) {
+			const siblings = Array.from(current.parentNode.childNodes);
+			const idx = siblings.indexOf(current as ChildNode);
+			path.push(idx);
+			current = current.parentNode;
+		}
+		return path.reverse();
+	}
 
 	function walk(node: Node) {
 		if (node.nodeType === Node.TEXT_NODE) {
@@ -120,7 +152,7 @@ export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
 			if (!text.trim()) return;
 			const pieces =
 				tokens.length > 0
-					? (splitTextWithPreferences(text) as SplitPiece[])
+					? (splitTextWithPreferences(text, tokens) as SplitPiece[])
 					: splitTextWithSeparators(text);
 			for (const piece of pieces) {
 				if (!piece.text.trim()) continue;
@@ -129,6 +161,12 @@ export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
 					text: piece.text,
 					separator: piece.separator,
 				});
+				meta.push({
+					kind: "text",
+					path: buildPath(node),
+					separator: piece.separator,
+				});
+				combinedSegments.push(`${piece.text}${piece.separator ?? ""}`);
 			}
 			return;
 		}
@@ -145,7 +183,7 @@ export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
 				if (!attrValue.trim()) continue;
 				const pieces =
 					tokens.length > 0
-						? (splitTextWithPreferences(attrValue) as SplitPiece[])
+						? (splitTextWithPreferences(attrValue, tokens) as SplitPiece[])
 						: splitTextWithSeparators(attrValue);
 				for (const piece of pieces) {
 					if (!piece.text.trim()) continue;
@@ -155,6 +193,13 @@ export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
 						text: piece.text,
 						separator: piece.separator,
 					});
+					meta.push({
+						kind: "attribute",
+						path: buildPath(el),
+						attribute: attr,
+						separator: piece.separator,
+					});
+					combinedSegments.push(`${piece.text}${piece.separator ?? ""}`);
 				}
 			}
 		}
@@ -164,24 +209,34 @@ export function segmentHtmlContent(htmlContent: string): HtmlSegmentation {
 
 	walk(doc.body);
 
-	const allSegments: string[] = [
-		...textSegments.map(
-			(segment) => `${segment.text}${segment.separator ?? ""}`,
-		),
-		...attributeSegments.map(
-			(segment) => `${segment.text}${segment.separator ?? ""}`,
-		),
-	];
-
-	return { doc, textSegments, attributeSegments, allSegments };
+	return {
+		doc,
+		textSegments,
+		attributeSegments,
+		allSegments: combinedSegments,
+		meta,
+	};
 }
 
 export function applyTranslationsToHtml(
 	htmlContent: string,
 	translatedSegments: string[],
+	tokensOverride?: string[],
+	metaOverride?: HtmlMeta[],
 ): string {
-	const { doc, textSegments, attributeSegments } =
-		segmentHtmlContent(htmlContent);
+	const hasValidMeta =
+		metaOverride &&
+		metaOverride.length > 0 &&
+		metaOverride.length === translatedSegments.length;
+
+	if (hasValidMeta) {
+		return applyWithMeta(htmlContent, translatedSegments, metaOverride);
+	}
+
+	const { doc, textSegments, attributeSegments } = segmentHtmlContent(
+		htmlContent,
+		tokensOverride,
+	);
 	const serializer = new XMLSerializer();
 	const ensureWithSeparator = (text: string, separator?: string) => {
 		if (!separator) return text;
@@ -226,4 +281,70 @@ export function applyTranslationsToHtml(
 	}
 
 	return serializer.serializeToString(doc);
+}
+
+function resolvePath(doc: Document, path: number[]): Node | null {
+	let current: Node | null = doc.body;
+	if (!current) return null;
+	for (const idx of path) {
+		if (!current.childNodes || idx < 0 || idx >= current.childNodes.length) {
+			return null;
+		}
+		current = current.childNodes[idx];
+	}
+	return current;
+}
+
+function applyWithMeta(
+	htmlContent: string,
+	translatedSegments: string[],
+	meta: HtmlMeta[],
+): string {
+	const parser = new DOMParser();
+	const doc = parser.parseFromString(htmlContent, "text/html");
+	const textPieces = new Map<Node, string[]>();
+	const attrPieces = new Map<Element, Map<string, string[]>>();
+
+	for (let i = 0; i < meta.length; i++) {
+		const entry = meta[i];
+		const translated = translatedSegments[i] ?? "";
+		const sep = entry.separator || "";
+
+		if (entry.kind === "text") {
+			const node = resolvePath(doc, entry.path);
+			if (!node || node.nodeType !== Node.TEXT_NODE) continue;
+			const arr = textPieces.get(node) || [];
+			let base = translated;
+			if (sep && base.endsWith(sep)) {
+				base = base.slice(0, -sep.length);
+			}
+			arr.push(sep ? `${base}${sep}` : base);
+			textPieces.set(node, arr);
+		} else if (entry.kind === "attribute") {
+			const node = resolvePath(doc, entry.path);
+			if (!node || node.nodeType !== Node.ELEMENT_NODE) continue;
+			const el = node as Element;
+			const map = attrPieces.get(el) || new Map<string, string[]>();
+			const arr = map.get(entry.attribute) || [];
+			let base = translated;
+			if (sep && base.endsWith(sep)) {
+				base = base.slice(0, -sep.length);
+			}
+			arr.push(sep ? `${base}${sep}` : base);
+			map.set(entry.attribute, arr);
+			attrPieces.set(el, map);
+		}
+	}
+
+	textPieces.forEach((pieces, node) => {
+		(node as Text).textContent = pieces.join("");
+	});
+
+	attrPieces.forEach((attrMap, el) => {
+		attrMap.forEach((pieces, attr) => {
+			el.setAttribute(attr, pieces.join(""));
+		});
+	});
+
+	return new XMLSerializer().serializeToString(doc);
 }

@@ -18,10 +18,11 @@
 	let temporarySaveName: string = "";
 
 	let parsedStringArray: string[] = [];
+	let docxMeta: any[] = [];
 	let isDragging = false;
 	let sourceLanguage = "";
 	let targetLanguage = "";
-	let extractedXmlContent: { [key: string]: string | Blob } = {};
+	let extractedXmlContent: { [key: string]: string | Blob | any[] } = {};
 
 	// Handle file upload and extract the XML structure
 	async function handleFileUpload(event: Event) {
@@ -88,18 +89,24 @@
 		const documentXml = extractedXmlContent["word/document.xml"];
 
 		if (documentXml) {
-			parsedStringArray = parseTextStringsFromXML(documentXml as string);
+			const parsed = parseTextStringsFromXML(documentXml as string);
+			parsedStringArray = parsed.parsedSegments;
+			docxMeta = parsed.meta;
 		}
 	}
 
 	// Parse text strings from the XML string generated from a .docx file
-	function parseTextStringsFromXML(xmlDocument: string): string[] {
-		const { segments } = segmentDocxXml(xmlDocument);
+	function parseTextStringsFromXML(xmlDocument: string): {
+		parsedSegments: string[];
+		meta: any[];
+	} {
+		const { segments, meta } = segmentDocxXml(xmlDocument);
+		// Store full text including separator so the user sees the exact source
 		const parsedSegments = segments.map(
 			(segment) => `${segment.text}${segment.separator ?? ""}`,
 		);
 		console.log("Extracted text strings:", parsedSegments);
-		return parsedSegments;
+		return { parsedSegments, meta };
 	}
 
 	function handleDragOver(event: DragEvent): void {
@@ -153,6 +160,7 @@
 			parsedStringArray,
 			"docx",
 			extractedXmlContent,
+			docxMeta,
 		);
 		showLoading.set(false);
 		notifySuccess("Project created");

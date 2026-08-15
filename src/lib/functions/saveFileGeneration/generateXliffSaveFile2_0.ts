@@ -1,7 +1,7 @@
 import type { UserData } from "$lib/types/types";
 
 // Function to generate the XLIFF XML string
-function generateXliff(userData: UserData): string {
+export function buildXliff2_0(userData: UserData): string {
 	const { translationData } = userData;
 	const {
 		name,
@@ -18,8 +18,8 @@ function generateXliff(userData: UserData): string {
 
 	// Builds the XLIFF structure
 	let xliff = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-	xliff += `<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="${sourceLang}" trgLang="${targetLang}">\n`;
-	xliff += `  <file id="${escapeXml(userData.id!.toString() ?? "")}" original="">\n`;
+	xliff += `<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" xmlns:mda="urn:oasis:names:tc:xliff:metadata:2.0" version="2.0" srcLang="${escapeXml(sourceLang)}" trgLang="${escapeXml(targetLang)}">\n`;
+	xliff += `  <file id="${escapeXml(String(userData.id ?? ""))}" original="">\n`;
 
 	// Adds a <mda:metadata> element to contain the custom metadata
 	xliff += `    <mda:metadata>\n`;
@@ -92,7 +92,7 @@ async function generateXliffFileDownload(xliffData: string, name: string) {
 export async function generateXliffSaveFile2_0(userData: UserData) {
 	try {
 		// Generates the XLIFF content from UserData
-		const xliffContent = generateXliff(userData);
+		const xliffContent = buildXliff2_0(userData);
 
 		// Triggers download
 		await generateXliffFileDownload(

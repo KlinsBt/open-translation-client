@@ -94,6 +94,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
 	role="dialog"
+	tabindex="-1"
 	class="modal-element-global {showUploadModal ? '' : 'close-modal-global'}"
 	onclick={() => (showUploadModal = false)}
 >
@@ -355,8 +356,7 @@
 		filter: brightness(1.1);
 	}
 
-	button:disabled,
-	button[disabled] {
+	button:disabled {
 		background-color: #cccccc !important;
 		color: #666666 !important;
 		pointer-events: none;

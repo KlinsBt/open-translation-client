@@ -48,8 +48,7 @@ export function calcPercentageOfTotalSegmentsChecked(
 }
 
 export async function getWordsAmountFromFullText(fullText: string) {
-	let words = fullText.split(" ");
-	return words.length;
+	return fullText.trim() ? fullText.trim().split(/\s+/).length : 0;
 }
 
 export function getTotalWordCount(segmentsArray: string[]): number {

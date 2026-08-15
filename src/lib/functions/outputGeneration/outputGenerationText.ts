@@ -1,9 +1,8 @@
 import type { UserData } from "$lib/types/types";
 
 async function generateTextFileDownload(textData: string, name: string) {
-	// Convert JSON data to a Blob
-	const blob: Blob = new Blob([JSON.stringify(textData, null, 2)], {
-		type: "plain/text",
+	const blob: Blob = new Blob([textData], {
+		type: "text/plain;charset=utf-8",
 	});
 
 	// Create a URL for the Blob
@@ -12,7 +11,7 @@ async function generateTextFileDownload(textData: string, name: string) {
 	// Create a temporary <a> element to trigger the download
 	const a: HTMLAnchorElement = document.createElement("a");
 	a.href = url;
-	a.download = `${name}.text`;
+	a.download = `${name}.txt`;
 
 	// Append the element, trigger the download, and remove the element
 	document.body.appendChild(a);
@@ -28,16 +27,12 @@ export async function generateTextTranslation(
 	// singleLineFormat: boolean, // if true, text is formatted as a single line
 ) {
 	const name: string = translation.translationData.name || "translation";
-	let stringifiedData: string[] = JSON.parse(
-		JSON.stringify(translation.translationData.seg2),
+	await generateTextFileDownload(
+		buildTextTranslation(translation.translationData.seg2),
+		name,
 	);
-	let formatedString: string = "";
+}
 
-	// if (singleLineFormat) {
-	// 	formatedString = stringifiedData.join(" ");
-	// } else {
-	// 	formatedString = stringifiedData.join("\n");
-	// }
-
-	generateTextFileDownload(stringifiedData.join(" "), name);
+export function buildTextTranslation(segments: string[]): string {
+	return segments.join(" ");
 }

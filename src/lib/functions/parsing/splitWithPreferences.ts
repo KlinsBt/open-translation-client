@@ -1,5 +1,3 @@
-import { getActiveTokens } from "./parsingPreferences";
-
 export interface SplitPiece {
 	text: string;
 	start: number;
@@ -10,15 +8,28 @@ export interface SplitPiece {
 const DEFAULT_BOUNDARY = /([.?!。！？])\s*(?=[A-ZÀ-ÖØ-Þ]|$)/g;
 const DEFAULT_DELIMS = [".", "?", "!", "。", "！", "？"];
 
-// Splits text using custom tokens if active; otherwise defaults to sentence-ish boundaries.
-export function splitTextWithPreferences(text: string): SplitPiece[] {
-	const tokens = getActiveTokens();
-	if (!tokens || tokens.length === 0) {
+// Splits text using provided tokens if given; otherwise uses active tokens; otherwise defaults.
+export function splitTextWithPreferences(
+	text: string,
+	tokens?: string[],
+	getActiveTokens?: () => string[],
+): SplitPiece[] {
+	const activeTokens =
+		(tokens && tokens.length > 0
+			? tokens
+			: getActiveTokens
+				? getActiveTokens()
+				: []) ?? [];
+	if (!activeTokens || activeTokens.length === 0) {
 		return splitOnBoundary(text, DEFAULT_BOUNDARY);
 	}
 
-	// Combine default delimiters with custom tokens so punctuation is still preserved
-	const merged = Array.from(new Set([...DEFAULT_DELIMS, ...tokens]));
+	// Prefer longer tokens so a custom token such as ". " is not shadowed by ".".
+	const merged = Array.from(
+		new Set(
+			[...DEFAULT_DELIMS, ...activeTokens].filter((token) => token.length > 0),
+		),
+	).sort((a, b) => b.length - a.length);
 	const escaped = merged.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 	const boundary = new RegExp(`(${escaped.join("|")})`, "g");
 	return splitOnBoundary(text, boundary);

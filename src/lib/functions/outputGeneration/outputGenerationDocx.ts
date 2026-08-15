@@ -1,13 +1,24 @@
 import type { UserData } from "$lib/types/types";
 import { applyTranslationsToDocxXml } from "$lib/functions/parsing/parsingDocx";
+import { getDefaultTokens } from "$lib/functions/parsing/parsingPreferences";
 import JSZip from "jszip";
 
 export async function createDocxFromModifiedXmlText(translation: UserData) {
 	let xmlContentMap: any = translation.translationData.typeRef;
+	const tokens =
+		translation.translationData.parsingTokens || getDefaultTokens();
+	const meta =
+		translation.translationData.segmentsMeta &&
+		translation.translationData.segmentsMeta.length ===
+			translation.translationData.seg2.length
+			? translation.translationData.segmentsMeta
+			: undefined;
 	// Replace the text in document.xml with the new strings
 	xmlContentMap["word/document.xml"] = replaceTextStrings(
 		xmlContentMap["word/document.xml"],
 		translation.translationData.seg2,
+		tokens,
+		meta,
 	);
 
 	// Log the content of document.xml for inspection
@@ -58,7 +69,12 @@ export async function createDocxFromModifiedXmlText(translation: UserData) {
 }
 
 // Replace text strings in the XML string with the modified ones
-function replaceTextStrings(documentXml: any, textArray: string[]) {
+function replaceTextStrings(
+	documentXml: any,
+	textArray: string[],
+	tokens: string[],
+	meta?: any,
+) {
 	if (typeof documentXml !== "string") return documentXml;
-	return applyTranslationsToDocxXml(documentXml, textArray);
+	return applyTranslationsToDocxXml(documentXml, textArray, tokens, meta);
 }

@@ -5,68 +5,29 @@ import { getActiveTokens } from "./parsingPreferences";
 // filter criteria to create text segments
 const PARSE_CRITERIA: string[] = [".", "?", "!", ". ", "? ", "! "];
 export async function createTextSegmentsByArrayFilters(fullText: string) {
-	let text: string = "";
-	let textSegments1: string[] = [];
-	let textSegments2: string[] = [];
-	let checked: boolean[] = [];
-	for (let i = 0; i < fullText.length; i++) {
-		if (
-			PARSE_CRITERIA.includes(fullText[i]) ||
-			(i > 0 && fullText[i - 1] == `"`) ||
-			(i > 0 && fullText[i - 1] == `"`)
-		) {
-			text += fullText[i];
-		} else {
-			text += fullText[i];
-			textSegments1.push(text);
-			textSegments2.push("");
-			checked.push(false);
-			text = "";
-			continue;
-		}
-	}
-	if (textSegments1.length === 0) {
-		return [
-			[{ segment: fullText, checked: "" }],
-			[{ segment: "", checked: "" }],
-		];
-	}
-	return [textSegments1, textSegments2];
+	const tokens = PARSE_CRITERIA.filter((token) => token.trim().length > 0);
+	const segments = splitTextWithPreferences(fullText, tokens)
+		.map((piece) => `${piece.text}${piece.separator}`)
+		.filter((segment) => segment.length > 0);
+	return buildSegmentArrays(segments);
 }
 
 // Simple filter by "." to create text segments
 export async function createTextSegmentsSimple(fullText: string) {
-	let text: string = "";
-	let textSegments1: string[] = [];
-	let textSegments2: string[] = [];
-	let checked: boolean[] = [];
-	for (let i = 0; i < fullText.length; i++) {
-		if (
-			fullText[i] !== "." ||
-			(i > 0 && fullText[i - 1] == `"`) ||
-			(i > 0 && fullText[i - 1] == `"`)
-		) {
-			text += fullText[i];
-		} else {
-			text += fullText[i];
-			textSegments1.push(text);
-			textSegments2.push("");
-			checked.push(false);
-			text = "";
-			continue;
-		}
-	}
-	if (textSegments1.length === 0) {
-		return [[], [], []];
-	}
-	return [textSegments1, textSegments2, checked];
+	const segments = splitTextWithPreferences(fullText, ["."])
+		.map((piece) => `${piece.text}${piece.separator}`)
+		.filter((segment) => segment.length > 0);
+	return buildSegmentArrays(segments);
 }
 
 export function createTextSegmentsWithRegexGeneralTextAlgo(
 	fullText: string,
 ): [string[], string[], boolean[]] {
 	// Normalize line endings, unescape literal \n, strip wrapping quotes
-	let normalized = fullText.replace(/\r\n/g, "\n").replace(/\r/g, "").replace(/\\n/g, "\n");
+	let normalized = fullText
+		.replace(/\r\n/g, "\n")
+		.replace(/\r/g, "")
+		.replace(/\\n/g, "\n");
 	normalized = normalized.replace(/^["']+|["']+$/g, "").trim();
 	const tokens = getActiveTokens();
 
@@ -85,7 +46,7 @@ export function createTextSegmentsWithRegexGeneralTextAlgo(
 		if (!para) continue;
 
 		if (tokens && tokens.length > 0) {
-			const pieces = splitTextWithPreferences(para).filter(
+			const pieces = splitTextWithPreferences(para, tokens).filter(
 				(p) => (p.text + (p.separator ?? "")).trim().length > 0,
 			);
 			pieces.forEach((p, idx) => {
@@ -168,20 +129,9 @@ function createTextSegmentsWithRegexTechnicalTextAlgo(fullText: string) {
 
 // Works well for simple text content with standard punctuation
 export async function createTextSegmentsWithRegexSimple(fullText: string) {
-	let arrayText: string[] = fullText
+	const arrayText: string[] = fullText
 		.replace(/([.?!])\s*(?=[A-Z])/g, "$1|")
-		.split("|");
-	console.log("fullText converted: ", arrayText);
-	let textSegments1: string[] = [];
-	let textSegments2: string[] = [];
-	let checked: boolean[] = [];
-	for (let i = 0; i < arrayText.length; i++) {
-		textSegments1.push(arrayText[i]);
-		textSegments2.push("");
-		checked.push(false);
-	}
-	if (textSegments1.length === 0) {
-		return [[], [], []];
-	}
-	return [textSegments1, textSegments2, checked];
+		.split("|")
+		.filter((segment) => segment.length > 0);
+	return buildSegmentArrays(arrayText);
 }

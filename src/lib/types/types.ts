@@ -3,8 +3,25 @@
 	checked: boolean;
 }
 
-export type TypeRef = string | { [key: string]: string | Blob };
+export type TypeRef = string | { [key: string]: string | Blob | any[] };
 export type Type = "text" | "json" | "docx" | "xlsx" | "html";
+
+export interface DocxFragmentMeta {
+	paragraphIndex: number;
+	textNodeIndex: number;
+	start: number;
+	end: number;
+}
+
+export type SegmentMeta =
+	| {
+			separator?: string;
+			fragments: DocxFragmentMeta[];
+	  }
+	| {
+			path: string[];
+			separator?: string;
+	  };
 
 export interface UserData {
 	id?: number;
@@ -18,6 +35,7 @@ export interface UserData {
 		checked: boolean[];
 		type: Type;
 		typeRef: TypeRef;
+		segmentsMeta?: SegmentMeta[];
 		tm: null | {
 			id: null | number;
 			name: null | string;
@@ -28,6 +46,7 @@ export interface UserData {
 			name: null | string;
 			active: boolean;
 		};
+		parsingTokens?: string[];
 		segSpec?: {
 			deepSeg: boolean;
 			segTrack: number[];

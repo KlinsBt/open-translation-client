@@ -1,7 +1,7 @@
 import type { UserData } from "$lib/types/types";
 
 // Function to generate the XLIFF XML string for version 1.2
-function generateXliff(userData: UserData): string {
+export function buildXliff1_2(userData: UserData): string {
 	const { translationData } = userData;
 	const {
 		name,
@@ -20,14 +20,14 @@ function generateXliff(userData: UserData): string {
 	let xliff = `<?xml version="1.0" encoding="UTF-8"?>\n`;
 	xliff += `<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2"\n`;
 	xliff += `        xmlns:sup="http://example.com/sup">\n`;
-	xliff += `  <file original="" source-language="${sourceLang}" target-language="${targetLang}" datatype="plaintext">\n`;
+	xliff += `  <file original="" source-language="${escapeXml(sourceLang)}" target-language="${escapeXml(targetLang)}" datatype="plaintext">\n`;
 	xliff += `    <header>\n`;
 	// Adds a <group> element to contain the custom metadata and translation units
 	xliff += `      <group>\n`;
 
 	// Includes custom metadata using 'sup' namespace elements within the <group>
 	xliff += `        <sup:SourceInfo>\n`;
-	xliff += `          <sup:Id>${escapeXml(userData.id!.toString() ?? "")}</sup:Id>\n`;
+	xliff += `          <sup:Id>${escapeXml(String(userData.id ?? ""))}</sup:Id>\n`;
 	xliff += `          <sup:Name>${escapeXml(name)}</sup:Name>\n`;
 	xliff += `          <sup:Checked>${escapeXml(JSON.stringify(checked))}</sup:Checked>\n`;
 	xliff += `          <sup:Type>${escapeXml(type)}</sup:Type>\n`;
@@ -97,7 +97,7 @@ async function generateXliffFileDownload(xliffData: string, name: string) {
 export async function generateXliffSaveFile1_2(userData: UserData) {
 	try {
 		// Generates the XLIFF content from UserData
-		const xliffContent = generateXliff(userData);
+		const xliffContent = buildXliff1_2(userData);
 
 		// Triggers download
 		await generateXliffFileDownload(

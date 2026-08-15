@@ -128,14 +128,14 @@
 					break;
 				case "XLSX":
 					await processXlsx(uploadedFile, timestamp);
-				break;
-			case "HTML":
-				await processHtml(uploadedFile, timestamp);
-				break;
-			default:
-				notifyError("Unsupported file type");
-				showLoading.set(false);
-				return;
+					break;
+				case "HTML":
+					await processHtml(uploadedFile, timestamp);
+					break;
+				default:
+					notifyError("Unsupported file type");
+					showLoading.set(false);
+					return;
 			}
 
 			notifySuccess("Project created");
@@ -170,7 +170,7 @@
 		const documentXml = extractedXmlContent["word/document.xml"] as string;
 		if (!documentXml) throw new Error("No document.xml found");
 
-		const { segments } = segmentDocxXml(documentXml);
+		const { segments, meta } = segmentDocxXml(documentXml);
 		const parsedSegments = segments.map(
 			(segment) => `${segment.text}${segment.separator ?? ""}`,
 		);
@@ -183,6 +183,7 @@
 			parsedSegments,
 			"docx",
 			extractedXmlContent as any,
+			meta,
 		);
 	}
 
@@ -191,22 +192,33 @@
 		const jsonData = JSON.parse(text);
 
 		const values: string[] = [];
-		const meta: number[] = [];
+		const meta: any[] = [];
+
+		const pathStack: string[] = [];
 
 		function traverse(obj: any): void {
 			for (const key in obj) {
-				if (typeof obj[key] === "object" && obj[key] !== null) {
-					traverse(obj[key]);
+				const val = obj[key];
+				if (typeof val === "object" && val !== null) {
+					pathStack.push(key);
+					traverse(val);
+					pathStack.pop();
 				} else {
-					const text = String(obj[key]);
-					const pieces = splitTextWithPreferences(text).filter(
+					const textVal = String(val);
+					const pieces = splitTextWithPreferences(textVal).filter(
 						(p) => p.text.trim().length > 0,
 					);
-					meta.push(pieces.length > 0 ? pieces.length : 1);
 					if (pieces.length === 0) {
-						values.push(text);
+						values.push(textVal);
+						meta.push({ path: [...pathStack, key], separator: "" });
 					} else {
-						pieces.forEach((p) => values.push(`${p.text}${p.separator ?? ""}`));
+						for (const p of pieces) {
+							values.push(`${p.text}${p.separator ?? ""}`);
+							meta.push({
+								path: [...pathStack, key],
+								separator: p.separator ?? "",
+							});
+						}
 					}
 				}
 			}
@@ -272,7 +284,7 @@
 
 	async function processHtml(file: File, timestamp: string) {
 		const htmlText = await file.text();
-		const { allSegments } = segmentHtmlContent(htmlText);
+		const { allSegments, meta } = segmentHtmlContent(htmlText);
 
 		await saveAndOpenNewFileWithStringArray(
 			temporarySaveName,
@@ -282,6 +294,7 @@
 			allSegments,
 			"html",
 			htmlText,
+			meta,
 		);
 	}
 
@@ -396,6 +409,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
 	role="dialog"
+	tabindex="-1"
 	class="modal-element-global {show ? '' : 'close-modal-global'}"
 	onclick={() => (show = false)}
 >

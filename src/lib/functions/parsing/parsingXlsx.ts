@@ -1,6 +1,8 @@
-
-import { splitTextWithPreferences, type SplitPiece } from "./splitWithPreferences";
-import { getActiveTokens } from "./parsingPreferences";
+import {
+	splitTextWithPreferences,
+	type SplitPiece,
+} from "./splitWithPreferences";
+import { getActiveTokens, getDefaultTokens } from "./parsingPreferences";
 
 export interface SharedStringFragment {
 	node: Element;
@@ -76,12 +78,13 @@ function buildNodeRanges(textNodes: Element[]): NodeRange[] {
 
 export function segmentSharedStringsXml(
 	sharedStringsXml: string,
+	tokensOverride?: string[],
 ): SharedStringSegmentationResult {
 	const parser = new DOMParser();
 	const xmlDoc = parser.parseFromString(sharedStringsXml, "application/xml");
 	const siElements = Array.from(xmlDoc.getElementsByTagName("si"));
 	const segments: SharedStringSegment[] = [];
-	const tokens = getActiveTokens();
+	const tokens = tokensOverride ?? getActiveTokens();
 
 	for (const si of siElements) {
 		const textNodes = Array.from(si.getElementsByTagName("t"));
@@ -94,7 +97,7 @@ export function segmentSharedStringsXml(
 		const ranges = buildNodeRanges(textNodes);
 		const pieces =
 			tokens.length > 0
-				? (splitTextWithPreferences(combinedText) as SplitPiece[])
+				? (splitTextWithPreferences(combinedText, tokens) as SplitPiece[])
 				: [
 						{
 							text: combinedText,
@@ -136,13 +139,14 @@ export function segmentSharedStringsXml(
 function segmentInlineStringsInSheet(
 	sheetXml: string,
 	sheetPath: string,
+	tokensOverride?: string[],
 ): SheetSegmentation {
 	const parser = new DOMParser();
 	const xmlDoc = parser.parseFromString(sheetXml, "application/xml");
 	const cellElements = Array.from(xmlDoc.getElementsByTagName("c"));
 	const inlineSegments: InlineStringSegment[] = [];
 	const valueSegments: ValueCellSegment[] = [];
-	const tokens = getActiveTokens();
+	const tokens = tokensOverride ?? getActiveTokens();
 
 	for (const cell of cellElements) {
 		const type = cell.getAttribute("t");
@@ -157,7 +161,7 @@ function segmentInlineStringsInSheet(
 			const ranges = buildNodeRanges(tNodes);
 			const pieces =
 				tokens.length > 0
-					? (splitTextWithPreferences(combinedText) as SplitPiece[])
+					? (splitTextWithPreferences(combinedText, tokens) as SplitPiece[])
 					: [
 							{
 								text: combinedText,
@@ -202,7 +206,7 @@ function segmentInlineStringsInSheet(
 			if (!text) continue;
 			const pieces =
 				tokens.length > 0
-					? (splitTextWithPreferences(text) as SplitPiece[])
+					? (splitTextWithPreferences(text, tokens) as SplitPiece[])
 					: [
 							{
 								text,
@@ -243,12 +247,19 @@ function segmentInlineStringsInSheet(
 
 export function segmentWorkbookStrings(
 	xmlContentMap: Record<string, string | Blob>,
+	tokensOverride?: string[],
 ): WorkbookSegmentation {
 	const sharedStringsEntry = xmlContentMap["xl/sharedStrings.xml"];
 	const shared =
 		typeof sharedStringsEntry === "string"
-			? segmentSharedStringsXml(sharedStringsEntry)
-			: { xmlDoc: new DOMParser().parseFromString("<sst></sst>", "application/xml"), segments: [] };
+			? segmentSharedStringsXml(sharedStringsEntry, tokensOverride)
+			: {
+					xmlDoc: new DOMParser().parseFromString(
+						"<sst></sst>",
+						"application/xml",
+					),
+					segments: [],
+				};
 
 	const sheetPaths = Object.keys(xmlContentMap)
 		.filter(
@@ -259,11 +270,17 @@ export function segmentWorkbookStrings(
 		.sort();
 
 	const sheets = sheetPaths.map((path) =>
-		segmentInlineStringsInSheet(xmlContentMap[path] as string, path),
+		segmentInlineStringsInSheet(
+			xmlContentMap[path] as string,
+			path,
+			tokensOverride,
+		),
 	);
 
 	const allSegments: string[] = [
-		...shared.segments.map((segment) => `${segment.text}${segment.separator ?? ""}`),
+		...shared.segments.map(
+			(segment) => `${segment.text}${segment.separator ?? ""}`,
+		),
 		...sheets.flatMap((sheet) => [
 			...sheet.inlineSegments.map(
 				(segment) => `${segment.text}${segment.separator ?? ""}`,
@@ -278,22 +295,21 @@ export function segmentWorkbookStrings(
 export function applyTranslationsToSharedStringsXml(
 	sharedStringsXml: string,
 	translatedSegments: string[],
+	tokensOverride?: string[],
 ): string {
-	const { xmlDoc, segments } = segmentSharedStringsXml(sharedStringsXml);
+	const { xmlDoc, segments } = segmentSharedStringsXml(
+		sharedStringsXml,
+		tokensOverride ?? getDefaultTokens(),
+	);
 	if (segments.length === 0) return sharedStringsXml;
 
 	const serializer = new XMLSerializer();
 	const nodePieces = new Map<Element, string[]>();
 
-	const ensureWithSeparator = (text: string, separator?: string) => {
-		if (!separator) return text;
-		return text.endsWith(separator) ? text : `${text}${separator}`;
-	};
-
 	for (let i = 0; i < segments.length; i++) {
 		const segment = segments[i];
 		const translatedText = translatedSegments[i] ?? segment.text;
-		const replacement = ensureWithSeparator(translatedText, segment.separator);
+		const replacement = translatedText;
 		const fragments = segment.fragments;
 		const totalSpan =
 			fragments.reduce(
@@ -343,15 +359,11 @@ function applyTranslationsToInlineSegments(
 	const serializer = new XMLSerializer();
 	const nodePieces = new Map<Element, string[]>();
 	let cursor = startIndex;
-	const ensureWithSeparator = (text: string, separator?: string) => {
-		if (!separator) return text;
-		return text.endsWith(separator) ? text : `${text}${separator}`;
-	};
 
 	for (let i = 0; i < inlineSegments.length; i++) {
 		const segment = inlineSegments[i];
 		const translatedText = translatedSegments[cursor] ?? segment.text;
-		const replacement = ensureWithSeparator(translatedText, segment.separator);
+		const replacement = translatedText;
 		cursor++;
 
 		const fragments = segment.fragments;
@@ -421,16 +433,22 @@ function applyTranslationsToValueSegments(
 export function applyTranslationsToWorkbook(
 	xmlContentMap: Record<string, string | Blob>,
 	translatedSegments: string[],
+	tokensOverride?: string[],
 ): Record<string, string | Blob> {
 	const updatedMap: Record<string, string | Blob> = { ...xmlContentMap };
-	const { shared, sheets } = segmentWorkbookStrings(xmlContentMap);
+	const tokens = tokensOverride ?? getDefaultTokens();
+	const { shared, sheets } = segmentWorkbookStrings(xmlContentMap, tokens);
 
 	// Shared strings
 	const sharedCount = shared.segments.length;
-	if (sharedCount > 0 && typeof xmlContentMap["xl/sharedStrings.xml"] === "string") {
+	if (
+		sharedCount > 0 &&
+		typeof xmlContentMap["xl/sharedStrings.xml"] === "string"
+	) {
 		updatedMap["xl/sharedStrings.xml"] = applyTranslationsToSharedStringsXml(
 			xmlContentMap["xl/sharedStrings.xml"] as string,
 			translatedSegments.slice(0, sharedCount),
+			tokens,
 		);
 	}
 

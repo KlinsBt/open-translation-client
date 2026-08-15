@@ -2,6 +2,10 @@ import type { Type, TypeRef, UserData } from "../types/types";
 import { createTextSegmentsWithRegexGeneralTextAlgo } from "./parsing/parsingText";
 import { updateTranslationOnIndexedDB } from "./saveData/indexedDb";
 import { userData } from "./saveData/stores.svelte";
+import {
+	getActiveTokens,
+	getDefaultTokens,
+} from "./parsing/parsingPreferences";
 
 export async function saveNewTranslationToUserDataFromText(
 	fullData: UserData[],
@@ -25,6 +29,8 @@ export async function saveNewTranslationToUserDataFromText(
 			checked: generatedText[2],
 			type: fileType,
 			typeRef: fileTypeRef || {},
+			segmentsMeta: [],
+			parsingTokens: getActiveTokens() || getDefaultTokens(),
 			tm: {
 				id: null,
 				name: null,
@@ -51,6 +57,7 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 	stringArray: string[],
 	fileType: Type,
 	fileTypeRef?: TypeRef,
+	segmentsMeta?: any[],
 ) {
 	let data: UserData = {
 		translationData: {
@@ -63,6 +70,8 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 			checked: new Array(stringArray.length).fill(false),
 			type: fileType,
 			typeRef: fileTypeRef || {},
+			segmentsMeta: segmentsMeta || [],
+			parsingTokens: getActiveTokens() || getDefaultTokens(),
 			tm: {
 				id: null,
 				name: null,
@@ -84,6 +93,9 @@ export async function saveNewTranslationToUserDataFromSaveFile(
 	fullData: UserData[],
 	data: UserData,
 ) {
+	if (!data.translationData.parsingTokens) {
+		data.translationData.parsingTokens = getDefaultTokens();
+	}
 	fullData.push(data);
 	await updateTranslationOnIndexedDB(data);
 	userData.set(fullData);

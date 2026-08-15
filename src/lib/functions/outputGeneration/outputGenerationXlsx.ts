@@ -1,14 +1,18 @@
 import type { UserData } from "$lib/types/types";
 import { applyTranslationsToWorkbook } from "$lib/functions/parsing/parsingXlsx";
 import JSZip from "jszip";
+import { getDefaultTokens } from "$lib/functions/parsing/parsingPreferences";
 
 export async function createXlsxFromModifiedXmlText(translation: UserData) {
 	let xmlContentMap: any = translation.translationData.typeRef;
+	const tokens =
+		translation.translationData.parsingTokens || getDefaultTokens();
 
 	// Apply translations to shared strings and inline strings across all sheets
 	xmlContentMap = applyTranslationsToWorkbook(
 		xmlContentMap,
 		translation.translationData.seg2,
+		tokens,
 	);
 
 	// Ensures _rels/.rels is present

@@ -24,11 +24,19 @@
 		textSegment1,
 		textSegment2,
 		checked,
+		combineSelected = false,
+		onMarkSplit,
+		onSplitSegment,
+		onToggleCombine,
 	}: {
 		id: number;
 		textSegment1: string;
 		textSegment2: string;
 		checked: boolean;
+		combineSelected?: boolean;
+		onMarkSplit?: (detail: { index: number; offset: number | null }) => void;
+		onSplitSegment?: (detail: { index: number; offset: number }) => void;
+		onToggleCombine?: (detail: { index: number }) => void;
 	} = $props();
 
 	let tmMatchesFound: { segment: string; match: string; percentage: string }[] =
@@ -51,6 +59,7 @@
 		$singleUserData.translationData.tm?.active ?? false,
 	);
 	let isSelected: boolean = $derived($selectedSegmentId === id);
+	let splitOffset: number | null = $state(null);
 
 	function toggleLockSegment() {
 		if (checked) {
@@ -106,6 +115,33 @@
 	// 	updateTranslationOnIndexedDB($singleUserData);
 	// 	seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	// }
+
+	function handleSourceMouseUp(event: MouseEvent) {
+		const sel = window.getSelection();
+		if (!sel || sel.rangeCount === 0) return;
+		const range = sel.getRangeAt(0);
+		if (!range.commonAncestorContainer) return;
+		const container = event.currentTarget as HTMLElement;
+		if (!container.contains(range.commonAncestorContainer)) return;
+		const selectionLength = range.toString().length;
+		if (selectionLength === 0) {
+			splitOffset = null;
+			onMarkSplit?.({ index: id, offset: null });
+			return;
+		}
+		const offset = range.endOffset;
+		splitOffset = offset;
+		onMarkSplit?.({ index: id, offset });
+	}
+
+	function splitAtSelection() {
+		if (splitOffset === null) return;
+		onSplitSegment?.({ index: id, offset: splitOffset });
+	}
+
+	function toggleCombineSelect() {
+		onToggleCombine?.({ index: id });
+	}
 
 	function handleInput(event: Event) {
 		const value = (event.target as HTMLTextAreaElement).value;
@@ -164,12 +200,12 @@
 		// console.log("TB Matches: ", tbMatchesFound);
 	}
 
-function getLanguageCode(lang?: string): string {
-	// Extract language code from full name like "English (en)" or return as-is
-	if (!lang) return "";
-	const match = lang.match(/\(([^)]+)\)/);
-	return match?.[1] ?? lang;
-}
+	function getLanguageCode(lang?: string): string {
+		// Extract language code from full name like "English (en)" or return as-is
+		if (!lang) return "";
+		const match = lang.match(/\(([^)]+)\)/);
+		return match?.[1] ?? lang;
+	}
 
 	async function tmIdExists(id: number | null): Promise<boolean> {
 		if (id === null) return false;
@@ -238,6 +274,7 @@ function getLanguageCode(lang?: string): string {
 	data-segment-id={id}
 	tabindex="0"
 	class:selected={isSelected}
+	class:combine-selected={combineSelected}
 	onclick={() => selectedSegmentId.set(id)}
 	onfocus={() => selectedSegmentId.set(id)}
 >
@@ -262,6 +299,14 @@ function getLanguageCode(lang?: string): string {
 		{/if}
 	</button>
 
+	<input
+		type="checkbox"
+		class="combine-toggle-checkbox"
+		checked={combineSelected}
+		onchange={toggleCombineSelect}
+		title="Select for combining"
+	/>
+
 	<!-- <span class="segment-number-outer">{id + 1}</span> -->
 
 	<div class="field left source-text">
@@ -270,10 +315,14 @@ function getLanguageCode(lang?: string): string {
 				Fill
 				<span>→</span>
 			</button>
-			<!-- <button class="translate-btn ml" disabled>
-				MT
-				<span>→</span>
-			</button> -->
+			<button
+				class="tm-btn save split-btn"
+				onclick={splitAtSelection}
+				disabled={splitOffset === null}
+				title="Select text in source to enable split"
+			>
+				Split
+			</button>
 			<button
 				class="tm-btn save"
 				disabled={tmActive ? false : true}
@@ -283,7 +332,10 @@ function getLanguageCode(lang?: string): string {
 			</button>
 		</div>
 		<span class="segment-number-inner">{id + 1}.</span>
-		<p>{textSegment1}</p>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<p class="source-select" onmouseup={handleSourceMouseUp}>
+			{textSegment1}
+		</p>
 	</div>
 
 	{#if checked}
@@ -314,12 +366,9 @@ function getLanguageCode(lang?: string): string {
 <style>
 	.segment {
 		position: relative;
-		display: flex;
-		justify-content: center;
-		width: 100%;
-
 		display: grid;
 		justify-content: center;
+		width: 100%;
 		grid-template-columns: 50% 50%;
 	}
 
@@ -339,6 +388,30 @@ function getLanguageCode(lang?: string): string {
 	.segment.selected .target-field {
 		border: 2px solid var(--color-theme-3);
 		box-shadow: 0 0 0 2px var(--color-theme-1);
+	}
+
+	.segment.combine-selected .target-field {
+		border: 2px dashed var(--color-theme-1);
+		box-shadow: 0 0 0 1px var(--color-theme-1);
+	}
+
+	.source-select {
+		user-select: text;
+	}
+
+	.combine-toggle-checkbox {
+		position: absolute;
+		width: 12px;
+		height: 12px;
+		cursor: pointer;
+		left: 10px;
+		top: 10px;
+		z-index: 1;
+		accent-color: var(--color-theme-1);
+	}
+
+	.split-btn {
+		right: 75px;
 	}
 
 	.field {
@@ -387,8 +460,11 @@ function getLanguageCode(lang?: string): string {
 		cursor: pointer;
 		border-radius: 5px;
 		transition: background-color 0.3s ease;
-		right: 13px;
 		top: -35px;
+	}
+
+	.translate-btn {
+		right: 13px;
 	}
 
 	.translate-btn > span {
@@ -396,13 +472,9 @@ function getLanguageCode(lang?: string): string {
 		height: 17px;
 	}
 
-	/* .translate-btn.ml {
-		right: 75px;
-	} */
-
 	.tm-btn {
-		right: 137px;
 		right: 75px;
+		width: 55px;
 	}
 
 	.translate-btn:hover,

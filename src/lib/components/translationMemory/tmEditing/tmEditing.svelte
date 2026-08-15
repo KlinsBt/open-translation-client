@@ -183,6 +183,7 @@
 {#if showModal}
 	<div
 		role="dialog"
+		tabindex="-1"
 		class="modal-element-global"
 		onclick={() => (showModal = false)}
 	>
@@ -533,17 +534,17 @@
 	}
 
 	/* Ensure confirmation modal fills viewport when embedded */
-.modal-element-global {
-	position: fixed;
-	inset: 0;
-	width: 100vw;
-	height: 100vh;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	background: rgba(0, 0, 0, 0.5);
-	z-index: 3000;
-}
+	.modal-element-global {
+		position: fixed;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background: rgba(0, 0, 0, 0.5);
+		z-index: 3000;
+	}
 
 	.add-btn {
 		color: white;

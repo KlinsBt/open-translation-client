@@ -14,6 +14,16 @@ export function getTermMatches(
 	}[] = [];
 
 	const normalizedSentence = searchSentence.toLowerCase();
+	const normalizeNotes = (
+		notes: string[] | { type: string; text: string }[],
+	): string[] =>
+		notes.map((note) =>
+			typeof note === "string"
+				? note
+				: note.type
+					? `${note.type}: ${note.text}`
+					: note.text,
+		);
 
 	// Iterate over all entries in the TbData structure
 	for (const entry of tbData.entries) {
@@ -36,7 +46,7 @@ export function getTermMatches(
 						matches.push({
 							searchEntry: sourceTerm.term,
 							foundEntry: term.term,
-							notes: term.notes,
+							notes: normalizeNotes(term.notes),
 						});
 					}
 				}

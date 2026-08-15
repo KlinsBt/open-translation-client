@@ -50,7 +50,6 @@ export function validateXliff2_0Data(xliffDocument: Document): boolean {
 
 	// Check meta elements with types "name", "type", and "type_ref"
 	const metaElements = openTlcMetaGroup.getElementsByTagName("mda:meta");
-	console.log(metaElements);
 	let hasName = false;
 	let hasType = false;
 	let hasTypeRef = false;
@@ -63,8 +62,6 @@ export function validateXliff2_0Data(xliffDocument: Document): boolean {
 	}
 
 	if (!hasName || !hasType || !hasTypeRef) return false;
-
-	console.log(true);
 
 	return true;
 }
@@ -121,9 +118,6 @@ export function extractXliff2_0Data(
 					else if (typeAttr === "type") type = content;
 					else if (typeAttr === "type_ref") {
 						try {
-							console.log("typeAttr:", typeAttr);
-							console.log("content:", content);
-							console.log("type_ref typeof:", typeof content);
 							typeRef = JSON.parse(content);
 						} catch (e) {
 							console.error("Invalid JSON in type_ref", e);
@@ -145,7 +139,7 @@ export function extractXliff2_0Data(
 							tb = JSON.parse(content);
 						} catch (e) {
 							console.error("Invalid JSON in tb", e);
-							tm = {
+							tb = {
 								id: null,
 								name: null,
 								active: false,
@@ -158,7 +152,6 @@ export function extractXliff2_0Data(
 		}
 	}
 
-	console.log(checked);
 	// Extract segments
 	const units = fileElement.getElementsByTagName("unit");
 	const seg1: string[] = [];
@@ -180,8 +173,8 @@ export function extractXliff2_0Data(
 		...(isNaN(id) ? {} : { id: id }), // Only include the id field if it's not NaN
 		translationData: {
 			name: name,
-			targetLang: srcLang,
-			sourceLang: trgLang,
+			targetLang: trgLang,
+			sourceLang: srcLang,
 			creationDate: new Date().getTime().toString(),
 			seg1: seg1,
 			seg2: seg2,
@@ -244,7 +237,6 @@ export function validateXliff1_2Data(xliffDocument: Document): boolean {
 
 	if (!supName || !supType || !supTypeRef) return false;
 
-	console.log(true);
 	return true;
 }
 
@@ -310,7 +302,6 @@ export function extractXliff1_2Data(
 			id = supId?.textContent || null;
 			name = supName?.textContent || name;
 			checked = JSON.parse(supChecked?.textContent!) || checked;
-			console.log(checked);
 			type = supType?.textContent || type;
 			const typeRefContent = (supTypeRef?.textContent || "{}").replace(
 				/&quot;/g,
@@ -408,10 +399,11 @@ export function validateJsonData(data: any): boolean {
 		return false;
 	if (
 		!Array.isArray(td.checked) ||
-		!td.checked.every((s: any) => typeof s === "boolean")
+		!td.checked.every((s: any) => typeof s === "boolean") ||
+		td.checked.length !== td.seg1.length
 	)
 		return false;
-	if (typeof td.type !== "string") return false;
+	if (!["text", "json", "docx", "xlsx", "html"].includes(td.type)) return false;
 	if (typeof td.typeRef !== "string" && typeof td.typeRef !== "object")
 		return false;
 

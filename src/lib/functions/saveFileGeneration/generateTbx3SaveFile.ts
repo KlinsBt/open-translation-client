@@ -1,18 +1,18 @@
 import type { TbData } from "../../types/types";
 
 // Function to generate the TBX XML string
-function generateTbx(sourceLang: string, tbxData: TbData): string {
+export function buildTbx(sourceLang: string, tbxData: TbData): string {
 	let tbxContent = `<?xml version="1.0" encoding="UTF-8"?>\n`;
 	tbxContent += `<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX_Core_RNG/master/TBXcoreStructV03.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>\n`;
 	tbxContent += `<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Core_dialect/master/Schemas/TBX-Core.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>\n`;
-	tbxContent += `<tbx style="dca" type="TBX-Core" xml:lang="${getLanguageCode(sourceLang)}" xmlns="urn:iso:std:iso:30042:ed-2">\n`;
+	tbxContent += `<tbx style="dca" type="TBX-Core" xml:lang="${escapeXml(getLanguageCode(sourceLang))}" xmlns="urn:iso:std:iso:30042:ed-2">\n`;
 	tbxContent += `  <tbxHeader>\n`;
 	tbxContent += `    <fileDesc>\n`;
 	tbxContent += `      <titleStmt>\n`;
-	tbxContent += `        <title>${tbxData.name || "Untitled TBX File"}</title>\n`;
+	tbxContent += `        <title>${escapeXml(tbxData.name || "Untitled TBX File")}</title>\n`;
 	tbxContent += `      </titleStmt>\n`;
 	tbxContent += `      <sourceDesc>\n`;
-	tbxContent += `        <p>OpenTLC ID: ${tbxData.id}</p>\n`;
+	tbxContent += `        <p>OpenTLC ID: ${escapeXml(String(tbxData.id ?? ""))}</p>\n`;
 	tbxContent += `      </sourceDesc>\n`;
 	tbxContent += `    </fileDesc>\n`;
 	tbxContent += `  </tbxHeader>\n`;
@@ -24,7 +24,7 @@ function generateTbx(sourceLang: string, tbxData: TbData): string {
 		// tbxData.entries.forEach((concept) => {
 		tbxContent += `      <conceptEntry id="C${i + 1}">\n`;
 		tbxData.entries[i].terms.forEach((term) => {
-			tbxContent += `        <langSec xml:lang="${term.lang}">\n`;
+			tbxContent += `        <langSec xml:lang="${escapeXml(term.lang)}">\n`;
 			tbxContent += `          <termSec>\n`;
 			tbxContent += `            <term>${escapeXml(term.term)}</term>\n`;
 			term.notes.forEach((note) => {
@@ -115,7 +115,7 @@ function customFormatToUnix(customTime: string): number {
 export async function generateTbxSaveFile(sourceLang: string, tbxData: TbData) {
 	try {
 		// Generate the TBX content from tbxData
-		const tbxContent = generateTbx(sourceLang, tbxData);
+		const tbxContent = buildTbx(sourceLang, tbxData);
 
 		// Trigger download
 		await generateTbxFileDownload(tbxContent, tbxData.name || "TBX_Save_File");
