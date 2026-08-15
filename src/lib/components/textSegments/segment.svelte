@@ -18,6 +18,7 @@
 	import { getTermMatches } from "$lib/components/termBase/tbFunctions";
 	import type { TbData, TmData } from "$lib/types/types";
 	import { notifySuccess } from "$lib/components/notifications/toastStore";
+	import { getSplitOffsetFromSelection } from "$lib/functions/parsing/segmentSelection";
 
 	let {
 		id,
@@ -30,6 +31,7 @@
 		onMarkSplit,
 		onSplitSegment,
 		onToggleCombine,
+		onActivateSegment,
 	}: {
 		id: number;
 		textSegment1: string;
@@ -41,6 +43,7 @@
 		onMarkSplit?: (detail: { index: number; offset: number | null }) => void;
 		onSplitSegment?: (detail: { index: number; offset: number }) => void;
 		onToggleCombine?: (detail: { index: number }) => void;
+		onActivateSegment?: (detail: { index: number }) => void;
 	} = $props();
 
 	let tmMatchesFound: { segment: string; match: string; percentage: string }[] =
@@ -147,29 +150,12 @@
 	// }
 
 	function handleSourceMouseUp(event: MouseEvent) {
-		const sel = window.getSelection();
 		const container = event.currentTarget as HTMLElement;
-		const caretNode = sel?.focusNode;
-		if (!sel || !caretNode || !container.contains(caretNode)) {
-			onMarkSplit?.({ index: id, offset: null });
-			return;
-		}
-
-		const rangeToCaret = document.createRange();
-		rangeToCaret.selectNodeContents(container);
-		try {
-			rangeToCaret.setEnd(caretNode, sel.focusOffset);
-		} catch {
-			onMarkSplit?.({ index: id, offset: null });
-			return;
-		}
-
-		const offset = rangeToCaret.toString().length;
-		if (offset <= 0 || offset >= textSegment1.length) {
-			onMarkSplit?.({ index: id, offset: null });
-			return;
-		}
-
+		const offset = getSplitOffsetFromSelection(
+			container,
+			window.getSelection(),
+			textSegment1.length,
+		);
 		onMarkSplit?.({ index: id, offset });
 	}
 
@@ -190,6 +176,11 @@
 
 	function toggleCombineSelect() {
 		onToggleCombine?.({ index: id });
+	}
+
+	function activateSegment() {
+		selectedSegmentId.set(id);
+		onActivateSegment?.({ index: id });
 	}
 
 	function handleInput(event: Event) {
@@ -324,8 +315,8 @@
 	tabindex="0"
 	class:selected={isSelected}
 	class:combine-selected={combineSelected}
-	onclick={() => selectedSegmentId.set(id)}
-	onfocus={() => selectedSegmentId.set(id)}
+	onclick={activateSegment}
+	onfocus={activateSegment}
 >
 	<button
 		class="toggle-container {checked ? 'locked' : 'unlocked'}"
@@ -366,7 +357,10 @@
 			</button>
 			<button
 				class="tm-btn save split-btn"
-				onclick={splitAtCaret}
+				onclick={(event) => {
+					event.stopPropagation();
+					splitAtCaret();
+				}}
 				disabled={splitOffset === null}
 				title="Place the caret inside the source text to enable split"
 			>

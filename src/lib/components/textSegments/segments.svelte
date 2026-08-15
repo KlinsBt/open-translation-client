@@ -807,18 +807,18 @@
 			)}
 			splitOffset={pendingSplitOffsets.get(i) ?? null}
 			onMarkSplit={(detail) => {
-				const next = new Map(pendingSplitOffsets);
 				if (detail.offset === null || detail.offset === undefined) {
-					next.delete(detail.index);
+					pendingSplitOffsets = new Map();
 				} else {
-					next.set(detail.index, detail.offset);
+					pendingSplitOffsets = new Map([[detail.index, detail.offset]]);
 				}
-				pendingSplitOffsets = next;
 				selectedSegmentId.set(detail.index);
 			}}
 			onSplitSegment={(detail) => splitAtOffset(detail.index, detail.offset)}
 			onToggleCombine={(detail) => {
 				const idx = detail.index;
+				pendingSplitOffsets = new Map();
+				selectedSegmentId.set(idx);
 				const next = new Set(combineSelection);
 				if (next.has(idx)) {
 					next.delete(idx);
@@ -826,6 +826,12 @@
 					next.add(idx);
 				}
 				combineSelection = next;
+			}}
+			onActivateSegment={(detail) => {
+				if (!pendingSplitOffsets.has(detail.index)) {
+					pendingSplitOffsets = new Map();
+				}
+				selectedSegmentId.set(detail.index);
 			}}
 		/>
 	{/each}
