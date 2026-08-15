@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2"
+        xmlns:sup="http://example.com/sup">
+  <file original="" source-language="English (en)" target-language="German (de)" datatype="plaintext">
+    <header>
+      <group>
+        <sup:SourceInfo>
+          <sup:Id>1733096416472</sup:Id>
+          <sup:Name>HTML Test 1</sup:Name>
+          <sup:Checked>[true,false,true,true,true,false,false,false,false,false,false]</sup:Checked>
+          <sup:Type>html</sup:Type>
+          <sup:TypeRef>&quot;&lt;!DOCTYPE html&gt;\r\n&lt;html lang=\&quot;en\&quot;&gt;\r\n\r\n&lt;head&gt;\r\n    &lt;meta charset=\&quot;UTF-8\&quot;&gt;\r\n    &lt;meta name=\&quot;viewport\&quot; content=\&quot;width=device-width, initial-scale=1.0\&quot;&gt;\r\n    &lt;title&gt;Example Form&lt;/title&gt;\r\n&lt;/head&gt;\r\n\r\n&lt;body&gt;\r\n    &lt;h1&gt;Contact Us&lt;/h1&gt;\r\n\r\n    &lt;p&gt;If you have any questions, please fill out the form below and we&apos;ll get back to you as soon as possible.&lt;/p&gt;\r\n\r\n    &lt;form action=\&quot;/submit\&quot; method=\&quot;post\&quot;&gt;\r\n        &lt;label for=\&quot;name\&quot;&gt;Name:&lt;/label&gt;\r\n        &lt;input type=\&quot;text\&quot; id=\&quot;name\&quot; name=\&quot;name\&quot; placeholder=\&quot;Your name\&quot;&gt;&lt;br&gt;&lt;br&gt;\r\n\r\n        &lt;label for=\&quot;email\&quot;&gt;Email:&lt;/label&gt;\r\n        &lt;input type=\&quot;email\&quot; id=\&quot;email\&quot; name=\&quot;email\&quot; placeholder=\&quot;Your email\&quot;&gt;&lt;br&gt;&lt;br&gt;\r\n\r\n        &lt;label for=\&quot;message\&quot;&gt;Message:&lt;/label&gt;&lt;br&gt;\r\n        &lt;textarea id=\&quot;message\&quot; name=\&quot;message\&quot; placeholder=\&quot;Your message\&quot;&gt;&lt;/textarea&gt;&lt;br&gt;&lt;br&gt;\r\n\r\n        &lt;label for=\&quot;newsletter\&quot;&gt;Subscribe to newsletter:&lt;/label&gt;\r\n        &lt;input type=\&quot;checkbox\&quot; id=\&quot;newsletter\&quot; name=\&quot;newsletter\&quot;&gt;&lt;br&gt;&lt;br&gt;\r\n\r\n        &lt;input type=\&quot;submit\&quot; value=\&quot;Submit\&quot;&gt;\r\n    &lt;/form&gt;\r\n\r\n    &lt;footer&gt;\r\n        &lt;p&gt;&amp;copy; 2024 Example Company. All rights reserved.&lt;/p&gt;\r\n    &lt;/footer&gt;\r\n&lt;/body&gt;\r\n\r\n&lt;/html&gt;&quot;</sup:TypeRef>
+        </sup:SourceInfo>
+      </group>
+    </header>
+    <body>
+        <trans-unit id="1">
+          <source>Contact Us</source>
+          <target>Kontaktieren Sie Uns</target>
+        </trans-unit>
+        <trans-unit id="2">
+          <source>If you have any questions, please fill out the form below and we&apos;ll get back to you as soon as possible.</source>
+          <target>fjhjdjn djfihjfdhjsdhg sdshfjshg</target>
+        </trans-unit>
+        <trans-unit id="3">
+          <source>Name:</source>
+          <target>Name:</target>
+        </trans-unit>
+        <trans-unit id="4">
+          <source>Your name</source>
+          <target>Ihr Name:</target>
+        </trans-unit>
+        <trans-unit id="5">
+          <source>Email:</source>
+          <target>E-Mail</target>
+        </trans-unit>
+        <trans-unit id="6">
+          <source>Your email</source>
+          <target></target>
+        </trans-unit>
+        <trans-unit id="7">
+          <source>Message:</source>
+          <target>sdgsdgsg</target>
+        </trans-unit>
+        <trans-unit id="8">
+          <source>Your message</source>
+          <target></target>
+        </trans-unit>
+        <trans-unit id="9">
+          <source>Subscribe to newsletter:</source>
+          <target></target>
+        </trans-unit>
+        <trans-unit id="10">
+          <source>Submit</source>
+          <target></target>
+        </trans-unit>
+        <trans-unit id="11">
+          <source>© 2024 Example Company. All rights reserved.</source>
+          <target></target>
+        </trans-unit>
+    </body>
+  </file>
+</xliff>

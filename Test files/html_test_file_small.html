@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example Form</title>
+</head>
+
+<body>
+    <h1>Contact Us</h1>
+
+    <p>If you have any questions, please fill out the form below and we'll get back to you as soon as possible.</p>
+
+    <form action="/submit" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" placeholder="Your name"><br><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" placeholder="Your email"><br><br>
+
+        <label for="message">Message:</label><br>
+        <textarea id="message" name="message" placeholder="Your message"></textarea><br><br>
+
+        <label for="newsletter">Subscribe to newsletter:</label>
+        <input type="checkbox" id="newsletter" name="newsletter"><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+
+    <footer>
+        <p>&copy; 2024 Example Company. All rights reserved.</p>
+    </footer>
+</body>
+
+</html>

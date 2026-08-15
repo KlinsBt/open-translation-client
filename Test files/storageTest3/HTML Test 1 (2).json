@@ -1,0 +1,50 @@
+{
+  "translationData": {
+    "name": "HTML Test 1",
+    "sourceLang": "English (en)",
+    "targetLang": "German (de)",
+    "creationDate": "1731409488222",
+    "seg1": [
+      "Contact Us",
+      "If you have any questions, please fill out the form below and we'll get back to you as soon as possible.",
+      "Name:",
+      "Your name",
+      "Email:",
+      "Your email",
+      "Message:",
+      "Your message",
+      "Subscribe to newsletter:",
+      "Submit",
+      "© 2024 Example Company. All rights reserved."
+    ],
+    "seg2": [
+      "Kontaktieren Sie Uns",
+      "fjhjdjn djfihjfdhjsdhg sdshfjshg",
+      "Name:",
+      "Ihr Name:",
+      "E-Mail",
+      "",
+      "sdgsdgsg",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "checked": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "type": "html",
+    "typeRef": "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n\r\n<head>\r\n    <meta charset=\"UTF-8\">\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    <title>Example Form</title>\r\n</head>\r\n\r\n<body>\r\n    <h1>Contact Us</h1>\r\n\r\n    <p>If you have any questions, please fill out the form below and we'll get back to you as soon as possible.</p>\r\n\r\n    <form action=\"/submit\" method=\"post\">\r\n        <label for=\"name\">Name:</label>\r\n        <input type=\"text\" id=\"name\" name=\"name\" placeholder=\"Your name\"><br><br>\r\n\r\n        <label for=\"email\">Email:</label>\r\n        <input type=\"email\" id=\"email\" name=\"email\" placeholder=\"Your email\"><br><br>\r\n\r\n        <label for=\"message\">Message:</label><br>\r\n        <textarea id=\"message\" name=\"message\" placeholder=\"Your message\"></textarea><br><br>\r\n\r\n        <label for=\"newsletter\">Subscribe to newsletter:</label>\r\n        <input type=\"checkbox\" id=\"newsletter\" name=\"newsletter\"><br><br>\r\n\r\n        <input type=\"submit\" value=\"Submit\">\r\n    </form>\r\n\r\n    <footer>\r\n        <p>&copy; 2024 Example Company. All rights reserved.</p>\r\n    </footer>\r\n</body>\r\n\r\n</html>"
+  },
+  "id": 1733096416472
+}

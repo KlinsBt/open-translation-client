@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmx version="1.4">
+  <header creationtool="Open Translation Client" creationtoolversion="1.0" datatype="unknown" segtype="sentence" adminlang="en-us" srclang="de" o-tmf="OpenTLCTM" creationdate="20250108T223434Z" creationid="System" changedate="20250108T223434Z" changeid="System">
+    <prop type="id">67</prop>
+    <prop type="name">New TM</prop>
+  </header>
+  <body>
+    <tu tuid="1">
+      <tuv xml:lang="de">
+        <seg>Dies ist ein Testsegment</seg>
+      </tuv>
+      <tuv xml:lang="en">
+        <seg>This is a test segment</seg>
+      </tuv>
+      <tuv xml:lang="fr">
+        <seg>Ceci est un segment de test</seg>
+      </tuv>
+    </tu>
+    <tu tuid="2">
+      <tuv xml:lang="de">
+        <seg>Dies ist ein weiteres Testsegment</seg>
+      </tuv>
+      <tuv xml:lang="en">
+        <seg>This is another test segment</seg>
+      </tuv>
+      <tuv xml:lang="fr">
+        <seg>Ceci est un autre segment de test</seg>
+      </tuv>
+    </tu>
+  </body>
+</tmx>

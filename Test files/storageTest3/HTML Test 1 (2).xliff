@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="English (en)" trgLang="German (de)">
+  <file id="1733096416472" original="">
+    <mda:metadata>
+      <mda:metaGroup category="open_tlc_metadata">
+        <mda:meta type="name">HTML Test 1</mda:meta>
+        <mda:meta type="checked">[true,false,true,true,true,false,false,false,false,false,false]</mda:meta>
+        <mda:meta type="type">html</mda:meta>
+        <mda:meta type="type_ref">&quot;&lt;!DOCTYPE html&gt;\r\n&lt;html lang=\&quot;en\&quot;&gt;\r\n\r\n&lt;head&gt;\r\n    &lt;meta charset=\&quot;UTF-8\&quot;&gt;\r\n    &lt;meta name=\&quot;viewport\&quot; content=\&quot;width=device-width, initial-scale=1.0\&quot;&gt;\r\n    &lt;title&gt;Example Form&lt;/title&gt;\r\n&lt;/head&gt;\r\n\r\n&lt;body&gt;\r\n    &lt;h1&gt;Contact Us&lt;/h1&gt;\r\n\r\n    &lt;p&gt;If you have any questions, please fill out the form below and we&apos;ll get back to you as soon as possible.&lt;/p&gt;\r\n\r\n    &lt;form action=\&quot;/submit\&quot; method=\&quot;post\&quot;&gt;\r\n        &lt;label for=\&quot;name\&quot;&gt;Name:&lt;/label&gt;\r\n        &lt;input type=\&quot;text\&quot; id=\&quot;name\&quot; name=\&quot;name\&quot; placeholder=\&quot;Your name\&quot;&gt;&lt;br&gt;&lt;br&gt;\r\n\r\n        &lt;label for=\&quot;email\&quot;&gt;Email:&lt;/label&gt;\r\n        &lt;input type=\&quot;email\&quot; id=\&quot;email\&quot; name=\&quot;email\&quot; placeholder=\&quot;Your email\&quot;&gt;&lt;br&gt;&lt;br&gt;\r\n\r\n        &lt;label for=\&quot;message\&quot;&gt;Message:&lt;/label&gt;&lt;br&gt;\r\n        &lt;textarea id=\&quot;message\&quot; name=\&quot;message\&quot; placeholder=\&quot;Your message\&quot;&gt;&lt;/textarea&gt;&lt;br&gt;&lt;br&gt;\r\n\r\n        &lt;label for=\&quot;newsletter\&quot;&gt;Subscribe to newsletter:&lt;/label&gt;\r\n        &lt;input type=\&quot;checkbox\&quot; id=\&quot;newsletter\&quot; name=\&quot;newsletter\&quot;&gt;&lt;br&gt;&lt;br&gt;\r\n\r\n        &lt;input type=\&quot;submit\&quot; value=\&quot;Submit\&quot;&gt;\r\n    &lt;/form&gt;\r\n\r\n    &lt;footer&gt;\r\n        &lt;p&gt;&amp;copy; 2024 Example Company. All rights reserved.&lt;/p&gt;\r\n    &lt;/footer&gt;\r\n&lt;/body&gt;\r\n\r\n&lt;/html&gt;&quot;</mda:meta>
+      </mda:metaGroup>
+    </mda:metadata>
+    <unit id="1">
+      <segment>
+        <source>Contact Us</source>
+        <target>Kontaktieren Sie Uns</target>
+      </segment>
+    </unit>
+    <unit id="2">
+      <segment>
+        <source>If you have any questions, please fill out the form below and we&apos;ll get back to you as soon as possible.</source>
+        <target>fjhjdjn djfihjfdhjsdhg sdshfjshg</target>
+      </segment>
+    </unit>
+    <unit id="3">
+      <segment>
+        <source>Name:</source>
+        <target>Name:</target>
+      </segment>
+    </unit>
+    <unit id="4">
+      <segment>
+        <source>Your name</source>
+        <target>Ihr Name:</target>
+      </segment>
+    </unit>
+    <unit id="5">
+      <segment>
+        <source>Email:</source>
+        <target>E-Mail</target>
+      </segment>
+    </unit>
+    <unit id="6">
+      <segment>
+        <source>Your email</source>
+        <target></target>
+      </segment>
+    </unit>
+    <unit id="7">
+      <segment>
+        <source>Message:</source>
+        <target>sdgsdgsg</target>
+      </segment>
+    </unit>
+    <unit id="8">
+      <segment>
+        <source>Your message</source>
+        <target></target>
+      </segment>
+    </unit>
+    <unit id="9">
+      <segment>
+        <source>Subscribe to newsletter:</source>
+        <target></target>
+      </segment>
+    </unit>
+    <unit id="10">
+      <segment>
+        <source>Submit</source>
+        <target></target>
+      </segment>
+    </unit>
+    <unit id="11">
+      <segment>
+        <source>© 2024 Example Company. All rights reserved.</source>
+        <target></target>
+      </segment>
+    </unit>
+  </file>
+</xliff>

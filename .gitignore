@@ -21,3 +21,7 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 desktop.ini
+
+# Generated TMX stress-test fixtures exceed GitHub's 100 MB file limit
+/Test files/TMX and TBX/Merged TMX 400k.tmx
+/Test files/TMX and TBX/Merged TMX 500k (1).tmx

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example Form</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        background-color: #f9f9f9;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      h1 {
+        color: #0056b3;
+        text-align: center;
+        margin-bottom: 10px;
+        max-width: 500px;
+      }
+
+      p {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #555;
+        max-width: 500px;
+      }
+
+      form {
+        width: 100%;
+        max-width: 500px;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      label {
+        font-size: 1rem;
+        color: #555;
+        margin-bottom: 5px;
+        display: block;
+      }
+
+      input[type="text"],
+      input[type="email"],
+      textarea {
+        width: 95%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+
+      textarea {
+        resize: vertical;
+        height: 100px;
+      }
+
+      input[type="checkbox"] {
+        margin-right: 10px;
+      }
+
+      input[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #0056b3;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      input[type="submit"]:hover {
+        background-color: #003f7f;
+      }
+
+      footer {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #aaa;
+      }
+
+      footer p {
+        margin: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Contact Us</h1>
+
+    <p>
+      If you have any questions, please fill out the form below. We'll get back
+      to you as soon as possible. If you have further inquiries, feel free to
+      reach out via our support email.
+    </p>
+
+    <form id="contactForm">
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" placeholder="Your name" />
+
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" placeholder="Your email" />
+
+      <label for="message">Message:</label>
+      <textarea
+        id="message"
+        name="message"
+        placeholder="Your message"
+      ></textarea>
+
+      <label for="newsletter">
+        <input type="checkbox" id="newsletter" name="newsletter" />
+        Subscribe to newsletter. So you don't miss any updates!
+      </label>
+
+      <input type="submit" value="Submit" />
+    </form>
+
+    <footer>
+      <p>&copy; 2024 Example Company. All rights reserved.</p>
+    </footer>
+
+    <script>
+      const form = document.getElementById("contactForm");
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        alert("Thank you for contacting us! We will get back to you soon.");
+      });
+    </script>
+  </body>
+</html>

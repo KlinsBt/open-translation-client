@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="fr">
+  <file id="f1">
+    <notes>
+      <note id="n1">Note for file</note>
+    </notes>
+    <unit id="u1">
+      <notes>
+        <note id="n1">Note for unit</note>
+      </notes>
+      <segment id="s1" state="initial">
+        <source>text</source>
+        <target></target>
+      </segment>
+    </unit>
+    <unit id="u2">
+      <notes>
+        <note id="n2">Note for unit 2</note>
+      </notes>
+      <segment id="s2" state="translated">
+        <source>text 2</source>
+        <target>translation 2</target>
+      </segment>
+    </unit>
+    <unit id="u3">
+      <notes>
+        <note id="n3">Note for unit 3</note>
+      </notes>
+      <segment id="s3" state="final">
+        <source>text 3</source>
+        <target>approved translation 3</target>
+      </segment>
+    </unit>
+  </file>
+</xliff>

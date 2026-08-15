@@ -1,0 +1,4026 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Basic_dialect/master/DCT/TBX-Basic_DCT.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Basic_dialect/master/DCT/TBX-Basic.nvdl" type="application/xml"schematypens="http://purl.oclc.org/dsdl/nvdl/ns/structure/1.0"?>
+<tbx xmlns="urn:iso:std:iso:30042:ed-2" type="TBX-Basic" style="dct" xml:lang="en" xmlns:min="http://www.tbxinfo.net/ns/min" xmlns:basic="http://www.tbxinfo.net/ns/basic">
+	<tbxHeader>
+		<fileDesc>
+			<sourceDesc>
+				<p>TBX file, created via MultiTerm Export</p>
+			</sourceDesc>
+		</fileDesc>
+	</tbxHeader>
+
+	<text>
+		<body>
+			<conceptEntry id="c1">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Galaxy_cluster#/media/File:Galaxy_cluster_IDCS_J1426.jpg">Open_Cluster.JPG</basic:xGraphic>
+				<note>G-Source: http://www.physics.drexel.edu/observatory/dump.shtml</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A group of stars formed together in the spiral
+							arms of a galaxy.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>open cluster</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Over 1100 open clusters are known in our Milky
+								Way Galaxy, and this is probably only a small percentage of the
+								total population which is probably some factor higher; estimates of
+								as many as about 100,000 Milky Way open clusters have been given. </basic:context>
+							<basic:source>http://seds.org/MESSIER/open.html</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>galactic cluster</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>supersededTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>In contrast, the galactic cluster represented by
+								M29 is a grouping of stars—a “knot” of stars in the stellar
+								backdrop.</basic:context>
+							<basic:source>http://www.eastbayastro.org/2000/0900/r0900-8.htm</basic:source>
+						</descripGrp>
+						<note>Another name for an open star cluster. They are often termed Galactic
+							Clusters because they are found mainly in the plane of our galaxy. If
+							you were to view our galaxy from afar, you would find that all the
+							open/galactic clusters lie within the spiral arms of the galaxy.</note>
+						<note>N-Source:
+							http://www.delscope.demon.co.uk/astronomy/glossary.htm#G</note>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una acumulación de una docena hasta varios miles
+							de jóvenes estrellas en el plano de las galaxias.</basic:definition>
+						<basic:source>http://www.espacioprofundo.com.ar/diccionario/Glosario_de_Astronomia/vertermino/Cumulo_abierto.html</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>cúmulo abierto</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>M7 es uno de los cúmulos abiertos estelares más
+								prominentes del cielo. El cúmulo, dominado por brillantes estrellas
+								azules, puede ser visto a ojo desnudo en un cielo oscuro en la cola
+								de la constelación del Escorpión (Scorpius).Contiene unas 100
+								estrellas en total, tiene una edad aproximada de 200 millones de
+								años, mide 25 años luz de ancho, y se encuentra a unos 1000 años luz
+								de distancia.</basic:context>
+							<basic:source>http://observatorio.info/2009/11/m7-cumulo-abierto-en-scorpius-2/</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c2">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Birth</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Accretion_disk#/media/File:Star_with_accretion_disk.jpg">Accretion_Disk.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://www.cfht.hawaii.edu/Instruments/Spectroscopy/Espadons/www.ast.obs-mip.fr/users/donati/press/fuori_eng.html</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A structure that forms around a compact object
+							(e.g. a white dwarf, neutron star, or black hole) when matter flows
+							towards it.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>circumstellar accretion disk</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>fullForm</basic:termType>
+						<descripGrp>
+							<basic:context>In contrast with the violence of merging, the
+								gradual growth of massive stars by accretion is likely to produce
+								less infrared variability, relatively thin circumstellar accretion
+								disks that maintain their orientation, and collimated bipolar
+								outflows that are scaled-up versions of those produced by low-mass
+								young stellar objects.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>accretion disc</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Accretion Disc Evolution in Single and Binary T
+								Tauri Stars</basic:context>
+							<basic:source>http://cdsweb.cern.ch/record/369655</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>circumstellar disk</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Our results suggest a scenario of a central star
+								accreting material from a circumstellar disc at the centre of a cool
+								extended rotating torus, while driving a fast bipolar wind. </basic:context>
+							<basic:source>http://adsabs.harvard.edu/abs/2010MNRAS.402.1504D</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una estructura en forma de disco alrededor de un
+							objeto central masivo que alimenta el cuerpo central siendo atraido por
+							éste y contribuye a su aumento de masa.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Disco_de_acreci%C3%B3n</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>disco de acreción</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Lo que alimenta esta actividad es el gas
+								extraído de la estrella normal, que, cayendo en espiral hacia el
+								agujero negro, se acumula en un denso disco de acreción.</basic:context>
+							<basic:source>http://www.amazings.com/ciencia/noticias/010210e.html</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>disco de acrecimiento</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Imágenes de estrellas jóvenes con discos de
+								acrecimeinto y chorros colimados de material, tomadas con el
+								telescopio espacial Hubble.</basic:context>
+							<basic:source>http://www.laeff.inta.es/index.php?op=modload&amp;name=phpWiki&amp;file=index&amp;pagename=Research-Brown%20Dwarfs-BD_esp-DiscosAcrecimiento</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c3">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Death</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Black_hole#/media/File:BH_LMC.png">Black_Hole.jpg</basic:xGraphic>
+				<note>G-Source: http://wallpaper-s.org/12__Supermassive_Black_Hole.htm</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A region of space where the gravitational force
+							is so strong that not even light can escape from it.</basic:definition>
+						<basic:source>Cambridge2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>black hole</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>As matter spirals toward and into the black
+								hole, some of its gravitational potential energy may be efficiently
+								converted into relativistic jets launched by the magnetic field
+								along the spin axis.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Un punto super-denso en el espacio formado por el
+							colapso de una estrella donde nada puede escapar de su influencia
+							gravitacional. </basic:definition>
+						<basic:source>www.atlasoftheuniverse.com/espanol/glossary.html</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>agujero negro</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>En teoría un agujero negro se origina hacia el
+								final de la vida de una estrella, cuando ésta se contrae mas allá de
+								un límite determinado - conocido como radio de Schwarzschild - y se
+								hace más pequeña y mas densa que una estrella de neutrones, tanto
+								que ni la luz puede escapar de su campo gravitatorio.</basic:context>
+							<basic:source>http://html.rincondelvago.com/agujeros-negros_5.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c4">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Gamma-ray_burst#/media/File:GRB080319B_illustration_NASA.jpg">Gamma_Ray_Burst.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://nakedmaninthetree.wordpress.com/2009/02/22/galaxies-and-the-future/</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A temporary intese burst of gamma rays and X-rays
+							from a cosmic source.</basic:definition>
+						<basic:source>Cambridge2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>gamma-ray burst</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>fullForm</basic:termType>
+						<descripGrp>
+							<basic:context>The extremely rare merger of two stars close to
+								the upper-mass end of the initial mass function may be a possible
+								pathway to hypernova-generated gamma-ray bursts.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>GRB</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>acronym</basic:termType>
+						<descripGrp>
+							<basic:context>The off-axis collisions and merging of stars
+								near the top of the stellar mass spectrum may result in the
+								production of GRBs.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Destellos de rayos gamma que pueden durar desde
+							unos nanosegundos hasta cerca de una hora.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Brote_de_rayos_gamma</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>explosión de rayos gamma</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Una poderosa explosión de rayos gamma, detectada
+								el 19 de marzo por el satélite Swift, de la NASA, batió el récord
+								como el objeto más distante que se pudo observar a simple
+								vista.</basic:context>
+							<basic:source>http://ciencia.nasa.gov/headlines/y2008/21mar_nakedeye.htm</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>brote de rayos gamma</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>John Ellis (entrevistado por Punset en su
+								despacho en el CERN en un programa de Redes) y sus colaboradores
+								mostraron cómo utilizar las propiedades de los grandes brotes de
+								rayos gamma (gamma-ray bursters o GRBs) para responder a esta
+								cuestión.</basic:context>
+							<basic:source>http://francisthemulenews.wordpress.com/2009/02/21/el-mayor-brote-de-rayos-gamma-grb-080916c-acerca-la-gravedad-cuantica-al-mundo-de-planck/</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c5">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Globular_cluster#/media/File:A_Swarm_of_Ancient_Stars_-_GPN-2000-000930.jpg">Globular_Cluster.jpg</basic:xGraphic>
+				<note>G-Source: http://www.astrographics.com/GalleryPrintsIndex/GP0046.html</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A roughly spherical group of old stars in the
+							halo of the galaxy.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>globular cluster</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Although the standard accretion scenario may
+								well explain the formation of most massive stars, the existence of
+								blue stragglers in globular clusters indicates that mergers do occur
+								in nature.</basic:context>
+							<basic:source>Birth of High-Mass Stars</basic:source>
+						</descripGrp>
+						<note>Related Term: star cluster</note>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Un tipo de cúmulo estelar que consiste en una
+							agrupación de miles de estrellas viejas, gravitacionalmente ligadas, con
+							distribución aproximadamente esférica, y que orbita en torno a una
+							galaxia de manera similar a un satélite.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/C%C3%BAmulo_globular</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>cúmulo globular</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context> De los 200 cúmulos globulares que sobreviven
+								hoy, M3 es uno de los más grande y luminoso, fácilmente observable
+								con binoculares en el hemisferio Norte del cielo.</basic:context>
+							<basic:source>http://www.tayabeixo.org/portadas/m3.htm</basic:source>
+						</descripGrp>
+						<note>Related Term: cúmulo estelar</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c6">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Main_sequence#/media/File:HRDiagram.png">Main_Sequence.jpg</basic:xGraphic>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<note>G-Source: http://www.skyofplenty.com/?page_id=374</note>
+					<descripGrp>
+						<basic:definition>Of or dealing with a major group of stars forming
+							a band stretching from upper left to lower right on a
+							Hertzsprung-Russell diagram when being plotted by luminosity and surface
+							temperature.</basic:definition>
+						<basic:source>http://en.wiktionary.org/wiki/main-sequence</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>main-sequence</term>
+
+
+						<min:partOfSpeech>adjective</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>However, immediately after its formation, the
+								merger product is likely to have a photospheric radius considerably
+								larger than that of a main-sequence star with the same
+								mass.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Pertenece a las estrellas en la región del
+							diagrama de Hertzsprung-Russell en la que se encuentran la mayor parte
+							de las estrellas que transforman hidrógeno en helio.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Secuencia_principal</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>de secuencia principal</term>
+
+
+						<min:partOfSpeech>adjective</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Por ejemplo, nuestro sol es una estrella de
+								secuencia principal regular de tamaño pequeño. </basic:context>
+							<basic:source>http://celestia.albacete.org/celestia/celestia/stars/secu5.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c7">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Birth</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Protostar#/media/File:A_diamond_in_the_dust.jpg">Protostar.JPG</basic:xGraphic>
+				<note>G-Source: http://www.konkoly.hu/KISAG/Science/star/star_intro.html</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A star in the earliest observable stage of
+							formation.</basic:definition>
+						<basic:source>Cambridge2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>protostar</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Alternatively, it has been suggested that
+								massive stars form from the merging of lower mass protostars in
+								high-density protostar clusters (Bonnell et al.1998; Stahler et al.
+								2000; Bonnell 2002; Zinnecker &amp; Bate 2002).</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<note>G-Source:
+						http://geocities.ws/acarvajaltt/temas/estrellas_nacimiento_estelar.html</note>
+					<descripGrp>
+						<basic:definition>Una región muy densa o descorazonada de nubes
+							moleculares donde existen estrellas en proceso de formación.</basic:definition>
+						<basic:source>www.astrocosmo.cl/glosario/glosar-p.htm</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>protoestrella</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>En estos primeros estadios, la protoestrella es
+								un objeto muy activo, y produce un viento bipolar formado por dos
+								chorros opuestos de material de alta velocidad. </basic:context>
+							<basic:source>http://www.fomento.es/MFOM/LANG_CASTELLANO/DIRECCIONES_GENERALES/INSTITUTO_GEOGRAFICO/Astronomia/InvestermSecacion/astronomia/protoestrellas.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c8">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Star_cluster#/media/File:M92_arp_750pix.jpg">Star_Cluster.jpg</basic:xGraphic>
+				<note>G-Source: http://apod.nasa.gov/apod/ap060109.html</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A collection of stars formed together from the
+							same gas cloud and bound together by mutual gravitational
+							attraction.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>star cluster</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Most star clusters are too far away and the
+								white dwarfs are too faint to be seen by ground-based telescopes,
+								but Hubble's powerful vision sees many of them.</basic:context>
+							<basic:source>http://hubblesite.org/newscenter/archive/releases/star%20cluster/2008/25/full/</basic:source>
+						</descripGrp>
+						<note>Related Term: globular cluster</note>
+						<note>Related Term: open cluster</note>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Un grupo de estrellas atraídas entre sí por su
+							gravedad mutua.</basic:definition>
+						<basic:source>http://iopscience.iop.org/1538-3881/129/5/2281/pdf/1538-3881_129_5_2281.pdf</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>cúmulo estelar</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>“Es como encontrar un pez fuera del agua”, dice
+								Ed Churchwell, profesor de astronomía de la Universidad de
+								Wisconsin-Madison, quien con un equipo de científicos de UW-Madison,
+								de la Universidad de Wyoming, de la Universidad de Boston, del
+								Instituto de Ciencia Espacial de Boulder, Colorado, y del Centro de
+								Ciencia Spitzer descubrieron este inusual cúmulo estelar con la
+								ayuda del Telescopio Espacial Spitzer de la NASA. </basic:context>
+							<basic:source>http://www.astroseti.org/vernew.php?codigo=1117</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>cúmulo de estrellas</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Los cúmulos de estrellas se clasifican en dos
+								grupos: cúmulos abiertos, que no poseen forma definida, y cúmulos
+								globulares, que son esféricos o casi esféricos.</basic:context>
+							<basic:source>http://www.astromia.com/universo/cumulos.htm</basic:source>
+						</descripGrp>
+						<note>Related Term: cúmulo globular</note>
+						<note>Related Term: cúmulo abierto</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c9">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Milky_Way#/media/File:ESO-VLT-Laser-phot-33a-07.jpg">Milky_Way.jpg</basic:xGraphic>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<note>G-Source: http://www.cfa.harvard.edu/~afrebel/milky-way-2.jpg</note>
+					<descripGrp>
+						<basic:definition>A band of faint light across the sky, visible to
+							the naked eye on a moonless night, consisting of stars and glowing gas
+							in the disk of our own Galaxy.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>Galaxy</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>shortForm</basic:termType>
+						<descripGrp>
+							<basic:context>If merging is an important pathway to the
+								formation of massive stars, then it is expected that some
+								highluminosity IRAS sources in our Galaxy have brightened or faded
+								since the IRAS observations were made.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>Milky Way Galaxy</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>fullForm</basic:termType>
+					</termSec>
+					<termSec>
+						<term>Milky Way</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>shortForm</basic:termType>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<note>G-Source: http://oacs-unah.edu.hn/an111/vrt/img/via_lactea.jpg</note>
+					<descripGrp>
+						<basic:definition>Una galaxia espiral en la que se encuentra el
+							Sistema Solar y, por ende, la Tierra.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Vía_Láctea</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>Galaxia</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>shortForm</basic:termType>
+						<descripGrp>
+							<basic:context>La Vía Láctea, también llamada la Galaxia, es un
+								agrupamiento de estrellas con forma de disco, que incluye al Sol y a
+								su sistema solar.</basic:context>
+							<basic:source>www.todoelsistemasolar.com.ar/vlactea.htm</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>Vía Láctea</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>shortForm</basic:termType>
+						<descripGrp>
+							<basic:context>La Via Láctea és una galaxia grande, espiral y
+								puede tener unos 100.000 millones de estrellas, entre ellas, el Sol. </basic:context>
+							<basic:source>http://www.astromia.com/universo/vialactea.htm</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>galaxia Vía Láctea</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>fullForm</basic:termType>
+						<descripGrp>
+							<basic:context>La galaxia Vía Láctea es una galaxia espiral que
+								es nuestro hogar, al igual que el de otras 100 mil millones
+								estrellas. </basic:context>
+							<basic:source>http://www.windows.ucar.edu/tour/link=/the_universe/Milkyway.sp.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c10">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Star#/media/File:The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg">Star.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://lh4.ggpht.com/_EuutPdvjcY0/SQ2jGBKWO7I/AAAAAAAAALM/gjDMVimDQc8/005Est.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A large, luminous ball of gas generating energy
+							internally by nuclear fusion.</basic:definition>
+						<basic:source>Cambridge2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>star</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>While the behavior of stars forming by accretion
+								is reasonably well understood,the consequences of merging have not
+								been fully investermSecated.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una enorme y densa bola de gas que genera fusión
+							nuclear, liberando así una gran cantidad de energía</basic:definition>
+						<basic:source>spaceplace.nasa.gov/sp/kids/spitzer/signs/sign_glossary.shtml</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>estrella</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Las estrellas son enormes aglomeraciones de gas,
+								principalmente Hidrogeno, cuya temperatura es tan alta debido a la
+								fusión de este elemento, que irradian luz a lo largo de todo el
+								espectro electromagnético. Poseen diferentes temperaturas que varían
+								desde los 2000 grados Celsius hasta los 50000.</basic:context>
+							<basic:source>http://www.astrosurf.com/astronosur/estrellas.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c11">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Ultraviolet#/media/File:UV_LED_Fluoresence.jpg">UV_Radiation.jpg</basic:xGraphic>
+				<note>G-Source: http://drdima.files.wordpress.com/2009/05/sun-rays.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>The region of the electromagnetic spectrum
+							spanning the wavelength range from the Lymann limit at 91.2 nm to 350
+							nm.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>UV radiation</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>shortForm</basic:termType>
+						<descripGrp>
+							<basic:context>UV radiation from stars and shocks likely
+								provide the minimum level of ionization required to couple these
+								fields strongly to the entangled medium.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>ultraviolet radiation</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>fullForm</basic:termType>
+						<descripGrp>
+							<basic:context>Ultraviolet (UV) radiation is part of the
+								electromagnetic spectrum emitted by the sun. </basic:context>
+							<basic:source>http://www.who.int/uv/en/</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>La radiación electromagnética cuya longitud de
+							onda está comprendida aproximadamente entre los 400 nm y los 15
+							nm.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Radiaci%C3%B3n_UV</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>radiación UV</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>shortForm</basic:termType>
+						<descripGrp>
+							<basic:context>Los usuarios de camas solares se someten a dosis
+								considerables de radiaciones UV artificiales para conseguir un
+								bronceado complementario al obtenido al tomar el sol.</basic:context>
+							<basic:source>http://copublications.greenfacts.org/es/camas-solares/</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>radiación ultravioleta</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<basic:termType>fullForm</basic:termType>
+						<descripGrp>
+							<basic:context>La radiación ultravioleta se encuentra entre la
+								luz visible y los rayos X del espectro electromagnético.</basic:context>
+							<basic:source>http://www.windows.ucar.edu/tour/link=/physical_science/magnetism/em_ultraviolet.sp.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c12">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Magnetic_field#/media/File:VFPt_magnets_BHM.svg">Magnetic_Field.jpg</basic:xGraphic>
+				<note>G-Source: http://www.greatdreams.com/magnet1.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A region subject to the influence of magnetism
+							that is manifested by the mechanical forces that it exerts upon
+							electricity moving across it and upon the poles of magnets placed in
+							it.</basic:definition>
+						<basic:source>Merriam-Webster2002</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>magnetic field</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Detailed consideration of the merger process
+								will require numerical modeling in which the hydrodynamics, effects
+								of gravity,magnetic fields, and radiation are considered
+								carefully.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Un campo de fuerza creado como consecuencia del
+							movimiento de cargas eléctricas, del flujo de la electricidad.</basic:definition>
+						<basic:source>http://www.greenfacts.org/es/glosario/abc/campo-magnetico.htm</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>campo magnético</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>El campo magnético es producido por la corriente
+								eléctrica que circula por un conductor.</basic:context>
+							<basic:source>http://teleformacion.edu.aytolacoruna.es/FISICA/document/teoria/A_Franco/elecmagnet/magnetico/cMagnetico.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c13">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Blue_straggler#/media/File:Ngc6397_hst_blue_straggler.jpg">Blue_Straggler.jpg</basic:xGraphic>
+				<note>G-Source: http://images.spaceref.com/news/2009/ooBlue_Straggler09.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A blue main-sequence star, usually found in a
+							globular or open cluster that appears to be slower in its evolution than
+							other stars of similar mass and luminosity in the same
+							cluster.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>blue straggler</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Numerical models of stellar collisions leading
+								to the formation of blue stragglers in globular clusters (Lombardi
+								et al. 2002, 2003; Fregeau et al. 2004) indicate that merger
+								products have radii up to 30 times larger than that of an equivalent
+								main-sequence star.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Estrellas que aparentan una edad menor que la del
+							sistema estelar al que pertenecen, si se supone que se formaron junto
+							con él.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Estrella_rezagada_azul</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>estrella rezagada azul</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Las últimas observaciones de las “rezagadas
+								azules”, estrellas atípicas que aparentan ser más jóvenes que el
+								sistema estelar al que pertenecen, han proporcionado dos modelos
+								diferentes sobre su origen.</basic:context>
+							<basic:source>http://mundoastronomia.portalmundos.com/nuevas-pistas-sobre-el-origen-de-las-estrellas-rezagadas-azules/</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c14">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>The sudden collapse of a massive star when the
+							internal pressure pushing outwards falls so that it cannot balance the
+							weight of material pressing inward.</basic:definition>
+						<basic:source>Cambridge2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>gravitational collapse</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Stars form from the gravitational collapse of
+								turbulent molecular cloud cores (Elmegreen &amp; Scalo 2004; Mac Low
+								&amp; Klessen 2004).</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>El estado final de la evolución de una estrella
+							de gran masa en el que la materia se comprime bajo la acción de su
+							propia atracción gravitatoria, con desprendimiento de grandes cantidades
+							de energía.</basic:definition>
+						<basic:source>http://www.conocimientosweb.net/portal/term6172.html</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>colapso gravitacional</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Esto sucede si la masa de un pedazo de la nube
+								excede cierto valor crítico, de modo tal que la fuerza de gravedad
+								vence definitivamente y el pedazo empieza a contraerse, aumentando
+								su densidad. Este proceso se llama colapso gravitacional. </basic:context>
+							<basic:source>http://bibliotecadigital.ilce.edu.mx/sites/ciencia/volumen1/ciencia2/06/html/sec_15.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c15">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Binary_star#/media/File:Algol_AB_movie_imaged_with_the_CHARA_interferometer_-_labeled.gif">Binary_Star.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://lh6.ggpht.com/_6hgSmco4R9M/SaqplXGqJfI/AAAAAAAAA1k/B3a43_O9VI8/56_Binary_Stars_thumb3.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A pair of stars in orbit around each other, held
+							together by the graviational attraction between them.</basic:definition>
+						<basic:source>Cambridge2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>binary star</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>These authors considered collision partners
+								having similar masses and concluded that such interactions can at
+								most account for a small fraction of the observed binary star
+								population in young clusters.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Un sistema estelar compuesto de dos estrellas que
+							orbitan mutuamente alrededor de un centro de masas común.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Estrella_binaria</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>estrella binaria</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>La explosión de una estrella binaria dentro de
+								una nebulosa planetaria ha sido capturado por un equipo dirigido por
+								investermSecadores del University College of London UCL - es un
+								acontecimiento que no ha sido presenciado hace más de 100
+								años.</basic:context>
+							<basic:source>http://www.astroelche.es/blog/index.php?blog=2&amp;title=astronomos-capturam-la-explosion-de-una-&amp;more=1&amp;c=1&amp;tb=1&amp;pb=1</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>estrella doble</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Una estrella doble es una pareja de estrellas
+								que se mantienen unidas por la fuerza de la gravitación y giran en
+								torno a su centro común.</basic:context>
+							<basic:source>http://www.astromia.com/universo/dobles.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c16">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-17</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Birth</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Initial_mass_function#/media/File:LH_95.jpg">Initial_Mass_Function.JPG</basic:xGraphic>
+				<note>G-Source:
+					http://www.astro.ljmu.ac.uk/~ikb/research/imf-use-in-cosmology.html</note>
+				<note>This figure compares the IMFs by ploting mass fraction per dex versus mass,
+					i.e., normalized so that the integral under each curve is unity. They are
+					assumed to be valid from 0.1 to 120 solar masses.</note>
+				<note>N-Source:
+					http://www.astro.ljmu.ac.uk/~ikb/research/imf-use-in-cosmology.html</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A mathematical description of the relative
+							frequncy with which stars of various masses are formed.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>initial mass function</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>The extremely rare merger of two stars close to
+								the upper-mass end of the initial mass function may be a possible
+								pathway to hypernova-generated gamma-ray bursts.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-17</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>La expresión numérica que determina el número de
+							estrellas con masa en un rango determinado.</basic:definition>
+						<basic:source>Basado en http://laeff.cab.inta-csic.es/modules.php?op=modload&amp;name=phpWiki&amp;file=index&amp;pagename=Research-Estrellas-IMF</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>función inicial de masa</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Estado evolutivo y función inicial de masa de
+								cúmulos jóvenes en la gran nube de Magallanes (estudio en el
+								ultravioleta).</basic:context>
+							<basic:source>http://dialnet.unirioja.es/servlet/tesis?codigo=11651</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c17">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<langSec xml:lang="zu">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>Bally2005</term>
+
+
+						<note>Author[s]: Bally, John and Hans Zinnecker</note>
+						<note>Journal Title: The Astronomical Journal</note>
+						<note>Article Title: The Birth of High-Mass Stars: Accertion and/or
+							Mergers?</note>
+						<note>Volume: 129</note>
+						<note>Publication Place: U.S.A.</note>
+						<note>Publisher: The American Astronomical Society</note>
+						<note>Publication Year: May 2005</note>
+						<note>Page(s): 2281-2293</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c18">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<langSec xml:lang="zu">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>Cambridge2007</term>
+
+
+						<note>Author[s]: Mitton, Jaqueline</note>
+						<note>Book Title: Cambridge Illustrated Dictionary of Astronomy</note>
+						<note>Publication Place: New York</note>
+						<note>Publisher: Cambridge University Press</note>
+						<note>Publication Year: 2007</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c19">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<langSec xml:lang="zu">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>Merriam-Webster2002</term>
+
+
+						<note>Book Title: Webster's Third New International Dictionary</note>
+						<note>Editor[s]: Gove, Philip Babcock</note>
+						<note>Volume: Third Edition</note>
+						<note>Publication Place: Springfield, Massachusetts</note>
+						<note>Publisher: Merriam-Webster INC.</note>
+						<note>Publication Year: 2002</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c20">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<langSec xml:lang="zu">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>Oxford2007</term>
+
+
+						<note>Book Title: Oxford Dictionary of Astronomy</note>
+						<note>Editor[s]: Ridpath, Ian</note>
+						<note>Volume: Second Edition</note>
+						<note>Publication Place: New York</note>
+						<note>Publisher: Oxford University Press</note>
+						<note>Publication Year: 2007</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c21">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-20</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Death</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Supernova#/media/File:SN1994D.jpg">Supernova.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://jcconwell.wordpress.com/2009/07/24/top-10-ways-the-universe-could-kill-us/supernova/</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A catastrophic stellar explosion in which so much
+							energy is released that the supernova alone can outshine an entire
+							galaxy of billions of stars.</basic:definition>
+						<basic:source>Cambridge2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>supernova</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>The supermassive object may be eventually
+								disrupted by an unusually violent supernova explosion (a hypernova)
+								soon after formation.</basic:context>
+							<basic:source>Bally2005</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-20</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Student</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una estrella que estalla y lanza a todo su
+							alrededor la mayor parte de su masa a altísimas velocidades.</basic:definition>
+						<basic:source>http://www.astromia.com/glosario/supernova.htm</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>supernova</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Un equipo de científicos británicos propone esta
+								semana en la revista Nature que la tenue supernova SN2008ha,
+								descubierta por una adolescente estadounidense en noviembre de 2008,
+								podría ser la explosión de una estrella masiva, en lugar de proceder
+								de una enana blanca como se planteaba hasta ahora.</basic:context>
+							<basic:source>http://www.plataformasinc.es/index.php/esl/Noticias/Una-supernova-observada-por-astronomos-aficionados-abre-el-debate-entre-los-profesionales</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c22">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<langSec xml:lang="zu">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>Moore2003</term>
+
+
+						<note>Author[s]: Moore, Patrick</note>
+						<note>Book Title: Philip's Atlas of the Universe</note>
+						<note>Publication Place: Heron Quays, London</note>
+						<note>Publisher: Philip's</note>
+						<note>Publication Year: 2003</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c23">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Red_giant#/media/File:Mira_1997.jpg">Red_Giant.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://www.lcsd.gov.hk/CE/Museum/Space/EducationResource/Universe/framed_e/lecture/ch15/imgs/red_size.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A cool, large and highly luminous star that has
+							left the main sequence and is powered by heavier elements than
+							hydrogen.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>red giant</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>The core temperature becomes so high that helium
+								start to 'burn', producing carbon; around this active core there is
+								a shell where hydrogen is still producing energy. The star becomes
+								unstable, and the outer layers swell out, cooling as they do so. The
+								star becomes a red giant.</basic:context>
+							<basic:source>Moore2003</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una estrella de masa baja o intermedia (menos de
+							8-9 masas solares) que, tras haber consumido el hidrógeno en su núcleo
+							durante la etapa de secuencia principal, convirtiéndolo en helio por
+							fusión nuclear, comienza a quemar hidrógeno en una cáscara alrededor del
+							núcleo de helio inerte.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Gigante_roja</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>gigante roja</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>La gigante roja S Orionis (S Ori) es una
+								estrella variable del tipo Mira. Su masa es similar a la del Sol,
+								con la diferencia de que está mucho más cerca de convertirse en una
+								enana blanca, el mismo final que le espera a nuestro Sol dentro de 5
+								mil millones de años.</basic:context>
+							<basic:source>http://www.solociencia.com/astronomia/07071709.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c24">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Red_dwarf#/media/File:New_shot_of_Proxima_Centauri,_our_nearest_neighbour.jpg">Red_Dwarf.jpg</basic:xGraphic>
+				<note>G-Source: http://www.wolflodge.org/bluestar/h_red_dwarf_02.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A cool, faint, low-mass star lying at the lower
+							end of the main sequence of spectral type K or M.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>red dwarf</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>The dim red dward Proxima, more than a degree
+								away from Alpha, is slightly closer to us.</basic:context>
+							<basic:source>Moore2003</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una estrella pequeña y relativamente fría de la
+							secuencia principal, ya sea de tipo espectral K tardío o M.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Enana_roja</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>enana roja</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>El planeta que se ha descubierto girando
+								alrededor de esta enana roja tiene una masa equivalente a la de
+								Neptuno, es decir, es sólo 17 veces mayor que la Tierra y mucho
+								menor que Saturno.</basic:context>
+							<basic:source>http://axxon.com.ar/not/157/c-1570034.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c25">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Stellar_classification#/media/File:Zeta_Puppis.png">Spectral_Type.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://www.astro.columbia.edu/~archung/labs/spring2002/images/spectral_type2.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A means of classifying stars according to the
+							details of their spectrum, depending largely on their surface
+							temperature.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>spectral type</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>In this version of a typical HR diagram, the
+								stars are plotted according to their spectral types and suface
+								temperatures (horzontal axis, x) and their luminositites in therms
+								of the Sun (vertical axis, y).</basic:context>
+							<basic:source>Moore2003, 171</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>El espectro de una estrella clasificado por una
+							letra (O, B, A, F, G, K, M, R, N, S) seguida de un digito que describe
+							el color de la estrella y su temperatura.</basic:definition>
+						<basic:source>Basado en http://www.espacioprofundo.com.ar/diccionario/Glosario_de_Astronomia/vertermino/Tipo_espectral.html</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>tipo espectral</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>En el gráfico superior se muestra la intensidad
+								de las líneas espectrales según la temperatura de la estrella (tipo
+								espectral)</basic:context>
+							<basic:source>http://www.astrosurf.com/astronosur/estrellas.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c26">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/White_dwarf#/media/File:Sirius_A_and_B_Hubble_photo.editted.PNG">White_Dwarf.jpg</basic:xGraphic>
+				<note>G-Source: http://www.stsci.edu/~inr/thisweek1/thisweek/WhiteDwarf.gif</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A small dense star that is has run out of fuel
+							for nuclear fusion, collapsing under its own gravity and blowing off its
+							outer layers to form a planetary nebula in the process.</basic:definition>
+						<basic:source>Based on Oxford2007 and Cambridge2007</basic:source>
+					</descripGrp>
+					<note>This is the end-result of all but the most massive of stars.</note>
+					<note>N-Source: Oxford2007</note>
+					<termSec>
+						<term>white dwarf</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>To the upper right lie giants and supergiants of
+								tremendous luminosity, while to the lower left there are the white
+								dwarfs, which are in a differnt category and were not known when HR
+								Diagrams were introduced.</basic:context>
+							<basic:source>Moore2003, 170</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Un remanente estelar que se genera cuando una
+							estrella de masa menor a 9-10 masas solares ha agotado su combustible
+							nuclear.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Enana_blanca</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>enana blanca</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Cuando el material fusionable se agota la
+								estrella pierde la presión interna producida por la fusión nuclear y
+								puede colapsar inmediatamente terminando en una enana
+								blanca.</basic:context>
+							<basic:source>http://astroverada.com/_/Main/T_evolucion.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c27">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Planetary_nebula#/media/File:NGC6543.jpg">Planetary_Nebula.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://www.phys.ncku.edu.tw/~astrolab/mirrors/apod_e/image/0901/ngc2818_hheritage_800.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A bright cloud of glowing gas and dust
+							surrounding a highly evolved star.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<note>As mass is gradually lost, the core of the star becomes more exposed,
+						ultimately becoming a white dwarf. Also, planetary nebulae have nothing to
+						do with planets, and are not true nebulae.</note>
+					<note>N-Source: Based on Oxford2007 and Moore2003, 186</note>
+					<termSec>
+						<term>planetary nebula</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>The star's outer layers are thrown off, and for
+								a cosmically brief period - no more than about 100,000 years - we
+								have the phenomenon of what is termed a planetary nebula.</basic:context>
+							<basic:source>Moore2003, 173</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una nebulosa de emisión consistente en una
+							envoltura brillante en expansión de plasma y gas ionizado, expulsada
+							durante la fase de rama asintótica gigante que atraviesan las estrellas
+							gigantes rojas en los últimos momentos de sus vidas.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Nebulosa_planetaria</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>nebulosa planetaria</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Las nebulosas planetarias resultan objetos muy
+								espectaculares si se observan con un telescopio de media o gran
+								potencia.</basic:context>
+							<basic:source>http://www.astromia.com/glosario/nebulosaplanetaria.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c28">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Birth</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Emission_nebula#/media/File:Ring_Nebula.jpg">Emission_Nebula.jpg</basic:xGraphic>
+				<note>G-Source: http://apod.nasa.gov/apod/image/0612/NGC2174_lrg.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A luminous cloud of gas and sust in space which
+							shines with its own light, which can be generated in several
+							ways.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<note>Ultraviolet radiation, gas cloud collisions, and synchrotron radiation can
+						all cause the emission nebula to shine.</note>
+					<note>N-Source: Oxford2007</note>
+					<termSec>
+						<term>emission nebula</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>In this and other similar emission nebulae,
+								energetic ultraviolet light from a hot young star strips electrons
+								from the surrounding hydrogen atoms.</basic:context>
+							<basic:source>http://apod.nasa.gov/apod/emission_nebulae.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una nube de gas interestelar que brilla por la
+							excitación del gas, causado por radiación ultravioleta emitida por
+							estrellas inmersas en la nube o por calentamiento debido a otro
+							mecanismos. </basic:definition>
+						<basic:source>http://www.diclib.com/Nebulosa%20de%20emisi%C3%B3n/show/en/es_astronomia/726</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>nebulosa de emisión</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Las nebulosas de emisión estan normalmente en
+								los lugares de formación de estrellas.</basic:context>
+							<basic:source>http://www.astrored.net/nebulosaweb/types.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c29">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-24</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Nebula#/media/File:Eagle_nebula_pillars.jpg">Nebula.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://my-blackberry.net/wallpapers/49/m/NASA_-_The_Horsehead_Nebula%2C_B33%2C_Orion_Nebula.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A cloud of interstellar gas and dust.</basic:definition>
+						<basic:source>Cambridge2007</basic:source>
+					</descripGrp>
+					<note>The term was originally applied to any object with a fuzzy telescopic
+						appearance, but with the advent of larger instruments many 'nebulae' were
+						found to consist of faint stars.</note>
+					<note>N-Source: Oxford2007</note>
+					<termSec>
+						<term>nebula</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<note>Grammatical Number: singular</note>
+						<descripGrp>
+							<basic:context>According to current theory, a star begins by
+								condensing out of the tenuous material making up a nebula.</basic:context>
+							<basic:source>Moore2003, 172</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>nebulae</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<note>Grammatical Number: plural</note>
+						<descripGrp>
+							<basic:context>Other nebulae are within the range of small
+								telescopes.</basic:context>
+							<basic:source>Moore2003, 187</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-24</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Regiones del medio interestelar constituidas por
+							gases (principalmente hidrógeno y helio) y polvo.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Nebulosa</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>nebulosa</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>A unos 1.500 años-luz de distancia, dentro de
+								nuestro brazo espiral en la Vía Láctea, la Nebulosa de Orión está en
+								el centro de la región de la Espada de la constelación de Orión el
+								Cazador, que domina el cielo nocturno a inicios del invierno, en las
+								latitudes Norte.</basic:context>
+							<basic:source>http://www.oarval.org/OrionNebsp.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c30">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-28</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Birth</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Dark_nebula#/media/File:All_Quiet_in_the_Nursery%3F.jpg">Dark_Nebula.jpg</basic:xGraphic>
+				<note>G-Source: http://www.mallorcaweb.net/masm/obstel/caballo.GIF</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A type of interstellar cloud that is so dense
+							that it obscures the light from the background emission or reflection
+							nebula or that it blocks out background stars.</basic:definition>
+						<basic:source>http://en.wikipedia.org/wiki/Dark_nebula</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>dark nebula</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>There is no difference between a dark nebula and
+								a bright one, except for the lack of illumination.</basic:context>
+							<basic:source>Moore2003, 187</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>absorbtion nebula</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>An absorption nebula is a dense cloud of dust
+								and gas. From the point of view of an observer on Earth, it absorbs
+								the light from more distant stars, creating a dark, starless
+								region.</basic:context>
+							<basic:source>http://www.glyphweb.com/esky/concepts/absorptionnebula.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Nubes de polvo que simplemente tapan la luz de lo
+							que haya detras.</basic:definition>
+						<basic:source>http://www.astrored.net/nebulosaweb/types.html</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>nebulosa oscura</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Aqui hay un mapa que muestra las regiones de
+								nebulosas oscuras que estan en un radio de 2000 años luz.</basic:context>
+							<basic:source>http://www.atlasoftheuniverse.com/espanol/darknebs.html</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>nebulosa de absorción</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>El caso más opuesto a las nebulosas de emisión
+								son las nebulosas de absorción (nebulosas oscuras). Estas ni si
+								quiera están rodeadas de estrellas lo suficientemente potentes ni
+								cercanas para hacer llegar la luminosidad suficiente para que la
+								nebulosa pueda reflejarla.</basic:context>
+							<basic:source>http://www.blogdeastronomia.es/astronomia/formacion-de-estrellas/las-nebulosas</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c31">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-28</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-28</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Birth</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Reflection_nebula#/media/File:Reflection.nebula.arp.750pix.jpg">Reflection_Nebula.jpeg</basic:xGraphic>
+				<note>G-Source:
+					http://mm04.nasaimages.org/MediaManager/srvr?mediafile=/Size3/NVA2-8-NA/14107/full_tif.jpg&amp;userid=1&amp;username=admin&amp;resolution=3&amp;servertype=JVA&amp;cid=8&amp;iid=NVA2&amp;vcid=NA&amp;usergroup=HUBBLE&amp;profileid=39</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A cloud of interstellar gas and dust that appears
+							bight because it reflects or scatters starlight.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>reflection nebula</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Just weeks after NASA astronauts repaired the
+								Hubble Space Telescope in December 1999, the Hubble Heritage Project
+								snapped this picture of NGC 1999, a reflection nebula in the
+								constellation Orion. </basic:context>
+							<basic:source>http://www.nasa.gov/multimedia/imagegallery/image_feature_701.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-28</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Nubes de polvo que simplemente reflejan la luz de
+							una estrella o estrellas cercanas.</basic:definition>
+						<basic:source>http://www.astrored.net/nebulosaweb/types.html</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>nebulosa de reflexión</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Como el propio nombre implica, esta nebulosa de
+								reflexión asociada con la estrella Rigel, se asemeja a una vieja
+								arpía de un cuento de hadas. </basic:context>
+							<basic:source>http://www.astrofotos.com.es/2008/11/nebulosa-de-la-cabeza-de-bruja.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c32">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Neutron_star#/media/File:PIA18848-PSRB1509-58-ChandraXRay-WiseIR-20141023.jpg">Neutron_Star.jpg</basic:xGraphic>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<note>G-Source: http://nrumiano.free.fr/Images/Neutron_star_E.gif</note>
+					<termSec>
+						<term>neutron star</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>After its Main Sequence period the star becomes
+								a red supergiant and may explode as a supernova. It may end as a
+								neutron star or pulsar, although if its mass is even greater it may
+								poroduce a black hole.</basic:context>
+							<basic:source>Moore2003, 173</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<note>G-Source:
+						http://es.wikipedia.org/wiki/Archivo:Estrella_de_Neutrones.jpg</note>
+					<descripGrp>
+						<basic:definition>Un cuerpo pequeño muy denso que se forma en el
+							envejecimiento de una estrella pesada y que está formada únicamente por
+							partículas subatómicas denominadas neutrones.</basic:definition>
+						<basic:source>http://www.astroasa.com.ar/diccionario_astro.htm</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>estrella de neutrones</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>El Gran Telescopio Canarias (GTC), instalado en
+								el Observatorio del Roque de los Muchachos (La Palma), ha obtenido
+								imágenes de una profundidad "sin precedentes" de una estrella de
+								neutrones del tipo magnetar, de las que se conocen seis, según ha
+								informado el Instituto de Astrofísica de Canarias (IAC).</basic:context>
+							<basic:source>http://www.rtve.es/noticias/20100301/imagen-unica-estrella-neutrones-cazada-canarias/321412.shtml</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c33">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Death</min:subjectField>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>The maximum possible mass of a degenerate star,
+							above which it will be unable to support itself against the inward pull
+							of its own gravity. </basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<note>For a star with no hydrogen content the limit is 1.44 solar masses, which
+						is thus the maximum possible for a white dwarf.</note>
+					<note>N-Source: Oxford2007</note>
+					<termSec>
+						<term>Chandrasekhar limit</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>However, there is a limit, once the mass of the
+								white dwarf becomes greater than 1.4 time that of the sun )a value
+								known as the Chandrasekhar limit, after the Indian astronomer who
+								first worked it out=, the carbon detonates, and in a matter of a few
+								seconds the white dwarf blows itself to pieces.</basic:context>
+							<basic:source>Moore2003</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>El límite de masa más allá del cual la
+							degeneración de electrones no es capaz de contrarrestar la fuerza de
+							gravedad en un remanente estelar, produciéndose un colapso que origina
+							una estrella de neutrones o un agujero negro. </basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/L%C3%ADmite_de_Chandrasekhar</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>límite de Chandrasekhar</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Descubrió una masa (aproximadamente 1.5 veces la
+								masa del Sol) en la que una estrella fría no podría soportar su
+								gravedad. Esto es lo que se conoce como el límite de
+								Chandrasekhar.</basic:context>
+							<basic:source>http://html.rincondelvago.com/agujeros-negros_5.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c34">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Death</min:subjectField>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>The state of degeneracy attained when the density
+							of matter is so high that neutrons cannot be packed any more closely
+							together.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<note>Encountered on in neutron stars.</note>
+					<note>N-Source: Oxford2007</note>
+					<termSec>
+						<term>neutron degeneracy</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>When it reaches the threshold of energy
+								necessary to force the combining of electrons and protons to form
+								neutrons, the electron degeneracy limit has been passed and the
+								collapse continues until it is stopped by neutron
+								degeneracy.</basic:context>
+							<basic:source>http://hyperphysics.phy-astr.gsu.edu/HBASE/Astro/pulsar.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>El estado de degeneración alcanzado cuando la
+							densidad de materia es tan alta, que los neutrones no pueden juntarse
+							más.</basic:definition>
+						<basic:source>Oxford2003</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>degeneración de neutrones</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Es la principal responsable de la resistencia al
+								colapso gravitacional de las enanas blancas (degeneración de
+								electrones) y de las estrellas de neutrones (degeneración de
+								neutrones). </basic:context>
+							<basic:source>http://www.emiliosilveravazquez.com/glosario.php?letra=d</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c35">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Event_horizon#/media/File:Spacetime_lattice_analogy.svg">Event_Horizon.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://www.astro.cornell.edu/academics/courses/astro2201/images/bh_structure.gif</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>The radius of the event horizon of a black
+							hole.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>Schwarzschild radius</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>The critical radius of a non-rotating black hole
+								is called the Schwarzschild radius, after the German astronomer who
+								investermSecated the problem mathematically as long ago as 1916: the
+								boundary around the collapsed star having this radius is termed the
+								'event horizon'.</basic:context>
+							<basic:source>Moore2003</basic:source>
+						</descripGrp>
+						<note>Related Term: event horizon</note>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>El radio del horizonte de sucesos para un agujero
+							negro.</basic:definition>
+						<basic:source>http://www.astrocosmo.cl/glosario/glosar-r.htm</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>radio de Schwarzschild</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Me pareció muy interesante este vídeo del
+								proyecto Sixty Symbols de la Universidad de Nottingham en el que
+								explican de forma divulgativa qué es el radio de Schwarzschild.
+								Básicamente es el radio de un agujero negro.</basic:context>
+							<basic:source>http://www.microsiervos.com/archivo/ciencia/agujeros-negros-y-el-radio-de-schwarzschild.html</basic:source>
+						</descripGrp>
+						<note>Related Term: horizonte de sucesos, horizonte de eventos</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c36">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Death</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Event_horizon#/media/File:Spacetime_lattice_analogy.svg">Event_Horizon.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://www.astro.cornell.edu/academics/courses/astro2201/images/bh_structure.gif</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>The surface of a black hole.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>event horizon</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Narayan and Heyl have calculated that if very
+								heavy objects do not collapse to a point with an event horizon but
+								instead have a surface, they would eject as many type 1 bursts as
+								neutron stars.</basic:context>
+							<basic:source>http://www.newscientist.com/article/dn2527-astronomers-reach-the-event-horizon.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>El superficie de un agujero negro.</basic:definition>
+						<basic:source>Oxford2003</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>horizonte de sucesos</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>En consecuencia, aquí, cuando nos estamos
+								refiriendo a una «singularidad», estamos pensando en una masa con
+								volumen nulo rodeada de una frontera gravitacional llamada
+								«horizonte de sucesos», de la cual nada puede escapar. </basic:context>
+							<basic:source>http://www.astrocosmo.cl/h-foton/h-foton-03_08-01.htm</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>horizonte de eventos</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>InvestermSecadores de la Universidad de St. Andrews
+								en Escocia, afirman haber encontrado una forma de simular un
+								horizonte de eventos de un agujero negro – no a través de una nueva
+								técnica de observación cósmica, ni mediante una supercomputadora de
+								alta potencia … sino en el laboratorio.</basic:context>
+							<basic:source>http://www.cienciakanija.com/2008/02/14/horizonte-de-eventos-sintetico-de-un-agujero-negro-creado-en-un-laboratorio-del-reino-unido/</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c37">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Proton%E2%80%93proton_chain_reaction#/media/File:Fusion_in_the_Sun.svg">PP_Chain.jpg</basic:xGraphic>
+				<note>G-Source: http://en.wikipedia.org/wiki/File:FusionintheSun.svg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>proton-proton chain reaction</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>fullForm</basic:termType>
+						<descripGrp>
+							<basic:context>The proton–proton chain reaction is one of
+								several fusion reactions by which stars convert hydrogen to helium,
+								the primary alternative being the CNO cycle. The proton–proton chain
+								dominates in stars the size of the Sun or smaller.</basic:context>
+							<basic:source>http://www.absoluteastronomy.com/topics/Proton-proton_chain_reaction</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>PP chain</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>shortForm</basic:termType>
+						<descripGrp>
+							<basic:context>The primary reactions in the main branch of the
+								PP chain are illustrated in the following figure.</basic:context>
+							<basic:source>http://csep10.phys.utk.edu/astr162/lect/energy/ppchain.html</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>proton-proton reaction</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>variant</basic:termType>
+						<descripGrp>
+							<basic:context>The gamma rays produced in the proton-proton
+								reaction take one to 10 million years to work their way out from the
+								star's core, being scattered numerous times and losing energy as
+								they go, until they emerge from the surface as rays of light and
+								heat. Inside the Sun, about 655 million tons of hydrogen are
+								converted into 650 million tons of helium every second. In stars
+								heavier than about 2 solar masses, in which the core temperature is
+								more than about 18 million K, the dominant process in which energy
+								is produced by the fusion of hydrogen into helium is a different
+								reaction chain known as the carbon-nitrogen cycle. </basic:context>
+							<basic:source>http://www.daviddarling.info/encyclopedia/P/proton-proton_chain.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Un conjunto de procesos nucleares mediante los
+							cuales cuatro núcleos de átomos de hidrógeno se combinan para formar uno
+							de helio, produciendo gran cantidad de energía.</basic:definition>
+						<basic:source>http://www.avizora.com/publicaciones/astronomia/textos/glosario_astronomia_afines_0006.htm</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>cadena protón-protón</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c38">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/CNO_cycle#/media/File:CNO_cycle.png">CNO_Cycle.jpg</basic:xGraphic>
+				<note>G-Source: http://en.wikipedia.org/wiki/File:CNO_Cycle.svg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>carbon-nitrogen cycle</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>variant</basic:termType>
+						<descripGrp>
+							<basic:context>The Helium burning process are important 1)
+								Carbon-Nitrogen cycle at which a carbon-12 nucleus (12C) capture
+								proton and is converted into 13C, Nitrogen-4 and nitrogen –15. </basic:context>
+							<basic:source>http://www.sciencenews.org/view/generic/id/44769/title/Supernova_may_be_in_a_new_class</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>CNO cycle</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>shortForm</basic:termType>
+						<descripGrp>
+							<basic:context>For stars heavier than the sun, theoretical
+								models show that the CNO (carbon-nitrogen-oxygen) cycle of nuclear
+								fusion is the dominant source of energy generation.</basic:context>
+							<basic:source>http://nobelprize.org/nobel_prizes/physics/articles/fusion/sun_cno.html</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>carbon-nitrogen-oxygen cycle</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>variant</basic:termType>
+						<descripGrp>
+							<basic:context>For stars heavier than the sun, theoretical
+								models show that the CNO (carbon-nitrogen-oxygen) cycle of nuclear
+								fusion is the dominant source of energy generation.</basic:context>
+							<basic:source>http://nobelprize.org/nobel_prizes/physics/articles/fusion/sun_cno.html</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>Bethe-Weizsäcker-cycle</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Dr. von Weizsäcker is best known in science for
+								what is sometimes called the Bethe-Weizsäcker cycle, proposed by him
+								and the physicist Hans Bethe in the late 1930s as the nuclear
+								reactive process by which energy is generated in stars. </basic:context>
+							<basic:source>http://www.nytimes.com/2007/05/02/world/europe/02weizsacker.html</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>carbon cycle</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>deprecatedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>variant</basic:termType>
+						<descripGrp>
+							<basic:context>The main theme of the carbon cycle is the adding
+								of protons, but after a carbon-12 nucleus fuses with a proton to
+								form nitrogen-13, one of the protons decays with the emission of a
+								positron and a neutrino to form carbon -13.</basic:context>
+							<basic:source>http://hyperphysics.phy-astr.gsu.edu/HBASE/Astro/carbcyc.html</basic:source>
+						</descripGrp>
+						<note>The carbon cycle can also refer to the biogeochemical cycle by which
+							carbon is exchanged among the biosphere, pedosphere, geosphere,
+							hydrosphere, and atmosphere of the Earth.</note>
+						<note>N-Source: http://en.wikipedia.org/wiki/Carbon_cycle</note>
+					</termSec>
+					<termSec>
+						<term>CN cycle</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>variant</basic:termType>
+						<descripGrp>
+							<basic:context>We argue that it may be possible to exploit
+								neutrinos from the CN cycle and p-p chain to determine the
+								primordial solar core abundances of C and N at an interesting level
+								of precision.</basic:context>
+							<basic:source>http://iopscience.iop.org/0004-637X/687/1/678</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>ciclo CNO</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>shortForm</basic:termType>
+						<descripGrp>
+							<basic:context>Existen dos formas fundamentales en las que una
+								estrella fusiona hidrógeno para producir helio: la cadena
+								protón-protón y el ciclo CNO.</basic:context>
+							<basic:source>http://eltamiz.com/2007/09/06/la-vida-privada-de-las-estrellas-las-entranas-de-una-estrella/</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>ciclo del carbono-nitrógeno-oxígeno</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>deprecatedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>fullForm</basic:termType>
+						<descripGrp>
+							<basic:context>No se pretende copiar los complicados ciclos de
+								reacciones que se dan en el interior de las estrellas, como la
+								cadena protón-protón o el ciclo del carbono-nitrógeno-oxígeno (esta
+								última más importante en las estrellas más masivas que el Sol). </basic:context>
+							<basic:source>http://www.zaragoza.es/ciudad/conocimiento/zivis/aplicaciones.htm</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>ciclo del carbono</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>deprecatedTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>variant</basic:termType>
+						<descripGrp>
+							<basic:context>El ciclo del carbono comienza y acaba con un
+								núcleo de carbono 12 que actúa como catalizador en la producción de
+								un núcleo de helio a partir de núcleos de hidrógeno; también se
+								producen neutrinos y rayos gamma. </basic:context>
+							<basic:source>http://www.astromia.com/glosario/ciclocno.htm</basic:source>
+						</descripGrp>
+						<note>También este término puede referirse a la formación de las moléculas
+							de carbohidratos, lípidos, proteínas y ácidos nucleicos.</note>
+						<note>N-Source: http://es.wikipedia.org/wiki/Ciclo_del_carbono</note>
+					</termSec>
+					<termSec>
+						<term>ciclo del carbono-nitrógeno</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+						<basic:termType>variant</basic:termType>
+						<descripGrp>
+							<basic:context>En las estrellas de gran masa, que queman su
+								hidrógeno mucho más rápidamente, predomina el ciclo del
+								carbono-nitrógeno (CN).</basic:context>
+							<basic:source>http://www.aavbae.net/bol17/evolucion.php</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c39">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A state of matter attained when atomic particles
+							are packed together as termSechtly as is physically possible, at densities
+							of several thousand tonnes per cubic metre.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>degeneracy</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Although Eddington raised doubts at the meeting
+								about the concept of relativistic degeneracy, astronomy has since
+								found that all white dwarfs for which masses have been measured fall
+								neatly below the Chandrasekhar limit without exception. Today there
+								are no doubts about his work on degeneracy. </basic:context>
+							<basic:source>http://www.tamil.net/people/andrew/subra.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Estado de la materia producido cuando las
+							partículas atómicas tienen el mayor empaquetamiento físicamente posible,
+							con densidades de varios miles de toneladas por centímetro cúbico. </basic:definition>
+						<basic:source>http://www.emiliosilveravazquez.com/glosario.php?letra=d</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>degeneración</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Estas estrellas son aún más densas que las
+								enanas blancas, y más pequeñas. Se mantienen por un proceso de
+								"degeneración de neutrones" o "repulsión de neutrones".</basic:context>
+							<basic:source>http://www.austrinus.com/index.php?option=com_content&amp;view=article&amp;id=157&amp;Itemid=112</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c40">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<langSec xml:lang="zu">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<termSec>
+						<term>Oxford2003</term>
+
+
+						<note>Author[s]: Ridpath, Ian</note>
+						<note>Book Title: Astronomía</note>
+						<note>Publication Place: Spain</note>
+						<note>Publisher: Oxford University Press</note>
+						<note>Publication Year: 2003</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c41">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>Stellar Death</min:subjectField>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>The state of degeneracy attained when the density
+							of matter is so high that electrons cannot be packed any closer
+							together.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<note>Electron degeneracy supports white dwarf stars against further
+						collapse.</note>
+					<note>N-Source: Oxford2007</note>
+					<termSec>
+						<term>electron degeneracy</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>When it reaches the threshold of energy
+								necessary to force the combining of electrons and protons to form
+								neutrons, the electron degeneracy limit has been passed and the
+								collapse continues until it is stopped by neutron
+								degeneracy.</basic:context>
+							<basic:source>http://hyperphysics.phy-astr.gsu.edu/HBASE/Astro/pulsar.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>El estado de degeneración alcanzado cuando la
+							densidad de materia es tan grande, que los electrones no pueden
+							empaquetarse más.</basic:definition>
+						<basic:source>Oxford2003</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>degeneración de electrones</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Es la principal responsable de la resistencia al
+								colapso gravitacional de las enanas blancas (degeneración de
+								electrones) y de las estrellas de neutrones (degeneración de
+								neutrones). </basic:context>
+							<basic:source>http://www.emiliosilveravazquez.com/glosario.php?letra=d</basic:source>
+						</descripGrp>
+					</termSec>
+					<termSec>
+						<term>degeneración electrónica</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+						<descripGrp>
+							<basic:context>Las fuerzas gravitatorias actuantes en un cuerpo
+								celeste masivo pueden comprimir su materia hasta un estado de
+								degeneración electrónica y no más, ya que el principio de exclusión
+								impide a dos electrones ocupar el mismo nivel de energía. </basic:context>
+							<basic:source>http://www.portalplanetasedna.com.ar/estrella2.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c42">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-05-01</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Event_horizon#/media/File:Spacetime_lattice_analogy.svg">Event_Horizon.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://www.astro.cornell.edu/academics/courses/astro2201/images/bh_structure.gif</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A mathematical point at which certain physical
+							quantities reach infinite values.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>singularity</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>A singularity means a point where some property
+								is infinite. For example, at the center of a black hole, according
+								to classical theory, the density is infinite (because a finite mass
+								is compressed to a zero volume). Hence it is a singularity. </basic:context>
+							<basic:source>http://curious.astro.cornell.edu/question.php?number=55</basic:source>
+						</descripGrp>
+						<note>Related Term: black hole, event horizon, Schwarzschild radius</note>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Un punto matemático en el que ciertas cantidades
+							físicas alcanzan valores infinitos.</basic:definition>
+						<basic:source>Oxford2003</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>singularidad</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Las singularidades ocurren en el Big Bang, en
+								los agujeros negros y en el Big Crunch (que podría ser considerado
+								como una unión de agujeros negros).</basic:context>
+							<basic:source>http://www.astrocosmo.cl/h-foton/h-foton-03_08-01.htm</basic:source>
+						</descripGrp>
+						<note>Related Term: agujero negro, horizonte de sucesos, radio de
+							Schwarzschild</note>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c43">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Solar_mass#/media/File:Rho_Cassiopeiae_Sol_VY_Canis_Majoris.png">Solar_Mass.jpg</basic:xGraphic>
+				<note>G-Source: http://en.wikipedia.org/wiki/Solar_mass</note>
+				<note>In this graphic, the M with a subscript is the symbol for a solar mass.</note>
+				<note>N-Source: Jonathan Tomolonis</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A unit of mass used in stellar and galactic
+							astronomy, equivalent to the mass of the sun, 1.989 x 10^30
+							kg.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>solar mass</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>This page now explores the fate of stars of 8
+								solar masses or less.</basic:context>
+							<basic:source>http://outreach.atnf.csiro.au/education/senior/astrophysics/stellarevolution_deathlow.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una unidad de medida utilizada en astronomía y
+							astrofísica para medir comparativamente la masa de las estrellas y otros
+							objetos astronómicos muy masivos como galaxias.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Masa_solar</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>masa solar</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Para una nube con la masa de nuestro Sol, el
+								colapso dura unos 10 millones de años, mientras que si su masa fuese
+								mucho más pequeña, por ejemplo un décimo de la masa solar, este
+								proceso podría durar hasta 800 millones de años.</basic:context>
+							<basic:source>http://www.tayabeixo.org/sist_solar/hipotesis/formacion_sistsolar.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c44">
+				<min:subjectField>General</min:subjectField>
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Triple-alpha_process#/media/File:Triple-Alpha_Process.svg">Triple-Alpha_Process.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Triple-Alpha_Process.svg/750px-Triple-Alpha_Process.svg.png</note>
+				<langSec xml:lang="en">
+					
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>The chain of nuclear reactions by which carbon is
+							synthesized in the interiors of stars through the fusion of three helium
+							nuclei(alpha particles).</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>triple-alpha process</term>
+						
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>This small concentration of Be-8 can begin to
+								undergo reactions with other He-4 nuclei to produce an excited state
+								of the mass-12 isotope of Carbon. This excited state is unstable,
+								but a few of these excited Carbon nuclei emit a gamma-ray quickly
+								enough to become stable before they disintegrate. This extremely
+								improbable sequence is called the triple-alpha process because the
+								net effect is to combine 3 alpha particles (that is, 3 He-4 nuclei)
+								to form a C-12 nucleus. </basic:context>
+							<basic:source>http://csep10.phys.utk.edu/astr162/lect/energy/triplealph.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>El proceso por el cual tres núcleos de helio
+							(partículas alfa) se transforman en un núcleo de carbono.</basic:definition>
+						<basic:source>http://es.wikipedia.org/wiki/Proceso_triple-alfa</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>proceso triple-alfa</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>También debe tenerse en cuenta una tercera
+								reacción de gran importancia, denominada proceso triple
+								alfa.</basic:context>
+							<basic:source>http://feinstein.com.ar/Composicion.html</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+
+
+			<conceptEntry id="c45">
+				<transacGrp>
+					<basic:transactionType>origination</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<transacGrp>
+					<basic:transactionType>modification</basic:transactionType>
+					<date>2010-04-29</date>
+					<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+				</transacGrp>
+				<min:subjectField>General</min:subjectField>
+				<basic:xGraphic target="https://en.wikipedia.org/wiki/Black_dwarf#/media/File:Black_dwarf.jpg">Black_Dwarf.jpg</basic:xGraphic>
+				<note>G-Source:
+					http://www.dorlingkindersley-uk.co.uk/static/clipart/uk/dk/sci_space/image_sci_space013.jpg</note>
+				<langSec xml:lang="en">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>A degenerate star that has cooled until it is no
+							longer visible.</basic:definition>
+						<basic:source>Oxford2007</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>black dwarf</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>Banprupt though it is, a white swarf still has a
+								high surface temperature when it is first formed; up to 100,000
+								degrees C in some cases and it continues to radiate. Gradually it
+								fades, and must end up as a cold, dead black dwarf; but at the
+								moment no white dwarf with a surface temperature of below 3,000
+								degrees C has been found, and it may be that the universe is not yet
+								old enough for any black dwarfs to have been formed.</basic:context>
+							<basic:source>Moore2003, 173</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+				<langSec xml:lang="es">
+					<transacGrp>
+						<basic:transactionType>origination</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<transacGrp>
+						<basic:transactionType>modification</basic:transactionType>
+						<date>2010-04-29</date>
+						<basic:responsibility target="pe324as3-9615-4d41-a9c8-30c36bffe0e6">Tommy</basic:responsibility>
+					</transacGrp>
+					<descripGrp>
+						<basic:definition>Una estrella creada cuando una enana blanca se
+							enfría lo suficiente como para dejar de emitir calor o luz en cantidad
+							significativa.</basic:definition>
+						<basic:source>http://spaceplace.nasa.gov/sp/kids/spitzer/signs/sign_glossary.shtml</basic:source>
+					</descripGrp>
+					<termSec>
+						<term>enana negra</term>
+
+
+						<min:partOfSpeech>noun</min:partOfSpeech>
+						<descripGrp>
+							<basic:context>No se conoce, todavía, la cantidad de Enanas
+								Negras que pueblan en realidad nuestro Universo. El tiempo estimado
+								para que una Enana Blanca se enfríe lo suficiente para volverse
+								Negra, se estima entre diez y cien mil millones de años, y nuestro
+								Universo no es aún lo bastante viejo, nada más que para que existan
+								algunas enanas blancas que se han enfriado lo suficiente para
+								alcanzar la etapa de enanas negras.</basic:context>
+							<basic:source>http://celestia.albacete.org/celestia/celestia/stars/enana12.htm</basic:source>
+						</descripGrp>
+					</termSec>
+				</langSec>
+			</conceptEntry>
+		</body>
+		<back>
+			<refObjectSec type="respPerson">
+				<refObject id="pe324as3-9615-4d41-a9c8-30c36bffe0e6">
+					<item type="fn">Tommy Tomolonis</item>
+				</refObject>
+			</refObjectSec>
+		</back>
+	</text>
+
+</tbx>

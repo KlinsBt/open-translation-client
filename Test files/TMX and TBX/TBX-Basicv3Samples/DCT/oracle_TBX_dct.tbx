@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Basic_dialect/master/DCT/TBX-Basic_DCT.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Basic_dialect/master/DCT/TBX-Basic.nvdl" type="application/xml"schematypens="http://purl.oclc.org/dsdl/nvdl/ns/structure/1.0"?>
+<tbx xmlns="urn:iso:std:iso:30042:ed-2" style="dct" type="TBX-Basic" xml:lang="en"
+  xmlns:min="http://www.tbxinfo.net/ns/min" xmlns:basic="http://www.tbxinfo.net/ns/basic">
+  <tbxHeader>
+    <fileDesc>
+      <titleStmt>
+        <title>Oracle Terms</title>
+      </titleStmt>
+      <sourceDesc>
+        <p>from an Oracle termbase</p>
+      </sourceDesc>
+    </fileDesc>
+  </tbxHeader>
+  <text>
+    <body>
+      <conceptEntry id="c1">
+        <min:subjectField>HR</min:subjectField>
+        <langSec xml:lang="en">
+          <descripGrp>
+            <basic:definition>GREs and PREs represent an employer the governments recognise as being
+              responsible for paying employees and for filing a variety of reports. There must be a
+              GRE for each Business Number that the Canada Customs and Revenue Agency (CCRA) assigns
+              to an employer.</basic:definition>
+          </descripGrp>
+          <termSec>
+            <term>Provincial Reporting Establishment </term>
+          </termSec>
+          <termSec>
+            <term>PRE</term>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="pt">
+          <note>Termo específico aos EUA.</note>
+          <termSec>
+            <term>Entidade de Supervisão de Província </term>
+          </termSec>
+          <termSec>
+            <term>PRE</term>
+          </termSec>
+        </langSec>
+      </conceptEntry>
+      <conceptEntry id="c2">
+        <min:subjectField>FI</min:subjectField>
+        <langSec xml:lang="en">
+          <descripGrp>
+            <basic:definition>Click the link to browse and select active that have been created. You
+              can still enter the target value and select a pricing basis for each price element in
+              the list and then apply the list. </basic:definition>
+          </descripGrp>
+          <termSec>
+            <term>Target Value</term>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="pt">
+          <note>Different from 'Valor Alvo' that exists in the glossary for POM</note>
+          <termSec>
+            <term>Valor a Atingir</term>
+          </termSec>
+        </langSec>
+      </conceptEntry>
+    </body>
+  </text>
+</tbx>

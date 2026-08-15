@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmx version="1.4">
+  <header creationtool="Open Translation Client" creationtoolversion="1.0" datatype="unknown" segtype="sentence" adminlang="en-us" srclang="en" o-tmf="OpenTLCTM" creationdate="20250109T093348Z" creationid="System" changedate="20250109T093348Z" changeid="System">
+    <prop type="id">192</prop>
+    <prop type="name">Merged HTML</prop>
+  </header>
+  <body>
+    <tu tuid="1">
+      <tuv xml:lang="en">
+        <seg>If you have any questions, please fill out the form below and we&apos;ll get back to you as soon as possible ...</seg>
+      </tuv>
+      <tuv xml:lang="de">
+        <seg>Falls Sie Fragen haben, füllen sie bitte das untenstehende Formular aus und wir melden uns sobald wie möglich bei Ihnen ...</seg>
+      </tuv>
+    </tu>
+    <tu tuid="2">
+      <tuv xml:lang="en">
+        <seg>If you have any questions, please fill out the form below and we&apos;ll get
+      back to you as soon as possible.</seg>
+      </tuv>
+      <tuv xml:lang="de">
+        <seg>Falls Sie Fragen haben, füllen sie bitte das untenstehende Formular aus und wir melden uns sobald wie möglich bei Ihnen.</seg>
+      </tuv>
+    </tu>
+    <tu tuid="3">
+      <tuv xml:lang="en">
+        <seg>If you have any questions, fill out the form below and we&apos;ll get back to you soon.</seg>
+      </tuv>
+      <tuv xml:lang="de">
+        <seg>Falls Sie Fragen haben, füllen sie das Formular aus und wir melden bald bei Ihnen.</seg>
+      </tuv>
+    </tu>
+    <tu tuid="4">
+      <tuv xml:lang="en">
+        <seg>If you have any questions, fill out the form below and we&apos;ll get back to you as soon as possible.</seg>
+      </tuv>
+      <tuv xml:lang="de">
+        <seg>Falls Sie Fragen haben, füllen sie das untenstehende Formular aus und wir melden uns sobald wie möglich bei Ihnen.</seg>
+      </tuv>
+    </tu>
+    <tu tuid="5">
+      <tuv xml:lang="en">
+        <seg>If you have any questions, please fill out the form below</seg>
+      </tuv>
+      <tuv xml:lang="de">
+        <seg>Falls Sie irgendwelche Fragen habe, füllen Sie das untere Formular aus</seg>
+      </tuv>
+    </tu>
+    <tu tuid="6">
+      <tuv xml:lang="en">
+        <seg>If you have any questions, please fill out the form below and we&apos;ll get back to you soon.</seg>
+      </tuv>
+      <tuv xml:lang="de">
+        <seg>Falls Sie irgendwelche Fragen haben, füllen Sie bitte das Formular unten aus und wir melden uns bald bei Ihnen.</seg>
+      </tuv>
+    </tu>
+    <tu tuid="7">
+      <tuv xml:lang="en">
+        <seg>If you have any questions, please fill out the form below and we&apos;ll get back to you as soon as possible.</seg>
+      </tuv>
+      <tuv xml:lang="es">
+        <seg>Si tiene alguna pregunta, rellene el siguiente formulario y nos pondremos en contacto con usted lo antes posible.</seg>
+      </tuv>
+    </tu>
+    <tu tuid="8">
+      <tuv xml:lang="en">
+        <seg>If you have any questions, please fill out the form below and we&apos;ll get
+      back to you as soon as possible.</seg>
+      </tuv>
+      <tuv xml:lang="de">
+        <seg>Wenn Sie Fragen haben, füllen Sie bitte das nachstehende Formular aus, und wir werden uns so bald wie möglich mit Ihnen in Verbindung setzen.</seg>
+      </tuv>
+    </tu>
+    <tu tuid="9">
+      <tuv xml:lang="en">
+        <seg>Contact Us</seg>
+      </tuv>
+      <tuv xml:lang="de">
+        <seg>Kontaktieren Sie Uns</seg>
+      </tuv>
+    </tu>
+  </body>
+</tmx>

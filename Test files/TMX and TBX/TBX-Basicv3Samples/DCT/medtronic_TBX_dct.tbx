@@ -1,0 +1,981 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Basic_dialect/master/DCT/TBX-Basic_DCT.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Basic_dialect/master/DCT/TBX-Basic.nvdl" type="application/xml"schematypens="http://purl.oclc.org/dsdl/nvdl/ns/structure/1.0"?>
+<tbx xmlns="urn:iso:std:iso:30042:ed-2" style="dct" type="TBX-Basic" xml:lang="en" xmlns:min="http://www.tbxinfo.net/ns/min" xmlns:basic="http://www.tbxinfo.net/ns/basic">
+  <tbxHeader>
+    <fileDesc>
+      <titleStmt>
+        <title>Medtronic Data</title>
+      </titleStmt>
+      <sourceDesc>
+        <p>from a Collection of Terminology Metadata</p>
+      </sourceDesc>
+    </fileDesc>
+    <encodingDesc>
+      <p type="XCSURI">TBXXCSV02.xcs</p>
+    </encodingDesc>
+  </tbxHeader>
+  <text>
+    <body>
+      <conceptEntry id="c7331">
+        <transacGrp>
+          <basic:transactionType>modification</basic:transactionType>
+          <basic:responsibility>UMuegge</basic:responsibility>
+          <date>2005-04-22</date>
+        </transacGrp>
+        <transacGrp>
+          <basic:transactionType>origination</basic:transactionType>
+          <basic:responsibility>local</basic:responsibility>
+          <date>2005-03-10</date>
+        </transacGrp>
+        <basic:projectSubset>Concerto/Virtuoso</basic:projectSubset>
+        <basic:definition>the capability of a distance telemetry enabled programmer
+                    to remotely identify one or more patients with a suitable implanted device who
+                    are within range of the programmer</basic:definition>
+        <langSec xml:lang="en">
+          <termSec>
+            <term>patient identifier</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <basic:context>If the programmer establishes distance telemetry
+                            with multiple devices, it lists each one with a unique patient
+                            identifier.</basic:context>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="da">
+          <termSec>
+            <term>patientidentifikator</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="nl">
+          <termSec>
+            <term>patiënt-identificatiecode</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="fi">
+          <termSec>
+            <term>potilastunniste</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="fr">
+          <termSec>
+            <term>identifiant patient</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="da">
+          <termSec>
+            <term>Patienten-Identifikator</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="hu">
+          <termSec>
+            <term>betegazonosító</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="it">
+          <termSec>
+            <term>identificativo paziente</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="no">
+          <termSec>
+            <term>pasient-ID</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="pl">
+          <termSec>
+            <term>identyfikator pacjenta</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="pt">
+          <termSec>
+            <term>identificador de doentes</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="es">
+          <termSec>
+            <term>identificador de paciente</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="sv">
+          <termSec>
+            <term>patient identifierare</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="el">
+          <termSec>
+            <term>αναγνωριστής ασθενούς</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="cs">
+          <termSec>
+            <term>identifikační karta pacienta</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>UMuegge</basic:responsibility>
+              <date>2005-04-22</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>UMuegge</basic:responsibility>
+              <date>2005-04-22</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+      </conceptEntry>
+      <conceptEntry id="c7332">
+        <transacGrp>
+          <basic:transactionType>modification</basic:transactionType>
+          <basic:responsibility>UMuegge</basic:responsibility>
+          <date>2005-04-22</date>
+        </transacGrp>
+        <transacGrp>
+          <basic:transactionType>origination</basic:transactionType>
+          <basic:responsibility>local</basic:responsibility>
+          <date>2005-03-10</date>
+        </transacGrp>
+        <basic:projectSubset>Concerto/Virtuoso</basic:projectSubset>
+        <basic:definition>the notification of a patient (and subsequent clinitian
+                    notification ) of a triggered alert criterion via an audible tone from an
+                    implanted device</basic:definition>
+        <note>An audible alert notifies the patient of a device-triggered event. A silent
+                    alert notifies the clinician of a device-triggered event via the Medtornic
+                    CareLink® network. With an audible alert, the patient still needs to notify the
+                    clinic.</note>
+        <note>See patient alert</note>
+        <langSec xml:lang="en">
+          <termSec>
+            <term>audible alert</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <basic:context>The most urgent audible alert is a high/low dual
+                            tone.</basic:context>
+          </termSec>
+          <termSec>
+            <term>audible notification</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="da">
+          <termSec>
+            <term>hørbar alarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="nl">
+          <termSec>
+            <term>hoorbaar alarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="fi">
+          <termSec>
+            <term>hälytysääni</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="fr">
+          <termSec>
+            <term>signal sonore</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="da">
+          <termSec>
+            <term>akustischer Alarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="hu">
+          <termSec>
+            <term>hallható riasztás</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="it">
+          <termSec>
+            <term>allarme udibile</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="no">
+          <termSec>
+            <term>lydsignal</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="pl">
+          <termSec>
+            <term>alarm dźwiękowy</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="pt">
+          <termSec>
+            <term>alerta sonoro</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="es">
+          <termSec>
+            <term>señal de aviso sonora</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="sv">
+          <termSec>
+            <term>ljudalarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="el">
+          <termSec>
+            <term>ηχητικό σήμα επαγρύπνησης</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="cs">
+          <termSec>
+            <term>zvukový výstražný signál</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>UMuegge</basic:responsibility>
+              <date>2005-04-22</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>UMuegge</basic:responsibility>
+              <date>2005-04-22</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+      </conceptEntry>
+      <conceptEntry id="c7333">
+        <transacGrp>
+          <basic:transactionType>modification</basic:transactionType>
+          <basic:responsibility>UMuegge</basic:responsibility>
+          <date>2005-04-28</date>
+        </transacGrp>
+        <transacGrp>
+          <basic:transactionType>origination</basic:transactionType>
+          <basic:responsibility>local</basic:responsibility>
+          <date>2005-03-10</date>
+        </transacGrp>
+        <basic:projectSubset>Concerto/Virtuoso</basic:projectSubset>
+        <basic:definition>the notification of a physician or other health care
+                    professional of a triggered alert criterion from an implanted device via the
+                    Medtronic CareLink® network</basic:definition>
+        <langSec xml:lang="en">
+          <termSec>
+            <term>clinician notification</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <basic:context>The Patient Alert system monitor provides audible or
+                            written clinician notification of significant device events.</basic:context>
+          </termSec>
+          <termSec>
+            <term>silent alert</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <basic:context>Silent alert messages appear in the web based
+                            report, notifying the clinician without relying on the patient to report
+                            alert tones.</basic:context>
+          </termSec>
+          <termSec>
+            <term>wireless alert</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="da">
+          <termSec>
+            <term>meddelelse til lægen</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>lydløs alarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="nl">
+          <termSec>
+            <term>bericht voor de arts</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>stil alarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="fi">
+          <termSec>
+            <term>lääkärin ilmoitus</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>hälytysviesti</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="fr">
+          <termSec>
+            <term>notification médecin</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>alerte silencieuse</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="da">
+          <termSec>
+            <term>Benachrichtigung des Arztes</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>stiller Alarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="hu">
+          <termSec>
+            <term>orvos értesítése</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>néma riasztás</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="it">
+          <termSec>
+            <term>notifica del medico</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>allarme silenzioso</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="no">
+          <termSec>
+            <term>melding til personale</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>stille alarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="pl">
+          <termSec>
+            <term>powiadomienie lekarza</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>alarm cichy</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="pt">
+          <termSec>
+            <term>notificação para o médico</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>alerta silencioso</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="es">
+          <termSec>
+            <term>notificación al facultativo</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>señal de aviso silenciosa</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="sv">
+          <termSec>
+            <term>läkarmeddelande</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>tyst alarm</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="el">
+          <termSec>
+            <term>γνωστοποίηση ιατρού</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>σιωπηλή επαναγρύπνηση</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>local</basic:responsibility>
+              <date>2005-03-10</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="cs">
+          <termSec>
+            <term>upozornění pro lékaře</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>UMuegge</basic:responsibility>
+              <date>2005-04-22</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>UMuegge</basic:responsibility>
+              <date>2005-04-22</date>
+            </transacGrp>
+          </termSec>
+          <termSec>
+            <term>výstraha bez zvukového signálu</term>
+            <transacGrp>
+              <basic:transactionType>modification</basic:transactionType>
+              <basic:responsibility>UMuegge</basic:responsibility>
+              <date>2005-04-22</date>
+            </transacGrp>
+            <transacGrp>
+              <basic:transactionType>origination</basic:transactionType>
+              <basic:responsibility>UMuegge</basic:responsibility>
+              <date>2005-04-22</date>
+            </transacGrp>
+          </termSec>
+        </langSec>
+      </conceptEntry>
+    </body>
+  </text>
+</tbx>

@@ -1,0 +1,41 @@
+,,,,,,,,,,,
+,GET STARTED,,,,,,,NOTE,,,
+,"Set your starting balance in cell L8, then customize your categories and planned spending amounts in the 'Income' and 'Expenses' tables below.",,,,,,,Only edit highlighted cells.,,,
+,,,,,,,,Try not to alter cells that contain a formula. ,,,
+,"As you enter data in the 'Transactions' tab, this sheet will automatically update to show a summary of your spending for the month.",,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,Monthly Budget,,,,,,,,Starting balance: ,,"$1,000"
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,+50%,,,
+,,,,,,,,Increase in total savings,,,
+,,,,,,,,$500,,,
+,,,START BALANCE , END BALANCE,,,,Saved this month,,,
+,,,"$1,000","$1,500",,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,Expenses,,,,,,Income,,,,
+,Planned,$950,,,,,Planned,"$1,450",,,
+,Actual,"$1,000",,,,,Actual,"$1,500",,,
+,,,,,,,,,,,
+,Expenses,,,,,,Income,,,,
+,,,Planned,Actual,Diff.,,,,Planned,Actual,Diff.
+,Totals,,$950,"$1,000",-$50,,Totals,,"$1,450","$1,500",+$50
+,,,,,,,,,,,
+,Food,,$0,$0,$0,,Savings,,$0,$0,$0
+,Gifts,,$0,$0,$0,,Paycheck,,"$1,450","$1,500",+$50
+,Health/medical,,$0,$0,$0,,Bonus,,$0,$0,$0
+,Home,,$950,"$1,000",-$50,,Interest,,$0,$0,$0
+,Transportation,,$0,$0,$0,,Other,,$0,$0,$0
+,Personal,,$0,$0,$0,,Custom category ,,$0,$0,$0
+,Pets,,$0,$0,$0,,,,,,
+,Utilities,,$0,$0,$0,,,,,,
+,Travel,,$0,$0,$0,,,,,,
+,Debt,,$0,$0,$0,,,,,,
+,Other,,$0,$0,$0,,,,,,
+,Custom category 1,,$0,$0,$0,,,,,,
+,Custom category 2,,$0,$0,$0,,,,,,
+,Custom category 3,,$0,$0,$0,,,,,,
