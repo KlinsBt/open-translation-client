@@ -119,6 +119,7 @@
 					adapter.id,
 					imported.typeRef,
 					imported.document,
+					imported.skeleton,
 				);
 			} else {
 				await saveAndOpenNewFileWithStringArray(
@@ -131,6 +132,7 @@
 					imported.typeRef,
 					imported.segmentsMeta,
 					imported.document,
+					imported.skeleton,
 				);
 			}
 

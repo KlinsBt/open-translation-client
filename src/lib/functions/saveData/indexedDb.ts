@@ -6,6 +6,11 @@ import {
 	synchronizeNeutralDocument,
 } from "$lib/formats/documentModel";
 import {
+	createSkeletonFromLegacy,
+	synchronizeSkeletonReplacements,
+	validateDocumentSkeleton,
+} from "$lib/formats/skeleton";
+import {
 	tbData,
 	tmData,
 	userData,
@@ -20,7 +25,7 @@ const DURABILITY = "relaxed"; // "strict" or "relaxed"
 
 let db: IDBDatabase | null = null;
 
-export function ensureNeutralDocument(userData: UserData): UserData {
+export function ensureProjectModels(userData: UserData): UserData {
 	const translation = userData.translationData;
 	const document =
 		translation.documentModel ??
@@ -42,6 +47,23 @@ export function ensureNeutralDocument(userData: UserData): UserData {
 		},
 		translation.sourceLang,
 		translation.targetLang,
+	);
+	if (
+		!translation.skeleton ||
+		!validateDocumentSkeleton(translation.skeleton).valid
+	) {
+		translation.skeleton = createSkeletonFromLegacy({
+			format: translation.type,
+			name: translation.name,
+			typeRef: translation.typeRef,
+			segments: translation.seg1,
+			segmentsMeta: translation.segmentsMeta,
+		});
+	}
+	translation.skeleton = synchronizeSkeletonReplacements(
+		translation.skeleton,
+		translation.seg1,
+		translation.segmentsMeta,
 	);
 	return userData;
 }
@@ -131,7 +153,7 @@ export async function loadTranslationsUserDataFromIndexedDB(): Promise<
 						console.error("Failed to regenerate docx meta", e);
 					}
 				}
-				return ensureNeutralDocument(item);
+				return ensureProjectModels(item);
 			});
 			userData.set(result);
 			resolve(result);
@@ -212,7 +234,7 @@ export async function updateAllTranslationsOnIndexedDB(
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
 
 		const updatePromises = fullUserData.map((data) => {
-			ensureNeutralDocument(data);
+			ensureProjectModels(data);
 			return new Promise<void>((res, rej) => {
 				const request = store.put(data);
 
@@ -234,7 +256,7 @@ export async function updateAllTranslationsOnIndexedDB(
 export async function updateTranslationOnIndexedDB(
 	userData: UserData,
 ): Promise<void> {
-	ensureNeutralDocument(userData);
+	ensureProjectModels(userData);
 	const db = await openDatabase();
 	return new Promise((resolve, reject) => {
 		const transaction = db.transaction(DB_USER_STORE_NAME, "readwrite", {

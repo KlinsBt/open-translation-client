@@ -18,12 +18,14 @@ export function buildXliff2_0(userData: UserData): string {
 		segmentJoinStates,
 		parsingTokens,
 		documentModel,
+		skeleton,
 	} = translationData;
 	const editingState = {
 		segmentsMeta,
 		segmentJoinStates,
 		parsingTokens,
 		documentModel,
+		skeleton,
 	};
 
 	// Builds the XLIFF structure

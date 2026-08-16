@@ -135,6 +135,11 @@ describe("registered importers and validators", () => {
 				format: "text",
 				schemaVersion: 1,
 			},
+			skeleton: {
+				schemaVersion: 1,
+				format: "text",
+				payload: { kind: "text", content: "First line\r\nSecond line" },
+			},
 		});
 	});
 
@@ -161,6 +166,7 @@ describe("registered importers and validators", () => {
 			"nested",
 			"count",
 		]);
+		expect(result.skeleton.replacements).toHaveLength(2);
 	});
 
 	it("imports HTML and retains replacement metadata", async () => {
@@ -177,6 +183,7 @@ describe("registered importers and validators", () => {
 		expect(result.segmentsMeta).toHaveLength(1);
 		expect(result.typeRef).toContain("<p>Hello world.</p>");
 		expect(result.document.units).toHaveLength(1);
+		expect(result.skeleton.payload).toMatchObject({ kind: "text" });
 	});
 
 	it("accepts HTML fragments but rejects empty HTML files", async () => {
@@ -211,6 +218,7 @@ describe("registered importers and validators", () => {
 		expect(result.document.units[0].sourceLocation?.part).toBe(
 			"word/document.xml",
 		);
+		expect(result.skeleton.payload).toMatchObject({ kind: "package" });
 	});
 
 	it("validates and imports a minimal XLSX package", async () => {
@@ -232,6 +240,10 @@ describe("registered importers and validators", () => {
 		if (result.kind !== "segments") throw new Error("Expected segments");
 		expect(result.document.units[0].sourceLocation).toMatchObject({
 			segmentIndex: 0,
+		});
+		expect(result.skeleton.replacements[0]).toMatchObject({
+			kind: "xlsx-text",
+			part: "xl/sharedStrings.xml",
 		});
 	});
 

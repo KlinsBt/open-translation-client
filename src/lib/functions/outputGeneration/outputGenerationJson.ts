@@ -1,9 +1,15 @@
 import type { UserData } from "$lib/types/types";
+import {
+	applyJsonSkeleton,
+	getTextSkeletonContent,
+	skeletonHasIdentityTargets,
+	type JsonValueReplacement,
+} from "$lib/formats/skeleton";
 // Note: do not rely on parsing preferences when reconstructing JSON output
 
-async function generateJsonFileDownload(jsonData: JSON, name: string) {
+async function generateJsonFileDownload(jsonData: string, name: string) {
 	// Converts JSON data to a Blob
-	const blob: Blob = new Blob([JSON.stringify(jsonData, null, 2)], {
+	const blob: Blob = new Blob([jsonData], {
 		type: "application/json",
 	});
 
@@ -25,8 +31,25 @@ async function generateJsonFileDownload(jsonData: JSON, name: string) {
 }
 
 export async function generateJsonTranslation(translation: UserData) {
-	console.log("userData: ", translation);
 	const name: string = translation.translationData.name || "translation_file";
+	await generateJsonFileDownload(buildJsonTranslation(translation), name);
+}
+
+export function buildJsonTranslation(translation: UserData): string {
+	const data = translation.translationData;
+	const skeletonContent = getTextSkeletonContent(data.skeleton, "json");
+	if (skeletonContent !== undefined) {
+		if (skeletonHasIdentityTargets(data.seg1, data.seg2))
+			return skeletonContent;
+		const replacements = data.skeleton!.replacements.filter(
+			(replacement): replacement is JsonValueReplacement =>
+				replacement.kind === "json-value",
+		);
+		if (replacements.length === data.seg2.length) {
+			return applyJsonSkeleton(skeletonContent, replacements, data.seg2);
+		}
+	}
+
 	const typeRef: any = translation.translationData.typeRef;
 	const sourceData =
 		(typeRef && typeRef.data) || translation.translationData.typeRef;
@@ -39,10 +62,7 @@ export async function generateJsonTranslation(translation: UserData) {
 		translation.translationData.seg2,
 		segMeta,
 	);
-	await generateJsonFileDownload(
-		JSON.parse(JSON.stringify(newJsonObject)),
-		name,
-	);
+	return JSON.stringify(JSON.parse(JSON.stringify(newJsonObject)), null, 2);
 }
 
 export type JsonMetaEntry = { path: string[]; separator?: string } | number;

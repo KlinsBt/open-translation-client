@@ -21,6 +21,7 @@ import {
 	splitSegmentData,
 } from "./segmentationLogic";
 import { createNeutralDocument } from "$lib/formats/documentModel";
+import { createSkeletonFromLegacy } from "$lib/formats/skeleton";
 
 describe("segment splitting", () => {
 	it("splits at a source caret and keeps the existing target in the first half", () => {
@@ -231,6 +232,12 @@ describe("segment joining", () => {
 				checked: [true, false],
 				unitIds: ["first", "second"],
 			}),
+			skeleton: createSkeletonFromLegacy({
+				format: "text",
+				name: "notes",
+				typeRef: "One two",
+				segments: ["One ", "two"],
+			}),
 		}).translationData;
 		const joined = combineSegmentData(data, 0);
 
@@ -242,6 +249,7 @@ describe("segment joining", () => {
 			firstUnitId: "first",
 			secondUnitId: "second",
 		});
+		expect(joined.data.skeleton?.replacements).toHaveLength(1);
 
 		const restored = splitSegmentData(joined.data, 0, 4);
 		expect(restored.error).toBeUndefined();
@@ -249,6 +257,7 @@ describe("segment joining", () => {
 			"first",
 			"second",
 		]);
+		expect(restored.data.skeleton?.replacements).toHaveLength(2);
 	});
 
 	it("does not invent punctuation when joining untranslated structured segments", () => {

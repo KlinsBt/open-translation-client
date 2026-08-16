@@ -12,6 +12,7 @@ import { buildTmx } from "./generateTmxSaveFile1_4";
 import { buildXliff1_2 } from "./generateXliffSaveFile1_2";
 import { buildXliff2_0 } from "./generateXliffSaveFile2_0";
 import { createNeutralDocument } from "$lib/formats/documentModel";
+import { createSkeletonFromLegacy } from "$lib/formats/skeleton";
 
 describe("translation output builders", () => {
 	it("builds plain text without JSON quoting", () => {
@@ -54,6 +55,13 @@ describe("translation output builders", () => {
 				checked: [true],
 				unitIds: ["message"],
 			}),
+			skeleton: createSkeletonFromLegacy({
+				format: "json",
+				name: "messages",
+				typeRef: { data: { message: "One. Two!" } },
+				segments: ["One. Two!"],
+				segmentsMeta: [{ path: ["message"], separator: "!" }],
+			}),
 		});
 		const output = buildXliff2_0(userData);
 		const doc = new DOMParser().parseFromString(output, "application/xml");
@@ -69,6 +77,7 @@ describe("translation output builders", () => {
 		expect(restored.documentModel).toEqual(
 			userData.translationData.documentModel,
 		);
+		expect(restored.skeleton).toEqual(userData.translationData.skeleton);
 	});
 
 	it("does not throw when optional XLIFF IDs are absent", () => {

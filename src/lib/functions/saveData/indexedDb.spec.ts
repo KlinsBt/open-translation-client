@@ -4,7 +4,7 @@ import {
 	contentToPlainText,
 	createNeutralDocument,
 } from "$lib/formats/documentModel";
-import { ensureNeutralDocument } from "./indexedDb";
+import { ensureProjectModels } from "./indexedDb";
 
 describe("neutral document persistence compatibility", () => {
 	it("backfills old projects with an aligned, deterministic document model", () => {
@@ -13,15 +13,21 @@ describe("neutral document persistence compatibility", () => {
 			seg1: ["One", "Two"],
 			seg2: ["Eins", ""],
 			checked: [true, false],
+			typeRef: "OneTwo",
 		});
 
-		ensureNeutralDocument(userData);
+		ensureProjectModels(userData);
 		const document = userData.translationData.documentModel!;
 		expect(document.id).toBe("project-123");
 		expect(document.units.map((unit) => unit.id)).toEqual(["unit-1", "unit-2"]);
 		expect(
 			document.units.map((unit) => contentToPlainText(unit.target)),
 		).toEqual(["Eins", ""]);
+		expect(userData.translationData.skeleton).toMatchObject({
+			schemaVersion: 1,
+			format: "text",
+			payload: { kind: "text", content: "OneTwo" },
+		});
 	});
 
 	it("keeps existing unit IDs while synchronizing edited target text", () => {
@@ -38,7 +44,7 @@ describe("neutral document persistence compatibility", () => {
 			documentModel: document,
 		});
 
-		ensureNeutralDocument(userData);
+		ensureProjectModels(userData);
 		expect(userData.translationData.documentModel?.units[0].id).toBe(
 			"source-message-id",
 		);

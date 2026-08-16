@@ -63,10 +63,17 @@ must be removed until a real XLS converter exists.
       synchronized with the current segment-array compatibility view. Split/join
       edits preserve unit IDs, while protected codes cannot be silently flattened.
       Model, importer, persistence, interchange, and structural-edit tests pass.
-- [ ] **FF-002 — Separate skeleton preservation from segment content.** Store
+- [x] **FF-002 — Separate skeleton preservation from segment content.** Store
       untouched source bytes/package parts plus explicit replacement locations.
       Export by patching the skeleton, preserving unknown elements, namespaces,
       relationships, order, encodings where practical, and binary assets.
+      Completed 2026-08-16: every registered importer now stores a versioned,
+      immutable skeleton with original bytes, text or package parts, and typed
+      replacement locations. Exporters patch fresh skeleton copies, identity
+      exports reuse exact originals, JSON retains layout and primitive types,
+      and DOCX/XLSX retain unknown relationships, namespaces, and binary parts.
+      Legacy projects and split/join edits rebuild aligned replacement mappings;
+      identity, translated round-trip, persistence, and malformed-state tests pass.
 - [ ] **FF-003 — Add configurable filter options.** Support format-specific
       choices such as spreadsheet columns, JSON/YAML selectors, XML XPath/ITS
       rules, HTML attributes, subtitle limits, and whether existing targets are

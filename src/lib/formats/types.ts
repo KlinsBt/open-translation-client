@@ -1,6 +1,7 @@
 import type { SegmentMeta, TypeRef, UserData } from "$lib/types/types";
 import type { FormatId } from "./formatIds";
 import type { NeutralDocument } from "./documentModel";
+import type { DocumentSkeleton } from "./skeleton";
 
 export interface FormatCapabilities {
 	import: boolean;
@@ -26,12 +27,14 @@ export type FormatImportResult =
 			kind: "text";
 			text: string;
 			document: NeutralDocument;
+			skeleton: DocumentSkeleton;
 			typeRef?: TypeRef;
 	  }
 	| {
 			kind: "segments";
 			segments: string[];
 			document: NeutralDocument;
+			skeleton: DocumentSkeleton;
 			typeRef?: TypeRef;
 			segmentsMeta?: SegmentMeta[];
 	  };

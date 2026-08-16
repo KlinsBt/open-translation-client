@@ -7,6 +7,17 @@ import { createTextSegmentsWithRegexGeneralTextAlgo } from "$lib/functions/parsi
 import type { FormatImportResult, FormatValidationResult } from "./types";
 import type { TypeRef } from "$lib/types/types";
 import { createNeutralDocument, type SourceLocation } from "./documentModel";
+import {
+	createPackageSkeleton,
+	createPlainTextSkeleton,
+	createTextSkeleton,
+	findJsonPrimitiveLocations,
+	type DocxTextReplacement,
+	type HtmlAttributeReplacement,
+	type HtmlTextReplacement,
+	type JsonValueReplacement,
+	type XlsxTextReplacement,
+} from "./skeleton";
 
 type PackageContent = { [key: string]: string | Blob };
 
@@ -47,6 +58,13 @@ export async function importDocxFile(file: File): Promise<FormatImportResult> {
 	const sourceSegments = segments.map(
 		(segment) => `${segment.text}${segment.separator ?? ""}`,
 	);
+	const replacements: DocxTextReplacement[] = meta.map((entry, unitIndex) => ({
+		kind: "docx-text",
+		unitIndex,
+		part: "word/document.xml",
+		separator: entry.separator,
+		fragments: entry.fragments.map((fragment) => ({ ...fragment })),
+	}));
 	return {
 		kind: "segments",
 		segments: sourceSegments,
@@ -62,6 +80,7 @@ export async function importDocxFile(file: File): Promise<FormatImportResult> {
 				},
 			})),
 		}),
+		skeleton: await createPackageSkeleton(file, "docx", content, replacements),
 		typeRef: content,
 		segmentsMeta: meta,
 	};
@@ -79,43 +98,36 @@ export async function validateJsonFile(
 }
 
 export async function importJsonFile(file: File): Promise<FormatImportResult> {
-	const jsonData = JSON.parse(await file.text());
+	const content = await file.text();
+	const jsonData = JSON.parse(content);
 	const segments: string[] = [];
 	const meta: { path: string[]; separator?: string }[] = [];
-	const pathStack: string[] = [];
-
-	function traverse(value: unknown): void {
-		if (typeof value !== "object" || value === null) return;
-
-		for (const [key, child] of Object.entries(value)) {
-			if (typeof child === "object" && child !== null) {
-				pathStack.push(key);
-				traverse(child);
-				pathStack.pop();
-				continue;
-			}
-
-			const text = String(child);
-			const pieces = splitTextWithPreferences(text).filter(
-				(piece) => piece.text.trim().length > 0,
-			);
-			if (pieces.length === 0) {
-				segments.push(text);
-				meta.push({ path: [...pathStack, key], separator: "" });
-				continue;
-			}
-
-			for (const piece of pieces) {
-				segments.push(`${piece.text}${piece.separator ?? ""}`);
-				meta.push({
-					path: [...pathStack, key],
-					separator: piece.separator ?? "",
-				});
-			}
+	const replacements: JsonValueReplacement[] = [];
+	for (const location of findJsonPrimitiveLocations(content)) {
+		const text = String(location.value);
+		const pieces = splitTextWithPreferences(text).filter(
+			(piece) => piece.text.trim().length > 0,
+		);
+		const effectivePieces =
+			pieces.length > 0 ? pieces : [{ text, separator: "" }];
+		for (const piece of effectivePieces) {
+			const unitIndex = segments.length;
+			segments.push(`${piece.text}${piece.separator ?? ""}`);
+			meta.push({
+				path: [...location.path],
+				separator: piece.separator ?? "",
+			});
+			replacements.push({
+				kind: "json-value",
+				unitIndex,
+				path: [...location.path],
+				start: location.start,
+				end: location.end,
+				valueType: location.valueType,
+				separator: piece.separator ?? "",
+			});
 		}
 	}
-
-	traverse(jsonData);
 	return {
 		kind: "segments",
 		segments,
@@ -128,6 +140,7 @@ export async function importJsonFile(file: File): Promise<FormatImportResult> {
 				segmentIndex: index,
 			})),
 		}),
+		skeleton: await createTextSkeleton(file, "json", content, replacements),
 		typeRef: { data: jsonData, meta } as unknown as TypeRef,
 		segmentsMeta: meta,
 	};
@@ -151,6 +164,7 @@ export async function importTextFile(file: File): Promise<FormatImportResult> {
 				segmentIndex: index,
 			})),
 		}),
+		skeleton: await createPlainTextSkeleton(file, text, segments),
 	};
 }
 
@@ -176,25 +190,47 @@ export async function importXlsxFile(file: File): Promise<FormatImportResult> {
 	const workbook = segmentWorkbookStrings(content);
 	const { allSegments } = workbook;
 	const sourceLocations: SourceLocation[] = [];
+	const replacements: XlsxTextReplacement[] = [];
 	for (const [index] of workbook.shared.segments.entries()) {
 		sourceLocations.push({
 			part: "xl/sharedStrings.xml",
 			segmentIndex: sourceLocations.length,
 			metadata: { sharedStringSegment: index },
 		});
+		replacements.push({
+			kind: "xlsx-text",
+			unitIndex: replacements.length,
+			part: "xl/sharedStrings.xml",
+			storage: "shared-string",
+			localIndex: index,
+		});
 	}
 	for (const sheet of workbook.sheets) {
-		for (const segment of sheet.inlineSegments) {
+		for (const [localIndex, segment] of sheet.inlineSegments.entries()) {
 			sourceLocations.push({
 				part: sheet.sheetPath,
 				segmentIndex: sourceLocations.length,
 				metadata: { fragmentCount: segment.fragments.length },
 			});
+			replacements.push({
+				kind: "xlsx-text",
+				unitIndex: replacements.length,
+				part: sheet.sheetPath,
+				storage: "inline-string",
+				localIndex,
+			});
 		}
-		for (const _segment of sheet.valueSegments) {
+		for (const [localIndex] of sheet.valueSegments.entries()) {
 			sourceLocations.push({
 				part: sheet.sheetPath,
 				segmentIndex: sourceLocations.length,
+			});
+			replacements.push({
+				kind: "xlsx-text",
+				unitIndex: replacements.length,
+				part: sheet.sheetPath,
+				storage: "cell-value",
+				localIndex,
 			});
 		}
 	}
@@ -206,6 +242,7 @@ export async function importXlsxFile(file: File): Promise<FormatImportResult> {
 			sourceSegments: allSegments,
 			sourceLocations,
 		}),
+		skeleton: await createPackageSkeleton(file, "xlsx", content, replacements),
 		typeRef: content,
 	};
 }
@@ -222,6 +259,22 @@ export async function validateHtmlFile(
 export async function importHtmlFile(file: File): Promise<FormatImportResult> {
 	const html = await file.text();
 	const { allSegments, meta } = segmentHtmlContent(html);
+	const replacements = meta.map((entry, unitIndex) =>
+		entry.kind === "attribute"
+			? ({
+					kind: "html-attribute",
+					unitIndex,
+					path: [...entry.path],
+					attribute: entry.attribute,
+					separator: entry.separator,
+				} satisfies HtmlAttributeReplacement)
+			: ({
+					kind: "html-text",
+					unitIndex,
+					path: [...entry.path],
+					separator: entry.separator,
+				} satisfies HtmlTextReplacement),
+	);
 	return {
 		kind: "segments",
 		segments: allSegments,
@@ -241,6 +294,7 @@ export async function importHtmlFile(file: File): Promise<FormatImportResult> {
 					}) satisfies SourceLocation,
 			),
 		}),
+		skeleton: await createTextSkeleton(file, "html", html, replacements),
 		typeRef: html,
 		segmentsMeta: meta,
 	};

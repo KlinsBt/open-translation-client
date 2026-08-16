@@ -1,4 +1,10 @@
 import type { UserData } from "$lib/types/types";
+import {
+	applyTextSkeleton,
+	getTextSkeletonContent,
+	skeletonHasIdentityTargets,
+	type TextRangeReplacement,
+} from "$lib/formats/skeleton";
 
 async function generateTextFileDownload(textData: string, name: string) {
 	const blob: Blob = new Blob([textData], {
@@ -28,9 +34,25 @@ export async function generateTextTranslation(
 ) {
 	const name: string = translation.translationData.name || "translation";
 	await generateTextFileDownload(
-		buildTextTranslation(translation.translationData.seg2),
+		buildTextTranslationFromProject(translation),
 		name,
 	);
+}
+
+export function buildTextTranslationFromProject(translation: UserData): string {
+	const data = translation.translationData;
+	const content = getTextSkeletonContent(data.skeleton, "text");
+	if (content !== undefined) {
+		if (skeletonHasIdentityTargets(data.seg1, data.seg2)) return content;
+		const replacements = data.skeleton!.replacements.filter(
+			(replacement): replacement is TextRangeReplacement =>
+				replacement.kind === "text-range",
+		);
+		if (replacements.length === data.seg2.length) {
+			return applyTextSkeleton(content, replacements, data.seg2);
+		}
+	}
+	return buildTextTranslation(data.seg2);
 }
 
 export function buildTextTranslation(segments: string[]): string {

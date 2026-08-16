@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createNeutralDocument } from "$lib/formats/documentModel";
+import { createSkeletonFromLegacy } from "$lib/formats/skeleton";
 
 const mocks = vi.hoisted(() => ({ update: vi.fn() }));
 
@@ -48,6 +49,13 @@ describe("new-project neutral model persistence", () => {
 			sourceSegments: ["Hello"],
 			sourceLocations: [{ part: "messages.json", path: ["hello"] }],
 		});
+		const skeleton = createSkeletonFromLegacy({
+			format: "json",
+			name: "messages.json",
+			typeRef: { data: { hello: "Hello" } },
+			segments: ["Hello"],
+			segmentsMeta: [{ path: ["hello"] }],
+		});
 		await saveNewTranslationToUserDataFromArrayOfStrings(
 			[],
 			"Messages",
@@ -59,6 +67,7 @@ describe("new-project neutral model persistence", () => {
 			{},
 			[{ path: ["hello"] }],
 			imported,
+			skeleton,
 		);
 
 		const document =
@@ -70,5 +79,8 @@ describe("new-project neutral model persistence", () => {
 		});
 		expect(document.units[0].source.language).toBe("en");
 		expect(document.units[0].target.language).toBe("de");
+		expect(mocks.update.mock.calls[0][0].translationData.skeleton).toBe(
+			skeleton,
+		);
 	});
 });

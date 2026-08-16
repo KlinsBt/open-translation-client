@@ -12,6 +12,7 @@ import {
 	splitNeutralDocumentUnit,
 	synchronizeNeutralDocument,
 } from "$lib/formats/documentModel";
+import { synchronizeSkeletonReplacements } from "$lib/formats/skeleton";
 
 type TranslationData = UserData["translationData"];
 
@@ -549,6 +550,11 @@ export function splitSegmentData(
 			segmentsMeta: newMeta,
 			segmentJoinStates: newJoinStates,
 			documentModel: splitDocument?.document,
+			skeleton: synchronizeSkeletonReplacements(
+				translation.skeleton,
+				newSeg1,
+				newMeta,
+			),
 		},
 		restoredJoinBoundary: canRestoreJoinedTargets,
 	};
@@ -637,6 +643,11 @@ export function combineSegmentData(
 			segmentsMeta: newMeta,
 			segmentJoinStates: newJoinStates,
 			documentModel: synchronizedDocument,
+			skeleton: synchronizeSkeletonReplacements(
+				translation.skeleton,
+				newSeg1,
+				newMeta,
+			),
 		},
 	};
 }

@@ -12,6 +12,7 @@ import {
 	withDocumentLanguages,
 	type NeutralDocument,
 } from "$lib/formats/documentModel";
+import type { DocumentSkeleton } from "$lib/formats/skeleton";
 
 function prepareDocumentModel(
 	documentModel: NeutralDocument | undefined,
@@ -58,6 +59,7 @@ export async function saveNewTranslationToUserDataFromText(
 	fileType: Type,
 	fileTypeRef?: TypeRef,
 	documentModel?: NeutralDocument,
+	skeleton?: DocumentSkeleton,
 ) {
 	let generatedText = createTextSegmentsWithRegexGeneralTextAlgo(fullText);
 	const model = prepareDocumentModel(
@@ -83,6 +85,7 @@ export async function saveNewTranslationToUserDataFromText(
 			typeRef: fileTypeRef || {},
 			segmentsMeta: [],
 			documentModel: model,
+			skeleton,
 			parsingTokens: getActiveTokens() || getDefaultTokens(),
 			tm: {
 				id: null,
@@ -112,6 +115,7 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 	fileTypeRef?: TypeRef,
 	segmentsMeta?: any[],
 	documentModel?: NeutralDocument,
+	skeleton?: DocumentSkeleton,
 ) {
 	const targetSegments = new Array(stringArray.length).fill("");
 	const checkedSegments = new Array(stringArray.length).fill(false);
@@ -137,6 +141,7 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 				targetSegments,
 				checkedSegments,
 			),
+			skeleton,
 			parsingTokens: getActiveTokens() || getDefaultTokens(),
 			tm: {
 				id: null,

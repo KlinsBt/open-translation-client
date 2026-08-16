@@ -3,6 +3,12 @@ import {
 	applyTranslationsToHtml,
 	segmentHtmlContent,
 } from "$lib/functions/parsing/parsingHtml";
+import {
+	getTextSkeletonContent,
+	skeletonHasIdentityTargets,
+	type HtmlAttributeReplacement,
+	type HtmlTextReplacement,
+} from "$lib/formats/skeleton";
 
 async function generateHtmlFileDownload(htmlContent: string, name: string) {
 	const blob: Blob = new Blob([htmlContent], {
@@ -22,10 +28,44 @@ async function generateHtmlFileDownload(htmlContent: string, name: string) {
 }
 
 export async function createHtmlFromModifiedText(translation: UserData) {
-	let originalHtmlContent = translation.translationData.typeRef as string;
-	console.log("html: ", originalHtmlContent);
+	const updatedHtmlContent = buildHtmlTranslation(translation);
+	await generateHtmlFileDownload(
+		updatedHtmlContent,
+		translation.translationData.name,
+	);
+}
+
+export function buildHtmlTranslation(translation: UserData): string {
+	const data = translation.translationData;
+	const originalHtmlContent =
+		getTextSkeletonContent(data.skeleton, "html") ?? (data.typeRef as string);
+	if (skeletonHasIdentityTargets(data.seg1, data.seg2)) {
+		return originalHtmlContent;
+	}
 	const tokens = translation.translationData.parsingTokens;
-	let meta = translation.translationData.segmentsMeta;
+	let meta = data.skeleton?.replacements
+		.filter(
+			(
+				replacement,
+			): replacement is HtmlTextReplacement | HtmlAttributeReplacement =>
+				replacement.kind === "html-text" ||
+				replacement.kind === "html-attribute",
+		)
+		.map((replacement) =>
+			replacement.kind === "html-attribute"
+				? {
+						kind: "attribute" as const,
+						path: replacement.path,
+						attribute: replacement.attribute,
+						separator: replacement.separator ?? "",
+					}
+				: {
+						kind: "text" as const,
+						path: replacement.path,
+						separator: replacement.separator ?? "",
+					},
+		);
+	if (meta?.length !== data.seg2.length) meta = data.segmentsMeta as any;
 
 	// If meta is missing or misaligned, regenerate from the stored HTML using the saved tokens
 	if (!meta || meta.length !== translation.translationData.seg2.length) {
@@ -51,10 +91,7 @@ export async function createHtmlFromModifiedText(translation: UserData) {
 		tokens,
 		meta,
 	);
-	await generateHtmlFileDownload(
-		updatedHtmlContent,
-		translation.translationData.name,
-	);
+	return updatedHtmlContent;
 }
 
 function replaceTextStrings(

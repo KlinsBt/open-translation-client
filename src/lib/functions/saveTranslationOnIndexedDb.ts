@@ -17,6 +17,7 @@ import {
 } from "./saveFileModsIndexedDb";
 import { getTotalWordCount } from "./statistics";
 import type { NeutralDocument } from "$lib/formats/documentModel";
+import type { DocumentSkeleton } from "$lib/formats/skeleton";
 
 export async function saveAndOpenNewFileWithTextString(
 	temporarySaveName: string,
@@ -27,6 +28,7 @@ export async function saveAndOpenNewFileWithTextString(
 	fileType: Type,
 	fileTypeRef?: TypeRef,
 	documentModel?: NeutralDocument,
+	skeleton?: DocumentSkeleton,
 ) {
 	let data: UserData[] = await loadTranslationsUserDataFromIndexedDB();
 	await saveNewTranslationToUserDataFromText(
@@ -39,6 +41,7 @@ export async function saveAndOpenNewFileWithTextString(
 		fileType,
 		fileTypeRef,
 		documentModel,
+		skeleton,
 	);
 	data = await loadTranslationsUserDataFromIndexedDB();
 	const singleData = data[data.length - 1];
@@ -60,6 +63,7 @@ export async function saveAndOpenNewFileWithStringArray(
 	fileTypeRef?: TypeRef,
 	segmentsMeta?: any[],
 	documentModel?: NeutralDocument,
+	skeleton?: DocumentSkeleton,
 ) {
 	let data: UserData[] = await loadTranslationsUserDataFromIndexedDB();
 	await saveNewTranslationToUserDataFromArrayOfStrings(
@@ -73,6 +77,7 @@ export async function saveAndOpenNewFileWithStringArray(
 		fileTypeRef,
 		segmentsMeta,
 		documentModel,
+		skeleton,
 	);
 	data = await loadTranslationsUserDataFromIndexedDB();
 	const singleData = data[data.length - 1];
