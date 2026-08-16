@@ -87,11 +87,21 @@ must be removed until a real XLS converter exists.
       Unit, selective-import, persistence, interchange, and filtered round-trip
       tests pass. YAML/XML/subtitle/target-specific controls will extend the same
       option contract when those roadmap adapters are implemented.
-- [ ] **FF-004 — Centralize safe input handling.** Add size and entry-count
+- [x] **FF-004 — Centralize safe input handling.** Add size and entry-count
       limits, ZIP expansion-ratio limits, cancellation, progress, encoding and
       BOM detection, XML parsing with external entities disabled, duplicate-path
       checks, and useful typed errors. Never execute imported scripts, PHP,
       formulas, macros, or archive contents.
+      Completed 2026-08-16: all active project, source-format, TMX, and TBX
+      imports now use one typed safe-input layer. It enforces compressed-file,
+      entry-count, expanded-size, and per-entry/total expansion-ratio limits;
+      rejects encrypted, split, ZIP64, duplicate, traversal, and inconsistent
+      archives; detects UTF-8/UTF-16 BOMs and invalid encodings; and blocks XML
+      DTD/entity declarations and malformed XML. Unknown archive content,
+      scripts, formulas, macros, and binary parts remain opaque and are never
+      executed. Adapter operations expose progress and cancellation, with both
+      controls wired into project creation. Adversarial, compatibility,
+      persistence, round-trip, type-check, and production-build tests pass.
 - [ ] **FF-005 — Support large files without whole-document DOM copies.** Add
       streaming/SAX-style XML and incremental text paths for TMX, TBX, XLIFF,
       CSV, and other large formats; batch IndexedDB writes and keep the UI

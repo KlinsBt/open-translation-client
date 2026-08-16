@@ -1,11 +1,12 @@
 import type { FormatId } from "./formatIds";
+import { decodeTextBytes, readSafeFileBytes } from "./safeInput";
 
 export const DOCUMENT_SKELETON_VERSION = 1 as const;
 
 export interface SkeletonSource {
 	name: string;
 	mimeType: string;
-	encoding?: "utf-8";
+	encoding?: "utf-8" | "utf-16le" | "utf-16be";
 	hasBom?: boolean;
 	originalFile?: Blob;
 }
@@ -94,22 +95,17 @@ export interface JsonPrimitiveLocation {
 	valueType: JsonValueReplacement["valueType"];
 }
 
-function hasUtf8Bom(bytes: Uint8Array): boolean {
-	return (
-		bytes.length >= 3 &&
-		bytes[0] === 0xef &&
-		bytes[1] === 0xbb &&
-		bytes[2] === 0xbf
-	);
-}
-
-async function sourceFromFile(file: File): Promise<SkeletonSource> {
-	const bytes = new Uint8Array(await file.arrayBuffer());
+async function sourceFromFile(
+	file: File,
+	textSource: boolean,
+): Promise<SkeletonSource> {
+	const bytes = await readSafeFileBytes(file);
+	const textMetadata = textSource ? decodeTextBytes(bytes) : undefined;
 	return {
 		name: file.name,
 		mimeType: file.type,
-		encoding: "utf-8",
-		hasBom: hasUtf8Bom(bytes),
+		encoding: textMetadata?.encoding,
+		hasBom: textMetadata?.hasBom,
 		originalFile: new Blob([bytes], { type: file.type }),
 	};
 }
@@ -145,11 +141,12 @@ export async function createTextSkeleton(
 	format: "text" | "json" | "html",
 	content: string,
 	replacements: SkeletonReplacement[],
+	source?: SkeletonSource,
 ): Promise<DocumentSkeleton> {
 	return {
 		schemaVersion: DOCUMENT_SKELETON_VERSION,
 		format,
-		source: await sourceFromFile(file),
+		source: source ?? (await sourceFromFile(file, true)),
 		payload: { kind: "text", content },
 		replacements,
 	};
@@ -159,12 +156,14 @@ export async function createPlainTextSkeleton(
 	file: File,
 	content: string,
 	segments: readonly string[],
+	source?: SkeletonSource,
 ): Promise<DocumentSkeleton> {
 	return createTextSkeleton(
 		file,
 		"text",
 		content,
 		locateTextRanges(content, segments),
+		source,
 	);
 }
 
@@ -173,11 +172,12 @@ export async function createPackageSkeleton(
 	format: "docx" | "xlsx",
 	parts: Record<string, string | Blob>,
 	replacements: SkeletonReplacement[],
+	source?: SkeletonSource,
 ): Promise<DocumentSkeleton> {
 	return {
 		schemaVersion: DOCUMENT_SKELETON_VERSION,
 		format,
-		source: await sourceFromFile(file),
+		source: source ?? (await sourceFromFile(file, false)),
 		payload: { kind: "package", parts },
 		replacements,
 	};

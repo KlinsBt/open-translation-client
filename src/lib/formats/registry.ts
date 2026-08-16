@@ -18,6 +18,11 @@ import {
 import { FORMAT_IDS, type FormatId } from "./formatIds";
 import type { FormatAdapter } from "./types";
 import { FORMAT_IMPORT_OPTIONS } from "./options";
+import {
+	assertSafeFileSize,
+	decodeTextBytes,
+	type SafeInputContext,
+} from "./safeInput";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -25,8 +30,18 @@ const READ_WRITE_CAPABILITIES = {
 	roundTrip: true,
 } as const;
 
-async function sniffText(file: File, pattern: RegExp): Promise<boolean> {
-	return pattern.test((await file.slice(0, 4096).text()).trimStart());
+async function sniffText(
+	file: File,
+	pattern: RegExp,
+	context?: SafeInputContext,
+): Promise<boolean> {
+	try {
+		const bytes = new Uint8Array(await file.slice(0, 4096).arrayBuffer());
+		if (context?.signal?.aborted) return false;
+		return pattern.test(decodeTextBytes(bytes).text.trimStart());
+	} catch {
+		return false;
+	}
 }
 
 const adapters = [
@@ -49,7 +64,7 @@ const adapters = [
 		mimeTypes: ["application/json", "text/json"],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.json,
-		sniff: (file) => sniffText(file, /^(?:\{|\[)/),
+		sniff: (file, context) => sniffText(file, /^(?:\{|\[)/, context),
 		validate: validateJsonFile,
 		importFile: importJsonFile,
 		exportFile: generateJsonTranslation,
@@ -63,7 +78,8 @@ const adapters = [
 		],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.docx,
-		sniff: async (file) => (await validateDocxFile(file)).valid,
+		sniff: async (file, context) =>
+			(await validateDocxFile(file, context)).valid,
 		validate: validateDocxFile,
 		importFile: importDocxFile,
 		exportFile: createDocxFromModifiedXmlText,
@@ -78,7 +94,8 @@ const adapters = [
 		],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.xlsx,
-		sniff: async (file) => (await validateXlsxFile(file)).valid,
+		sniff: async (file, context) =>
+			(await validateXlsxFile(file, context)).valid,
 		validate: validateXlsxFile,
 		importFile: importXlsxFile,
 		exportFile: createXlsxFromModifiedXmlText,
@@ -90,8 +107,8 @@ const adapters = [
 		mimeTypes: ["text/html", "application/xhtml+xml"],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.html,
-		sniff: (file) =>
-			sniffText(file, /^<(?:!doctype\s+html|html|head|body)(?:\s|>)/i),
+		sniff: (file, context) =>
+			sniffText(file, /^<(?:!doctype\s+html|html|head|body)(?:\s|>)/i, context),
 		validate: validateHtmlFile,
 		importFile: importHtmlFile,
 		exportFile: createHtmlFromModifiedText,
@@ -118,7 +135,9 @@ function getExtension(fileName: string): string | undefined {
 
 export async function detectFormat(
 	file: File,
+	context?: SafeInputContext,
 ): Promise<FormatAdapter | undefined> {
+	assertSafeFileSize(file);
 	const mimeType = file.type.toLowerCase().split(";", 1)[0].trim();
 	if (mimeType) {
 		const mimeMatch = adapters.find((adapter) =>
@@ -136,7 +155,7 @@ export async function detectFormat(
 	}
 
 	for (const adapter of adapters) {
-		if (await adapter.sniff(file)) return adapter;
+		if (await adapter.sniff(file, context)) return adapter;
 	}
 
 	return undefined;

@@ -19,6 +19,7 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
+	import { readSafeXmlFile, safeInputMessage } from "$lib/formats/safeInput";
 
 	let temporarySaveName: string = $state("");
 
@@ -28,54 +29,36 @@
 	let extractedTbxData: TbData | null = $state(null);
 	let tbxDataIdExists: boolean = $state(false);
 
+	async function processTbxFile(file: File | null): Promise<void> {
+		showLoading.set(true);
+		if (!file || !file.name.toLowerCase().endsWith(".tbx")) {
+			notifyError("Please upload a valid TBX file");
+			showLoading.set(false);
+			return;
+		}
+		try {
+			const tbxFile = await readSafeXmlFile(file);
+			if (!validateTbxFile(tbxFile)) throw new Error("Invalid TBX structure.");
+			extractedTbxData = extractTbxData(tbxFile);
+			if (!extractedTbxData) throw new Error("No TBX data was found.");
+			if (checkIfIdExists(extractedTbxData.id)) {
+				tbxDataIdExists = true;
+				return;
+			}
+			notifySuccess("New TBX file created");
+			await createNewProjectWithTbxFile();
+		} catch (error) {
+			notifyError(safeInputMessage(error));
+			console.error("Invalid TBX file", error);
+		} finally {
+			showLoading.set(false);
+		}
+	}
+
 	function handleTbxFileUpload(event: Event): void {
 		const inputElement = event.target as HTMLInputElement;
 		const file = inputElement.files ? inputElement.files[0] : null;
-		showLoading.update((v) => true);
-
-		if (file && file.name.includes(".tbx")) {
-			const reader = new FileReader();
-
-			reader.onload = (e: ProgressEvent<FileReader>) => {
-				try {
-					if (e.target?.result) {
-						const parser = new DOMParser();
-						const tbxFile = parser.parseFromString(
-							e.target.result as string,
-							"application/xml",
-						);
-						console.log("tbxFile: ", tbxFile);
-						if (!validateTbxFile(tbxFile)) throw Error;
-
-						extractedTbxData = extractTbxData(tbxFile);
-						console.log("tbxData: ", extractedTbxData);
-						if (!extractedTbxData) throw Error;
-
-						if (extractedTbxData) {
-							if (checkIfIdExists(extractedTbxData.id)) {
-								console.log("ID is already defined.");
-								tbxDataIdExists = true;
-								return showLoading.set(false);
-							} else {
-								notifySuccess("New TBX file created");
-								createNewProjectWithTbxFile().then(() => {
-									showLoading.set(false);
-								});
-							}
-						}
-					}
-				} catch (error) {
-					notifyError("Invalid TBX file");
-					console.error("Invalid TBX file", error);
-					showLoading.set(false);
-				}
-			};
-			reader.readAsText(file);
-		} else {
-			notifyError("Please upload a valid TBX file");
-			console.error("Please upload a valid TBX file");
-			showLoading.set(false);
-		}
+		void processTbxFile(file);
 	}
 
 	function checkIfIdExists(id: number | undefined): boolean {
@@ -98,59 +81,8 @@
 	async function handleDropUpload(event: DragEvent): Promise<void> {
 		event.preventDefault();
 		isDragging = false;
-		showLoading.update((v) => true);
-
 		const file = event.dataTransfer?.files ? event.dataTransfer.files[0] : null;
-
-		if (file) {
-			const fileName = file.name.toLowerCase();
-			if (fileName.endsWith(".tbx")) {
-				const reader = new FileReader();
-				reader.onload = (e: ProgressEvent<FileReader>) => {
-					try {
-						if (e.target?.result) {
-							const parser = new DOMParser();
-							const tbxFile = parser.parseFromString(
-								e.target.result as string,
-								"application/xml",
-							);
-							if (!validateTbxFile(tbxFile)) throw Error;
-
-							extractedTbxData = extractTbxData(tbxFile);
-							if (!extractedTbxData) throw Error;
-							console.log("tbxData: ", extractedTbxData);
-							// if (!extractedTbxData) return showLoading.set(false);
-
-							if (extractedTbxData) {
-								if (checkIfIdExists(extractedTbxData.id)) {
-									console.log("ID is already defined.");
-									tbxDataIdExists = true;
-									return showLoading.set(false);
-								} else {
-									notifySuccess("New TBX file created");
-									// console.log("tbxFile: ", tbxFile);
-									createNewProjectWithTbxFile().then(() => {
-										showLoading.set(false);
-									});
-								}
-							}
-						}
-					} catch (error) {
-						notifyError("Invalid TBX file");
-						console.error("Invalid TBX file", error);
-						showLoading.set(false);
-					}
-				};
-				reader.readAsText(file);
-			} else {
-				notifyError("Please drop a valid TBX file");
-				console.error("Please drop a valid TBX file");
-				showLoading.set(false);
-			}
-		} else {
-			console.error("No file dropped");
-			showLoading.set(false);
-		}
+		await processTbxFile(file);
 	}
 
 	async function createNewProjectWithTbxFile() {

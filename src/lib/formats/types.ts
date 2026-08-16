@@ -2,6 +2,7 @@ import type { SegmentMeta, TypeRef, UserData } from "$lib/types/types";
 import type { FormatId } from "./formatIds";
 import type { NeutralDocument } from "./documentModel";
 import type { DocumentSkeleton } from "./skeleton";
+import type { SafeInputContext, SafeInputErrorCode } from "./safeInput";
 
 export interface FormatCapabilities {
 	import: boolean;
@@ -25,6 +26,7 @@ export type FormatOptionValues = Record<string, FormatOptionValue>;
 export interface FormatValidationResult {
 	valid: boolean;
 	reason?: string;
+	errorCode?: SafeInputErrorCode;
 }
 
 export type FormatImportResult =
@@ -53,11 +55,15 @@ export interface FormatAdapter {
 	mimeTypes: readonly string[];
 	capabilities: FormatCapabilities;
 	importOptions: readonly FormatImportOption[];
-	sniff(file: File): Promise<boolean>;
-	validate(file: File): Promise<FormatValidationResult>;
+	sniff(file: File, context?: SafeInputContext): Promise<boolean>;
+	validate(
+		file: File,
+		context?: SafeInputContext,
+	): Promise<FormatValidationResult>;
 	importFile(
 		file: File,
 		options?: Readonly<FormatOptionValues>,
+		context?: SafeInputContext,
 	): Promise<FormatImportResult>;
 	exportFile(translation: UserData): Promise<void>;
 }

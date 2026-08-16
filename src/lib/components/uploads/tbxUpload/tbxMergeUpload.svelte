@@ -4,7 +4,6 @@
 	import { extractTbxData, validateTbxFile } from "./tbxFileFunctions";
 	import {
 		showLoading,
-		tbData,
 		singleTbData,
 		editTb,
 		showTbxModal,
@@ -18,47 +17,37 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
+	import { readSafeXmlFile, safeInputMessage } from "$lib/formats/safeInput";
 
 	let isDragging = $state(false);
 
 	let extractedTbxData: TbData | null = $state(null);
 	let combinedTbxData: TbData = { name: "Merged TBX", entries: [] };
 
+	async function processTbxFile(file: File | null): Promise<void> {
+		showLoading.set(true);
+		if (!file || !file.name.toLowerCase().endsWith(".tbx")) {
+			notifyError("Please upload a valid TBX file");
+			showLoading.set(false);
+			return;
+		}
+		try {
+			const tbxFile = await readSafeXmlFile(file);
+			if (!validateTbxFile(tbxFile)) throw new Error("Invalid TBX structure.");
+			extractedTbxData = extractTbxData(tbxFile);
+			if (!extractedTbxData) throw new Error("No TBX data was found.");
+		} catch (error) {
+			notifyError(safeInputMessage(error));
+			console.error("Invalid TBX file", error);
+		} finally {
+			showLoading.set(false);
+		}
+	}
+
 	function handleTbxFileUpload(event: Event): void {
 		const inputElement = event.target as HTMLInputElement;
 		const file = inputElement.files ? inputElement.files[0] : null;
-
-		if (file && file.name.includes(".tbx")) {
-			const reader = new FileReader();
-
-			reader.onload = (e: ProgressEvent<FileReader>) => {
-				try {
-					if (e.target?.result) {
-						const parser = new DOMParser();
-						const tbxFile = parser.parseFromString(
-							e.target.result as string,
-							"application/xml",
-						);
-						// console.log("tbxFile: ", tbxFile);
-						if (!validateTbxFile(tbxFile)) throw Error;
-
-						extractedTbxData = extractTbxData(tbxFile);
-						// console.log("tbxData: ", extractedTbxData);
-						if (!extractedTbxData) throw Error;
-						return showLoading.set(false);
-					}
-				} catch (error) {
-					notifyError("Invalid TBX file");
-					console.error("Invalid TBX file", error);
-					return showLoading.set(false);
-				}
-			};
-			reader.readAsText(file);
-		} else {
-			notifyError("Please upload a valid TBX file");
-			console.error("Please upload a valid TBX file");
-			return showLoading.set(false);
-		}
+		void processTbxFile(file);
 	}
 
 	function handleDragOver(event: DragEvent): void {
@@ -76,42 +65,7 @@
 
 		const file = event.dataTransfer?.files ? event.dataTransfer.files[0] : null;
 
-		if (file) {
-			const fileName = file.name.toLowerCase();
-			if (fileName.endsWith(".tbx")) {
-				const reader = new FileReader();
-				reader.onload = (e: ProgressEvent<FileReader>) => {
-					try {
-						if (e.target?.result) {
-							const parser = new DOMParser();
-							const tbxFile = parser.parseFromString(
-								e.target.result as string,
-								"application/xml",
-							);
-							if (!validateTbxFile(tbxFile)) throw Error;
-
-							extractedTbxData = extractTbxData(tbxFile);
-							if (!extractedTbxData) throw Error;
-							// console.log("tbxData: ", extractedTbxData);
-							if (!extractedTbxData) return;
-							return showLoading.set(false);
-						}
-					} catch (error) {
-						notifyError("Invalid TBX file");
-						console.error("Invalid TBX file", error);
-						return showLoading.set(false);
-					}
-				};
-				reader.readAsText(file);
-			} else {
-				notifyError("Please drop a valid TBX file");
-				console.error("Please drop a valid TBX file");
-				return showLoading.set(false);
-			}
-		} else {
-			console.error("No file dropped");
-			return showLoading.set(false);
-		}
+		await processTbxFile(file);
 	}
 
 	async function mergeTbxFiles() {

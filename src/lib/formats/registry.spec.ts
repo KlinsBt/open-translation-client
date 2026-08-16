@@ -197,6 +197,27 @@ describe("registered importers and validators", () => {
 		expect(result.skeleton.replacements).toHaveLength(2);
 	});
 
+	it("detects and imports BOM-marked UTF-16 JSON", async () => {
+		const source = '{"message":"Hello"}';
+		const bytes = new Uint8Array(2 + source.length * 2);
+		bytes.set([0xff, 0xfe]);
+		for (let index = 0; index < source.length; index++) {
+			bytes[2 + index * 2] = source.charCodeAt(index);
+		}
+		const file = new File([bytes], "messages.json", {
+			type: "application/json",
+		});
+		await expect(getFormatAdapter("json").validate(file)).resolves.toEqual({
+			valid: true,
+		});
+		const result = await getFormatAdapter("json").importFile(file);
+		expect(result).toMatchObject({ kind: "segments", segments: ["Hello"] });
+		expect(result.skeleton.source).toMatchObject({
+			encoding: "utf-16le",
+			hasBom: true,
+		});
+	});
+
 	it("imports HTML and retains replacement metadata", async () => {
 		const file = textFile(
 			"<!doctype html><html><body><p>Hello world.</p></body></html>",
@@ -334,7 +355,7 @@ describe("registered importers and validators", () => {
 			getFormatAdapter("json").validate(
 				textFile("{broken", "broken.json", "application/json"),
 			),
-		).resolves.toMatchObject({ valid: false });
+		).resolves.toMatchObject({ valid: false, errorCode: "JSON_MALFORMED" });
 
 		const zip = await zipFile({ "other.xml": "<other/>" }, "wrong.docx");
 		await expect(getFormatAdapter("docx").validate(zip)).resolves.toMatchObject(

@@ -4,14 +4,8 @@
 	// import PdfUpload from "$lib/components/uploads/pdfInput.svelte";
 	// import Compr from "$lib/components/uploads/compression/msgPackUpload.svelte";
 	// import { loadTranslationsUserData } from "$lib/functions/saveData/localStorage";
-	import TextUpload from "$lib/components/uploads/textUpload.svelte";
-	import JsonUpload from "$lib/components/uploads/jsonUpload.svelte";
-	import DocxUpload from "$lib/components/uploads/docxUpload.svelte";
-	import ExcelUpload from "$lib/components/uploads/xlsxUpload.svelte";
-	import HtmlUpload from "$lib/components/uploads/htmlUpload.svelte";
 	import SaveFileUpload from "$lib/components/uploads/saveFileUploads/saveFileUpload.svelte";
 	import ProjectCard from "./components/projectCards.svelte";
-	import RightArrow from "../svg/rightArrow.svelte";
 	import {
 		sortUserDataByDateAscending,
 		sortUserDataByDateDescending,
@@ -35,7 +29,6 @@
 	import ParsingPreferencesModal from "./components/parsingPreferencesModal.svelte";
 	import UniversalUpload from "$lib/components/uploads/universalUpload.svelte";
 
-	let newProject: number = $state(0);
 	let sortByName: boolean = $state(false); // default sort by date
 	let ascendingOrder: boolean = $state(true); // default ascending order
 
@@ -104,97 +97,73 @@
 <ParsingPreferencesModal bind:show={showParsingModal} bind:parsingPreferences />
 <UniversalUpload bind:show={showNewProjectModal} />
 
-{#if newProject === 0}
-	<div class="dashboard">
-		<div class="order-bar" style="margin: 0 0 20px 0;">
-			<button class:active={sortByName} onclick={toggleSortByName}>
-				Name {sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
-			</button>
-			<button class:active={!sortByName} onclick={toggleSortByDate}>
-				Date {!sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
-			</button>
-		</div>
-		<div class="order-bar">
-			<!-- <span>Sort by:</span> -->
-			<button class="tm-btn" onclick={() => (showParsingModal = true)}>
-				Parsing preferences
-			</button>
-			<button
-				class="tm-btn"
-				onclick={() => {
-					goto("/tm");
-				}}
-			>
-				Translation Memory
-			</button>
+<div class="dashboard">
+	<div class="order-bar" style="margin: 0 0 20px 0;">
+		<button class:active={sortByName} onclick={toggleSortByName}>
+			Name {sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
+		</button>
+		<button class:active={!sortByName} onclick={toggleSortByDate}>
+			Date {!sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
+		</button>
+	</div>
+	<div class="order-bar">
+		<!-- <span>Sort by:</span> -->
+		<button class="tm-btn" onclick={() => (showParsingModal = true)}>
+			Parsing preferences
+		</button>
+		<button
+			class="tm-btn"
+			onclick={() => {
+				goto("/tm");
+			}}
+		>
+			Translation Memory
+		</button>
 
-			<button
-				class="tm-btn"
-				onclick={() => {
-					goto("/tb");
-				}}
-			>
-				Term Base
-			</button>
-		</div>
+		<button
+			class="tm-btn"
+			onclick={() => {
+				goto("/tb");
+			}}
+		>
+			Term Base
+		</button>
+	</div>
 
-		<div class="project-cards">
-			{#if $userData?.length > 0}
-				{#each $userData as file, i}
-					<ProjectCard {file} />
-				{/each}
-			{/if}
-			<div class="add-project">
-				<div class="add-icon">+</div>
-				<div>
-					<button
-						onclick={() => {
-							showNewProjectModal = true;
-						}}>Create new project</button
-					>
-					<button
-						onclick={() => {
-							showUploadModal = true;
-						}}>Upload project file</button
-					>
-				</div>
+	<div class="project-cards">
+		{#if $userData?.length > 0}
+			{#each $userData as file, i}
+				<ProjectCard {file} />
+			{/each}
+		{/if}
+		<div class="add-project">
+			<div class="add-icon">+</div>
+			<div>
+				<button
+					onclick={() => {
+						showNewProjectModal = true;
+					}}>Create new project</button
+				>
+				<button
+					onclick={() => {
+						showUploadModal = true;
+					}}>Upload project file</button
+				>
 			</div>
 		</div>
 	</div>
-	<div class="buttons-container">
-		<button
-			class="back-btn back"
-			onclick={() => {
-				goto("/");
-			}}
-		>
-			<!-- <RightArrow /> -->
-			Close App
-		</button>
-	</div>
-{:else if newProject === 1}
-	<h1 class="section-title">Create Translation Project</h1>
-
-	<div class="new-file-container">
-		<JsonUpload />
-		<DocxUpload />
-		<ExcelUpload />
-		<HtmlUpload />
-		<TextUpload />
-		<!-- <PdfUpload /> -->
-		<!-- <Compr /> -->
-	</div>
-
+</div>
+<div class="buttons-container">
 	<button
 		class="back-btn back"
 		onclick={() => {
-			newProject = 0;
+			goto("/");
 		}}
 	>
-		<RightArrow />
-		Go Back
+		<!-- <RightArrow /> -->
+		Close App
 	</button>
-{/if}
+</div>
 
 <style>
 	.dashboard {
@@ -285,17 +254,6 @@
 		filter: brightness(1.1);
 	}
 
-	.new-file-container {
-		display: flex;
-		justify-content: center;
-		align-items: start;
-		flex-wrap: wrap;
-		padding: 0px;
-		gap: 1rem;
-		padding: 0px 0px 50px 0px;
-		min-height: 75vh;
-	}
-
 	.save-file-upload-container {
 		display: flex;
 		justify-content: center;
@@ -334,13 +292,6 @@
 
 	.buttons-container > button {
 		margin: 10px 0px;
-	}
-
-	.section-title {
-		text-align: center;
-		font-size: 2rem;
-		font-weight: 600;
-		color: var(--color-theme-3);
 	}
 
 	.tm-btn {

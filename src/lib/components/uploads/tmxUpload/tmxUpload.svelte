@@ -19,6 +19,7 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
+	import { readSafeXmlFile, safeInputMessage } from "$lib/formats/safeInput";
 
 	let temporarySaveName: string = $state("");
 
@@ -28,54 +29,39 @@
 	let extractedTmxData: TmData | null = $state(null);
 	let tmxDataIdExists: boolean = $state(false);
 
+	async function processTmxFile(file: File | null): Promise<void> {
+		showLoading.set(true);
+		if (!file || !file.name.toLowerCase().endsWith(".tmx")) {
+			notifyError("Please upload a valid TMX file");
+			showLoading.set(false);
+			return;
+		}
+		try {
+			const tmxFile = await readSafeXmlFile(file);
+			if (!validateTmxFile(tmxFile)) throw new Error("Invalid TMX structure.");
+			extractedTmxData = extractTmxData(tmxFile);
+			if (!extractedTmxData) throw new Error("No TMX data was found.");
+			if (
+				extractedTmxData.id !== undefined &&
+				checkIfIdExists(extractedTmxData.id)
+			) {
+				tmxDataIdExists = true;
+				return;
+			}
+			notifySuccess("New TMX file created");
+			await createNewProjectWithTmxFile();
+		} catch (error) {
+			notifyError(safeInputMessage(error));
+			console.error("Invalid TMX file", error);
+		} finally {
+			showLoading.set(false);
+		}
+	}
+
 	function handleTmxFileUpload(event: Event): void {
 		const inputElement = event.target as HTMLInputElement;
 		const file = inputElement.files ? inputElement.files[0] : null;
-		showLoading.update((v) => true);
-
-		if (file && file.name.includes(".tmx")) {
-			const reader = new FileReader();
-
-			reader.onload = (e: ProgressEvent<FileReader>) => {
-				try {
-					if (e.target?.result) {
-						const parser = new DOMParser();
-						const tmxFile = parser.parseFromString(
-							e.target.result as string,
-							"application/xml",
-						);
-						console.log("tmxFile: ", tmxFile);
-						if (!validateTmxFile(tmxFile)) throw Error;
-
-						extractedTmxData = extractTmxData(tmxFile);
-						console.log("tmxData: ", extractedTmxData);
-						if (!extractedTmxData) throw Error;
-
-						if (extractedTmxData && extractedTmxData.id !== undefined) {
-							if (checkIfIdExists(extractedTmxData.id)) {
-								console.log("ID is already defined.");
-								tmxDataIdExists = true;
-								return showLoading.set(false);
-							} else {
-								notifySuccess("New TMX file created");
-								createNewProjectWithTmxFile().then(() => {
-									showLoading.set(false);
-								});
-							}
-						}
-					}
-				} catch (error) {
-					notifyError("Invalid TMX file");
-					console.error("Invalid TMX file", error);
-					showLoading.set(false);
-				}
-			};
-			reader.readAsText(file);
-		} else {
-			notifyError("Please upload a valid TMX file");
-			console.error("Please upload a valid TMX file");
-			showLoading.set(false);
-		}
+		void processTmxFile(file);
 	}
 
 	function checkIfIdExists(id: number | undefined): boolean {
@@ -97,58 +83,8 @@
 	async function handleDrop(event: DragEvent): Promise<void> {
 		event.preventDefault();
 		isDragging = false;
-		showLoading.update((v) => true);
-
 		const file = event.dataTransfer?.files ? event.dataTransfer.files[0] : null;
-
-		if (file) {
-			const fileName = file.name.toLowerCase();
-			if (fileName.endsWith(".tmx")) {
-				const reader = new FileReader();
-				reader.onload = (e: ProgressEvent<FileReader>) => {
-					try {
-						if (e.target?.result) {
-							const parser = new DOMParser();
-							const tmxFile = parser.parseFromString(
-								e.target.result as string,
-								"application/xml",
-							);
-							if (!validateTmxFile(tmxFile)) throw Error;
-
-							extractedTmxData = extractTmxData(tmxFile);
-							if (!extractedTmxData) throw Error;
-							console.log("tmxData: ", extractedTmxData);
-							if (!extractedTmxData) return showLoading.set(false);
-
-							if (extractedTmxData && extractedTmxData.id !== undefined) {
-								if (checkIfIdExists(extractedTmxData.id)) {
-									console.log("ID is already defined.");
-									tmxDataIdExists = true;
-									return showLoading.set(false);
-								} else {
-									notifySuccess("New TMX file created");
-									createNewProjectWithTmxFile().then(() => {
-										showLoading.set(false);
-									});
-								}
-							}
-						}
-					} catch (error) {
-						notifyError("Invalid TMX file");
-						console.error("Invalid TMX file", error);
-						showLoading.set(false);
-					}
-				};
-				reader.readAsText(file);
-			} else {
-				notifyError("Please drop a valid TMX file");
-				console.error("Please drop a valid TMX file");
-				showLoading.set(false);
-			}
-		} else {
-			console.error("No file dropped");
-			showLoading.set(false);
-		}
+		await processTmxFile(file);
 	}
 
 	async function createNewProjectWithTmxFile() {

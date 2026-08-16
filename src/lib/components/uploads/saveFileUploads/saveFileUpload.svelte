@@ -1,6 +1,5 @@
 <script lang="ts">
 	import {
-		saveAndOpenNewFileWithStringArray,
 		saveAndOpenNewFileWithStringArrayFromSaveFile,
 		updateAndOpenNewFileWithStringArray,
 	} from "$lib/functions/saveTranslationOnIndexedDb.js";
@@ -20,103 +19,69 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
+	import {
+		readSafeTextFile,
+		readSafeXmlFile,
+		parseSafeJson,
+		safeInputMessage,
+	} from "$lib/formats/safeInput";
 
 	let isDragging = $state(false);
 
-	let sameIdProject: UserData | null = null;
 	let saveData: UserData | null = null;
 	let saveFileIdExists: boolean = $state(false);
 
-	async function handleTranslationFileUpload(event: Event): Promise<void> {
-		const inputElement = event.target as HTMLInputElement;
-		const file = inputElement.files ? inputElement.files[0] : null;
-
-		if (file && file.type === "application/json") {
-			const reader = new FileReader();
-			await setLoadingAndRender();
-
-			reader.onload = (e: ProgressEvent<FileReader>) => {
-				try {
-					if (e.target?.result) {
-						const parsedData = JSON.parse(e.target.result as string);
-						if (validateJsonData(parsedData)) {
-							saveData = parsedData;
-							console.log("saveData: ", saveData);
-							if (checkIfUniqueId(parsedData.id)) {
-								console.log("ID is already defined.");
-								showLoading.set(false);
-								return (saveFileIdExists = true);
-							} else {
-								notifySuccess("New project created");
-								createNewProjectWithSaveFile();
-							}
-						} else {
-							notifyError("Invalid JSON file");
-							console.error("Invalid JSON structure");
-							showLoading.set(false);
-						}
-					}
-				} catch (error) {
-					notifyError("Invalid JSON file");
-					console.error("Invalid JSON file", error);
-					showLoading.set(false);
+	async function processTranslationFile(file: File | null): Promise<void> {
+		await setLoadingAndRender();
+		try {
+			if (!file) throw new Error("No file was selected.");
+			const fileName = file.name.toLowerCase();
+			if (fileName.endsWith(".json")) {
+				const { text } = await readSafeTextFile(file);
+				const parsedData = parseSafeJson<UserData>(text);
+				if (!validateJsonData(parsedData))
+					throw new Error("Invalid Open TLC JSON project structure.");
+				saveData = parsedData;
+			} else if (fileName.endsWith(".xlf") || fileName.endsWith(".xliff")) {
+				const xliffDocument = await readSafeXmlFile(file);
+				const version = getXliffVersion(xliffDocument);
+				if (version === 1.2) {
+					saveData = extractXliff1_2Data(
+						xliffDocument,
+						validateXliff1_2Data(xliffDocument),
+					);
+				} else if (version >= 2.0) {
+					saveData = extractXliff2_0Data(
+						xliffDocument,
+						validateXliff2_0Data(xliffDocument),
+					);
+				} else {
+					throw new Error("Unsupported XLIFF version.");
 				}
-			};
-			reader.readAsText(file);
-		} else if (file && file.name.includes(".xliff")) {
-			const reader = new FileReader();
-
-			reader.onload = (e: ProgressEvent<FileReader>) => {
-				try {
-					if (e.target?.result) {
-						const parser = new DOMParser();
-						const xliffDocument = parser.parseFromString(
-							e.target.result as string,
-							"application/xml",
-						);
-						let version = getXliffVersion(xliffDocument);
-						if (version === 1.2) {
-							let withMetaData = validateXliff1_2Data(xliffDocument);
-							saveData = extractXliff1_2Data(xliffDocument, withMetaData);
-							console.log("xliffData: ", saveData);
-							if (!saveData) return;
-							if (checkIfUniqueId(saveData.id!)) {
-								console.log("ID is already defined.");
-								showLoading.set(false);
-								return (saveFileIdExists = true);
-							} else {
-								notifySuccess("New project created");
-								createNewProjectWithSaveFile();
-							}
-							showLoading.set(false);
-						} else if (version >= 2.0) {
-							let withMetaData = validateXliff2_0Data(xliffDocument);
-							saveData = extractXliff2_0Data(xliffDocument, withMetaData);
-							console.log("xliffData: ", saveData);
-							if (!saveData) return;
-							if (checkIfUniqueId(saveData.id!)) {
-								console.log("ID is already defined.");
-								showLoading.set(false);
-								return (saveFileIdExists = true);
-							} else {
-								notifySuccess("New project created");
-								createNewProjectWithSaveFile();
-							}
-							showLoading.set(false);
-						}
-					}
-				} catch (error) {
-					notifyError("Invalid XLIFF file");
-					console.error("Invalid XLIFF file", error);
-					showLoading.set(false);
-				}
-			};
-			reader.readAsText(file);
-		} else {
-			notifyError("Please upload a valid JSON or XLIFF file");
-			console.error("Please upload a valid JSON or XLIFF file");
+			} else {
+				throw new Error("Please upload a JSON, XLF, or XLIFF project file.");
+			}
+			if (!saveData)
+				throw new Error("The project file contains no project data.");
+			if (saveData.id !== undefined && checkIfUniqueId(saveData.id)) {
+				saveFileIdExists = true;
+				return;
+			}
+			notifySuccess("New project created");
+			createNewProjectWithSaveFile();
+		} catch (error) {
+			notifyError(safeInputMessage(error));
+			console.error("Invalid project file", error);
+		} finally {
 			showLoading.set(false);
 		}
+	}
+
+	async function handleTranslationFileUpload(event: Event): Promise<void> {
+		const inputElement = event.target as HTMLInputElement;
+		await processTranslationFile(
+			inputElement.files ? inputElement.files[0] : null,
+		);
 	}
 
 	function handleDragOver(event: DragEvent): void {
@@ -132,99 +97,7 @@
 		event.preventDefault();
 		isDragging = false;
 		const file = event.dataTransfer?.files ? event.dataTransfer.files[0] : null;
-		await setLoadingAndRender();
-
-		if (file) {
-			const fileName = file.name.toLowerCase();
-			if (fileName.endsWith(".json")) {
-				// Handle JSON
-				const reader = new FileReader();
-				reader.onload = (e: ProgressEvent<FileReader>) => {
-					try {
-						if (e.target?.result) {
-							const parsedData = JSON.parse(e.target.result as string);
-							if (validateJsonData(parsedData)) {
-								saveData = parsedData;
-								console.log("data: ", saveData);
-								if (checkIfUniqueId(parsedData.id)) {
-									console.log("ID is already defined.");
-									showLoading.set(false);
-									return (saveFileIdExists = true);
-								} else {
-									notifySuccess("New project created");
-									createNewProjectWithSaveFile();
-								}
-								showLoading.set(false);
-							} else {
-								notifyError("Invalid JSON file");
-								console.error("Invalid JSON structure");
-								showLoading.set(false);
-							}
-						}
-					} catch (error) {
-						console.error("Invalid JSON file", error);
-						showLoading.set(false);
-					}
-				};
-				reader.readAsText(file);
-			} else if (fileName.endsWith(".xlf") || fileName.endsWith(".xliff")) {
-				// Handle XLIFF
-				const reader = new FileReader();
-				reader.onload = (e: ProgressEvent<FileReader>) => {
-					try {
-						if (e.target?.result) {
-							const parser = new DOMParser();
-							const xliffDocument = parser.parseFromString(
-								e.target.result as string,
-								"application/xml",
-							);
-							let version = getXliffVersion(xliffDocument);
-							if (version === 1.2) {
-								let withMetaData = validateXliff1_2Data(xliffDocument);
-								saveData = extractXliff1_2Data(xliffDocument, withMetaData);
-								console.log("xliffData: ", saveData);
-								if (!saveData) return;
-								if (checkIfUniqueId(saveData.id!)) {
-									console.log("ID is already defined.");
-									showLoading.set(false);
-									return (saveFileIdExists = true);
-								} else {
-									notifySuccess("New project created");
-									createNewProjectWithSaveFile();
-								}
-								showLoading.set(false);
-							} else if (version >= 2.0) {
-								let withMetaData = validateXliff2_0Data(xliffDocument);
-								saveData = extractXliff2_0Data(xliffDocument, withMetaData);
-								console.log("xliffData: ", saveData);
-								if (!saveData) return;
-								if (checkIfUniqueId(saveData.id!)) {
-									console.log("ID is already defined.");
-									showLoading.set(false);
-									return (saveFileIdExists = true);
-								} else {
-									notifySuccess("New project created");
-									createNewProjectWithSaveFile();
-								}
-								showLoading.set(false);
-							}
-						}
-					} catch (error) {
-						notifyError("Invalid XLIFF file");
-						console.error("Invalid XLIFF file", error);
-						showLoading.set(false);
-					}
-				};
-				reader.readAsText(file);
-			} else {
-				notifyError("Please drop a valid JSON or XLIFF file");
-				console.error("Please drop a valid JSON or XLIFF file");
-				showLoading.set(false);
-			}
-		} else {
-			console.error("No file dropped");
-			showLoading.set(false);
-		}
+		await processTranslationFile(file);
 	}
 
 	function createNewProjectWithSaveFile() {
@@ -245,7 +118,6 @@
 
 	function checkIfUniqueId(id: number): boolean {
 		let singleData: UserData = $userData.find((d) => d.id === id) as UserData;
-		sameIdProject = singleData;
 		if (singleData) {
 			return true;
 		} else {

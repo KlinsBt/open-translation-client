@@ -18,6 +18,11 @@
 	} from "$lib/formats/types";
 	import { normalizeImportOptions } from "$lib/formats/options";
 	import {
+		SafeInputError,
+		safeInputMessage,
+		type SafeInputProgress,
+	} from "$lib/formats/safeInput";
+	import {
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
@@ -37,6 +42,8 @@
 	let detectionComplete: boolean = $state(false);
 	let isProcessing: boolean = $state(false);
 	let importOptionValues: FormatOptionValues = $state({});
+	let importController: AbortController | null = $state(null);
+	let importProgress: SafeInputProgress | null = $state(null);
 	const acceptedFormats = getFormatAcceptValue();
 	const supportedFormatLabels = getSupportedFormatLabels();
 
@@ -55,19 +62,44 @@
 	async function selectFile(file: File) {
 		uploadedFile = file;
 		detectionComplete = false;
-		const detected = await detectFormat(file);
-		if (uploadedFile !== file) return;
-		detectedFormatId = detected?.id ?? null;
-		importOptionValues = detected ? normalizeImportOptions(detected.id) : {};
-		detectionComplete = true;
-		temporarySaveName = file.name.replace(/\.[^/.]+$/, "");
+		try {
+			const detected = await detectFormat(file);
+			if (uploadedFile !== file) return;
+			detectedFormatId = detected?.id ?? null;
+			importOptionValues = detected ? normalizeImportOptions(detected.id) : {};
+			temporarySaveName = file.name.replace(/\.[^/.]+$/, "");
+		} catch (error) {
+			if (uploadedFile !== file) return;
+			detectedFormatId = null;
+			notifyError(safeInputMessage(error));
+		} finally {
+			if (uploadedFile === file) detectionComplete = true;
+		}
 	}
 
 	function clearSelectedFile() {
+		importController?.abort();
 		uploadedFile = null;
 		detectedFormatId = null;
 		detectionComplete = false;
 		importOptionValues = {};
+	}
+
+	function cancelImport() {
+		importController?.abort();
+	}
+
+	function closeModal() {
+		importController?.abort();
+		show = false;
+	}
+
+	function progressPercent(): number {
+		if (!importProgress || importProgress.total <= 0) return 0;
+		return Math.min(
+			100,
+			Math.round((importProgress.completed / importProgress.total) * 100),
+		);
 	}
 
 	function setImportOption(id: string, value: FormatOptionValue) {
@@ -118,11 +150,16 @@
 
 		isProcessing = true;
 		showLoading.set(true);
+		importController = new AbortController();
+		const context = {
+			signal: importController.signal,
+			onProgress: (progress: SafeInputProgress) => (importProgress = progress),
+		};
 
 		try {
 			const timestamp = new Date().valueOf().toString();
 			const adapter = getFormatAdapter(detectedFormatId);
-			const validation = await adapter.validate(uploadedFile);
+			const validation = await adapter.validate(uploadedFile, context);
 			if (!validation.valid) {
 				throw new Error(validation.reason ?? `Invalid ${adapter.label} file.`);
 			}
@@ -134,6 +171,7 @@
 			const imported = await adapter.importFile(
 				uploadedFile,
 				normalizedOptions,
+				context,
 			);
 			if (imported.kind === "text") {
 				await saveAndOpenNewFileWithTextString(
@@ -169,9 +207,13 @@
 			resetForm();
 		} catch (error) {
 			console.error("Error processing file:", error);
-			notifyError("Error processing file. Please try again.");
+			if (!(error instanceof SafeInputError && error.code === "ABORTED")) {
+				notifyError(safeInputMessage(error));
+			}
 		} finally {
 			isProcessing = false;
+			importController = null;
+			importProgress = null;
 			showLoading.set(false);
 		}
 	}
@@ -184,6 +226,7 @@
 		detectedFormatId = null;
 		detectionComplete = false;
 		importOptionValues = {};
+		importProgress = null;
 	}
 </script>
 
@@ -322,13 +365,26 @@
 							</fieldset>
 						{/if}
 
-						<button
-							class="btn save"
-							onclick={processAndCreateProject}
-							disabled={!sourceLanguage || !targetLanguage || isProcessing}
-						>
-							{isProcessing ? "Processing..." : "Create Project"}
-						</button>
+						{#if isProcessing && importProgress}
+							<div class="import-progress" aria-live="polite">
+								<progress value={progressPercent()} max="100"></progress>
+								<small>{importProgress.message} ({progressPercent()}%)</small>
+							</div>
+						{/if}
+
+						<div class="project-actions">
+							<button
+								class="btn save"
+								onclick={processAndCreateProject}
+								disabled={!sourceLanguage || !targetLanguage || isProcessing}
+							>
+								{isProcessing ? "Processing..." : "Create Project"}
+							</button>
+							{#if isProcessing}
+								<button class="btn cancel" onclick={cancelImport}>Cancel</button
+								>
+							{/if}
+						</div>
 					</div>
 				{/if}
 			</div>
@@ -342,7 +398,7 @@
 	role="dialog"
 	tabindex="-1"
 	class="modal-element-global {show ? '' : 'close-modal-global'}"
-	onclick={() => (show = false)}
+	onclick={closeModal}
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -600,6 +656,27 @@
 	.filter-options small {
 		grid-column: 1 / -1;
 		line-height: 1.3;
+	}
+
+	.import-progress {
+		display: grid;
+		gap: 5px;
+		color: var(--color-theme-5);
+	}
+
+	.import-progress progress {
+		width: 100%;
+	}
+
+	.project-actions {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 8px;
+	}
+
+	.project-actions .cancel {
+		background: #c02b2b;
+		color: white;
 	}
 
 	select {

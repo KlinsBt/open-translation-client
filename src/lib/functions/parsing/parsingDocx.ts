@@ -3,6 +3,7 @@ import {
 	type SplitPiece,
 } from "./splitWithPreferences";
 import { getActiveTokens, getDefaultTokens } from "./parsingPreferences";
+import { safeParseXml } from "$lib/formats/safeInput";
 
 export interface DocxSegmentFragment {
 	node: Element;
@@ -111,8 +112,7 @@ export function segmentDocxXml(
 	documentXml: string,
 	tokensOverride?: string[],
 ): DocxSegmentationResult {
-	const parser = new DOMParser();
-	const xmlDoc = parser.parseFromString(documentXml, "application/xml");
+	const xmlDoc = safeParseXml(documentXml);
 	const paragraphs = Array.from(xmlDoc.getElementsByTagName("w:p"));
 	const segments: DocxSegment[] = [];
 	const meta: DocxSegmentationResult["meta"] = [];
@@ -272,8 +272,7 @@ function applyWithMeta(
 		}[];
 	}[],
 ): string {
-	const parser = new DOMParser();
-	const xmlDoc = parser.parseFromString(documentXml, "application/xml");
+	const xmlDoc = safeParseXml(documentXml);
 	const paragraphs = Array.from(xmlDoc.getElementsByTagName("w:p"));
 	const nodePieces = new Map<Element, string[]>();
 

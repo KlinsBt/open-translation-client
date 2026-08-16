@@ -1,4 +1,3 @@
-import JSZip from "jszip";
 import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
 import { segmentHtmlContent } from "$lib/functions/parsing/parsingHtml";
 import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
@@ -29,41 +28,47 @@ import {
 	parsePositiveRanges,
 	matchesJsonSelector,
 } from "./options";
+import {
+	createSkeletonSource,
+	inspectSafeZipFile,
+	parseSafeJson,
+	readSafeTextFile,
+	readSafeZipPackage,
+	SafeInputError,
+	type SafeInputContext,
+} from "./safeInput";
 
-type PackageContent = { [key: string]: string | Blob };
-
-async function readZipPackage(file: File): Promise<PackageContent> {
-	const zip = await JSZip.loadAsync(await file.arrayBuffer());
-	const content: PackageContent = {};
-
-	for (const [filePath, entry] of Object.entries(zip.files)) {
-		const isMedia =
-			filePath.startsWith("word/media") || filePath.startsWith("xl/media");
-		content[filePath] = await entry.async(isMedia ? "blob" : "string");
-	}
-
-	return content;
+function invalidResult(
+	error: unknown,
+	fallbackReason: string,
+): FormatValidationResult {
+	return error instanceof SafeInputError
+		? { valid: false, reason: error.message, errorCode: error.code }
+		: { valid: false, reason: fallbackReason };
 }
 
 export async function validateDocxFile(
 	file: File,
+	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
 	try {
-		const zip = await JSZip.loadAsync(await file.arrayBuffer());
-		return zip.file("word/document.xml")
+		const archive = await inspectSafeZipFile(file, context);
+		return archive.entries.some((entry) => entry.path === "word/document.xml")
 			? { valid: true }
 			: { valid: false, reason: "The DOCX package has no word/document.xml." };
-	} catch {
-		return { valid: false, reason: "The file is not a readable DOCX package." };
+	} catch (error) {
+		return invalidResult(error, "The file is not a readable DOCX package.");
 	}
 }
 
 export async function importDocxFile(
 	file: File,
 	options?: Readonly<FormatOptionValues>,
+	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
 	const filterOptions = normalizeImportOptions("docx", options);
-	const content = await readZipPackage(file);
+	const archive = await readSafeZipPackage(file, context);
+	const content = archive.parts;
 	const documentXml = content["word/document.xml"];
 	if (typeof documentXml !== "string") {
 		throw new Error("The DOCX package has no word/document.xml.");
@@ -115,7 +120,13 @@ export async function importDocxFile(
 				},
 			})),
 		}),
-		skeleton: await createPackageSkeleton(file, "docx", content, replacements),
+		skeleton: await createPackageSkeleton(
+			file,
+			"docx",
+			content,
+			replacements,
+			archive.source,
+		),
 		filterOptions,
 		typeRef: content,
 		segmentsMeta: meta,
@@ -124,23 +135,27 @@ export async function importDocxFile(
 
 export async function validateJsonFile(
 	file: File,
+	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
 	try {
-		JSON.parse(await file.text());
+		const { text } = await readSafeTextFile(file, context);
+		parseSafeJson(text);
 		return { valid: true };
-	} catch {
-		return { valid: false, reason: "The file does not contain valid JSON." };
+	} catch (error) {
+		return invalidResult(error, "The file does not contain valid JSON.");
 	}
 }
 
 export async function importJsonFile(
 	file: File,
 	options?: Readonly<FormatOptionValues>,
+	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
 	const filterOptions = normalizeImportOptions("json", options);
 	const selectors = parseList(filterOptions.pathSelectors);
-	const content = await file.text();
-	const jsonData = JSON.parse(content);
+	const read = await readSafeTextFile(file, context);
+	const content = read.text;
+	const jsonData = parseSafeJson(content);
 	const segments: string[] = [];
 	const meta: { path: string[]; separator?: string }[] = [];
 	const replacements: JsonValueReplacement[] = [];
@@ -187,23 +202,39 @@ export async function importJsonFile(
 				segmentIndex: index,
 			})),
 		}),
-		skeleton: await createTextSkeleton(file, "json", content, replacements),
+		skeleton: await createTextSkeleton(
+			file,
+			"json",
+			content,
+			replacements,
+			createSkeletonSource(file, read),
+		),
 		filterOptions,
 		typeRef: { data: jsonData, meta } as unknown as TypeRef,
 		segmentsMeta: meta,
 	};
 }
 
-export async function validateTextFile(): Promise<FormatValidationResult> {
-	return { valid: true };
+export async function validateTextFile(
+	file: File,
+	context?: SafeInputContext,
+): Promise<FormatValidationResult> {
+	try {
+		await readSafeTextFile(file, context);
+		return { valid: true };
+	} catch (error) {
+		return invalidResult(error, "The file is not readable text.");
+	}
 }
 
 export async function importTextFile(
 	file: File,
 	options?: Readonly<FormatOptionValues>,
+	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
 	const filterOptions = normalizeImportOptions("text", options);
-	const text = await file.text();
+	const read = await readSafeTextFile(file, context);
+	const text = read.text;
 	const mode = filterOptions.segmentationMode;
 	let segments: string[];
 	if (mode === "document") {
@@ -229,30 +260,38 @@ export async function importTextFile(
 				segmentIndex: index,
 			})),
 		}),
-		skeleton: await createPlainTextSkeleton(file, text, segments),
+		skeleton: await createPlainTextSkeleton(
+			file,
+			text,
+			segments,
+			createSkeletonSource(file, read),
+		),
 		filterOptions,
 	};
 }
 
 export async function validateXlsxFile(
 	file: File,
+	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
 	try {
-		const zip = await JSZip.loadAsync(await file.arrayBuffer());
-		return zip.file("xl/workbook.xml")
+		const archive = await inspectSafeZipFile(file, context);
+		return archive.entries.some((entry) => entry.path === "xl/workbook.xml")
 			? { valid: true }
 			: { valid: false, reason: "The XLSX package has no xl/workbook.xml." };
-	} catch {
-		return { valid: false, reason: "The file is not a readable XLSX package." };
+	} catch (error) {
+		return invalidResult(error, "The file is not a readable XLSX package.");
 	}
 }
 
 export async function importXlsxFile(
 	file: File,
 	options?: Readonly<FormatOptionValues>,
+	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
 	const filterOptions = normalizeImportOptions("xlsx", options);
-	const content = await readZipPackage(file);
+	const archive = await readSafeZipPackage(file, context);
+	const content = archive.parts;
 	if (typeof content["xl/workbook.xml"] !== "string") {
 		throw new Error("The XLSX package has no xl/workbook.xml.");
 	}
@@ -317,7 +356,13 @@ export async function importXlsxFile(
 			sourceSegments: allSegments,
 			sourceLocations,
 		}),
-		skeleton: await createPackageSkeleton(file, "xlsx", content, replacements),
+		skeleton: await createPackageSkeleton(
+			file,
+			"xlsx",
+			content,
+			replacements,
+			archive.source,
+		),
 		filterOptions,
 		typeRef: content,
 	};
@@ -325,19 +370,26 @@ export async function importXlsxFile(
 
 export async function validateHtmlFile(
 	file: File,
+	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
-	const text = await file.text();
-	return text.trim().length > 0
-		? { valid: true }
-		: { valid: false, reason: "The HTML file is empty." };
+	try {
+		const { text } = await readSafeTextFile(file, context);
+		return text.trim().length > 0
+			? { valid: true }
+			: { valid: false, reason: "The HTML file is empty." };
+	} catch (error) {
+		return invalidResult(error, "The HTML file is not readable text.");
+	}
 }
 
 export async function importHtmlFile(
 	file: File,
 	options?: Readonly<FormatOptionValues>,
+	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
 	const filterOptions = normalizeImportOptions("html", options);
-	const html = await file.text();
+	const read = await readSafeTextFile(file, context);
+	const html = read.text;
 	const { allSegments, meta } = segmentHtmlContent(html, undefined, {
 		includeTextNodes: filterOptions.includeTextNodes === true,
 		translatableAttributes: parseList(filterOptions.translatableAttributes),
@@ -377,7 +429,13 @@ export async function importHtmlFile(
 					}) satisfies SourceLocation,
 			),
 		}),
-		skeleton: await createTextSkeleton(file, "html", html, replacements),
+		skeleton: await createTextSkeleton(
+			file,
+			"html",
+			html,
+			replacements,
+			createSkeletonSource(file, read),
+		),
 		filterOptions,
 		typeRef: html,
 		segmentsMeta: meta,

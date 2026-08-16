@@ -3,6 +3,7 @@ import {
 	type SplitPiece,
 } from "./splitWithPreferences";
 import { getActiveTokens, getDefaultTokens } from "./parsingPreferences";
+import { safeParseXml } from "$lib/formats/safeInput";
 
 export interface SharedStringFragment {
 	node: Element;
@@ -89,8 +90,7 @@ export function segmentSharedStringsXml(
 	sharedStringsXml: string,
 	tokensOverride?: string[],
 ): SharedStringSegmentationResult {
-	const parser = new DOMParser();
-	const xmlDoc = parser.parseFromString(sharedStringsXml, "application/xml");
+	const xmlDoc = safeParseXml(sharedStringsXml);
 	const siElements = Array.from(xmlDoc.getElementsByTagName("si"));
 	const segments: SharedStringSegment[] = [];
 	const tokens = tokensOverride ?? getActiveTokens();
@@ -151,8 +151,7 @@ function segmentInlineStringsInSheet(
 	tokensOverride?: string[],
 	filterOptions: XlsxFilterOptions = {},
 ): SheetSegmentation {
-	const parser = new DOMParser();
-	const xmlDoc = parser.parseFromString(sheetXml, "application/xml");
+	const xmlDoc = safeParseXml(sheetXml);
 	const cellElements = Array.from(xmlDoc.getElementsByTagName("c"));
 	const inlineSegments: InlineStringSegment[] = [];
 	const valueSegments: ValueCellSegment[] = [];
@@ -286,10 +285,7 @@ export function segmentWorkbookStrings(
 		typeof sharedStringsEntry === "string"
 			? segmentSharedStringsXml(sharedStringsEntry, tokensOverride)
 			: {
-					xmlDoc: new DOMParser().parseFromString(
-						"<sst></sst>",
-						"application/xml",
-					),
+					xmlDoc: safeParseXml("<sst></sst>"),
 					segments: [],
 				};
 
