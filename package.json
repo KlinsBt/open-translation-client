@@ -13,7 +13,8 @@
 		"lint": "prettier --check .",
 		"format": "prettier --write .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run",
+		"test:browser": "vitest --config vite.browser.config.ts --run",
+		"test": "npm run test:unit -- --run && npm run test:browser",
 		"verify": "npm run lint && npm run check && npm test && npm run build"
 	},
 	"devDependencies": {
@@ -23,8 +24,10 @@
 		"@sveltejs/adapter-static": "^3.0.8",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^4.0.0",
+		"@vitest/browser": "^2.1.9",
 		"@xmldom/xmldom": "^0.8.10",
 		"happy-dom": "^20.11.2",
+		"playwright": "^1.62.1",
 		"prettier": "^3.3.2",
 		"prettier-plugin-svelte": "^3.2.6",
 		"svelte": "^5.0.0",

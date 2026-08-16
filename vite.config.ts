@@ -6,6 +6,7 @@ export default defineConfig({
 
 	test: {
 		include: ["src/**/*.{test,spec}.{js,ts}"],
+		exclude: ["src/**/*.browser.spec.ts"],
 		setupFiles: ["src/test/setup.ts"],
 	},
 });

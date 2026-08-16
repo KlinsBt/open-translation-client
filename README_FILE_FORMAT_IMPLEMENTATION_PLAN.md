@@ -169,10 +169,22 @@ must be removed until a real XLS converter exists.
       tests cover idempotence, corruption, rich package metadata, TM/TB data,
       legacy/current/future files, and a join-backup-split restoration. All 181
       unit tests, formatting, type-check, and a clean production build pass.
-- [ ] **FF-009 — Build a reusable filter test harness.** It must run extraction
+- [x] **FF-009 — Build a reusable filter test harness.** It must run extraction
       snapshots, identity and translated round trips, semantic package diffs,
       validators, malformed-input tests, Unicode tests, performance fixtures,
       and browser import/edit/export smoke tests for every adapter.
+      Completed 2026-08-16: one table-driven conformance harness now requires an
+      explicit fixture for every registered adapter and runs stable extraction
+      snapshots, valid/malformed validation, byte-identical identity exports,
+      translated export validation and re-import, combining-mark/RTL/non-BMP
+      Unicode checks, and timed 250-unit performance fixtures. DOCX and XLSX add
+      uncompressed part-level semantic diffs that reject added, removed, or
+      unexpectedly changed package parts. A separate Playwright-backed Vitest
+      suite runs each TXT, JSON, DOCX, XLSX, and HTML adapter in real headless
+      Chromium through import, edit, registered browser download, and re-import.
+      Fixture-to-registry coverage fails automatically when a future adapter
+      omits these gates. All 214 unit tests and five Chromium smoke tests,
+      formatting, type-check, production dependency audit, and a clean build pass.
 
 ## Phase 1 — CAT interoperability and current high-use formats
 
