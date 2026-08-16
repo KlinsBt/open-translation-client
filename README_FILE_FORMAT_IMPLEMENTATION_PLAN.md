@@ -74,10 +74,19 @@ must be removed until a real XLS converter exists.
       and DOCX/XLSX retain unknown relationships, namespaces, and binary parts.
       Legacy projects and split/join edits rebuild aligned replacement mappings;
       identity, translated round-trip, persistence, and malformed-state tests pass.
-- [ ] **FF-003 — Add configurable filter options.** Support format-specific
+- [x] **FF-003 — Add configurable filter options.** Support format-specific
       choices such as spreadsheet columns, JSON/YAML selectors, XML XPath/ITS
       rules, HTML attributes, subtitle limits, and whether existing targets are
       imported. Persist options with the project so re-export is deterministic.
+      Completed 2026-08-16: adapters now declare typed options that the upload UI
+      renders dynamically and normalizes before import. Current formats support
+      TXT segmentation modes, JSON wildcard paths and primitive-value policy,
+      DOCX paragraph ranges, XLSX worksheet/column/content filters, and HTML text
+      and attribute selection. Options persist in IndexedDB and Open TLC XLIFF
+      saves, are backfilled for older projects, and are reused by exporters.
+      Unit, selective-import, persistence, interchange, and filtered round-trip
+      tests pass. YAML/XML/subtitle/target-specific controls will extend the same
+      option contract when those roadmap adapters are implemented.
 - [ ] **FF-004 — Centralize safe input handling.** Add size and entry-count
       limits, ZIP expansion-ratio limits, cancellation, progress, encoding and
       BOM detection, XML parsing with external entities disabled, duplicate-path

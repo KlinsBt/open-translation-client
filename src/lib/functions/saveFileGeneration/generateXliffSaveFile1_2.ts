@@ -19,6 +19,7 @@ export function buildXliff1_2(userData: UserData): string {
 		parsingTokens,
 		documentModel,
 		skeleton,
+		filterOptions,
 	} = translationData;
 	const editingState = {
 		segmentsMeta,
@@ -26,6 +27,7 @@ export function buildXliff1_2(userData: UserData): string {
 		parsingTokens,
 		documentModel,
 		skeleton,
+		filterOptions,
 	};
 
 	// XLIFF structure for version 1.2

@@ -10,6 +10,7 @@ import {
 	synchronizeSkeletonReplacements,
 	validateDocumentSkeleton,
 } from "$lib/formats/skeleton";
+import { normalizeImportOptions } from "$lib/formats/options";
 import {
 	tbData,
 	tmData,
@@ -27,6 +28,10 @@ let db: IDBDatabase | null = null;
 
 export function ensureProjectModels(userData: UserData): UserData {
 	const translation = userData.translationData;
+	translation.filterOptions = normalizeImportOptions(
+		translation.type,
+		translation.filterOptions,
+	);
 	const document =
 		translation.documentModel ??
 		createNeutralDocument({

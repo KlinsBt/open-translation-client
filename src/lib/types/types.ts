@@ -2,6 +2,7 @@
 
 import type { NeutralDocument } from "$lib/formats/documentModel";
 import type { DocumentSkeleton } from "$lib/formats/skeleton";
+import type { FormatOptionValues } from "$lib/formats/types";
 
 export interface Sgmt {
 	segment: string;
@@ -75,6 +76,7 @@ export interface UserData {
 		segmentJoinStates?: Array<SegmentJoinState | null>;
 		documentModel?: NeutralDocument;
 		skeleton?: DocumentSkeleton;
+		filterOptions?: FormatOptionValues;
 		tm: null | {
 			id: null | number;
 			name: null | string;

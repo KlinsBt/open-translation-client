@@ -62,7 +62,14 @@ describe("format adapter registry", () => {
 				export: true,
 				roundTrip: true,
 			});
-			expect(adapter.importOptions).toEqual([]);
+			expect(adapter.importOptions.length).toBeGreaterThan(0);
+			expect(
+				new Set(adapter.importOptions.map((option) => option.id)).size,
+			).toBe(adapter.importOptions.length);
+			for (const option of adapter.importOptions) {
+				expect(option.id).not.toBe("");
+				expect(option.label).not.toBe("");
+			}
 			expect(adapter.importFile).toBeTypeOf("function");
 			expect(adapter.exportFile).toBeTypeOf("function");
 			expect(adapter.validate).toBeTypeOf("function");
@@ -117,7 +124,7 @@ describe("format adapter registry", () => {
 });
 
 describe("registered importers and validators", () => {
-	it("imports text without altering its content", async () => {
+	it("imports text with configurable segmentation without altering its skeleton", async () => {
 		const file = textFile(
 			"First line\r\nSecond line",
 			"notes.txt",
@@ -127,10 +134,11 @@ describe("registered importers and validators", () => {
 			valid: true,
 		});
 		await expect(
-			getFormatAdapter("text").importFile(file),
+			getFormatAdapter("text").importFile(file, { segmentationMode: "lines" }),
 		).resolves.toMatchObject({
-			kind: "text",
-			text: "First line\r\nSecond line",
+			kind: "segments",
+			segments: ["First line", "Second line"],
+			filterOptions: { segmentationMode: "lines" },
 			document: {
 				format: "text",
 				schemaVersion: 1,
@@ -139,6 +147,26 @@ describe("registered importers and validators", () => {
 				schemaVersion: 1,
 				format: "text",
 				payload: { kind: "text", content: "First line\r\nSecond line" },
+			},
+		});
+	});
+
+	it("filters JSON primitives by wildcard path and value type", async () => {
+		const file = textFile(
+			JSON.stringify({ messages: { title: "Hello", count: 2 }, ignored: "No" }),
+			"messages.json",
+			"application/json",
+		);
+		const result = await getFormatAdapter("json").importFile(file, {
+			pathSelectors: "messages.*",
+			includeNonStringValues: false,
+		});
+		expect(result).toMatchObject({
+			kind: "segments",
+			segments: ["Hello"],
+			filterOptions: {
+				pathSelectors: "messages.*",
+				includeNonStringValues: false,
 			},
 		});
 	});
@@ -186,6 +214,22 @@ describe("registered importers and validators", () => {
 		expect(result.skeleton.payload).toMatchObject({ kind: "text" });
 	});
 
+	it("can import only selected HTML attributes", async () => {
+		const file = textFile(
+			'<p title="Tooltip" aria-label="Accessible">Visible</p>',
+			"page.html",
+			"text/html",
+		);
+		const result = await getFormatAdapter("html").importFile(file, {
+			includeTextNodes: false,
+			translatableAttributes: "aria-label",
+		});
+		expect(result).toMatchObject({
+			kind: "segments",
+			segments: ["Accessible"],
+		});
+	});
+
 	it("accepts HTML fragments but rejects empty HTML files", async () => {
 		await expect(
 			getFormatAdapter("html").validate(
@@ -221,6 +265,24 @@ describe("registered importers and validators", () => {
 		expect(result.skeleton.payload).toMatchObject({ kind: "package" });
 	});
 
+	it("filters DOCX paragraphs using one-based ranges", async () => {
+		const file = await zipFile(
+			{
+				"word/document.xml":
+					'<w:document xmlns:w="urn:test"><w:body><w:p><w:r><w:t>First.</w:t></w:r></w:p><w:p><w:r><w:t>Second.</w:t></w:r></w:p></w:body></w:document>',
+			},
+			"document.docx",
+		);
+		const result = await getFormatAdapter("docx").importFile(file, {
+			paragraphs: "2",
+		});
+		expect(result).toMatchObject({
+			kind: "segments",
+			segments: ["Second."],
+			filterOptions: { paragraphs: "2" },
+		});
+	});
+
 	it("validates and imports a minimal XLSX package", async () => {
 		const file = await zipFile(
 			{
@@ -245,6 +307,26 @@ describe("registered importers and validators", () => {
 			kind: "xlsx-text",
 			part: "xl/sharedStrings.xml",
 		});
+	});
+
+	it("filters XLSX worksheet columns and excludes cell values", async () => {
+		const file = await zipFile(
+			{
+				"xl/workbook.xml": '<workbook xmlns="urn:test"/>',
+				"xl/worksheets/sheet1.xml":
+					'<worksheet><sheetData><row><c r="A1" t="inlineStr"><is><t>Keep</t></is></c><c r="B1" t="inlineStr"><is><t>Skip</t></is></c><c r="A2"><v>42</v></c></row></sheetData></worksheet>',
+				"xl/worksheets/sheet2.xml":
+					'<worksheet><sheetData><row><c r="A1" t="inlineStr"><is><t>Other sheet</t></is></c></row></sheetData></worksheet>',
+			},
+			"workbook.xlsx",
+		);
+		const result = await getFormatAdapter("xlsx").importFile(file, {
+			worksheetPaths: "sheet1",
+			columns: "A",
+			includeSharedStrings: false,
+			includeCellValues: false,
+		});
+		expect(result).toMatchObject({ kind: "segments", segments: ["Keep"] });
 	});
 
 	it("rejects malformed JSON and mislabeled Office packages", async () => {

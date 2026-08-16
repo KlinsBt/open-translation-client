@@ -68,6 +68,7 @@ describe("new-project neutral model persistence", () => {
 			[{ path: ["hello"] }],
 			imported,
 			skeleton,
+			{ pathSelectors: "messages.*", includeNonStringValues: false },
 		);
 
 		const document =
@@ -81,6 +82,12 @@ describe("new-project neutral model persistence", () => {
 		expect(document.units[0].target.language).toBe("de");
 		expect(mocks.update.mock.calls[0][0].translationData.skeleton).toBe(
 			skeleton,
+		);
+		expect(mocks.update.mock.calls[0][0].translationData.filterOptions).toEqual(
+			{
+				pathSelectors: "messages.*",
+				includeNonStringValues: false,
+			},
 		);
 	});
 });

@@ -28,6 +28,9 @@ describe("neutral document persistence compatibility", () => {
 			format: "text",
 			payload: { kind: "text", content: "OneTwo" },
 		});
+		expect(userData.translationData.filterOptions).toEqual({
+			segmentationMode: "preferences",
+		});
 	});
 
 	it("keeps existing unit IDs while synchronizing edited target text", () => {

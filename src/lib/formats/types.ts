@@ -15,7 +15,12 @@ export interface FormatImportOption {
 	type: "boolean" | "number" | "select" | "text";
 	defaultValue: boolean | number | string;
 	choices?: readonly string[];
+	description?: string;
+	placeholder?: string;
 }
+
+export type FormatOptionValue = boolean | number | string;
+export type FormatOptionValues = Record<string, FormatOptionValue>;
 
 export interface FormatValidationResult {
 	valid: boolean;
@@ -28,6 +33,7 @@ export type FormatImportResult =
 			text: string;
 			document: NeutralDocument;
 			skeleton: DocumentSkeleton;
+			filterOptions: FormatOptionValues;
 			typeRef?: TypeRef;
 	  }
 	| {
@@ -35,6 +41,7 @@ export type FormatImportResult =
 			segments: string[];
 			document: NeutralDocument;
 			skeleton: DocumentSkeleton;
+			filterOptions: FormatOptionValues;
 			typeRef?: TypeRef;
 			segmentsMeta?: SegmentMeta[];
 	  };
@@ -48,6 +55,9 @@ export interface FormatAdapter {
 	importOptions: readonly FormatImportOption[];
 	sniff(file: File): Promise<boolean>;
 	validate(file: File): Promise<FormatValidationResult>;
-	importFile(file: File): Promise<FormatImportResult>;
+	importFile(
+		file: File,
+		options?: Readonly<FormatOptionValues>,
+	): Promise<FormatImportResult>;
 	exportFile(translation: UserData): Promise<void>;
 }

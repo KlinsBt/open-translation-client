@@ -24,6 +24,7 @@ export interface SharedStringSegmentationResult {
 export interface ValueCellSegment {
 	text: string;
 	sheetPath: string;
+	cellReference: string;
 	node: Element;
 }
 
@@ -37,7 +38,15 @@ export interface InlineStringSegment {
 	text: string;
 	separator: string;
 	sheetPath: string;
+	cellReference: string;
 	fragments: InlineStringFragment[];
+}
+
+export interface XlsxFilterOptions {
+	worksheetPaths?: readonly string[];
+	columns?: ReadonlySet<number> | null;
+	includeSharedStrings?: boolean;
+	includeCellValues?: boolean;
 }
 
 export interface SheetSegmentation {
@@ -140,6 +149,7 @@ function segmentInlineStringsInSheet(
 	sheetXml: string,
 	sheetPath: string,
 	tokensOverride?: string[],
+	filterOptions: XlsxFilterOptions = {},
 ): SheetSegmentation {
 	const parser = new DOMParser();
 	const xmlDoc = parser.parseFromString(sheetXml, "application/xml");
@@ -150,6 +160,19 @@ function segmentInlineStringsInSheet(
 
 	for (const cell of cellElements) {
 		const type = cell.getAttribute("t");
+		const cellReference = cell.getAttribute("r") ?? "";
+		const columnMatch = cellReference.match(/^([a-z]+)/i);
+		const column = columnMatch
+			? [...columnMatch[1].toUpperCase()].reduce(
+					(total, character) => total * 26 + character.charCodeAt(0) - 64,
+					0,
+				)
+			: null;
+		if (
+			filterOptions.columns &&
+			(column === null || !filterOptions.columns.has(column))
+		)
+			continue;
 
 		// inlineStr: <is><t>...</t></is>
 		if (type === "inlineStr") {
@@ -193,6 +216,7 @@ function segmentInlineStringsInSheet(
 					text: piece.text,
 					separator: piece.separator,
 					sheetPath,
+					cellReference,
 					fragments,
 				});
 			}
@@ -227,18 +251,24 @@ function segmentInlineStringsInSheet(
 					text: piece.text,
 					separator: piece.separator,
 					sheetPath,
+					cellReference,
 					fragments,
 				});
 			}
 		}
 
 		// Other cells with values (numeric, formula results, booleans, dates, etc.)
-		if (type !== "s" && type !== "str" && type !== "inlineStr") {
+		if (
+			filterOptions.includeCellValues !== false &&
+			type !== "s" &&
+			type !== "str" &&
+			type !== "inlineStr"
+		) {
 			const vNode = cell.getElementsByTagName("v")[0];
 			if (!vNode) continue;
 			const text = vNode.textContent || "";
 			if (!text) continue;
-			valueSegments.push({ text, sheetPath, node: vNode });
+			valueSegments.push({ text, sheetPath, cellReference, node: vNode });
 		}
 	}
 
@@ -248,9 +278,11 @@ function segmentInlineStringsInSheet(
 export function segmentWorkbookStrings(
 	xmlContentMap: Record<string, string | Blob>,
 	tokensOverride?: string[],
+	filterOptions: XlsxFilterOptions = {},
 ): WorkbookSegmentation {
 	const sharedStringsEntry = xmlContentMap["xl/sharedStrings.xml"];
 	const shared =
+		filterOptions.includeSharedStrings !== false &&
 		typeof sharedStringsEntry === "string"
 			? segmentSharedStringsXml(sharedStringsEntry, tokensOverride)
 			: {
@@ -261,11 +293,19 @@ export function segmentWorkbookStrings(
 					segments: [],
 				};
 
+	const requestedSheets = filterOptions.worksheetPaths?.map((path) =>
+		path.startsWith("xl/worksheets/")
+			? path
+			: `xl/worksheets/${path.endsWith(".xml") ? path : `${path}.xml`}`,
+	);
 	const sheetPaths = Object.keys(xmlContentMap)
 		.filter(
 			(path) =>
 				path.startsWith("xl/worksheets/sheet") &&
 				typeof xmlContentMap[path] === "string",
+		)
+		.filter(
+			(path) => !requestedSheets?.length || requestedSheets.includes(path),
 		)
 		.sort();
 
@@ -274,6 +314,7 @@ export function segmentWorkbookStrings(
 			xmlContentMap[path] as string,
 			path,
 			tokensOverride,
+			filterOptions,
 		),
 	);
 
@@ -434,10 +475,15 @@ export function applyTranslationsToWorkbook(
 	xmlContentMap: Record<string, string | Blob>,
 	translatedSegments: string[],
 	tokensOverride?: string[],
+	filterOptions: XlsxFilterOptions = {},
 ): Record<string, string | Blob> {
 	const updatedMap: Record<string, string | Blob> = { ...xmlContentMap };
 	const tokens = tokensOverride ?? getDefaultTokens();
-	const { shared, sheets } = segmentWorkbookStrings(xmlContentMap, tokens);
+	const { shared, sheets } = segmentWorkbookStrings(
+		xmlContentMap,
+		tokens,
+		filterOptions,
+	);
 
 	// Shared strings
 	const sharedCount = shared.segments.length;

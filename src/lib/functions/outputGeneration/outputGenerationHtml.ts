@@ -9,6 +9,7 @@ import {
 	type HtmlAttributeReplacement,
 	type HtmlTextReplacement,
 } from "$lib/formats/skeleton";
+import { normalizeImportOptions, parseList } from "$lib/formats/options";
 
 async function generateHtmlFileDownload(htmlContent: string, name: string) {
 	const blob: Blob = new Blob([htmlContent], {
@@ -43,6 +44,7 @@ export function buildHtmlTranslation(translation: UserData): string {
 		return originalHtmlContent;
 	}
 	const tokens = translation.translationData.parsingTokens;
+	const filterOptions = normalizeImportOptions("html", data.filterOptions);
 	let meta = data.skeleton?.replacements
 		.filter(
 			(
@@ -73,6 +75,12 @@ export function buildHtmlTranslation(translation: UserData): string {
 			const { meta: regenMeta, allSegments } = segmentHtmlContent(
 				originalHtmlContent,
 				tokens,
+				{
+					includeTextNodes: filterOptions.includeTextNodes === true,
+					translatableAttributes: parseList(
+						filterOptions.translatableAttributes,
+					),
+				},
 			);
 			if (allSegments.length === translation.translationData.seg2.length) {
 				meta = regenMeta.map((htmlMeta) => ({

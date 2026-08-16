@@ -52,6 +52,7 @@ function projectFromImport(
 		segmentsMeta: result.segmentsMeta,
 		documentModel: result.document,
 		skeleton: result.skeleton,
+		filterOptions: result.filterOptions,
 	});
 }
 
@@ -77,6 +78,26 @@ describe("textual skeleton round trips", () => {
 			skeleton: result.skeleton,
 		});
 		expect(buildTextTranslationFromProject(identity)).toBe(content);
+	});
+
+	it("preserves line boundaries when TXT line segmentation is exported", async () => {
+		const content = "First line\r\nSecond line\r\n";
+		const result = await importTextFile(
+			new File([content], "notes.txt", { type: "text/plain" }),
+			{ segmentationMode: "lines" },
+		);
+		if (result.kind !== "segments") throw new Error("Expected segments");
+		const project = makeUserData({
+			type: "text",
+			seg1: result.segments,
+			seg2: ["Erste Zeile", "Zweite Zeile"],
+			checked: [false, false],
+			skeleton: result.skeleton,
+			filterOptions: result.filterOptions,
+		});
+		expect(buildTextTranslationFromProject(project)).toBe(
+			"Erste Zeile\r\nZweite Zeile\r\n",
+		);
 	});
 
 	it("preserves JSON whitespace, order, and untouched values", async () => {
@@ -215,5 +236,33 @@ describe("package skeleton round trips", () => {
 		expect(
 			await output.file("xl/sharedStrings.xml")!.async("string"),
 		).toContain("Hallo.");
+	});
+
+	it("reuses XLSX filters during export so excluded cells stay untouched", async () => {
+		const source = await zipFile(
+			{
+				"xl/workbook.xml": '<workbook xmlns="urn:test"/>',
+				"xl/worksheets/sheet1.xml":
+					'<worksheet><sheetData><row><c r="A1" t="inlineStr"><is><t>Translate</t></is></c><c r="B1" t="inlineStr"><is><t>Do not touch</t></is></c></row></sheetData></worksheet>',
+			},
+			"book.xlsx",
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		);
+		const result = await importXlsxFile(source.file, {
+			worksheetPaths: "sheet1",
+			columns: "A",
+			includeSharedStrings: false,
+			includeCellValues: false,
+		});
+		const project = projectFromImport(result, "xlsx");
+		project.translationData.seg2 = ["Übersetzen"];
+		const output = await JSZip.loadAsync(
+			await (await buildXlsxTranslationPackage(project)).arrayBuffer(),
+		);
+		const sheet = await output
+			.file("xl/worksheets/sheet1.xml")!
+			.async("string");
+		expect(sheet).toContain("Übersetzen");
+		expect(sheet).toContain("Do not touch");
 	});
 });

@@ -62,6 +62,10 @@ describe("translation output builders", () => {
 				segments: ["One. Two!"],
 				segmentsMeta: [{ path: ["message"], separator: "!" }],
 			}),
+			filterOptions: {
+				pathSelectors: "message",
+				includeNonStringValues: false,
+			},
 		});
 		const output = buildXliff2_0(userData);
 		const doc = new DOMParser().parseFromString(output, "application/xml");
@@ -78,6 +82,9 @@ describe("translation output builders", () => {
 			userData.translationData.documentModel,
 		);
 		expect(restored.skeleton).toEqual(userData.translationData.skeleton);
+		expect(restored.filterOptions).toEqual(
+			userData.translationData.filterOptions,
+		);
 	});
 
 	it("does not throw when optional XLIFF IDs are absent", () => {

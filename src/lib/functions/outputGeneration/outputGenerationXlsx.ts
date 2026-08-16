@@ -7,6 +7,11 @@ import {
 	skeletonHasIdentityTargets,
 	type XlsxTextReplacement,
 } from "$lib/formats/skeleton";
+import {
+	normalizeImportOptions,
+	parseColumns,
+	parseList,
+} from "$lib/formats/options";
 
 export async function createXlsxFromModifiedXmlText(translation: UserData) {
 	const updatedXlsx = await buildXlsxTranslationPackage(translation);
@@ -37,6 +42,7 @@ export async function buildXlsxTranslationPackage(
 			(data.typeRef as Record<string, string | Blob>)),
 	};
 	const tokens = data.parsingTokens || getDefaultTokens();
+	const filterOptions = normalizeImportOptions("xlsx", data.filterOptions);
 	const skeletonReplacements = skeleton?.replacements.filter(
 		(replacement): replacement is XlsxTextReplacement =>
 			replacement.kind === "xlsx-text",
@@ -69,6 +75,12 @@ export async function buildXlsxTranslationPackage(
 		xmlContentMap,
 		translatedSegments,
 		tokens,
+		{
+			worksheetPaths: parseList(filterOptions.worksheetPaths),
+			columns: parseColumns(filterOptions.columns),
+			includeSharedStrings: filterOptions.includeSharedStrings === true,
+			includeCellValues: filterOptions.includeCellValues === true,
+		},
 	);
 
 	const zip = skeleton?.source.originalFile

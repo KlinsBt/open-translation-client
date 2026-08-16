@@ -17,6 +17,7 @@ import {
 } from "./importers";
 import { FORMAT_IDS, type FormatId } from "./formatIds";
 import type { FormatAdapter } from "./types";
+import { FORMAT_IMPORT_OPTIONS } from "./options";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -35,7 +36,7 @@ const adapters = [
 		extensions: ["txt"],
 		mimeTypes: ["text/plain"],
 		capabilities: READ_WRITE_CAPABILITIES,
-		importOptions: [],
+		importOptions: FORMAT_IMPORT_OPTIONS.text,
 		sniff: async () => false,
 		validate: validateTextFile,
 		importFile: importTextFile,
@@ -47,7 +48,7 @@ const adapters = [
 		extensions: ["json"],
 		mimeTypes: ["application/json", "text/json"],
 		capabilities: READ_WRITE_CAPABILITIES,
-		importOptions: [],
+		importOptions: FORMAT_IMPORT_OPTIONS.json,
 		sniff: (file) => sniffText(file, /^(?:\{|\[)/),
 		validate: validateJsonFile,
 		importFile: importJsonFile,
@@ -61,7 +62,7 @@ const adapters = [
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 		],
 		capabilities: READ_WRITE_CAPABILITIES,
-		importOptions: [],
+		importOptions: FORMAT_IMPORT_OPTIONS.docx,
 		sniff: async (file) => (await validateDocxFile(file)).valid,
 		validate: validateDocxFile,
 		importFile: importDocxFile,
@@ -76,7 +77,7 @@ const adapters = [
 			"application/vnd.ms-excel",
 		],
 		capabilities: READ_WRITE_CAPABILITIES,
-		importOptions: [],
+		importOptions: FORMAT_IMPORT_OPTIONS.xlsx,
 		sniff: async (file) => (await validateXlsxFile(file)).valid,
 		validate: validateXlsxFile,
 		importFile: importXlsxFile,
@@ -88,7 +89,7 @@ const adapters = [
 		extensions: ["html", "htm"],
 		mimeTypes: ["text/html", "application/xhtml+xml"],
 		capabilities: READ_WRITE_CAPABILITIES,
-		importOptions: [],
+		importOptions: FORMAT_IMPORT_OPTIONS.html,
 		sniff: (file) =>
 			sniffText(file, /^<(?:!doctype\s+html|html|head|body)(?:\s|>)/i),
 		validate: validateHtmlFile,

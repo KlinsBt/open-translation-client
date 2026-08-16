@@ -11,6 +11,12 @@
 		getSupportedFormatLabels,
 	} from "$lib/formats/registry";
 	import type { FormatId } from "$lib/formats/formatIds";
+	import type {
+		FormatImportOption,
+		FormatOptionValue,
+		FormatOptionValues,
+	} from "$lib/formats/types";
+	import { normalizeImportOptions } from "$lib/formats/options";
 	import {
 		notifyError,
 		notifySuccess,
@@ -30,6 +36,7 @@
 	let detectedFormatId: FormatId | null = $state(null);
 	let detectionComplete: boolean = $state(false);
 	let isProcessing: boolean = $state(false);
+	let importOptionValues: FormatOptionValues = $state({});
 	const acceptedFormats = getFormatAcceptValue();
 	const supportedFormatLabels = getSupportedFormatLabels();
 
@@ -39,12 +46,19 @@
 			: "UNSUPPORTED";
 	}
 
+	function getImportOptions(): readonly FormatImportOption[] {
+		return detectedFormatId
+			? getFormatAdapter(detectedFormatId).importOptions
+			: [];
+	}
+
 	async function selectFile(file: File) {
 		uploadedFile = file;
 		detectionComplete = false;
 		const detected = await detectFormat(file);
 		if (uploadedFile !== file) return;
 		detectedFormatId = detected?.id ?? null;
+		importOptionValues = detected ? normalizeImportOptions(detected.id) : {};
 		detectionComplete = true;
 		temporarySaveName = file.name.replace(/\.[^/.]+$/, "");
 	}
@@ -53,6 +67,11 @@
 		uploadedFile = null;
 		detectedFormatId = null;
 		detectionComplete = false;
+		importOptionValues = {};
+	}
+
+	function setImportOption(id: string, value: FormatOptionValue) {
+		importOptionValues = { ...importOptionValues, [id]: value };
 	}
 
 	async function handleFileSelect(event: Event) {
@@ -108,7 +127,14 @@
 				throw new Error(validation.reason ?? `Invalid ${adapter.label} file.`);
 			}
 
-			const imported = await adapter.importFile(uploadedFile);
+			const normalizedOptions = normalizeImportOptions(
+				adapter.id,
+				importOptionValues,
+			);
+			const imported = await adapter.importFile(
+				uploadedFile,
+				normalizedOptions,
+			);
 			if (imported.kind === "text") {
 				await saveAndOpenNewFileWithTextString(
 					temporarySaveName,
@@ -120,6 +146,7 @@
 					imported.typeRef,
 					imported.document,
 					imported.skeleton,
+					imported.filterOptions,
 				);
 			} else {
 				await saveAndOpenNewFileWithStringArray(
@@ -133,6 +160,7 @@
 					imported.segmentsMeta,
 					imported.document,
 					imported.skeleton,
+					imported.filterOptions,
 				);
 			}
 
@@ -155,6 +183,7 @@
 		targetLanguage = "";
 		detectedFormatId = null;
 		detectionComplete = false;
+		importOptionValues = {};
 	}
 </script>
 
@@ -241,6 +270,57 @@
 								{/each}
 							</select>
 						</div>
+
+						{#if getImportOptions().length > 0}
+							<fieldset class="filter-options">
+								<legend>Import options</legend>
+								{#each getImportOptions() as option}
+									<label class:boolean-option={option.type === "boolean"}>
+										<span>{option.label}</span>
+										{#if option.type === "boolean"}
+											<input
+												type="checkbox"
+												checked={Boolean(importOptionValues[option.id])}
+												onchange={(event) =>
+													setImportOption(
+														option.id,
+														(event.target as HTMLInputElement).checked,
+													)}
+											/>
+										{:else if option.type === "select"}
+											<select
+												value={String(importOptionValues[option.id] ?? "")}
+												onchange={(event) =>
+													setImportOption(
+														option.id,
+														(event.target as HTMLSelectElement).value,
+													)}
+											>
+												{#each option.choices ?? [] as choice}
+													<option value={choice}>{choice}</option>
+												{/each}
+											</select>
+										{:else}
+											<input
+												type={option.type}
+												placeholder={option.placeholder ?? ""}
+												value={importOptionValues[option.id] ?? ""}
+												oninput={(event) =>
+													setImportOption(
+														option.id,
+														option.type === "number"
+															? (event.target as HTMLInputElement).valueAsNumber
+															: (event.target as HTMLInputElement).value,
+													)}
+											/>
+										{/if}
+										{#if option.description}
+											<small>{option.description}</small>
+										{/if}
+									</label>
+								{/each}
+							</fieldset>
+						{/if}
 
 						<button
 							class="btn save"
@@ -484,6 +564,42 @@
 	.language-selection {
 		display: grid;
 		gap: 10px;
+	}
+
+	.filter-options {
+		display: grid;
+		gap: 10px;
+		margin: 0;
+		padding: 12px;
+		border: 1px solid var(--color-theme-4);
+		border-radius: 5px;
+	}
+
+	.filter-options legend {
+		padding: 0 5px;
+		font-weight: 600;
+		color: var(--color-theme-4);
+	}
+
+	.filter-options label {
+		display: grid;
+		gap: 5px;
+		color: var(--color-theme-5);
+	}
+
+	.filter-options .boolean-option {
+		grid-template-columns: 1fr auto;
+		align-items: center;
+	}
+
+	.filter-options .boolean-option input {
+		width: 18px;
+		height: 18px;
+	}
+
+	.filter-options small {
+		grid-column: 1 / -1;
+		line-height: 1.3;
 	}
 
 	select {

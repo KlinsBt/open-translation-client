@@ -25,6 +25,11 @@ export interface HtmlSegmentation {
 	meta: HtmlMeta[];
 }
 
+export interface HtmlFilterOptions {
+	includeTextNodes?: boolean;
+	translatableAttributes?: readonly string[];
+}
+
 interface SplitSegment {
 	text: string;
 	separator: string;
@@ -121,6 +126,7 @@ function isInsideSkippedTag(node: Node): boolean {
 export function segmentHtmlContent(
 	htmlContent: string,
 	tokensOverride?: string[],
+	filterOptions: HtmlFilterOptions = {},
 ): HtmlSegmentation {
 	const parser = new DOMParser();
 	const doc = parser.parseFromString(htmlContent, "text/html");
@@ -128,7 +134,13 @@ export function segmentHtmlContent(
 	const textSegments: HtmlTextSegment[] = [];
 	const attributeSegments: HtmlAttributeSegment[] = [];
 	const combinedSegments: string[] = [];
-	const attributesToCheck = ["placeholder", "value", "alt", "title"];
+	const attributesToCheck = filterOptions.translatableAttributes ?? [
+		"placeholder",
+		"value",
+		"alt",
+		"title",
+	];
+	const includeTextNodes = filterOptions.includeTextNodes ?? true;
 	const tokens = tokensOverride ?? getActiveTokens();
 	const meta: HtmlMeta[] = [];
 
@@ -147,6 +159,7 @@ export function segmentHtmlContent(
 
 	function walk(node: Node) {
 		if (node.nodeType === Node.TEXT_NODE) {
+			if (!includeTextNodes) return;
 			if (isInsideSkippedTag(node)) return;
 			const text = node.textContent ?? "";
 			if (!text.trim()) return;

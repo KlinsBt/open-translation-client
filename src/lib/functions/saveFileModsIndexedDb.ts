@@ -13,6 +13,8 @@ import {
 	type NeutralDocument,
 } from "$lib/formats/documentModel";
 import type { DocumentSkeleton } from "$lib/formats/skeleton";
+import type { FormatOptionValues } from "$lib/formats/types";
+import { normalizeImportOptions } from "$lib/formats/options";
 
 function prepareDocumentModel(
 	documentModel: NeutralDocument | undefined,
@@ -60,6 +62,7 @@ export async function saveNewTranslationToUserDataFromText(
 	fileTypeRef?: TypeRef,
 	documentModel?: NeutralDocument,
 	skeleton?: DocumentSkeleton,
+	filterOptions?: FormatOptionValues,
 ) {
 	let generatedText = createTextSegmentsWithRegexGeneralTextAlgo(fullText);
 	const model = prepareDocumentModel(
@@ -86,6 +89,7 @@ export async function saveNewTranslationToUserDataFromText(
 			segmentsMeta: [],
 			documentModel: model,
 			skeleton,
+			filterOptions: normalizeImportOptions(fileType, filterOptions),
 			parsingTokens: getActiveTokens() || getDefaultTokens(),
 			tm: {
 				id: null,
@@ -116,6 +120,7 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 	segmentsMeta?: any[],
 	documentModel?: NeutralDocument,
 	skeleton?: DocumentSkeleton,
+	filterOptions?: FormatOptionValues,
 ) {
 	const targetSegments = new Array(stringArray.length).fill("");
 	const checkedSegments = new Array(stringArray.length).fill(false);
@@ -142,6 +147,7 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 				checkedSegments,
 			),
 			skeleton,
+			filterOptions: normalizeImportOptions(fileType, filterOptions),
 			parsingTokens: getActiveTokens() || getDefaultTokens(),
 			tm: {
 				id: null,
@@ -164,6 +170,10 @@ export async function saveNewTranslationToUserDataFromSaveFile(
 	fullData: UserData[],
 	data: UserData,
 ) {
+	data.translationData.filterOptions = normalizeImportOptions(
+		data.translationData.type,
+		data.translationData.filterOptions,
+	);
 	if (!data.translationData.parsingTokens) {
 		data.translationData.parsingTokens = getDefaultTokens();
 	}

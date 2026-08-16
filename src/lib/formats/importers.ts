@@ -4,7 +4,11 @@ import { segmentHtmlContent } from "$lib/functions/parsing/parsingHtml";
 import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
 import { segmentWorkbookStrings } from "$lib/functions/parsing/parsingXlsx";
 import { createTextSegmentsWithRegexGeneralTextAlgo } from "$lib/functions/parsing/parsingText";
-import type { FormatImportResult, FormatValidationResult } from "./types";
+import type {
+	FormatImportResult,
+	FormatOptionValues,
+	FormatValidationResult,
+} from "./types";
 import type { TypeRef } from "$lib/types/types";
 import { createNeutralDocument, type SourceLocation } from "./documentModel";
 import {
@@ -18,6 +22,13 @@ import {
 	type JsonValueReplacement,
 	type XlsxTextReplacement,
 } from "./skeleton";
+import {
+	normalizeImportOptions,
+	parseColumns,
+	parseList,
+	parsePositiveRanges,
+	matchesJsonSelector,
+} from "./options";
 
 type PackageContent = { [key: string]: string | Blob };
 
@@ -47,14 +58,38 @@ export async function validateDocxFile(
 	}
 }
 
-export async function importDocxFile(file: File): Promise<FormatImportResult> {
+export async function importDocxFile(
+	file: File,
+	options?: Readonly<FormatOptionValues>,
+): Promise<FormatImportResult> {
+	const filterOptions = normalizeImportOptions("docx", options);
 	const content = await readZipPackage(file);
 	const documentXml = content["word/document.xml"];
 	if (typeof documentXml !== "string") {
 		throw new Error("The DOCX package has no word/document.xml.");
 	}
 
-	const { segments, meta } = segmentDocxXml(documentXml);
+	const parsed = segmentDocxXml(documentXml);
+	const lastParagraph = parsed.meta.reduce(
+		(maximum, entry) =>
+			Math.max(maximum, (entry.fragments[0]?.paragraphIndex ?? -1) + 1),
+		0,
+	);
+	const paragraphs = parsePositiveRanges(
+		filterOptions.paragraphs,
+		lastParagraph,
+	);
+	const includedIndexes = parsed.meta
+		.map((entry, index) => ({ entry, index }))
+		.filter(({ entry }) => {
+			const paragraph = entry.fragments[0]?.paragraphIndex;
+			return (
+				paragraphs === null ||
+				(paragraph !== undefined && paragraphs.has(paragraph + 1))
+			);
+		});
+	const segments = includedIndexes.map(({ index }) => parsed.segments[index]);
+	const meta = includedIndexes.map(({ entry }) => entry);
 	const sourceSegments = segments.map(
 		(segment) => `${segment.text}${segment.separator ?? ""}`,
 	);
@@ -81,6 +116,7 @@ export async function importDocxFile(file: File): Promise<FormatImportResult> {
 			})),
 		}),
 		skeleton: await createPackageSkeleton(file, "docx", content, replacements),
+		filterOptions,
 		typeRef: content,
 		segmentsMeta: meta,
 	};
@@ -97,13 +133,24 @@ export async function validateJsonFile(
 	}
 }
 
-export async function importJsonFile(file: File): Promise<FormatImportResult> {
+export async function importJsonFile(
+	file: File,
+	options?: Readonly<FormatOptionValues>,
+): Promise<FormatImportResult> {
+	const filterOptions = normalizeImportOptions("json", options);
+	const selectors = parseList(filterOptions.pathSelectors);
 	const content = await file.text();
 	const jsonData = JSON.parse(content);
 	const segments: string[] = [];
 	const meta: { path: string[]; separator?: string }[] = [];
 	const replacements: JsonValueReplacement[] = [];
 	for (const location of findJsonPrimitiveLocations(content)) {
+		if (!matchesJsonSelector(location.path, selectors)) continue;
+		if (
+			filterOptions.includeNonStringValues === false &&
+			location.valueType !== "string"
+		)
+			continue;
 		const text = String(location.value);
 		const pieces = splitTextWithPreferences(text).filter(
 			(piece) => piece.text.trim().length > 0,
@@ -141,6 +188,7 @@ export async function importJsonFile(file: File): Promise<FormatImportResult> {
 			})),
 		}),
 		skeleton: await createTextSkeleton(file, "json", content, replacements),
+		filterOptions,
 		typeRef: { data: jsonData, meta } as unknown as TypeRef,
 		segmentsMeta: meta,
 	};
@@ -150,12 +198,29 @@ export async function validateTextFile(): Promise<FormatValidationResult> {
 	return { valid: true };
 }
 
-export async function importTextFile(file: File): Promise<FormatImportResult> {
+export async function importTextFile(
+	file: File,
+	options?: Readonly<FormatOptionValues>,
+): Promise<FormatImportResult> {
+	const filterOptions = normalizeImportOptions("text", options);
 	const text = await file.text();
-	const [segments] = createTextSegmentsWithRegexGeneralTextAlgo(text);
+	const mode = filterOptions.segmentationMode;
+	let segments: string[];
+	if (mode === "document") {
+		segments = text.trim().length > 0 ? [text] : [];
+	} else if (mode === "lines") {
+		segments = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+	} else if (mode === "paragraphs") {
+		segments = text
+			.split(/(?:\r?\n){2,}/)
+			.map((paragraph) => paragraph.trim())
+			.filter(Boolean);
+	} else {
+		[segments] = createTextSegmentsWithRegexGeneralTextAlgo(text);
+	}
 	return {
-		kind: "text",
-		text,
+		kind: "segments",
+		segments,
 		document: createNeutralDocument({
 			format: "text",
 			sourceSegments: segments,
@@ -165,6 +230,7 @@ export async function importTextFile(file: File): Promise<FormatImportResult> {
 			})),
 		}),
 		skeleton: await createPlainTextSkeleton(file, text, segments),
+		filterOptions,
 	};
 }
 
@@ -181,13 +247,22 @@ export async function validateXlsxFile(
 	}
 }
 
-export async function importXlsxFile(file: File): Promise<FormatImportResult> {
+export async function importXlsxFile(
+	file: File,
+	options?: Readonly<FormatOptionValues>,
+): Promise<FormatImportResult> {
+	const filterOptions = normalizeImportOptions("xlsx", options);
 	const content = await readZipPackage(file);
 	if (typeof content["xl/workbook.xml"] !== "string") {
 		throw new Error("The XLSX package has no xl/workbook.xml.");
 	}
 
-	const workbook = segmentWorkbookStrings(content);
+	const workbook = segmentWorkbookStrings(content, undefined, {
+		worksheetPaths: parseList(filterOptions.worksheetPaths),
+		columns: parseColumns(filterOptions.columns),
+		includeSharedStrings: filterOptions.includeSharedStrings === true,
+		includeCellValues: filterOptions.includeCellValues === true,
+	});
 	const { allSegments } = workbook;
 	const sourceLocations: SourceLocation[] = [];
 	const replacements: XlsxTextReplacement[] = [];
@@ -243,6 +318,7 @@ export async function importXlsxFile(file: File): Promise<FormatImportResult> {
 			sourceLocations,
 		}),
 		skeleton: await createPackageSkeleton(file, "xlsx", content, replacements),
+		filterOptions,
 		typeRef: content,
 	};
 }
@@ -256,9 +332,16 @@ export async function validateHtmlFile(
 		: { valid: false, reason: "The HTML file is empty." };
 }
 
-export async function importHtmlFile(file: File): Promise<FormatImportResult> {
+export async function importHtmlFile(
+	file: File,
+	options?: Readonly<FormatOptionValues>,
+): Promise<FormatImportResult> {
+	const filterOptions = normalizeImportOptions("html", options);
 	const html = await file.text();
-	const { allSegments, meta } = segmentHtmlContent(html);
+	const { allSegments, meta } = segmentHtmlContent(html, undefined, {
+		includeTextNodes: filterOptions.includeTextNodes === true,
+		translatableAttributes: parseList(filterOptions.translatableAttributes),
+	});
 	const replacements = meta.map((entry, unitIndex) =>
 		entry.kind === "attribute"
 			? ({
@@ -295,6 +378,7 @@ export async function importHtmlFile(file: File): Promise<FormatImportResult> {
 			),
 		}),
 		skeleton: await createTextSkeleton(file, "html", html, replacements),
+		filterOptions,
 		typeRef: html,
 		segmentsMeta: meta,
 	};
