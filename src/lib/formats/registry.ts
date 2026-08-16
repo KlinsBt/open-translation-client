@@ -20,6 +20,7 @@ import type { FormatAdapter } from "./types";
 import { FORMAT_IMPORT_OPTIONS } from "./options";
 import { decodeTextBytes, type SafeInputContext } from "./safeInput";
 import { detectFileFormat, type FormatDetection } from "./detect";
+import { DOCX_FAMILY_EXTENSIONS, DOCX_FAMILY_MIME_TYPES } from "./docxPackage";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -69,10 +70,8 @@ const adapters = [
 	{
 		id: "docx",
 		label: "DOCX",
-		extensions: ["docx"],
-		mimeTypes: [
-			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-		],
+		extensions: DOCX_FAMILY_EXTENSIONS,
+		mimeTypes: Object.values(DOCX_FAMILY_MIME_TYPES),
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.docx,
 		sniff: async (file, context) =>

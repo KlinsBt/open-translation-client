@@ -153,6 +153,10 @@ describe("segment splitting", () => {
 		const meta = result.data.segmentsMeta as DocxSegmentMeta[];
 
 		expect(result.error).toBeUndefined();
+		expect(meta.map((entry) => entry.part)).toEqual([
+			"word/document.xml",
+			"word/document.xml",
+		]);
 		expect(meta[0].fragments[0]).toMatchObject({ start: 0, end: 6 });
 		expect(meta[1].fragments[0]).toMatchObject({ start: 6, end: 11 });
 		const output = applyTranslationsToDocxXml(xml, result.data.seg2, [], meta);
@@ -444,6 +448,29 @@ describe("segment joining", () => {
 		const rejected = combineSegmentData(crossParagraph, 0);
 		expect(rejected.error).toMatch(/paragraph boundaries/);
 		expect(rejected.data).toBe(crossParagraph);
+	});
+
+	it("rejects joining DOCX segments from different package parts", () => {
+		const fragment = {
+			paragraphIndex: 0,
+			textNodeIndex: 0,
+			start: 0,
+			end: 4,
+		};
+		const data = makeUserData({
+			type: "docx",
+			seg1: ["Body", "Head"],
+			seg2: ["Text", "Kopf"],
+			checked: [false, false],
+			segmentsMeta: [
+				{ part: "word/document.xml", fragments: [fragment] },
+				{ part: "word/header1.xml", fragments: [fragment] },
+			],
+		}).translationData;
+
+		const result = combineSegmentData(data, 0);
+		expect(result.error).toMatch(/different document parts/);
+		expect(result.data).toBe(data);
 	});
 
 	it("joins a consecutive range atomically", () => {

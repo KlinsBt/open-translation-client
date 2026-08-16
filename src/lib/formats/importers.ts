@@ -1,4 +1,7 @@
-import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
+import {
+	segmentDocxParts,
+	type DocxTrackedChangesPolicy,
+} from "$lib/functions/parsing/parsingDocx";
 import { segmentHtmlContent } from "$lib/functions/parsing/parsingHtml";
 import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
 import { segmentWorkbookStrings } from "$lib/functions/parsing/parsingXlsx";
@@ -34,6 +37,7 @@ import {
 	parseSafeJson,
 	readSafeTextFile,
 	readSafeZipPackage,
+	safeParseXml,
 	SafeInputError,
 	type SafeInputContext,
 } from "./safeInput";
@@ -53,10 +57,39 @@ export async function validateDocxFile(
 	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
 	try {
-		const archive = await inspectSafeZipFile(file, context);
-		return archive.entries.some((entry) => entry.path === "word/document.xml")
-			? { valid: true }
-			: { valid: false, reason: "The DOCX package has no word/document.xml." };
+		const { parts } = await readSafeZipPackage(file, context);
+		const documentXml = parts["word/document.xml"];
+		if (typeof documentXml !== "string") {
+			return {
+				valid: false,
+				reason: "The DOCX package has no word/document.xml.",
+			};
+		}
+		const document = safeParseXml(documentXml, context);
+		if (document.documentElement.localName !== "document") {
+			return {
+				valid: false,
+				reason: "word/document.xml has no Word document root element.",
+			};
+		}
+		for (const [path, content] of Object.entries(parts)) {
+			if (typeof content !== "string") continue;
+			const expectedRoot =
+				path === "[Content_Types].xml"
+					? "Types"
+					: /(?:^|\/)_rels\/[^/]+\.rels$/i.test(path)
+						? "Relationships"
+						: undefined;
+			if (!expectedRoot) continue;
+			const packageXml = safeParseXml(content, context);
+			if (packageXml.documentElement.localName !== expectedRoot) {
+				return {
+					valid: false,
+					reason: `${path} has an invalid package root element.`,
+				};
+			}
+		}
+		return { valid: true };
 	} catch (error) {
 		return invalidResult(error, "The file is not a readable DOCX package.");
 	}
@@ -75,12 +108,21 @@ export async function importDocxFile(
 		throw new Error("The DOCX package has no word/document.xml.");
 	}
 
-	const parsed = segmentDocxXml(documentXml);
-	const lastParagraph = parsed.meta.reduce(
-		(maximum, entry) =>
-			Math.max(maximum, (entry.fragments[0]?.paragraphIndex ?? -1) + 1),
-		0,
-	);
+	const parsed = segmentDocxParts(content, undefined, {
+		trackedChanges: filterOptions.trackedChanges as DocxTrackedChangesPolicy,
+		includeHeadersFooters: Boolean(filterOptions.includeHeadersFooters),
+		includeNotes: Boolean(filterOptions.includeNotes),
+		includeComments: Boolean(filterOptions.includeComments),
+		includeTextBoxes: Boolean(filterOptions.includeTextBoxes),
+		includeDrawingText: Boolean(filterOptions.includeDrawingText),
+	});
+	const lastParagraph = parsed.meta
+		.filter((entry) => entry.part === "word/document.xml")
+		.reduce(
+			(maximum, entry) =>
+				Math.max(maximum, (entry.fragments[0]?.paragraphIndex ?? -1) + 1),
+			0,
+		);
 	const paragraphs = parsePositiveRanges(
 		filterOptions.paragraphs,
 		lastParagraph,
@@ -90,6 +132,7 @@ export async function importDocxFile(
 		.filter(({ entry }) => {
 			const paragraph = entry.fragments[0]?.paragraphIndex;
 			return (
+				entry.part !== "word/document.xml" ||
 				paragraphs === null ||
 				(paragraph !== undefined && paragraphs.has(paragraph + 1))
 			);
@@ -102,7 +145,7 @@ export async function importDocxFile(
 	const replacements: DocxTextReplacement[] = meta.map((entry, unitIndex) => ({
 		kind: "docx-text",
 		unitIndex,
-		part: "word/document.xml",
+		part: entry.part ?? "word/document.xml",
 		separator: entry.separator,
 		fragments: entry.fragments.map((fragment) => ({ ...fragment })),
 	}));
@@ -113,7 +156,7 @@ export async function importDocxFile(
 			format: "docx",
 			sourceSegments,
 			sourceLocations: meta.map((entry, index) => ({
-				part: "word/document.xml",
+				part: entry.part ?? "word/document.xml",
 				paragraph: entry.fragments[0]?.paragraphIndex,
 				segmentIndex: index,
 				metadata: {

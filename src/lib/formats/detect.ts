@@ -237,24 +237,6 @@ async function detectZipPackage(
 	const paths = new Set(inspection.entries.map((entry) => entry.path));
 	const packageDetails = await readSmallPackageDetails(inspection, context);
 	if (paths.has("word/document.xml")) {
-		if (
-			paths.has("word/vbaProject.bin") ||
-			/macroEnabled\.main\+xml/i.test(packageDetails.contentTypes)
-		) {
-			return unsupported(
-				"DOCM",
-				"high",
-				["package", "signature"],
-				"A macro-enabled Word OOXML package was detected; DOCM import is not enabled because macro preservation is not implemented.",
-			);
-		}
-		if (["dotx", "dotm"].includes(extension ?? ""))
-			return unsupported(
-				extension!.toUpperCase(),
-				"high",
-				["package", "extension"],
-				"A Word template package was detected, but template round trips are not implemented.",
-			);
 		return supportedPackage(adapters, "docx", "word/document.xml");
 	}
 	if (paths.has("xl/workbook.xml")) {

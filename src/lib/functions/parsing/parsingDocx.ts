@@ -1,9 +1,25 @@
+import type { DocxSegmentMeta } from "$lib/types/types";
+import { safeParseXml } from "$lib/formats/safeInput";
 import {
 	splitTextWithPreferences,
 	type SplitPiece,
 } from "./splitWithPreferences";
 import { getActiveTokens, getDefaultTokens } from "./parsingPreferences";
-import { safeParseXml } from "$lib/formats/safeInput";
+
+export type DocxTrackedChangesPolicy = "current" | "original" | "all";
+
+export interface DocxParseOptions {
+	part?: string;
+	trackedChanges?: DocxTrackedChangesPolicy;
+	includeTextBoxes?: boolean;
+	includeDrawingText?: boolean;
+}
+
+export interface DocxPackageParseOptions extends DocxParseOptions {
+	includeHeadersFooters?: boolean;
+	includeNotes?: boolean;
+	includeComments?: boolean;
+}
 
 export interface DocxSegmentFragment {
 	node: Element;
@@ -30,289 +46,459 @@ interface NodeRange {
 	end: number;
 }
 
+interface TextFlow {
+	nodes: Element[];
+}
+
 export interface DocxSegmentationResult {
 	xmlDoc: Document;
 	segments: DocxSegment[];
-	meta: {
-		separator: string;
-		fragments: {
-			paragraphIndex: number;
-			textNodeIndex: number;
-			start: number;
-			end: number;
-		}[];
-	}[];
+	meta: DocxSegmentMeta[];
 }
 
-// Split a paragraph into sentence-like chunks while keeping trailing whitespace
+export interface DocxPackageSegmentationResult {
+	segments: DocxSegment[];
+	meta: DocxSegmentMeta[];
+	parts: string[];
+}
+
+const WORD_TEXT_PARTS = {
+	document: "word/document.xml",
+	footnotes: "word/footnotes.xml",
+	endnotes: "word/endnotes.xml",
+	comments: "word/comments.xml",
+} as const;
+
 function splitParagraphIntoSegments(paragraphText: string): SplitSegment[] {
 	const segments: SplitSegment[] = [];
-	const length = paragraphText.length;
 	let cursor = 0;
-
-	while (cursor < length) {
-		let boundary = length;
-
-		// Find the next sentence-ending punctuation
-		for (let i = cursor; i < length; i++) {
-			const char = paragraphText[i];
-			if (char === "." || char === "?" || char === "!") {
-				boundary = i + 1;
+	while (cursor < paragraphText.length) {
+		let boundary = paragraphText.length;
+		for (let index = cursor; index < paragraphText.length; index++) {
+			if ([".", "?", "!", "。", "！", "？"].includes(paragraphText[index])) {
+				boundary = index + 1;
 				break;
 			}
 		}
-
-		// Include trailing whitespace after the punctuation
 		let end = boundary;
-		while (end < length && /\s/.test(paragraphText[end])) {
-			end++;
-		}
-
+		while (end < paragraphText.length && /\s/.test(paragraphText[end])) end++;
 		const rawSegment = paragraphText.slice(cursor, end);
-		const leadingWhitespace = rawSegment.match(/^\s*/)![0].length;
-		const trailingWhitespace = rawSegment.match(/\s*$/)![0].length;
-		const trimmedStart = cursor + leadingWhitespace;
+		const leadingWhitespace = rawSegment.match(/^\s*/)?.[0].length ?? 0;
+		const trailingWhitespace = rawSegment.match(/\s*$/)?.[0].length ?? 0;
+		const start = cursor + leadingWhitespace;
 		const trimmedEnd = end - trailingWhitespace;
-		const cleanedText = paragraphText.slice(trimmedStart, trimmedEnd);
-		if (cleanedText.length > 0) {
-			const separator = paragraphText.slice(trimmedEnd, end);
+		const text = paragraphText.slice(start, trimmedEnd);
+		if (text)
 			segments.push({
-				text: cleanedText,
-				start: trimmedStart,
+				text,
+				start,
 				end,
-				separator,
+				separator: paragraphText.slice(trimmedEnd, end),
 			});
-		}
-
 		cursor = end;
 	}
-
 	return segments;
 }
 
-// Build ranges for each <w:t> node in the paragraph
 function buildNodeRanges(textNodes: Element[]): NodeRange[] {
 	const ranges: NodeRange[] = [];
 	let offset = 0;
-
 	for (const node of textNodes) {
-		const text = node.textContent || "";
-		ranges.push({
-			node,
-			start: offset,
-			end: offset + text.length,
-		});
+		const text = node.textContent ?? "";
+		ranges.push({ node, start: offset, end: offset + text.length });
 		offset += text.length;
 	}
-
 	return ranges;
+}
+
+function isWordElement(element: Element, localName: string): boolean {
+	if (element.localName !== localName) return false;
+	return (
+		element.prefix === "w" ||
+		element.tagName === `w:${localName}` ||
+		/wordprocessingml|ooxml\/wordprocessingml/i.test(
+			element.namespaceURI ?? "",
+		) ||
+		["w", "urn:word", "urn:test"].includes(element.namespaceURI ?? "")
+	);
+}
+
+function isDrawingElement(element: Element, localName: string): boolean {
+	if (element.localName !== localName) return false;
+	return (
+		element.prefix === "a" ||
+		element.tagName === `a:${localName}` ||
+		/drawingml/i.test(element.namespaceURI ?? "")
+	);
+}
+
+function isTextElement(element: Element): boolean {
+	return (
+		isWordElement(element, "t") ||
+		isWordElement(element, "delText") ||
+		isDrawingElement(element, "t")
+	);
+}
+
+function descendantElements(element: Element): Element[] {
+	return Array.from(element.getElementsByTagName("*"));
+}
+
+function hasWordAncestor(element: Element, localName: string): boolean {
+	let parent = element.parentElement;
+	while (parent) {
+		if (isWordElement(parent, localName)) return true;
+		parent = parent.parentElement;
+	}
+	return false;
+}
+
+function hasExcludedRevisionAncestor(
+	element: Element,
+	policy: DocxTrackedChangesPolicy,
+): boolean {
+	let parent = element.parentElement;
+	while (parent) {
+		if (revisionIsExcluded(parent, policy)) return true;
+		parent = parent.parentElement;
+	}
+	return false;
+}
+
+function wordParagraphs(document: Document): Element[] {
+	return descendantElements(document.documentElement).filter((element) =>
+		isWordElement(element, "p"),
+	);
+}
+
+function paragraphTextNodes(paragraph: Element): Element[] {
+	return descendantElements(paragraph).filter(isTextElement);
+}
+
+function revisionIsExcluded(
+	element: Element,
+	policy: DocxTrackedChangesPolicy,
+): boolean {
+	const deleted =
+		isWordElement(element, "del") || isWordElement(element, "moveFrom");
+	const inserted =
+		isWordElement(element, "ins") || isWordElement(element, "moveTo");
+	return (
+		(policy === "current" && deleted) || (policy === "original" && inserted)
+	);
+}
+
+function fieldCharacterType(element: Element): string | undefined {
+	if (!isWordElement(element, "fldChar")) return undefined;
+	return (
+		element.getAttribute("w:fldCharType") ??
+		element.getAttribute("fldCharType") ??
+		undefined
+	)?.toLowerCase();
+}
+
+function collectTextFlows(
+	paragraph: Element,
+	options: Required<
+		Pick<
+			DocxParseOptions,
+			"trackedChanges" | "includeTextBoxes" | "includeDrawingText"
+		>
+	>,
+): TextFlow[] {
+	const flows: TextFlow[] = [];
+	let active: Element[] = [];
+	let fieldDepth = 0;
+	const flush = () => {
+		if (active.length > 0) flows.push({ nodes: active });
+		active = [];
+	};
+	const walk = (node: Node) => {
+		if (node.nodeType !== 1) return;
+		const element = node as Element;
+		if (element !== paragraph && isWordElement(element, "p")) {
+			flush();
+			return;
+		}
+		if (revisionIsExcluded(element, options.trackedChanges)) {
+			flush();
+			return;
+		}
+		if (isWordElement(element, "fldSimple")) {
+			flush();
+			return;
+		}
+		const fieldType = fieldCharacterType(element);
+		if (fieldType) {
+			flush();
+			if (fieldType === "begin") fieldDepth++;
+			if (fieldType === "end") fieldDepth = Math.max(0, fieldDepth - 1);
+			return;
+		}
+		if (isWordElement(element, "instrText")) return;
+		if (
+			isWordElement(element, "tab") ||
+			isWordElement(element, "br") ||
+			isWordElement(element, "cr")
+		) {
+			flush();
+			return;
+		}
+		const isTextBox = isWordElement(element, "txbxContent");
+		const isDrawing = isWordElement(element, "drawing");
+		const isDrawingParagraph = isDrawingElement(element, "p");
+		if (
+			(isTextBox && !options.includeTextBoxes) ||
+			(isDrawing && !options.includeDrawingText)
+		) {
+			flush();
+			return;
+		}
+		const isolatedContainer = isTextBox || isDrawing || isDrawingParagraph;
+		if (isolatedContainer) flush();
+		if (isTextElement(element)) {
+			if (fieldDepth === 0) active.push(element);
+			return;
+		}
+		for (const child of Array.from(element.childNodes)) walk(child);
+		if (isolatedContainer) flush();
+	};
+	for (const child of Array.from(paragraph.childNodes)) walk(child);
+	flush();
+	return flows;
 }
 
 export function segmentDocxXml(
 	documentXml: string,
 	tokensOverride?: string[],
+	options: DocxParseOptions = {},
 ): DocxSegmentationResult {
 	const xmlDoc = safeParseXml(documentXml);
-	const paragraphs = Array.from(xmlDoc.getElementsByTagName("w:p"));
+	const paragraphs = wordParagraphs(xmlDoc);
 	const segments: DocxSegment[] = [];
-	const meta: DocxSegmentationResult["meta"] = [];
+	const meta: DocxSegmentMeta[] = [];
+	const effectiveOptions = {
+		trackedChanges: options.trackedChanges ?? "current",
+		includeTextBoxes: options.includeTextBoxes ?? true,
+		includeDrawingText: options.includeDrawingText ?? true,
+	};
 
-	for (const paragraph of paragraphs) {
-		const textNodes = Array.from(paragraph.getElementsByTagName("w:t"));
-		if (textNodes.length === 0) continue;
-
-		const paragraphText = textNodes
-			.map((node) => node.textContent || "")
-			.join("");
-
-		if (paragraphText.trim().length === 0) continue;
-
-		const nodeRanges = buildNodeRanges(textNodes);
-		const tokens = tokensOverride ?? getActiveTokens();
-		const splitSegments =
-			tokens.length > 0
-				? (splitTextWithPreferences(
-						paragraphText,
-						tokens,
-						getActiveTokens,
-					) as SplitPiece[])
-				: splitParagraphIntoSegments(paragraphText);
-
-		if (splitSegments.length === 0) continue;
-
-		for (const splitSegment of splitSegments) {
-			const fragments: DocxSegmentFragment[] = [];
-			const metaFragments: {
-				paragraphIndex: number;
-				textNodeIndex: number;
-				start: number;
-				end: number;
-			}[] = [];
-
-			for (const range of nodeRanges) {
-				const overlapStart = Math.max(range.start, splitSegment.start);
-				const overlapEnd = Math.min(range.end, splitSegment.end);
-				if (overlapStart < overlapEnd) {
+	for (const [paragraphIndex, paragraph] of paragraphs.entries()) {
+		if (hasExcludedRevisionAncestor(paragraph, effectiveOptions.trackedChanges))
+			continue;
+		if (
+			!effectiveOptions.includeTextBoxes &&
+			hasWordAncestor(paragraph, "txbxContent")
+		)
+			continue;
+		if (
+			!effectiveOptions.includeDrawingText &&
+			hasWordAncestor(paragraph, "drawing")
+		)
+			continue;
+		const allTextNodes = paragraphTextNodes(paragraph);
+		for (const flow of collectTextFlows(paragraph, effectiveOptions)) {
+			const paragraphText = flow.nodes
+				.map((node) => node.textContent ?? "")
+				.join("");
+			if (!paragraphText.trim()) continue;
+			const nodeRanges = buildNodeRanges(flow.nodes);
+			const tokens = tokensOverride ?? getActiveTokens();
+			const splitSegments =
+				tokens.length > 0
+					? (splitTextWithPreferences(
+							paragraphText,
+							tokens,
+							getActiveTokens,
+						) as SplitPiece[])
+					: splitParagraphIntoSegments(paragraphText);
+			for (const splitSegment of splitSegments) {
+				const fragments: DocxSegmentFragment[] = [];
+				const metaFragments: DocxSegmentMeta["fragments"] = [];
+				for (const range of nodeRanges) {
+					const overlapStart = Math.max(range.start, splitSegment.start);
+					const overlapEnd = Math.min(range.end, splitSegment.end);
+					if (overlapStart >= overlapEnd) continue;
 					fragments.push({
 						node: range.node,
 						start: overlapStart - range.start,
 						end: overlapEnd - range.start,
 					});
 					metaFragments.push({
-						paragraphIndex: paragraphs.indexOf(paragraph),
-						textNodeIndex: textNodes.indexOf(range.node),
+						paragraphIndex,
+						textNodeIndex: allTextNodes.indexOf(range.node),
 						start: overlapStart - range.start,
 						end: overlapEnd - range.start,
 					});
 				}
+				if (metaFragments.length === 0) continue;
+				segments.push({
+					text: splitSegment.text,
+					separator: splitSegment.separator,
+					fragments,
+				});
+				meta.push({
+					part: options.part ?? WORD_TEXT_PARTS.document,
+					separator: splitSegment.separator,
+					fragments: metaFragments,
+				});
 			}
-
-			segments.push({
-				text: splitSegment.text,
-				separator: splitSegment.separator,
-				fragments,
-			});
-			meta.push({
-				separator: splitSegment.separator,
-				fragments: metaFragments,
-			});
 		}
 	}
-
 	return { xmlDoc, segments, meta };
+}
+
+export function getDocxTextPartPaths(
+	parts: Record<string, string | Blob>,
+	options: DocxPackageParseOptions = {},
+): string[] {
+	const selected = Object.entries(parts)
+		.filter((entry): entry is [string, string] => typeof entry[1] === "string")
+		.map(([path]) => path)
+		.filter((path) => {
+			if (path === WORD_TEXT_PARTS.document) return true;
+			if (/^word\/(?:header|footer)\d*\.xml$/i.test(path))
+				return options.includeHeadersFooters ?? true;
+			if (
+				path === WORD_TEXT_PARTS.footnotes ||
+				path === WORD_TEXT_PARTS.endnotes
+			)
+				return options.includeNotes ?? true;
+			if (path === WORD_TEXT_PARTS.comments)
+				return options.includeComments ?? true;
+			return false;
+		});
+	const rank = (path: string) => {
+		if (path === WORD_TEXT_PARTS.document) return 0;
+		if (/^word\/header/i.test(path)) return 1;
+		if (/^word\/footer/i.test(path)) return 2;
+		if (path === WORD_TEXT_PARTS.footnotes) return 3;
+		if (path === WORD_TEXT_PARTS.endnotes) return 4;
+		return 5;
+	};
+	return selected.sort(
+		(first, second) =>
+			rank(first) - rank(second) || first.localeCompare(second),
+	);
+}
+
+export function segmentDocxParts(
+	parts: Record<string, string | Blob>,
+	tokensOverride?: string[],
+	options: DocxPackageParseOptions = {},
+): DocxPackageSegmentationResult {
+	const segments: DocxSegment[] = [];
+	const meta: DocxSegmentMeta[] = [];
+	const paths = getDocxTextPartPaths(parts, options);
+	for (const part of paths) {
+		const xml = parts[part];
+		if (typeof xml !== "string") continue;
+		const parsed = segmentDocxXml(xml, tokensOverride, { ...options, part });
+		segments.push(...parsed.segments);
+		meta.push(...parsed.meta);
+	}
+	return { segments, meta, parts: paths };
 }
 
 export function applyTranslationsToDocxXml(
 	documentXml: string,
 	translatedSegments: string[],
 	tokensOverride?: string[],
-	metaOverride?: {
-		separator?: string;
-		fragments: {
-			paragraphIndex: number;
-			textNodeIndex: number;
-			start: number;
-			end: number;
-		}[];
-	}[],
+	metaOverride?: DocxSegmentMeta[],
 ): string {
 	const validMeta =
 		metaOverride &&
 		metaOverride.length > 0 &&
 		metaOverride.length === translatedSegments.length &&
 		metaOverride.every(
-			(m) =>
-				m?.fragments?.length &&
-				m.fragments.every(
-					(f) =>
-						typeof f.paragraphIndex === "number" &&
-						typeof f.textNodeIndex === "number" &&
-						typeof f.start === "number" &&
-						typeof f.end === "number" &&
-						f.end >= f.start,
+			(entry) =>
+				entry.fragments.length > 0 &&
+				entry.fragments.every(
+					(fragment) =>
+						Number.isInteger(fragment.paragraphIndex) &&
+						Number.isInteger(fragment.textNodeIndex) &&
+						fragment.start >= 0 &&
+						fragment.end >= fragment.start,
 				),
 		);
-
-	if (validMeta) {
+	if (validMeta)
 		return applyWithMeta(documentXml, translatedSegments, metaOverride);
-	}
-
 	const tokens = tokensOverride ?? getDefaultTokens();
-	const { xmlDoc, segments } = segmentDocxXml(documentXml, tokens);
-	if (segments.length === 0) return documentXml;
+	const parsed = segmentDocxXml(documentXml, tokens);
+	if (parsed.segments.length === 0) return documentXml;
+	return applyWithMeta(
+		documentXml,
+		translatedSegments.map(
+			(value, index) => value ?? parsed.segments[index]?.text ?? "",
+		),
+		parsed.meta,
+	);
+}
 
-	const serializer = new XMLSerializer();
-	const nodePieces = new Map<Element, string[]>();
-
-	for (let i = 0; i < segments.length; i++) {
-		const segment = segments[i];
-		const translatedText = translatedSegments[i] ?? segment.text;
-		const replacement = translatedText;
-		const totalSpan =
-			segment.fragments.reduce(
-				(sum, fragment) => sum + (fragment.end - fragment.start),
-				0,
-			) || 1;
-
-		let consumed = 0;
-
-		segment.fragments.forEach((fragment, fragIndex) => {
-			const fragmentLength = fragment.end - fragment.start;
-			const isLast = fragIndex === segment.fragments.length - 1;
-			const takeLength = isLast
-				? replacement.length - consumed
-				: Math.round((fragmentLength / totalSpan) * replacement.length);
-			const nextConsumed = Math.max(consumed + takeLength, consumed);
-			const piece = replacement.slice(consumed, nextConsumed);
-			consumed = nextConsumed;
-
-			const existing = nodePieces.get(fragment.node) || [];
-			existing.push(piece);
-			nodePieces.set(fragment.node, existing);
-		});
-	}
-
-	nodePieces.forEach((pieces, node) => {
-		node.textContent = pieces.join("");
-	});
-
-	return serializer.serializeToString(xmlDoc);
+interface NodeEdit {
+	start: number;
+	end: number;
+	text: string;
 }
 
 function applyWithMeta(
 	documentXml: string,
 	translatedSegments: string[],
-	meta: {
-		separator?: string;
-		fragments: {
-			paragraphIndex: number;
-			textNodeIndex: number;
-			start: number;
-			end: number;
-		}[];
-	}[],
+	meta: DocxSegmentMeta[],
 ): string {
 	const xmlDoc = safeParseXml(documentXml);
-	const paragraphs = Array.from(xmlDoc.getElementsByTagName("w:p"));
-	const nodePieces = new Map<Element, string[]>();
-
-	for (let i = 0; i < meta.length; i++) {
-		const segMeta = meta[i];
-		const replacement = translatedSegments[i] ?? "";
-		const fragments = segMeta.fragments;
+	const paragraphs = wordParagraphs(xmlDoc);
+	const edits = new Map<Element, NodeEdit[]>();
+	for (const [segmentIndex, segmentMeta] of meta.entries()) {
+		const replacement = translatedSegments[segmentIndex] ?? "";
 		const totalSpan =
-			fragments.reduce(
-				(sum, fragment) => sum + (fragment.end - fragment.start),
+			segmentMeta.fragments.reduce(
+				(total, fragment) => total + fragment.end - fragment.start,
 				0,
 			) || 1;
-
-		let consumed = 0;
-
-		fragments.forEach((fragment, fragIndex) => {
-			const para = paragraphs[fragment.paragraphIndex];
-			if (!para) return;
-			const textNodes = Array.from(para.getElementsByTagName("w:t"));
-			const node = textNodes[fragment.textNodeIndex];
-			if (!node) return;
-
-			const fragmentLength = fragment.end - fragment.start;
-			const isLast = fragIndex === fragments.length - 1;
-			const takeLength = isLast
-				? replacement.length - consumed
-				: Math.round((fragmentLength / totalSpan) * replacement.length);
-			const nextConsumed = Math.max(consumed + takeLength, consumed);
-			const piece = replacement.slice(consumed, nextConsumed);
-			consumed = nextConsumed;
-
-			const existing = nodePieces.get(node) || [];
-			existing.push(piece);
-			nodePieces.set(node, existing);
-		});
+		let originalConsumed = 0;
+		let replacementConsumed = 0;
+		for (const [fragmentIndex, fragment] of segmentMeta.fragments.entries()) {
+			const paragraph = paragraphs[fragment.paragraphIndex];
+			if (!paragraph) continue;
+			const node = paragraphTextNodes(paragraph)[fragment.textNodeIndex];
+			if (!node) continue;
+			originalConsumed += fragment.end - fragment.start;
+			const replacementEnd =
+				fragmentIndex === segmentMeta.fragments.length - 1
+					? replacement.length
+					: Math.round((originalConsumed / totalSpan) * replacement.length);
+			const piece = replacement.slice(replacementConsumed, replacementEnd);
+			replacementConsumed = replacementEnd;
+			edits.set(node, [
+				...(edits.get(node) ?? []),
+				{ start: fragment.start, end: fragment.end, text: piece },
+			]);
+		}
 	}
-
-	nodePieces.forEach((pieces, node) => {
-		node.textContent = pieces.join("");
-	});
-
-	return new XMLSerializer().serializeToString(xmlDoc);
+	for (const [node, nodeEdits] of edits) {
+		let text = node.textContent ?? "";
+		for (const edit of [...nodeEdits].sort(
+			(first, second) => second.start - first.start,
+		))
+			text = `${text.slice(0, edit.start)}${edit.text}${text.slice(edit.end)}`;
+		node.textContent = text;
+		if (
+			/^\s|\s$/.test(text) &&
+			node.getAttribute("xml:space") !== "preserve" &&
+			node.getAttributeNS("http://www.w3.org/XML/1998/namespace", "space") !==
+				"preserve"
+		)
+			node.setAttributeNS(
+				"http://www.w3.org/XML/1998/namespace",
+				"xml:space",
+				"preserve",
+			);
+	}
+	// Some browser-compatible DOM implementations serialize U+00A0 as the
+	// HTML-only &nbsp; entity. OOXML is XML and only accepts predefined or
+	// numeric entities, so normalize it at the serialization boundary.
+	return new XMLSerializer()
+		.serializeToString(xmlDoc)
+		.replaceAll("&nbsp;", "&#160;");
 }

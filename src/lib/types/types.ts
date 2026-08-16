@@ -23,6 +23,7 @@ export interface DocxFragmentMeta {
 }
 
 export interface DocxSegmentMeta {
+	part?: string;
 	separator?: string;
 	fragments: DocxFragmentMeta[];
 }

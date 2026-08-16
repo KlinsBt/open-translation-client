@@ -31,7 +31,7 @@ The sequence is:
 
 | Area               | Present in the repository                                    | Main gap before it is production-grade                                           |
 | ------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| Source documents   | TXT, JSON, DOCX, XLSX, HTML                                  | Each uses a separate path; preservation and coverage vary                        |
+| Source documents   | TXT, JSON, DOCX/DOCM/DOTX/DOTM, XLSX, HTML                   | Each uses a separate path; preservation and coverage vary                        |
 | Project exchange   | Open TLC JSON, XLIFF 1.2/2.x, protected vendor XLIFF imports | Origin-tool-verified vendor exports and typed module capabilities                |
 | Translation memory | TMX 1.4b Level 1/2 import, export, and policy-driven merge   | Broader vendor corpora and persistent indexing for very large memories           |
 | Terminology        | TBX import/export and merge, including `martif` handling     | Explicit dialect/version support, validation, references, and lossless metadata  |
@@ -81,8 +81,9 @@ must be removed until a real XLS converter exists.
       Completed 2026-08-16: adapters now declare typed options that the upload UI
       renders dynamically and normalizes before import. Current formats support
       TXT segmentation modes, JSON wildcard paths and primitive-value policy,
-      DOCX paragraph ranges, XLSX worksheet/column/content filters, and HTML text
-      and attribute selection. Options persist in IndexedDB and Open TLC XLIFF
+      DOCX story, revision, drawing, and paragraph controls, XLSX
+      worksheet/column/content filters, and HTML text and attribute selection.
+      Options persist in IndexedDB and Open TLC XLIFF
       saves, are backfilled for older projects, and are reused by exporters.
       Unit, selective-import, persistence, interchange, and filtered round-trip
       tests pass. YAML/XML/subtitle/target-specific controls will extend the same
@@ -129,9 +130,10 @@ must be removed until a real XLS converter exists.
       and a user-facing explanation. Exact final extensions are normalized
       case-insensitively, MIME parameters are stripped, and contradictory names
       or MIME values cannot override structural signatures. Safe ZIP inspection
-      distinguishes DOCX, XLSX, DOCM/XLSM, Word/Excel templates, PPTX/PPTM,
-      ODT/ODS/ODP, EPUB, and unknown ZIP containers by internal entries and
-      declared media types. Legacy OLE `.doc`/`.xls`/`.ppt`, RTF, and generic XML
+      distinguishes the supported DOCX/DOCM/DOTX/DOTM family from XLSX,
+      unsupported XLSM/Excel templates, PPTX/PPTM, ODT/ODS/ODP, EPUB, and
+      unknown ZIP containers by internal entries and declared media types.
+      Legacy OLE `.doc`/`.xls`/`.ppt`, RTF, and generic XML
       are recognized but reported as unsupported instead of routed to an
       incompatible importer; misleading legacy upload hints were removed.
       Project backups recognize JSON or the XLIFF root independently of their
@@ -303,12 +305,29 @@ Complete these in order after FF-000 through FF-009.
       bounded-buffer import. All 284 unit tests and five Chromium tests,
       formatting, type-check, zero-vulnerability production audit, and an
       isolated clean production build pass.
-- [ ] **FF-105 — DOCX family (`.docx`, later `.docm`, `.dotx`, `.dotm`).**
+- [x] **FF-105 — DOCX family (`.docx`, `.docm`, `.dotx`, `.dotm`).**
       Harden current round trips across paragraphs split into runs, styles,
       tabs/breaks, hyperlinks, fields, tracked changes policy, tables, headers,
       footers, footnotes/endnotes, comments, text boxes, content controls, and
       drawings. Preserve relationships and every untouched ZIP part. Macro
       packages may only preserve VBA bytes; Open TLC must never execute them.
+      Completed 2026-08-16: one content-sniffed adapter now imports and exports
+      all four WordprocessingML package types; extracts main-document, header,
+      footer, footnote, endnote, comment, table, content-control, text-box, and
+      addressable DrawingML text; retains run/style, hyperlink, tab/break,
+      relationship, revision, and untouched package structure; and offers
+      current/original/all tracked-change plus per-story import policies. Fields
+      remain protected rather than exposing calculated display text. Package-part
+      metadata keeps split/join edits addressable and blocks cross-story joins.
+      Identity output is byte-exact, translated output changes only selected XML
+      stories, whitespace gaps and non-breaking spaces remain valid XML, and VBA
+      stays opaque and byte-identical without evaluation. DOCX-family detection,
+      extension/MIME retention, malformed XML, revision, option, nested text-box,
+      range-patching, macro, skeleton, 250-unit performance, browser re-import,
+      and real 2,718-word fixture tests pass. The generated real-world DOCX also
+      passes `xmllint` well-formedness and a headless LibreOffice reopen/PDF
+      export. Full ISO/IEC 29500 schema validation and semantic translation of
+      field results, charts, or SmartArt remain explicit future hardening work.
 - [ ] **FF-106 — XLSX family (`.xlsx`, later `.xlsm`, `.xltx`, `.xltm`).**
       Harden shared and inline strings across every worksheet; preserve formulas,
       numbers, dates, rich-text runs, comments, hyperlinks, hidden sheets,
@@ -583,6 +602,10 @@ events and reconstruct the original format.
 - [LTAC-Global TBX-Basic DCA/DCT schemas](https://ltac-global.github.io/TBX-Basic_dialect/)
 - [W3C ITS 2.0](https://www.w3.org/TR/its20/)
 - [Microsoft Open XML package overview](https://learn.microsoft.com/en-us/office/open-xml/about-the-open-xml-sdk)
+- [Microsoft WordprocessingML document structure and story parts](https://learn.microsoft.com/en-us/office/open-xml/word/structure-of-a-wordprocessingml-document)
+- [Microsoft Word header and footer package relationships](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-remove-the-headers-and-footers-from-a-word-processing-document)
+- [Microsoft Word comments-part guidance](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-retrieve-comments-from-a-word-processing-document)
+- [Microsoft DOCM-to-DOCX macro-part behavior](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-convert-a-word-processing-document-from-the-docm-to-the-docx-file-format)
 - [GNU gettext PO format](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html)
 - [Android string resources](https://developer.android.com/guide/topics/resources/string-resource)
 - [Apple string catalogs](https://developer.apple.com/documentation/xcode/localizing-and-varying-text-with-a-string-catalog)

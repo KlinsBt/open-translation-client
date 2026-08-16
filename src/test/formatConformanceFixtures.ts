@@ -164,7 +164,15 @@ const docxFixture: FormatConformanceFixture = {
 	expectMalformedImportFailure: true,
 	extractionSnapshot: {
 		segments: [CONFORMANCE_UNICODE_SOURCE],
-		filterOptions: { paragraphs: "" },
+		filterOptions: {
+			paragraphs: "",
+			trackedChanges: "current",
+			includeHeadersFooters: true,
+			includeNotes: true,
+			includeComments: true,
+			includeTextBoxes: true,
+			includeDrawingText: true,
+		},
 		skeleton: { kind: "package", replacementKinds: ["docx-text"] },
 		units: [{ id: "unit-1", part: "word/document.xml", path: null }],
 	},

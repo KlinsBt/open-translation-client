@@ -84,7 +84,9 @@ describe("format adapter registry", () => {
 	});
 
 	it("derives upload hints and labels from the registry", () => {
-		expect(getFormatAcceptValue()).toBe(".txt,.json,.docx,.xlsx,.html,.htm");
+		expect(getFormatAcceptValue()).toBe(
+			".txt,.json,.docx,.docm,.dotx,.dotm,.xlsx,.html,.htm",
+		);
 		expect(getSupportedFormatLabels()).toBe("TXT, JSON, DOCX, XLSX, HTML");
 	});
 
@@ -207,18 +209,30 @@ describe("format adapter registry", () => {
 		).resolves.toMatchObject({ formatId: "xlsx", label: "XLSX" });
 	});
 
+	it.each(["docm", "dotx", "dotm"])(
+		"detects Word %s packages as the DOCX-family adapter",
+		async (extension) => {
+			const file = await zipFile(
+				{
+					"[Content_Types].xml": `<Types><Override ContentType="application/vnd.ms-word.${extension.includes("m") ? "macroEnabled" : "template"}.main+xml"/></Types>`,
+					"word/document.xml": "<document/>",
+					...(extension.includes("m")
+						? { "word/vbaProject.bin": "opaque macro bytes" }
+						: {}),
+				},
+				`document.${extension}`,
+			);
+			await expect(detectFormatWithConfidence(file)).resolves.toMatchObject({
+				formatId: "docx",
+				label: "DOCX",
+				supported: true,
+				confidence: "high",
+			});
+		},
+	);
+
 	it("distinguishes unsupported OOXML, OpenDocument, EPUB, and generic ZIP packages", async () => {
 		const cases = [
-			[
-				await zipFile(
-					{
-						"word/document.xml": "<document/>",
-						"word/vbaProject.bin": "macro",
-					},
-					"macro.docm",
-				),
-				"DOCM",
-			],
 			[
 				await zipFile(
 					{ "ppt/presentation.xml": "<presentation/>" },

@@ -55,7 +55,7 @@ export interface HtmlAttributeReplacement extends ReplacementBase {
 
 export interface DocxTextReplacement extends ReplacementBase {
 	kind: "docx-text";
-	part: "word/document.xml";
+	part: string;
 	fragments: Array<{
 		paragraphIndex: number;
 		textNodeIndex: number;
@@ -524,7 +524,10 @@ export function createSkeletonFromLegacy(
 				replacements.push({
 					kind: "docx-text",
 					unitIndex,
-					part: "word/document.xml",
+					part:
+						typeof candidate.part === "string"
+							? candidate.part
+							: "word/document.xml",
 					separator: candidate.separator,
 					fragments: candidate.fragments.map((fragment) => ({ ...fragment })),
 				});

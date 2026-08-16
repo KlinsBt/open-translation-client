@@ -141,8 +141,13 @@ function splitDocxMetaEntry(
 	}
 
 	return {
-		first: { separator: "", fragments: firstFragments },
+		first: {
+			...(metaEntry.part ? { part: metaEntry.part } : {}),
+			separator: "",
+			fragments: firstFragments,
+		},
 		second: {
+			...(metaEntry.part ? { part: metaEntry.part } : {}),
 			separator: metaEntry.separator ?? "",
 			fragments: secondFragments,
 		},
@@ -398,6 +403,13 @@ function combineMetaEntries(
 		isDocxMetaEntry(current) &&
 		isDocxMetaEntry(next)
 	) {
+		const currentPart = current.part ?? "word/document.xml";
+		const nextPart = next.part ?? "word/document.xml";
+		if (currentPart !== nextPart) {
+			return {
+				error: "Cannot join DOCX segments from different document parts.",
+			};
+		}
 		const currentParagraph = docxParagraph(current);
 		const nextParagraph = docxParagraph(next);
 		if (
@@ -411,6 +423,7 @@ function combineMetaEntries(
 		}
 		return {
 			entry: {
+				...(current.part || next.part ? { part: currentPart } : {}),
 				separator: next.separator ?? "",
 				fragments: [
 					...current.fragments.map((fragment) => ({ ...fragment })),

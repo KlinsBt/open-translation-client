@@ -43,6 +43,45 @@ export const FORMAT_IMPORT_OPTIONS = {
 			placeholder: "All, or e.g. 1-5, 8",
 			description: "Import all paragraphs or a 1-based range list.",
 		},
+		{
+			id: "trackedChanges",
+			label: "Tracked changes",
+			type: "select",
+			defaultValue: "current",
+			choices: ["current", "original", "all"],
+			description:
+				"Current includes insertions; original includes deletions; all imports both without accepting or rejecting revisions.",
+		},
+		{
+			id: "includeHeadersFooters",
+			label: "Headers and footers",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeNotes",
+			label: "Footnotes and endnotes",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeComments",
+			label: "Comments",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeTextBoxes",
+			label: "Text boxes",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeDrawingText",
+			label: "Drawing text",
+			type: "boolean",
+			defaultValue: true,
+		},
 	],
 	xlsx: [
 		{

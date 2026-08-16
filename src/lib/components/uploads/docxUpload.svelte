@@ -220,7 +220,7 @@
 			<input
 				id="fileInputWord"
 				type="file"
-				accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+				accept=".docx,.docm,.dotx,.dotm,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-word.document.macroenabled.12,application/vnd.openxmlformats-officedocument.wordprocessingml.template,application/vnd.ms-word.template.macroenabled.12"
 				oninput={handleFileUpload}
 			/>
 		</button>
