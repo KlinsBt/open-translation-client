@@ -2,6 +2,10 @@ import { type TbData, type TmData, type UserData } from "../../types/types.js";
 import { getDefaultTokens } from "$lib/functions/parsing/parsingPreferences";
 import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
 import {
+	createNeutralDocument,
+	synchronizeNeutralDocument,
+} from "$lib/formats/documentModel";
+import {
 	tbData,
 	tmData,
 	userData,
@@ -15,6 +19,32 @@ const DB_TB_NAME = "TBData";
 const DURABILITY = "relaxed"; // "strict" or "relaxed"
 
 let db: IDBDatabase | null = null;
+
+export function ensureNeutralDocument(userData: UserData): UserData {
+	const translation = userData.translationData;
+	const document =
+		translation.documentModel ??
+		createNeutralDocument({
+			format: translation.type,
+			documentId: `project-${translation.creationDate}`,
+			sourceSegments: translation.seg1,
+			targetSegments: translation.seg2,
+			checked: translation.checked,
+			sourceLanguage: translation.sourceLang,
+			targetLanguage: translation.targetLang,
+		});
+	translation.documentModel = synchronizeNeutralDocument(
+		document,
+		{
+			seg1: translation.seg1,
+			seg2: translation.seg2,
+			checked: translation.checked,
+		},
+		translation.sourceLang,
+		translation.targetLang,
+	);
+	return userData;
+}
 
 // Open (or create) the IndexedDB database
 function openDatabase(): Promise<IDBDatabase> {
@@ -101,7 +131,7 @@ export async function loadTranslationsUserDataFromIndexedDB(): Promise<
 						console.error("Failed to regenerate docx meta", e);
 					}
 				}
-				return item;
+				return ensureNeutralDocument(item);
 			});
 			userData.set(result);
 			resolve(result);
@@ -182,6 +212,7 @@ export async function updateAllTranslationsOnIndexedDB(
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
 
 		const updatePromises = fullUserData.map((data) => {
+			ensureNeutralDocument(data);
 			return new Promise<void>((res, rej) => {
 				const request = store.put(data);
 
@@ -203,6 +234,7 @@ export async function updateAllTranslationsOnIndexedDB(
 export async function updateTranslationOnIndexedDB(
 	userData: UserData,
 ): Promise<void> {
+	ensureNeutralDocument(userData);
 	const db = await openDatabase();
 	return new Promise((resolve, reject) => {
 		const transaction = db.transaction(DB_USER_STORE_NAME, "readwrite", {

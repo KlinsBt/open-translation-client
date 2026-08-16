@@ -7,6 +7,11 @@ import type {
 	SegmentMeta,
 	UserData,
 } from "$lib/types/types";
+import {
+	combineNeutralDocumentUnits,
+	splitNeutralDocumentUnit,
+	synchronizeNeutralDocument,
+} from "$lib/formats/documentModel";
 
 type TranslationData = UserData["translationData"];
 
@@ -498,6 +503,19 @@ export function splitSegmentData(
 		typeof matchingJoinBoundary.secondChecked === "boolean"
 			? [matchingJoinBoundary.firstChecked, matchingJoinBoundary.secondChecked]
 			: [false, false];
+	const splitDocument = translation.documentModel
+		? splitNeutralDocumentUnit(translation.documentModel, idx, splitAt, {
+				firstTarget,
+				secondTarget,
+				firstChecked: restoredChecks[0],
+				secondChecked: restoredChecks[1],
+				firstId: matchingJoinBoundary?.firstUnitId,
+				secondId: matchingJoinBoundary?.secondUnitId,
+			})
+		: undefined;
+	if (splitDocument?.error) {
+		return { data: translation, error: splitDocument.error };
+	}
 
 	newSeg1.splice(idx, 1, source.slice(0, splitAt), source.slice(splitAt));
 	// A character offset in one language is not a meaningful target split point.
@@ -530,6 +548,7 @@ export function splitSegmentData(
 			checked: newChecked,
 			segmentsMeta: newMeta,
 			segmentJoinStates: newJoinStates,
+			documentModel: splitDocument?.document,
 		},
 		restoredJoinBoundary: canRestoreJoinedTargets,
 	};
@@ -557,6 +576,14 @@ export function combineSegmentData(
 		? [...translation.segmentsMeta]
 		: undefined;
 	const newJoinStates = normalizedJoinStates(translation);
+	const firstUnitId = translation.documentModel?.units[idx]?.id;
+	const secondUnitId = translation.documentModel?.units[idx + 1]?.id;
+	const combinedDocument = translation.documentModel
+		? combineNeutralDocumentUnits(translation.documentModel, idx)
+		: undefined;
+	if (combinedDocument?.error) {
+		return { data: translation, error: combinedDocument.error };
+	}
 	const currentSourceLength = newSeg1[idx].length;
 	const currentTargetLength = newSeg2[idx].length;
 	const joinedTarget = newSeg2[idx] + newSeg2[idx + 1];
@@ -569,6 +596,8 @@ export function combineSegmentData(
 			{
 				sourceOffset: currentSourceLength,
 				targetOffset: currentTargetLength,
+				...(firstUnitId ? { firstUnitId } : {}),
+				...(secondUnitId ? { secondUnitId } : {}),
 				...(firstMeta ? { firstMeta } : {}),
 				...(secondMeta ? { secondMeta } : {}),
 				firstChecked: newChecked[idx],
@@ -590,6 +619,14 @@ export function combineSegmentData(
 	if (newMeta && combinedMeta.entry) {
 		newMeta.splice(idx, 2, combinedMeta.entry);
 	}
+	const synchronizedDocument = combinedDocument?.document
+		? synchronizeNeutralDocument(
+				combinedDocument.document,
+				{ seg1: newSeg1, seg2: newSeg2, checked: newChecked },
+				translation.sourceLang,
+				translation.targetLang,
+			)
+		: undefined;
 
 	return {
 		data: {
@@ -599,6 +636,7 @@ export function combineSegmentData(
 			checked: newChecked,
 			segmentsMeta: newMeta,
 			segmentJoinStates: newJoinStates,
+			documentModel: synchronizedDocument,
 		},
 	};
 }

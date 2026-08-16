@@ -126,9 +126,15 @@ describe("registered importers and validators", () => {
 		await expect(getFormatAdapter("text").validate(file)).resolves.toEqual({
 			valid: true,
 		});
-		await expect(getFormatAdapter("text").importFile(file)).resolves.toEqual({
+		await expect(
+			getFormatAdapter("text").importFile(file),
+		).resolves.toMatchObject({
 			kind: "text",
 			text: "First line\r\nSecond line",
+			document: {
+				format: "text",
+				schemaVersion: 1,
+			},
 		});
 	});
 
@@ -147,6 +153,14 @@ describe("registered importers and validators", () => {
 			{ path: ["title"], separator: "" },
 			{ path: ["nested", "count"], separator: "" },
 		]);
+		expect(result.document.units.map((unit) => unit.id)).toEqual([
+			"unit-1",
+			"unit-2",
+		]);
+		expect(result.document.units[1].sourceLocation?.path).toEqual([
+			"nested",
+			"count",
+		]);
 	});
 
 	it("imports HTML and retains replacement metadata", async () => {
@@ -162,6 +176,7 @@ describe("registered importers and validators", () => {
 		expect(result.segments).toEqual(["Hello world."]);
 		expect(result.segmentsMeta).toHaveLength(1);
 		expect(result.typeRef).toContain("<p>Hello world.</p>");
+		expect(result.document.units).toHaveLength(1);
 	});
 
 	it("accepts HTML fragments but rejects empty HTML files", async () => {
@@ -193,6 +208,9 @@ describe("registered importers and validators", () => {
 		if (result.kind !== "segments") throw new Error("Expected segments");
 		expect(result.segments).toEqual(["Hello."]);
 		expect(result.segmentsMeta).toHaveLength(1);
+		expect(result.document.units[0].sourceLocation?.part).toBe(
+			"word/document.xml",
+		);
 	});
 
 	it("validates and imports a minimal XLSX package", async () => {
@@ -211,6 +229,10 @@ describe("registered importers and validators", () => {
 		});
 		const result = await getFormatAdapter("xlsx").importFile(file);
 		expect(result).toMatchObject({ kind: "segments", segments: ["Hello."] });
+		if (result.kind !== "segments") throw new Error("Expected segments");
+		expect(result.document.units[0].sourceLocation).toMatchObject({
+			segmentIndex: 0,
+		});
 	});
 
 	it("rejects malformed JSON and mislabeled Office packages", async () => {

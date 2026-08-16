@@ -11,6 +11,7 @@ import { buildTbx } from "./generateTbx3SaveFile";
 import { buildTmx } from "./generateTmxSaveFile1_4";
 import { buildXliff1_2 } from "./generateXliffSaveFile1_2";
 import { buildXliff2_0 } from "./generateXliffSaveFile2_0";
+import { createNeutralDocument } from "$lib/formats/documentModel";
 
 describe("translation output builders", () => {
 	it("builds plain text without JSON quoting", () => {
@@ -46,6 +47,13 @@ describe("translation output builders", () => {
 				},
 			],
 			parsingTokens: [".", "!"],
+			documentModel: createNeutralDocument({
+				format: "json",
+				sourceSegments: ["One. Two!"],
+				targetSegments: ["Eins. Zwei!"],
+				checked: [true],
+				unitIds: ["message"],
+			}),
 		});
 		const output = buildXliff2_0(userData);
 		const doc = new DOMParser().parseFromString(output, "application/xml");
@@ -58,6 +66,9 @@ describe("translation output builders", () => {
 			userData.translationData.segmentJoinStates,
 		);
 		expect(restored.parsingTokens).toEqual([".", "!"]);
+		expect(restored.documentModel).toEqual(
+			userData.translationData.documentModel,
+		);
 	});
 
 	it("does not throw when optional XLIFF IDs are absent", () => {

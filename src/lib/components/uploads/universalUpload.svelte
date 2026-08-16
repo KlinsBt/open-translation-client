@@ -118,6 +118,7 @@
 					imported.text,
 					adapter.id,
 					imported.typeRef,
+					imported.document,
 				);
 			} else {
 				await saveAndOpenNewFileWithStringArray(
@@ -129,6 +130,7 @@
 					adapter.id,
 					imported.typeRef,
 					imported.segmentsMeta,
+					imported.document,
 				);
 			}
 

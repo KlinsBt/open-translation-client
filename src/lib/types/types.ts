@@ -1,5 +1,7 @@
 ﻿import type { FormatId } from "$lib/formats/formatIds";
 
+import type { NeutralDocument } from "$lib/formats/documentModel";
+
 export interface Sgmt {
 	segment: string;
 	checked: boolean;
@@ -43,6 +45,8 @@ export type SegmentMeta = DocxSegmentMeta | JsonSegmentMeta | HtmlSegmentMeta;
 export interface SegmentJoinBoundary {
 	sourceOffset: number;
 	targetOffset: number | null;
+	firstUnitId?: string;
+	secondUnitId?: string;
 	firstMeta?: SegmentMeta;
 	secondMeta?: SegmentMeta;
 	firstChecked?: boolean;
@@ -68,6 +72,7 @@ export interface UserData {
 		typeRef: TypeRef;
 		segmentsMeta?: SegmentMeta[];
 		segmentJoinStates?: Array<SegmentJoinState | null>;
+		documentModel?: NeutralDocument;
 		tm: null | {
 			id: null | number;
 			name: null | string;

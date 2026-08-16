@@ -17,8 +17,14 @@ export function buildXliff1_2(userData: UserData): string {
 		segmentsMeta,
 		segmentJoinStates,
 		parsingTokens,
+		documentModel,
 	} = translationData;
-	const editingState = { segmentsMeta, segmentJoinStates, parsingTokens };
+	const editingState = {
+		segmentsMeta,
+		segmentJoinStates,
+		parsingTokens,
+		documentModel,
+	};
 
 	// XLIFF structure for version 1.2
 	let xliff = `<?xml version="1.0" encoding="UTF-8"?>\n`;

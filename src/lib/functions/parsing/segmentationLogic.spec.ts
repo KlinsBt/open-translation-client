@@ -20,6 +20,7 @@ import {
 	getSegmentJoinBoundaryOffsets,
 	splitSegmentData,
 } from "./segmentationLogic";
+import { createNeutralDocument } from "$lib/formats/documentModel";
 
 describe("segment splitting", () => {
 	it("splits at a source caret and keeps the existing target in the first half", () => {
@@ -216,6 +217,38 @@ describe("segment joining", () => {
 		expect(restored.data.seg2).toEqual(["Eins ", "zwei"]);
 		expect(restored.data.checked).toEqual([true, false]);
 		expect(restored.data.segmentJoinStates).toEqual([null, null]);
+	});
+
+	it("preserves neutral unit IDs when a join is split at its saved boundary", () => {
+		const data = makeUserData({
+			seg1: ["One ", "two"],
+			seg2: ["Eins ", "zwei"],
+			checked: [true, false],
+			documentModel: createNeutralDocument({
+				format: "text",
+				sourceSegments: ["One ", "two"],
+				targetSegments: ["Eins ", "zwei"],
+				checked: [true, false],
+				unitIds: ["first", "second"],
+			}),
+		}).translationData;
+		const joined = combineSegmentData(data, 0);
+
+		expect(joined.error).toBeUndefined();
+		expect(joined.data.documentModel?.units.map((unit) => unit.id)).toEqual([
+			"first",
+		]);
+		expect(joined.data.segmentJoinStates?.[0]?.boundaries[0]).toMatchObject({
+			firstUnitId: "first",
+			secondUnitId: "second",
+		});
+
+		const restored = splitSegmentData(joined.data, 0, 4);
+		expect(restored.error).toBeUndefined();
+		expect(restored.data.documentModel?.units.map((unit) => unit.id)).toEqual([
+			"first",
+			"second",
+		]);
 	});
 
 	it("does not invent punctuation when joining untranslated structured segments", () => {

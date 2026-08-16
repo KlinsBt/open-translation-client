@@ -52,11 +52,17 @@ must be removed until a real XLS converter exists.
       registry, all five current formats have adapters and validation hooks, and
       focused registry/import tests pass. Deeper signature enforcement remains
       tracked by FF-006 so existing uploads are not changed silently here.
-- [ ] **FF-001 — Define a rich neutral document model.** Represent stable unit
+- [x] **FF-001 — Define a rich neutral document model.** Represent stable unit
       IDs, source and target fragments, paired/standalone inline codes, context,
       notes, state, plural/variant relationships, translatability, whitespace,
       language, and source location. Do not flatten protected codes into plain
       strings.
+      Completed 2026-08-16: the versioned neutral model now covers these fields,
+      validates IDs and inline-code balance, is produced by every registered
+      importer, persists in IndexedDB and Open TLC XLIFF saves, and remains
+      synchronized with the current segment-array compatibility view. Split/join
+      edits preserve unit IDs, while protected codes cannot be silently flattened.
+      Model, importer, persistence, interchange, and structural-edit tests pass.
 - [ ] **FF-002 — Separate skeleton preservation from segment content.** Store
       untouched source bytes/package parts plus explicit replacement locations.
       Export by patching the skeleton, preserving unknown elements, namespaces,

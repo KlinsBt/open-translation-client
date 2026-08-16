@@ -6,6 +6,47 @@ import {
 	getActiveTokens,
 	getDefaultTokens,
 } from "./parsing/parsingPreferences";
+import {
+	createNeutralDocument,
+	synchronizeNeutralDocument,
+	withDocumentLanguages,
+	type NeutralDocument,
+} from "$lib/formats/documentModel";
+
+function prepareDocumentModel(
+	documentModel: NeutralDocument | undefined,
+	fileType: Type,
+	creationDate: string,
+	sourceLang: string,
+	targetLang: string,
+	seg1: string[],
+	seg2: string[],
+	checked: boolean[],
+): NeutralDocument {
+	const document = documentModel
+		? {
+				...withDocumentLanguages(documentModel, sourceLang, targetLang),
+				id:
+					documentModel.id === "document-1"
+						? `project-${creationDate}`
+						: documentModel.id,
+			}
+		: createNeutralDocument({
+				format: fileType,
+				documentId: `project-${creationDate}`,
+				sourceSegments: seg1,
+				targetSegments: seg2,
+				checked,
+				sourceLanguage: sourceLang,
+				targetLanguage: targetLang,
+			});
+	return synchronizeNeutralDocument(
+		document,
+		{ seg1, seg2, checked },
+		sourceLang,
+		targetLang,
+	);
+}
 
 export async function saveNewTranslationToUserDataFromText(
 	fullData: UserData[],
@@ -16,8 +57,19 @@ export async function saveNewTranslationToUserDataFromText(
 	fullText: string,
 	fileType: Type,
 	fileTypeRef?: TypeRef,
+	documentModel?: NeutralDocument,
 ) {
 	let generatedText = createTextSegmentsWithRegexGeneralTextAlgo(fullText);
+	const model = prepareDocumentModel(
+		documentModel,
+		fileType,
+		creationDate,
+		sourceLang,
+		targetLang,
+		generatedText[0],
+		generatedText[1],
+		generatedText[2],
+	);
 	let data: UserData = {
 		translationData: {
 			name: saveName,
@@ -30,6 +82,7 @@ export async function saveNewTranslationToUserDataFromText(
 			type: fileType,
 			typeRef: fileTypeRef || {},
 			segmentsMeta: [],
+			documentModel: model,
 			parsingTokens: getActiveTokens() || getDefaultTokens(),
 			tm: {
 				id: null,
@@ -58,7 +111,10 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 	fileType: Type,
 	fileTypeRef?: TypeRef,
 	segmentsMeta?: any[],
+	documentModel?: NeutralDocument,
 ) {
+	const targetSegments = new Array(stringArray.length).fill("");
+	const checkedSegments = new Array(stringArray.length).fill(false);
 	let data: UserData = {
 		translationData: {
 			name: saveName,
@@ -66,11 +122,21 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 			targetLang: targetLang,
 			creationDate: creationDate,
 			seg1: stringArray,
-			seg2: new Array(stringArray.length).fill(""),
-			checked: new Array(stringArray.length).fill(false),
+			seg2: targetSegments,
+			checked: checkedSegments,
 			type: fileType,
 			typeRef: fileTypeRef || {},
 			segmentsMeta: segmentsMeta || [],
+			documentModel: prepareDocumentModel(
+				documentModel,
+				fileType,
+				creationDate,
+				sourceLang,
+				targetLang,
+				stringArray,
+				targetSegments,
+				checkedSegments,
+			),
 			parsingTokens: getActiveTokens() || getDefaultTokens(),
 			tm: {
 				id: null,
@@ -95,6 +161,18 @@ export async function saveNewTranslationToUserDataFromSaveFile(
 ) {
 	if (!data.translationData.parsingTokens) {
 		data.translationData.parsingTokens = getDefaultTokens();
+	}
+	if (!data.translationData.documentModel) {
+		const translation = data.translationData;
+		translation.documentModel = createNeutralDocument({
+			format: translation.type,
+			documentId: `project-${translation.creationDate}`,
+			sourceSegments: translation.seg1,
+			targetSegments: translation.seg2,
+			checked: translation.checked,
+			sourceLanguage: translation.sourceLang,
+			targetLanguage: translation.targetLang,
+		});
 	}
 	fullData.push(data);
 	await updateTranslationOnIndexedDB(data);

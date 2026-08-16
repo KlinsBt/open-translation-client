@@ -3,8 +3,10 @@ import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
 import { segmentHtmlContent } from "$lib/functions/parsing/parsingHtml";
 import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
 import { segmentWorkbookStrings } from "$lib/functions/parsing/parsingXlsx";
+import { createTextSegmentsWithRegexGeneralTextAlgo } from "$lib/functions/parsing/parsingText";
 import type { FormatImportResult, FormatValidationResult } from "./types";
 import type { TypeRef } from "$lib/types/types";
+import { createNeutralDocument, type SourceLocation } from "./documentModel";
 
 type PackageContent = { [key: string]: string | Blob };
 
@@ -42,11 +44,24 @@ export async function importDocxFile(file: File): Promise<FormatImportResult> {
 	}
 
 	const { segments, meta } = segmentDocxXml(documentXml);
+	const sourceSegments = segments.map(
+		(segment) => `${segment.text}${segment.separator ?? ""}`,
+	);
 	return {
 		kind: "segments",
-		segments: segments.map(
-			(segment) => `${segment.text}${segment.separator ?? ""}`,
-		),
+		segments: sourceSegments,
+		document: createNeutralDocument({
+			format: "docx",
+			sourceSegments,
+			sourceLocations: meta.map((entry, index) => ({
+				part: "word/document.xml",
+				paragraph: entry.fragments[0]?.paragraphIndex,
+				segmentIndex: index,
+				metadata: {
+					fragments: entry.fragments.map((fragment) => ({ ...fragment })),
+				},
+			})),
+		}),
 		typeRef: content,
 		segmentsMeta: meta,
 	};
@@ -104,6 +119,15 @@ export async function importJsonFile(file: File): Promise<FormatImportResult> {
 	return {
 		kind: "segments",
 		segments,
+		document: createNeutralDocument({
+			format: "json",
+			sourceSegments: segments,
+			sourceLocations: meta.map((entry, index) => ({
+				part: file.name,
+				path: entry.path,
+				segmentIndex: index,
+			})),
+		}),
 		typeRef: { data: jsonData, meta } as unknown as TypeRef,
 		segmentsMeta: meta,
 	};
@@ -114,7 +138,20 @@ export async function validateTextFile(): Promise<FormatValidationResult> {
 }
 
 export async function importTextFile(file: File): Promise<FormatImportResult> {
-	return { kind: "text", text: await file.text() };
+	const text = await file.text();
+	const [segments] = createTextSegmentsWithRegexGeneralTextAlgo(text);
+	return {
+		kind: "text",
+		text,
+		document: createNeutralDocument({
+			format: "text",
+			sourceSegments: segments,
+			sourceLocations: segments.map((_, index) => ({
+				part: file.name,
+				segmentIndex: index,
+			})),
+		}),
+	};
 }
 
 export async function validateXlsxFile(
@@ -136,10 +173,39 @@ export async function importXlsxFile(file: File): Promise<FormatImportResult> {
 		throw new Error("The XLSX package has no xl/workbook.xml.");
 	}
 
-	const { allSegments } = segmentWorkbookStrings(content);
+	const workbook = segmentWorkbookStrings(content);
+	const { allSegments } = workbook;
+	const sourceLocations: SourceLocation[] = [];
+	for (const [index] of workbook.shared.segments.entries()) {
+		sourceLocations.push({
+			part: "xl/sharedStrings.xml",
+			segmentIndex: sourceLocations.length,
+			metadata: { sharedStringSegment: index },
+		});
+	}
+	for (const sheet of workbook.sheets) {
+		for (const segment of sheet.inlineSegments) {
+			sourceLocations.push({
+				part: sheet.sheetPath,
+				segmentIndex: sourceLocations.length,
+				metadata: { fragmentCount: segment.fragments.length },
+			});
+		}
+		for (const _segment of sheet.valueSegments) {
+			sourceLocations.push({
+				part: sheet.sheetPath,
+				segmentIndex: sourceLocations.length,
+			});
+		}
+	}
 	return {
 		kind: "segments",
 		segments: allSegments,
+		document: createNeutralDocument({
+			format: "xlsx",
+			sourceSegments: allSegments,
+			sourceLocations,
+		}),
 		typeRef: content,
 	};
 }
@@ -159,6 +225,22 @@ export async function importHtmlFile(file: File): Promise<FormatImportResult> {
 	return {
 		kind: "segments",
 		segments: allSegments,
+		document: createNeutralDocument({
+			format: "html",
+			sourceSegments: allSegments,
+			sourceLocations: meta.map(
+				(entry, index) =>
+					({
+						part: file.name,
+						path: entry.path,
+						segmentIndex: index,
+						metadata:
+							entry.kind === "attribute"
+								? { kind: entry.kind, attribute: entry.attribute }
+								: { kind: entry.kind },
+					}) satisfies SourceLocation,
+			),
+		}),
 		typeRef: html,
 		segmentsMeta: meta,
 	};
