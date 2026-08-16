@@ -18,6 +18,7 @@
 		safeInputMessage,
 	} from "$lib/formats/safeInput";
 	import { importXliffProjectStreaming } from "$lib/formats/streamingImporters";
+	import { detectProjectFileFormat } from "$lib/formats/detect";
 
 	let isDragging = $state(false);
 
@@ -28,17 +29,19 @@
 		await setLoadingAndRender();
 		try {
 			if (!file) throw new Error("No file was selected.");
-			const fileName = file.name.toLowerCase();
-			if (fileName.endsWith(".json")) {
+			const detection = await detectProjectFileFormat(file);
+			if (!detection)
+				throw new Error(
+					"The file is not recognizable as Open TLC JSON or XLIFF.",
+				);
+			if (detection.format === "json") {
 				const { text } = await readSafeTextFile(file);
 				const parsedData = parseSafeJson<UserData>(text);
 				if (!validateJsonData(parsedData))
 					throw new Error("Invalid Open TLC JSON project structure.");
 				saveData = parsedData;
-			} else if (fileName.endsWith(".xlf") || fileName.endsWith(".xliff")) {
-				saveData = (await importXliffProjectStreaming(file)).data;
 			} else {
-				throw new Error("Please upload a JSON, XLF, or XLIFF project file.");
+				saveData = (await importXliffProjectStreaming(file)).data;
 			}
 			if (!saveData)
 				throw new Error("The project file contains no project data.");
@@ -46,7 +49,9 @@
 				saveFileIdExists = true;
 				return;
 			}
-			notifySuccess("New project created");
+			notifySuccess(
+				`${detection.label} detected (${detection.confidence} confidence). New project created.`,
+			);
 			createNewProjectWithSaveFile();
 		} catch (error) {
 			notifyError(safeInputMessage(error));
@@ -133,7 +138,7 @@
 			<input
 				id="fileInput"
 				type="file"
-				accept="application/json, application/xml, .json, .xliff"
+				accept="application/json,application/xml,text/xml,.json,.xlf,.xliff"
 				oninput={handleTranslationFileUpload}
 			/>
 		</button>

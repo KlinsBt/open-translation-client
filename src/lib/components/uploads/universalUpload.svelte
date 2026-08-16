@@ -5,11 +5,12 @@
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
 	import {
-		detectFormat,
+		detectFormatWithConfidence,
 		getFormatAcceptValue,
 		getFormatAdapter,
 		getSupportedFormatLabels,
 	} from "$lib/formats/registry";
+	import type { FormatDetection } from "$lib/formats/detect";
 	import type { FormatId } from "$lib/formats/formatIds";
 	import type {
 		FormatImportOption,
@@ -39,6 +40,7 @@
 	let targetLanguage: string = $state("");
 	let isDragging: boolean = $state(false);
 	let detectedFormatId: FormatId | null = $state(null);
+	let formatDetection: FormatDetection | null = $state(null);
 	let detectionComplete: boolean = $state(false);
 	let isProcessing: boolean = $state(false);
 	let importOptionValues: FormatOptionValues = $state({});
@@ -48,9 +50,12 @@
 	const supportedFormatLabels = getSupportedFormatLabels();
 
 	function getDetectedFormatLabel(): string {
-		return detectedFormatId
-			? getFormatAdapter(detectedFormatId).label
-			: "UNSUPPORTED";
+		return formatDetection?.label ?? "UNSUPPORTED";
+	}
+
+	function confidenceLabel(): string {
+		const confidence = formatDetection?.confidence ?? "low";
+		return `${confidence[0].toUpperCase()}${confidence.slice(1)} confidence`;
 	}
 
 	function getImportOptions(): readonly FormatImportOption[] {
@@ -63,14 +68,18 @@
 		uploadedFile = file;
 		detectionComplete = false;
 		try {
-			const detected = await detectFormat(file);
+			const detected = await detectFormatWithConfidence(file);
 			if (uploadedFile !== file) return;
-			detectedFormatId = detected?.id ?? null;
-			importOptionValues = detected ? normalizeImportOptions(detected.id) : {};
+			formatDetection = detected ?? null;
+			detectedFormatId = detected?.formatId ?? null;
+			importOptionValues = detected?.formatId
+				? normalizeImportOptions(detected.formatId)
+				: {};
 			temporarySaveName = file.name.replace(/\.[^/.]+$/, "");
 		} catch (error) {
 			if (uploadedFile !== file) return;
 			detectedFormatId = null;
+			formatDetection = null;
 			notifyError(safeInputMessage(error));
 		} finally {
 			if (uploadedFile === file) detectionComplete = true;
@@ -81,6 +90,7 @@
 		importController?.abort();
 		uploadedFile = null;
 		detectedFormatId = null;
+		formatDetection = null;
 		detectionComplete = false;
 		importOptionValues = {};
 	}
@@ -224,6 +234,7 @@
 		sourceLanguage = "";
 		targetLanguage = "";
 		detectedFormatId = null;
+		formatDetection = null;
 		detectionComplete = false;
 		importOptionValues = {};
 		importProgress = null;
@@ -273,10 +284,24 @@
 						Remove
 					</button>
 				</div>
+				{#if detectionComplete && formatDetection}
+					<div
+						class="detection-result"
+						class:detection-unsupported={!formatDetection.supported}
+						aria-live="polite"
+					>
+						<strong
+							>Detected: {formatDetection.label} · {confidenceLabel()}</strong
+						>
+						<span>{formatDetection.reason}</span>
+					</div>
+				{/if}
 
 				{#if detectionComplete && !detectedFormatId}
 					<div class="error-message">
-						This file type is not supported. Please upload a valid file.
+						{formatDetection
+							? `${formatDetection.label} is not supported for project creation yet.`
+							: "This file type could not be identified or is not supported."}
 					</div>
 				{:else if detectionComplete}
 					<div class="form-section">
@@ -596,6 +621,26 @@
 		border: 2px solid #fcc;
 		font-weight: 600;
 		text-align: center;
+	}
+
+	.detection-result {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 10px 12px;
+		border-radius: 5px;
+		background: color-mix(in srgb, var(--color-theme-1) 65%, transparent);
+		color: var(--color-theme-4);
+		font-size: 0.82rem;
+	}
+
+	.detection-result span {
+		line-height: 1.35;
+	}
+
+	.detection-result.detection-unsupported {
+		background: #fff4e5;
+		color: #7a4100;
 	}
 
 	.form-section {

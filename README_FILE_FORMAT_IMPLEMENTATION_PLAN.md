@@ -120,10 +120,24 @@ must be removed until a real XLS converter exists.
       chunk-boundary, unsafe-XML, oversized-record, cancellation, interchange,
       CSV, persistence-batch, round-trip, type-check, and production-build tests
       pass.
-- [ ] **FF-006 — Correct existing format detection.** Remove misleading `.doc`
+- [x] **FF-006 — Correct existing format detection.** Remove misleading `.doc`
       and `.xls` acceptance, distinguish OOXML/ODF/EPUB ZIP packages by their
       entries, handle generic XML MIME types, make extension checks exact and
       case-insensitive, and report detected format plus confidence to the user.
+      Completed 2026-08-16: source and Open TLC project uploads now use
+      content-first detection with typed high/medium/low confidence, evidence,
+      and a user-facing explanation. Exact final extensions are normalized
+      case-insensitively, MIME parameters are stripped, and contradictory names
+      or MIME values cannot override structural signatures. Safe ZIP inspection
+      distinguishes DOCX, XLSX, DOCM/XLSM, Word/Excel templates, PPTX/PPTM,
+      ODT/ODS/ODP, EPUB, and unknown ZIP containers by internal entries and
+      declared media types. Legacy OLE `.doc`/`.xls`/`.ppt`, RTF, and generic XML
+      are recognized but reported as unsupported instead of routed to an
+      incompatible importer; misleading legacy upload hints were removed.
+      Project backups recognize JSON or the XLIFF root independently of their
+      filename, including `.xlf`, `.xliff`, and generic XML MIME types. Ambiguous,
+      renamed, uppercase, multi-extension, conflicting-metadata, package-family,
+      project-file, type-check, full-regression, and production-build tests pass.
 - [ ] **FF-007 — Add shared inline-code and placeholder QA.** Detect missing,
       duplicated, reordered, or malformed tags and placeholders; support paired
       nesting constraints and format-specific reorder rules before export.

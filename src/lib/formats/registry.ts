@@ -18,11 +18,8 @@ import {
 import { FORMAT_IDS, type FormatId } from "./formatIds";
 import type { FormatAdapter } from "./types";
 import { FORMAT_IMPORT_OPTIONS } from "./options";
-import {
-	assertSafeFileSize,
-	decodeTextBytes,
-	type SafeInputContext,
-} from "./safeInput";
+import { decodeTextBytes, type SafeInputContext } from "./safeInput";
+import { detectFileFormat, type FormatDetection } from "./detect";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -87,10 +84,9 @@ const adapters = [
 	{
 		id: "xlsx",
 		label: "XLSX",
-		extensions: ["xlsx", "xls"],
+		extensions: ["xlsx"],
 		mimeTypes: [
 			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-			"application/vnd.ms-excel",
 		],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.xlsx,
@@ -127,38 +123,18 @@ export function getFormatAdapter(id: FormatId): FormatAdapter {
 	return adapter;
 }
 
-function getExtension(fileName: string): string | undefined {
-	const lastDot = fileName.lastIndexOf(".");
-	if (lastDot < 0 || lastDot === fileName.length - 1) return undefined;
-	return fileName.slice(lastDot + 1).toLowerCase();
-}
-
 export async function detectFormat(
 	file: File,
 	context?: SafeInputContext,
 ): Promise<FormatAdapter | undefined> {
-	assertSafeFileSize(file);
-	const mimeType = file.type.toLowerCase().split(";", 1)[0].trim();
-	if (mimeType) {
-		const mimeMatch = adapters.find((adapter) =>
-			adapter.mimeTypes.some((candidate) => candidate === mimeType),
-		);
-		if (mimeMatch) return mimeMatch;
-	}
+	return (await detectFormatWithConfidence(file, context))?.adapter;
+}
 
-	const extension = getExtension(file.name);
-	if (extension) {
-		const extensionMatch = adapters.find((adapter) =>
-			adapter.extensions.some((candidate) => candidate === extension),
-		);
-		if (extensionMatch) return extensionMatch;
-	}
-
-	for (const adapter of adapters) {
-		if (await adapter.sniff(file, context)) return adapter;
-	}
-
-	return undefined;
+export async function detectFormatWithConfidence(
+	file: File,
+	context?: SafeInputContext,
+): Promise<FormatDetection | undefined> {
+	return detectFileFormat(file, adapters, context);
 }
 
 export function getFormatAcceptValue(): string {

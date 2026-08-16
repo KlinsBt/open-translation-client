@@ -202,7 +202,7 @@
 			<input
 				id="fileInputExcel"
 				type="file"
-				accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+				accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 				oninput={handleFileUpload}
 			/>
 		</button>

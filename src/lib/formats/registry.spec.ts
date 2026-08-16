@@ -5,11 +5,17 @@ import JSZip from "jszip";
 import { FORMAT_IDS } from "./formatIds";
 import {
 	detectFormat,
+	detectFormatWithConfidence,
 	FORMAT_ADAPTERS,
 	getFormatAcceptValue,
 	getFormatAdapter,
 	getSupportedFormatLabels,
 } from "./registry";
+import {
+	detectProjectFileFormat,
+	getFileExtension,
+	normalizeMimeType,
+} from "./detect";
 
 const storage = new Map<string, string>();
 
@@ -78,13 +84,11 @@ describe("format adapter registry", () => {
 	});
 
 	it("derives upload hints and labels from the registry", () => {
-		expect(getFormatAcceptValue()).toBe(
-			".txt,.json,.docx,.xlsx,.xls,.html,.htm",
-		);
+		expect(getFormatAcceptValue()).toBe(".txt,.json,.docx,.xlsx,.html,.htm");
 		expect(getSupportedFormatLabels()).toBe("TXT, JSON, DOCX, XLSX, HTML");
 	});
 
-	it("detects MIME types before extensions and handles uppercase extensions", async () => {
+	it("uses content and exact metadata while handling uppercase extensions", async () => {
 		await expect(
 			detectFormat(textFile("{}", "wrong.TXT", "application/json")),
 		).resolves.toMatchObject({ id: "json" });
@@ -119,6 +123,206 @@ describe("format adapter registry", () => {
 	it("returns undefined for unsupported content", async () => {
 		await expect(
 			detectFormat(textFile("not a known structured format", "payload.bin")),
+		).resolves.toBeUndefined();
+	});
+
+	it("normalizes MIME parameters and extracts only exact final extensions", () => {
+		expect(normalizeMimeType(" Application/JSON; charset=utf-8 ")).toBe(
+			"application/json",
+		);
+		expect(getFileExtension("REPORT.XLSX")).toBe("xlsx");
+		expect(getFileExtension("report.xlsx.exe")).toBe("exe");
+		expect(getFileExtension(".json")).toBeUndefined();
+		expect(getFileExtension("name.")).toBeUndefined();
+	});
+
+	it("reports supported detections with confidence and evidence", async () => {
+		await expect(
+			detectFormatWithConfidence(
+				textFile('{"message":"Hello"}', "PAYLOAD.JSON", "application/json"),
+			),
+		).resolves.toMatchObject({
+			formatId: "json",
+			label: "JSON",
+			supported: true,
+			confidence: "high",
+			evidence: ["content", "extension", "mime"],
+		});
+
+		await expect(
+			detectFormatWithConfidence(
+				textFile('{"message":"Hello"}', "payload.bin", ""),
+			),
+		).resolves.toMatchObject({
+			formatId: "json",
+			confidence: "medium",
+			evidence: ["content"],
+		});
+	});
+
+	it("does not advertise or silently route legacy Office binaries", async () => {
+		const ole = new Uint8Array([
+			0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0,
+		]);
+		const legacy = new File([ole], "accounts.XLS", {
+			type: "application/vnd.ms-excel",
+		});
+		await expect(detectFormat(legacy)).resolves.toBeUndefined();
+		await expect(detectFormatWithConfidence(legacy)).resolves.toMatchObject({
+			formatId: null,
+			label: "Legacy Excel (.xls)",
+			supported: false,
+			confidence: "high",
+			evidence: ["signature", "extension"],
+		});
+		await expect(
+			detectFormat(textFile("plain", "not-a-workbook.xls", "")),
+		).resolves.toBeUndefined();
+	});
+
+	it("lets OOXML package structure override misleading names and MIME types", async () => {
+		const renamedDocx = await zipFile(
+			{
+				"[Content_Types].xml": "<Types/>",
+				"word/document.xml": "<document/>",
+			},
+			"renamed.XLSX",
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		);
+		await expect(
+			detectFormatWithConfidence(renamedDocx),
+		).resolves.toMatchObject({
+			formatId: "docx",
+			label: "DOCX",
+			confidence: "high",
+			evidence: ["package", "signature"],
+		});
+
+		const renamedXlsx = await zipFile(
+			{ "xl/workbook.xml": "<workbook/>" },
+			"renamed.docx",
+		);
+		await expect(
+			detectFormatWithConfidence(renamedXlsx),
+		).resolves.toMatchObject({ formatId: "xlsx", label: "XLSX" });
+	});
+
+	it("distinguishes unsupported OOXML, OpenDocument, EPUB, and generic ZIP packages", async () => {
+		const cases = [
+			[
+				await zipFile(
+					{
+						"word/document.xml": "<document/>",
+						"word/vbaProject.bin": "macro",
+					},
+					"macro.docm",
+				),
+				"DOCM",
+			],
+			[
+				await zipFile(
+					{ "ppt/presentation.xml": "<presentation/>" },
+					"slides.pptx",
+				),
+				"PPTX",
+			],
+			[
+				await zipFile(
+					{
+						mimetype: "application/vnd.oasis.opendocument.text",
+						"META-INF/manifest.xml": "<manifest/>",
+						"content.xml": "<document/>",
+					},
+					"document.odt",
+				),
+				"ODT",
+			],
+			[
+				await zipFile(
+					{
+						mimetype: "application/epub+zip",
+						"META-INF/container.xml": "<container/>",
+					},
+					"book.epub",
+				),
+				"EPUB",
+			],
+			[await zipFile({ "other.txt": "data" }, "archive.zip"), "ZIP archive"],
+		] as const;
+
+		for (const [file, label] of cases) {
+			await expect(detectFormatWithConfidence(file)).resolves.toMatchObject({
+				formatId: null,
+				label,
+				supported: false,
+			});
+		}
+	});
+
+	it("recognizes generic XML MIME types without treating them as HTML", async () => {
+		await expect(
+			detectFormatWithConfidence(
+				textFile(
+					'<?xml version="1.0"?><resources><string>Hello</string></resources>',
+					"strings.XML",
+					"application/xml; charset=utf-8",
+				),
+			),
+		).resolves.toMatchObject({
+			formatId: null,
+			label: "Generic XML",
+			supported: false,
+			confidence: "high",
+			evidence: ["content", "extension", "mime"],
+		});
+
+		await expect(
+			detectFormatWithConfidence(
+				textFile(
+					'<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml"><body>Hello</body></html>',
+					"page.xhtml",
+					"application/xhtml+xml",
+				),
+			),
+		).resolves.toMatchObject({
+			formatId: "html",
+			label: "HTML",
+			supported: true,
+			confidence: "high",
+		});
+	});
+
+	it("detects project JSON and XLIFF from content rather than misleading extensions", async () => {
+		await expect(
+			detectProjectFileFormat(
+				textFile(
+					'<?xml version="1.0"?><xliff version="1.2"><file/></xliff>',
+					"BACKUP.JSON",
+					"application/xml",
+				),
+			),
+		).resolves.toMatchObject({
+			format: "xliff",
+			label: "XLIFF 1.2",
+			confidence: "high",
+			evidence: ["content", "mime"],
+		});
+
+		await expect(
+			detectProjectFileFormat(
+				textFile('{"translationData":{}}', "project.xlf", ""),
+			),
+		).resolves.toMatchObject({
+			format: "json",
+			label: "Open TLC JSON",
+			confidence: "medium",
+			evidence: ["content"],
+		});
+
+		await expect(
+			detectProjectFileFormat(
+				textFile("<resources/>", "not-xliff.xlf", "application/xml"),
+			),
 		).resolves.toBeUndefined();
 	});
 });
