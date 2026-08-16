@@ -9,6 +9,10 @@ import {
 	type SafeInputContext,
 } from "./safeInput";
 import type { FormatAdapter } from "./types";
+import {
+	detectXliffVendorProfile,
+	type XliffVendorProfileId,
+} from "./xliffProfiles";
 
 export type DetectionConfidence = "high" | "medium" | "low";
 
@@ -35,7 +39,17 @@ export interface ProjectFileDetection {
 	confidence: DetectionConfidence;
 	evidence: readonly DetectionEvidence[];
 	reason: string;
+	profileId?: XliffVendorProfileId;
+	exportPolicy?: "import-only";
 }
+
+const XLIFF_PROJECT_EXTENSIONS = new Set([
+	"xlf",
+	"xliff",
+	"sdlxliff",
+	"mqxliff",
+	"mxliff",
+]);
 
 export function getFileExtension(fileName: string): string | undefined {
 	const baseName = fileName.replaceAll("\\", "/").split("/").at(-1) ?? "";
@@ -168,23 +182,32 @@ export async function detectProjectFileFormat(
 			/\bversion\s*=\s*["']([^"']+)["']/i,
 		)?.[1];
 		const evidence: DetectionEvidence[] = ["content"];
-		if (extension === "xlf" || extension === "xliff")
+		if (extension && XLIFF_PROJECT_EXTENSIONS.has(extension))
 			evidence.push("extension");
 		if (isGenericXmlMime(mimeType)) evidence.push("mime");
+		const profile = detectXliffVendorProfile(
+			text,
+			file.name,
+			version ?? "unknown",
+		);
 		return {
 			format: "xliff",
-			label: version ? `XLIFF ${version}` : "XLIFF",
+			label: profile?.label ?? (version ? `XLIFF ${version}` : "XLIFF"),
 			confidence: evidence.length > 1 ? "high" : "medium",
 			evidence,
-			reason:
-				"The XML document has an XLIFF root element; its Open TLC metadata will be validated during import.",
+			reason: profile
+				? `${profile.label} markers were detected; the file will be imported with vendor XLIFF export disabled pending origin-tool verification.`
+				: "The XML document has an XLIFF root element; its Open TLC metadata will be validated during import.",
+			...(profile
+				? { profileId: profile.id, exportPolicy: profile.exportPolicy }
+				: {}),
 		};
 	}
 	if (/^<(?:\?xml\b|[A-Za-z_][\w.:-]*(?:\s|\/?>))/i.test(text))
 		return undefined;
 	if (extension === "json")
 		return projectMetadataDetection("json", "Open TLC JSON", "extension");
-	if (extension === "xlf" || extension === "xliff")
+	if (extension && XLIFF_PROJECT_EXTENSIONS.has(extension))
 		return projectMetadataDetection("xliff", "XLIFF", "extension");
 	if (["application/json", "text/json"].includes(mimeType))
 		return projectMetadataDetection("json", "Open TLC JSON", "mime");

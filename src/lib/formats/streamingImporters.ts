@@ -22,6 +22,10 @@ import {
 	type ParsedXliff2Record,
 } from "./xliff2";
 import {
+	applyXliffVendorProfile,
+	detectXliffVendorProfile,
+} from "./xliffProfiles";
+import {
 	migrateProjectData,
 	migrateTbData,
 	migrateTmData,
@@ -232,7 +236,12 @@ export async function importXliffProjectStreaming(
 			? extractXliff2Header(root, fileElement, metrics)
 			: extractXliff12Header(fileElement, metrics);
 	const normalizedType = normalizeType(state.type);
-	const xliff12Document =
+	const vendorProfile = detectXliffVendorProfile(
+		metrics.skeleton ?? metrics.header,
+		file.name,
+		root.getAttribute("version") ?? String(version),
+	);
+	const rawXliff12Document =
 		version < 2
 			? assembleXliff12Document({
 					skeletonXml:
@@ -248,7 +257,10 @@ export async function importXliffProjectStreaming(
 					documentId: String(state.id ?? file.name),
 				})
 			: undefined;
-	const xliff2Document =
+	const xliff12Document = rawXliff12Document
+		? applyXliffVendorProfile(rawXliff12Document, vendorProfile)
+		: undefined;
+	const rawXliff2Document =
 		version >= 2
 			? assembleXliff2Document({
 					skeletonXml:
@@ -264,6 +276,9 @@ export async function importXliffProjectStreaming(
 					documentId: String(state.id ?? file.name),
 				})
 			: undefined;
+	const xliff2Document = rawXliff2Document
+		? applyXliffVendorProfile(rawXliff2Document, vendorProfile)
+		: undefined;
 	const documentModel = xliff12Document ?? xliff2Document;
 	const editableText = xliff12Document
 		? contentToEditableText

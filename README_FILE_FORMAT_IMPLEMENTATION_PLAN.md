@@ -32,7 +32,7 @@ The sequence is:
 | Area               | Present in the repository                                    | Main gap before it is production-grade                                           |
 | ------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
 | Source documents   | TXT, JSON, DOCX, XLSX, HTML                                  | Each uses a separate path; preservation and coverage vary                        |
-| Project exchange   | Open TLC JSON, XLIFF 1.2, XLIFF 2.0/2.1                      | Vendor-profile interoperability and typed module capabilities                    |
+| Project exchange   | Open TLC JSON, XLIFF 1.2/2.x, protected vendor XLIFF imports | Origin-tool-verified vendor exports and typed module capabilities                |
 | Translation memory | TMX 1.4 import/export and merge                              | TMX 1.4b Level 2, streaming, metadata, and multilingual edge cases               |
 | Terminology        | TBX import/export and merge, including `martif` handling     | Explicit dialect/version support, validation, references, and lossless metadata  |
 | Tests              | Parser, output, storage, segmentation, and consistency tests | Per-format conformance corpora, round trips, malformed inputs, and browser flows |
@@ -232,10 +232,28 @@ Complete these in order after FF-000 through FF-009.
       matching official OASIS core schemas offline. All 232 unit tests and five
       Chromium tests, formatting, type-check, zero-vulnerability production
       audit, and a clean production build pass.
-- [ ] **FF-102 — Vendor XLIFF profiles.** Add fixture-led adapters/profiles for
+- [x] **FF-102 — Vendor XLIFF profiles.** Add fixture-led adapters/profiles for
       SDLXLIFF, MQXLIFF, MXLIFF, WordPress/Drupal XLIFF, and common e-learning
       XLIFF. Preserve vendor namespaces and skeleton data. Never emit a vendor
       profile until an exported file opens successfully in its originating tool.
+      Completed 2026-08-16: structural signature detection and protected-import
+      profiles now cover Trados SDLXLIFF, memoQ MQXLIFF, Phrase MXLIFF, WPML,
+      Drupal TMGMT, Articulate Rise, and Articulate Storyline without trusting a
+      filename extension alone. Vendor namespaces, headers, attributes,
+      identifiers, skeleton fragments, notes, length data, and project metadata
+      survive import and Open TLC JSON persistence. SDL segment confirmations,
+      memoQ statuses, Phrase confirmations, and vendor locks map into neutral
+      workflow state and translatability. Embedded CMS and e-learning HTML is
+      converted to protected inline codes while its text remains editable.
+      Vendor extensions are accepted by the upload UI and clearly identified as
+      protected imports. Every XLIFF 1.2, 2.0, and 2.1 exporter now hard-blocks
+      these profiles with an actionable notification; export remains deliberately
+      disabled because originating-tool reopen validation has not yet occurred.
+      Seven focused fixtures and 22 profile tests cover detection, preservation,
+      state/lock mapping, protected markup, malformed input, false positives,
+      persistence, and the export guard. All 254 unit tests and five Chromium
+      tests, formatting, type-check, zero-vulnerability production audit, and a
+      clean production build pass.
 - [ ] **FF-103 — TMX 1.4b (`.tmx`).** Upgrade current support to Level 1 and
       Level 2: multilingual TUVs, `xml:lang`, inline `bpt`/`ept`/`it`/`ph`,
       notes, props, stable `tuid`, dates, usage metadata, encodings, and source
@@ -512,6 +530,13 @@ events and reconstruct the original format.
 - [Okapi filter architecture and supported formats](https://www.okapiframework.org/wiki/index.php?title=Filters)
 - [OASIS XLIFF 2.1 core and modules](https://docs.oasis-open.org/xliff/xliff-core/v2.1/xliff-core-v2.1.html)
 - [OASIS XLIFF 1.2 specification](https://docs.oasis-open.org/xliff/v1.2/os/xliff-core.html)
+- [RWS Trados Studio SDLXLIFF file-type overview](https://developers.rws.com/studio-api-docs/17.2/apiconcepts/filetypesupport/file_type_support_overview.html)
+- [memoQ vendor-XLIFF processing guidance](https://docs.memoq.com/current/en/Globalese/How_Globalese_processes_XLIFF_files.html)
+- [Phrase MXLIFF format guidance](https://support.phrase.com/hc/en-us/articles/5709739992860--MXLIFF-Files-TMS)
+- [WPML XLIFF configuration guidance](https://wpml.org/documentation/translating-your-contents/using-desktop-cat-tools/configuring-xliff-file-options/)
+- [Drupal Translation Management Tool](https://www.drupal.org/project/tmgmt)
+- [Articulate Rise course translation](https://help.rise.com/en/articles/2066510-translate-your-course)
+- [Articulate Storyline course translation](https://www.articulatesupport.com/article/Storyline-360-Translating-Courses)
 - [TMX 1.4b specification](https://www.ttt.org/oscarStandards/tmx/tmx14b.html)
 - [OSCAR exchange standards, including SRX 2.0](https://www.ttt.org/oscarStandards/)
 - [ISO 30042:2019 TBX overview](https://www.iso.org/standard/62510.html)

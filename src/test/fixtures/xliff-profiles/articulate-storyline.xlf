@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="training.story" source-language="en-US" target-language="es" datatype="x-DocumentState">
+    <header><tool tool-id="ArticulateStoryline" tool-name="Articulate Storyline 360"/></header>
+    <body>
+      <trans-unit id="slide-guid.Name"><source>Introduction</source><target state="translated">Introducción</target></trans-unit>
+      <trans-unit id="shape-guid" xml:space="preserve">
+        <source><![CDATA[<p>Choose <strong>one answer</strong>.</p>]]></source>
+        <target state="translated"><![CDATA[<p>Elija <strong>una respuesta</strong>.</p>]]></target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

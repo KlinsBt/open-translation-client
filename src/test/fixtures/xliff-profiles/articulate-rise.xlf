@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="course" source-language="en-US" target-language="de-DE" datatype="plaintext">
+    <header><tool tool-id="ArticulateRise" tool-name="Articulate Rise 360"/></header>
+    <body>
+      <trans-unit id="title"><source>Safety training</source><target>Sicherheitstraining</target></trans-unit>
+      <trans-unit id="block-6b8f" xml:space="preserve">
+        <source>Read the <g id="1" ctype="bold">instructions</g>.</source>
+        <target>Lesen Sie die <g id="1" ctype="bold">Anweisungen</g>.</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

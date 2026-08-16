@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2"
+  xmlns:m="http://www.memsource.com/mxlf/2.0" version="1.2" m:version="2.3" m:level="1">
+  <file original="catalog.docx" source-language="en" target-language="es" datatype="x-undefined" m:file-format="DOCX" m:task-id="task-42">
+    <header><m:in-ctx-preview-skel>preview-payload</m:in-ctx-preview-skel></header>
+    <body>
+      <group id="0" m:para-id="0">
+        <trans-unit id="mx-1" m:score="98.5" m:confirmed="1" m:locked="false" m:para-id="0">
+          <source>Product name</source><target>Nombre del producto</target>
+        </trans-unit>
+        <trans-unit id="mx-2" m:confirmed="0" m:locked="true" m:para-id="0">
+          <source>Protected value</source><target>Valor protegido</target>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
+</xliff>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:mq="MQXliff" version="1.2">
+  <file original="website.html" source-language="en" target-language="fr" datatype="html">
+    <header><mq:versioninfos><mq:minorversioninfo mq:minorversion="1" mq:creatoruser="reviewer"/></mq:versioninfos></header>
+    <body>
+      <trans-unit id="mq-1" mq:status="MachineTranslated" mq:lastchangedtimestamp="2026-08-16T10:00:00Z">
+        <source>Open <x id="1" ctype="lb"/>file</source><target>Ouvrir <x id="1" ctype="lb"/>le fichier</target>
+      </trans-unit>
+      <trans-unit id="mq-2" mq:status="Proofread" mq:locked="locked">
+        <source>Locked</source><target>Verrouillé</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

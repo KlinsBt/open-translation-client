@@ -12,6 +12,7 @@ import {
 } from "./documentModel";
 import { SafeInputError, safeParseXml } from "./safeInput";
 import { parseXmlRecord } from "./streaming";
+import { assertVendorXliffExportAllowed } from "./xliffProfiles";
 
 export const XLIFF_12_NAMESPACE = "urn:oasis:names:tc:xliff:document:1.2";
 export const XLIFF_12_SCHEMA =
@@ -379,6 +380,7 @@ export function contentToEditableText(content: SegmentContent): string {
 
 export function buildXliff12(userData: UserData): string {
 	const data = userData.translationData;
+	assertVendorXliffExportAllowed(data.documentModel);
 	const baseDocument =
 		data.documentModel && data.documentModel.units.length === data.seg1.length
 			? data.documentModel
@@ -571,7 +573,7 @@ function inspectFile(file: Element, index: number): Xliff12FileMetadata {
 
 function inspectGroup(group: Element, index = 0): Xliff12GroupMetadata {
 	const attributes = attributesOf(group);
-	const siblingIndex = directElementChildren(group.parentElement ?? group)
+	const siblingIndex = directElementChildren(parentElementOf(group) ?? group)
 		.filter((element) => localName(element) === "group")
 		.indexOf(group);
 	return {
@@ -1135,20 +1137,20 @@ function segmentMarkers(element: Element): Element[] {
 }
 
 function closestAncestor(element: Element, name: string): Element | undefined {
-	let current = element.parentElement;
+	let current = parentElementOf(element);
 	while (current) {
 		if (localName(current) === name) return current;
-		current = current.parentElement;
+		current = parentElementOf(current);
 	}
 	return undefined;
 }
 
 function ancestorGroups(element: Element, stop: Element): Element[] {
 	const groups: Element[] = [];
-	let current = element.parentElement;
+	let current = parentElementOf(element);
 	while (current && current !== stop) {
 		if (localName(current) === "group") groups.unshift(current);
-		current = current.parentElement;
+		current = parentElementOf(current);
 	}
 	return groups;
 }
@@ -1172,9 +1174,14 @@ function inheritedXmlSpace(element: Element): string | undefined {
 			current.getAttribute("xml:space") ??
 			current.getAttributeNS?.(XML_NAMESPACE, "space");
 		if (value) return value;
-		current = current.parentElement;
+		current = parentElementOf(current);
 	}
 	return undefined;
+}
+
+function parentElementOf(element: Element): Element | null {
+	const parent = element.parentNode;
+	return parent?.nodeType === 1 ? (parent as Element) : null;
 }
 
 function noteAppliesTo(value: string | null): "source" | "target" | "unit" {

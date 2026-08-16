@@ -13,6 +13,7 @@ import {
 import { migrateProjectData } from "./persistenceMigrations";
 import { SafeInputError, safeParseXml } from "./safeInput";
 import { parseXmlRecord } from "./streaming";
+import { assertVendorXliffExportAllowed } from "./xliffProfiles";
 
 export const XLIFF_2_NAMESPACE = "urn:oasis:names:tc:xliff:document:2.0";
 export const XLIFF_20_SCHEMA =
@@ -331,6 +332,7 @@ export function buildXliff2(
 ): string {
 	const versionedData = migrateProjectData(userData);
 	const data = versionedData.translationData;
+	assertVendorXliffExportAllowed(data.documentModel);
 	const baseDocument =
 		data.documentModel && data.documentModel.units.length === data.seg1.length
 			? data.documentModel

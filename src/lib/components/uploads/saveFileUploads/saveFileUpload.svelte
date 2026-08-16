@@ -50,8 +50,14 @@
 				saveFileIdExists = true;
 				return;
 			}
+			const profile = saveData.translationData.documentModel?.metadata
+				?.xliffProfile as
+				| { label?: string; exportPolicy?: "import-only" }
+				| undefined;
 			notifySuccess(
-				`${detection.label} detected (${detection.confidence} confidence). New project created.`,
+				profile?.exportPolicy === "import-only"
+					? `${profile.label ?? detection.label} detected. Imported in protected profile mode; vendor XLIFF export is disabled pending origin-tool verification.`
+					: `${detection.label} detected (${detection.confidence} confidence). New project created.`,
 			);
 			createNewProjectWithSaveFile();
 		} catch (error) {
@@ -132,6 +138,8 @@
 			<span>XLIFF 1.2</span>
 			<br />
 			<span>XLIFF 2.0 / 2.1</span>
+			<br />
+			<span>Vendor XLIFF profiles (protected import)</span>
 		</p>
 		<DragAndDropHere />
 		<button class="input-button-container">
@@ -139,7 +147,7 @@
 			<input
 				id="fileInput"
 				type="file"
-				accept="application/json,application/xml,text/xml,.json,.xlf,.xliff"
+				accept="application/json,application/xml,text/xml,.json,.xlf,.xliff,.sdlxliff,.mqxliff,.mxliff"
 				oninput={handleTranslationFileUpload}
 			/>
 		</button>

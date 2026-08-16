@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="42-571e0f7e2d992e738adff8b1bd43a521" source-language="en" target-language="de" datatype="plaintext">
+    <header><tool tool-id="wpml" tool-name="WordPress WPML"/></header>
+    <body>
+      <trans-unit id="field-body" resname="post_content" xml:space="preserve">
+        <source><![CDATA[<p>Welcome <strong>friend</strong><br>Today.</p>]]></source>
+        <target><![CDATA[<p>Willkommen <strong>Freund</strong><br>Heute.</p>]]></target>
+        <note from="WPML">Post body</note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

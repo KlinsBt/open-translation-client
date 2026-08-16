@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="JobID_600" source-language="en" target-language="fr" datatype="plaintext" date="2026-08-16T10:00:00Z">
+    <header>
+      <phase-group><phase tool-id="tmgmt" phase-name="extraction" process-name="extraction" job-id="600"/></phase-group>
+      <tool tool-id="tmgmt" tool-name="Drupal Translation Management Tools"/>
+    </header>
+    <body>
+      <group id="8050">
+        <note>Article</note>
+        <trans-unit id="8050][field_body][0][value" resname="8050][field_body][0][value" size-unit="char">
+          <source xml:lang="en">&lt;p&gt;Visit &lt;a href=&quot;https://example.com&quot;&gt;our site&lt;/a&gt;.&lt;/p&gt;</source>
+          <target xml:lang="fr" maxwidth="255">&lt;p&gt;Visitez &lt;a href=&quot;https://example.com&quot;&gt;notre site&lt;/a&gt;.&lt;/p&gt;</target>
+          <note>Body &gt; Text</note>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
+</xliff>
