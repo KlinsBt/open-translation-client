@@ -1,8 +1,10 @@
 import type { UserData } from "$lib/types/types";
+import { migrateProjectData } from "$lib/formats/persistenceMigrations";
 
 // Function to generate the XLIFF XML string
 export function buildXliff2_0(userData: UserData): string {
-	const { translationData } = userData;
+	const versionedData = migrateProjectData(userData);
+	const { translationData } = versionedData;
 	const {
 		name,
 		sourceLang,
@@ -33,11 +35,12 @@ export function buildXliff2_0(userData: UserData): string {
 	// Builds the XLIFF structure
 	let xliff = `<?xml version="1.0" encoding="UTF-8"?>\n`;
 	xliff += `<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" xmlns:mda="urn:oasis:names:tc:xliff:metadata:2.0" version="2.0" srcLang="${escapeXml(sourceLang)}" trgLang="${escapeXml(targetLang)}">\n`;
-	xliff += `  <file id="${escapeXml(String(userData.id ?? ""))}" original="">\n`;
+	xliff += `  <file id="${escapeXml(String(versionedData.id ?? ""))}" original="">\n`;
 
 	// Adds a <mda:metadata> element to contain the custom metadata
 	xliff += `    <mda:metadata>\n`;
 	xliff += `      <mda:metaGroup category="open_tlc_metadata">\n`;
+	xliff += `        <mda:meta type="schema_version">${versionedData.schemaVersion}</mda:meta>\n`;
 	xliff += `        <mda:meta type="name">${escapeXml(name)}</mda:meta>\n`;
 	xliff += `        <mda:meta type="checked">${escapeXml(JSON.stringify(checked))}</mda:meta>\n`;
 	xliff += `        <mda:meta type="type">${escapeXml(type)}</mda:meta>\n`;

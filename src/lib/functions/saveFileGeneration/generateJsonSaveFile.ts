@@ -1,8 +1,9 @@
 import type { UserData } from "$lib/types/types";
+import { migrateProjectData } from "$lib/formats/persistenceMigrations";
 
-async function generateJsonFileDownload(jsonData: JSON, name: string) {
+async function generateJsonFileDownload(jsonData: string, name: string) {
 	// Converts JSON data to a Blob
-	const blob: Blob = new Blob([JSON.stringify(jsonData, null, 2)], {
+	const blob: Blob = new Blob([jsonData], {
 		type: "application/json",
 	});
 
@@ -23,9 +24,13 @@ async function generateJsonFileDownload(jsonData: JSON, name: string) {
 	URL.revokeObjectURL(url);
 }
 
+export function buildJsonSaveFile(userData: UserData): string {
+	return JSON.stringify(migrateProjectData(userData), null, 2);
+}
+
 export async function generateJsonSaveFile(userData: UserData) {
 	try {
-		const stringifiedData: JSON = JSON.parse(JSON.stringify(userData));
+		const stringifiedData = buildJsonSaveFile(userData);
 		await generateJsonFileDownload(
 			stringifiedData,
 			userData.translationData.name,

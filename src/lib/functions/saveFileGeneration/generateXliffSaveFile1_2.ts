@@ -1,8 +1,10 @@
 import type { UserData } from "$lib/types/types";
+import { migrateProjectData } from "$lib/formats/persistenceMigrations";
 
 // Function to generate the XLIFF XML string for version 1.2
 export function buildXliff1_2(userData: UserData): string {
-	const { translationData } = userData;
+	const versionedData = migrateProjectData(userData);
+	const { translationData } = versionedData;
 	const {
 		name,
 		sourceLang,
@@ -41,7 +43,8 @@ export function buildXliff1_2(userData: UserData): string {
 
 	// Includes custom metadata using 'sup' namespace elements within the <group>
 	xliff += `        <sup:SourceInfo>\n`;
-	xliff += `          <sup:Id>${escapeXml(String(userData.id ?? ""))}</sup:Id>\n`;
+	xliff += `          <sup:SchemaVersion>${versionedData.schemaVersion}</sup:SchemaVersion>\n`;
+	xliff += `          <sup:Id>${escapeXml(String(versionedData.id ?? ""))}</sup:Id>\n`;
 	xliff += `          <sup:Name>${escapeXml(name)}</sup:Name>\n`;
 	xliff += `          <sup:Checked>${escapeXml(JSON.stringify(checked))}</sup:Checked>\n`;
 	xliff += `          <sup:Type>${escapeXml(type)}</sup:Type>\n`;

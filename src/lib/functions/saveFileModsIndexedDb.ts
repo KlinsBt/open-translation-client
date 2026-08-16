@@ -15,6 +15,10 @@ import {
 import type { DocumentSkeleton } from "$lib/formats/skeleton";
 import type { FormatOptionValues } from "$lib/formats/types";
 import { normalizeImportOptions } from "$lib/formats/options";
+import {
+	migrateProjectData,
+	PROJECT_SCHEMA_VERSION,
+} from "$lib/formats/persistenceMigrations";
 
 function prepareDocumentModel(
 	documentModel: NeutralDocument | undefined,
@@ -76,6 +80,7 @@ export async function saveNewTranslationToUserDataFromText(
 		generatedText[2],
 	);
 	let data: UserData = {
+		schemaVersion: PROJECT_SCHEMA_VERSION,
 		translationData: {
 			name: saveName,
 			sourceLang: sourceLang,
@@ -125,6 +130,7 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 	const targetSegments = new Array(stringArray.length).fill("");
 	const checkedSegments = new Array(stringArray.length).fill(false);
 	let data: UserData = {
+		schemaVersion: PROJECT_SCHEMA_VERSION,
 		translationData: {
 			name: saveName,
 			sourceLang: sourceLang,
@@ -170,6 +176,7 @@ export async function saveNewTranslationToUserDataFromSaveFile(
 	fullData: UserData[],
 	data: UserData,
 ) {
+	Object.assign(data, migrateProjectData(data));
 	data.translationData.filterOptions = normalizeImportOptions(
 		data.translationData.type,
 		data.translationData.filterOptions,

@@ -9,6 +9,11 @@ import {
 	SafeInputError,
 	type SafeInputContext,
 } from "./safeInput";
+import {
+	migrateProjectData,
+	migrateTbData,
+	migrateTmData,
+} from "./persistenceMigrations";
 
 export interface StreamingImportResult<T> {
 	data: T;
@@ -96,7 +101,11 @@ export async function importTmxStreaming(
 			.find((property) => property.getAttribute("type") === "name")
 			?.textContent?.trim() || "New TM";
 	return {
-		data: { ...(Number.isFinite(id) ? { id } : {}), name, terms },
+		data: migrateTmData({
+			...(Number.isFinite(id) ? { id } : {}),
+			name,
+			terms,
+		}),
 		metrics,
 	};
 }
@@ -155,11 +164,11 @@ export async function importTbxStreaming(
 	const sourceDescription = findClosedElement(metrics.header, "sourceDesc");
 	const idMatch = sourceDescription?.match(/OpenTLC ID:\s*(\d+)/i);
 	return {
-		data: {
+		data: migrateTbData({
 			...(idMatch ? { id: Number(idMatch[1]) } : {}),
 			name,
 			entries,
-		},
+		}),
 		metrics,
 	};
 }
@@ -215,7 +224,10 @@ export async function importXliffProjectStreaming(
 			: seg1.map(() => false);
 	const numericId = Number(state.id);
 	return {
-		data: {
+		data: migrateProjectData({
+			...(state.schemaVersion === undefined
+				? {}
+				: { schemaVersion: state.schemaVersion }),
 			...(Number.isFinite(numericId) ? { id: numericId } : {}),
 			translationData: {
 				name: state.name,
@@ -236,12 +248,13 @@ export async function importXliffProjectStreaming(
 				tm: state.tm,
 				tb: state.tb,
 			},
-		},
+		}),
 		metrics,
 	};
 }
 
 interface XliffHeaderState {
+	schemaVersion?: number;
 	id?: string | number;
 	name: string;
 	sourceLang: string;
@@ -268,6 +281,7 @@ function extractXliff2Header(
 		}
 	}
 	return {
+		schemaVersion: parseOptionalVersion(values.get("schema_version")),
 		id: file.getAttribute("id") ?? undefined,
 		name: values.get("name") || `Translation ${file.getAttribute("id") ?? ""}`,
 		sourceLang: root.getAttribute("srcLang") ?? "",
@@ -294,6 +308,7 @@ function extractXliff12Header(
 		info?.getElementsByTagName(name)[0]?.textContent ??
 		"";
 	return {
+		schemaVersion: parseOptionalVersion(value("SchemaVersion")),
 		id: value("Id") || undefined,
 		name: value("Name") || "Unnamed Translation",
 		sourceLang: file.getAttribute("source-language") ?? "",
@@ -305,6 +320,12 @@ function extractXliff12Header(
 		tb: parseJsonOr(value("Tb"), inactiveResource()),
 		editingState: parseJsonOr(value("EditingState"), {}),
 	};
+}
+
+function parseOptionalVersion(value: string | undefined): number | undefined {
+	if (!value) return undefined;
+	const version = Number(value);
+	return Number.isNaN(version) ? Number.NaN : version;
 }
 
 function extractConceptEntry(record: Element): TbData["entries"][number] {

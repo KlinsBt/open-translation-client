@@ -61,6 +61,7 @@ export interface SegmentJoinState {
 }
 
 export interface UserData {
+	schemaVersion?: number;
 	id?: number;
 	translationData: {
 		name: string;
@@ -96,6 +97,7 @@ export interface UserData {
 }
 
 export interface TmData {
+	schemaVersion?: number;
 	id?: number;
 	name?: string;
 	terms: {
@@ -118,6 +120,7 @@ export interface TmEntry {
 }
 
 export interface TbData {
+	schemaVersion?: number;
 	id?: number;
 	name?: string;
 	entries: {

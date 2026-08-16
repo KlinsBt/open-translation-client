@@ -1,4 +1,10 @@
-import { type TbData, type TmData, type UserData } from "../../types/types.js";
+import {
+	type TbData,
+	type TmData,
+	type Type,
+	type TypeRef,
+	type UserData,
+} from "../../types/types.js";
 import { getDefaultTokens } from "$lib/functions/parsing/parsingPreferences";
 import { segmentDocxXml } from "$lib/functions/parsing/parsingDocx";
 import {
@@ -12,6 +18,11 @@ import {
 } from "$lib/formats/skeleton";
 import { normalizeImportOptions } from "$lib/formats/options";
 import { processInBatches } from "$lib/formats/streaming";
+import {
+	migrateProjectData,
+	migrateTbData,
+	migrateTmData,
+} from "$lib/formats/persistenceMigrations";
 import {
 	tbData,
 	tmData,
@@ -29,6 +40,7 @@ export const INDEXED_DB_WRITE_BATCH_SIZE = 100;
 let db: IDBDatabase | null = null;
 
 export function ensureProjectModels(userData: UserData): UserData {
+	Object.assign(userData, migrateProjectData(userData));
 	const translation = userData.translationData;
 	translation.filterOptions = normalizeImportOptions(
 		translation.type,
@@ -128,43 +140,46 @@ export async function loadTranslationsUserDataFromIndexedDB(): Promise<
 		const request = store.getAll();
 
 		request.onsuccess = (event) => {
-			let result = (event.target as IDBRequest).result as UserData[];
-			// Backfill parsingTokens with default tokens if missing
-			result = result.map((item) => {
-				if (!item.translationData.parsingTokens) {
-					item.translationData.parsingTokens = getDefaultTokens();
-				}
-				if (!item.translationData.segmentsMeta) {
-					item.translationData.segmentsMeta = [];
-				}
-				// Recompute docx segmentsMeta if missing but document.xml available
-				if (
-					item.translationData.type === "docx" &&
-					Array.isArray(item.translationData.segmentsMeta) &&
-					item.translationData.segmentsMeta.length === 0 &&
-					item.translationData.typeRef &&
-					(item.translationData.typeRef as any)["word/document.xml"]
-				) {
-					const docXml = (item.translationData.typeRef as any)[
-						"word/document.xml"
-					] as string;
-					try {
-						const { meta, segments } = segmentDocxXml(
-							docXml,
-							item.translationData.parsingTokens,
-						);
-						if (segments.length === item.translationData.seg1.length) {
-							item.translationData.segmentsMeta = meta;
-						}
-					} catch (e) {
-						console.error("Failed to regenerate docx meta", e);
+			try {
+				let result = (event.target as IDBRequest).result as unknown[];
+				result = result.map((storedItem) => {
+					const item = migrateProjectData(storedItem);
+					if (!item.translationData.parsingTokens) {
+						item.translationData.parsingTokens = getDefaultTokens();
 					}
-				}
-				return ensureProjectModels(item);
-			});
-			userData.set(result);
-			resolve(result);
-			return result;
+					if (!item.translationData.segmentsMeta) {
+						item.translationData.segmentsMeta = [];
+					}
+					// Recompute docx segmentsMeta if missing but document.xml available
+					if (
+						item.translationData.type === "docx" &&
+						Array.isArray(item.translationData.segmentsMeta) &&
+						item.translationData.segmentsMeta.length === 0 &&
+						item.translationData.typeRef &&
+						(item.translationData.typeRef as any)["word/document.xml"]
+					) {
+						const docXml = (item.translationData.typeRef as any)[
+							"word/document.xml"
+						] as string;
+						try {
+							const { meta, segments } = segmentDocxXml(
+								docXml,
+								item.translationData.parsingTokens,
+							);
+							if (segments.length === item.translationData.seg1.length) {
+								item.translationData.segmentsMeta = meta;
+							}
+						} catch (e) {
+							console.error("Failed to regenerate docx meta", e);
+						}
+					}
+					return ensureProjectModels(item);
+				});
+				userData.set(result as UserData[]);
+				resolve(result as UserData[]);
+			} catch (error) {
+				reject(error);
+			}
 		};
 
 		request.onerror = (event) => {
@@ -183,9 +198,9 @@ export async function saveNewTranslationToIndexedDB(
 	creationDate: string,
 	textSegments1: string[],
 	textSegments2: string[],
-	checkedSegments: string[],
-	fileType: string,
-	fileTypeRef: string,
+	checkedSegments: boolean[],
+	fileType: Type,
+	fileTypeRef: TypeRef,
 ): Promise<void> {
 	const db = await openDatabase();
 	return new Promise((resolve, reject) => {
@@ -193,28 +208,24 @@ export async function saveNewTranslationToIndexedDB(
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
-		const newUserData = {
-			name: tempSaveName,
-			targetLang: targetLang,
-			sourceLang: sourceLang,
-			creationDate: creationDate,
-			seg1: textSegments1,
-			seg2: textSegments2,
-			checked: checkedSegments,
-			type: fileType,
-			typeRef: fileTypeRef as any,
-			parsingTokens: getDefaultTokens(),
-			tm: {
-				id: null,
-				name: null,
-				active: false,
-			},
-			tb: {
-				id: null,
-				name: null,
-				active: false,
-			},
-		};
+		const newUserData = ensureProjectModels(
+			migrateProjectData({
+				translationData: {
+					name: tempSaveName,
+					targetLang,
+					sourceLang,
+					creationDate,
+					seg1: textSegments1,
+					seg2: textSegments2,
+					checked: checkedSegments,
+					type: fileType,
+					typeRef: fileTypeRef,
+					parsingTokens: getDefaultTokens(),
+					tm: { id: null, name: null, active: false },
+					tb: { id: null, name: null, active: false },
+				},
+			}),
+		);
 		const request = store.add(newUserData);
 
 		request.onsuccess = () => {
@@ -324,10 +335,15 @@ export async function loadTmDataFromIndexedDB(): Promise<TmData[]> {
 		const request = store.getAll();
 
 		request.onsuccess = (event) => {
-			const result = (event.target as IDBRequest).result as TmData[];
-			resolve(result);
-			tmData.set(result);
-			return result;
+			try {
+				const result = ((event.target as IDBRequest).result as unknown[]).map(
+					migrateTmData,
+				);
+				resolve(result);
+				tmData.set(result);
+			} catch (error) {
+				reject(error);
+			}
 		};
 
 		request.onerror = (event) => {
@@ -365,8 +381,12 @@ export async function getTmDataById(id: number): Promise<TmData | null> {
 		const request = store.get(id);
 
 		request.onsuccess = (event) => {
-			const result = (event.target as IDBRequest).result as TmData | undefined;
-			resolve(result || null);
+			try {
+				const result = (event.target as IDBRequest).result as unknown;
+				resolve(result === undefined ? null : migrateTmData(result));
+			} catch (error) {
+				reject(error);
+			}
 		};
 
 		request.onerror = (event) => {
@@ -380,6 +400,7 @@ export async function getTmDataById(id: number): Promise<TmData | null> {
 }
 
 export async function saveNewTmToIndexedDB(tm: TmData): Promise<void> {
+	Object.assign(tm, migrateTmData(tm));
 	const db = await openDatabase();
 	return new Promise((resolve, reject) => {
 		// Create a clean, serializable copy of `tm`
@@ -404,12 +425,11 @@ export async function saveNewTmToIndexedDB(tm: TmData): Promise<void> {
 }
 
 export async function updateTmOnIndexedDB(tm: TmData): Promise<void> {
+	Object.assign(tm, migrateTmData(tm));
 	const db = await openDatabase();
 	return new Promise((resolve, reject) => {
 		// Create a clean, serializable copy of `tm`
 		const cleanTm = JSON.parse(JSON.stringify(tm));
-
-		console.log("cleanTm", cleanTm);
 
 		const transaction = db.transaction(DB_TM_NAME, "readwrite", {
 			durability: DURABILITY,
@@ -466,10 +486,15 @@ export async function loadTbDataFromIndexedDB(): Promise<TbData[]> {
 		const request = store.getAll();
 
 		request.onsuccess = (event) => {
-			const result = (event.target as IDBRequest).result as TbData[];
-			resolve(result);
-			tbData.set(result);
-			return result;
+			try {
+				const result = ((event.target as IDBRequest).result as unknown[]).map(
+					migrateTbData,
+				);
+				resolve(result);
+				tbData.set(result);
+			} catch (error) {
+				reject(error);
+			}
 		};
 
 		request.onerror = (event) => {
@@ -507,8 +532,12 @@ export async function getTbDataById(id: number): Promise<TbData | null> {
 		const request = store.get(id);
 
 		request.onsuccess = (event) => {
-			const result = (event.target as IDBRequest).result as TbData | undefined;
-			resolve(result || null);
+			try {
+				const result = (event.target as IDBRequest).result as unknown;
+				resolve(result === undefined ? null : migrateTbData(result));
+			} catch (error) {
+				reject(error);
+			}
 		};
 
 		request.onerror = (event) => {
@@ -522,6 +551,7 @@ export async function getTbDataById(id: number): Promise<TbData | null> {
 }
 
 export async function saveNewTbToIndexedDB(tb: TbData): Promise<void> {
+	Object.assign(tb, migrateTbData(tb));
 	const db = await openDatabase();
 	return new Promise((resolve, reject) => {
 		// Create a clean, serializable copy of `tm`
@@ -546,12 +576,11 @@ export async function saveNewTbToIndexedDB(tb: TbData): Promise<void> {
 }
 
 export async function updateTbOnIndexedDB(tb: TbData): Promise<void> {
+	Object.assign(tb, migrateTbData(tb));
 	const db = await openDatabase();
 	return new Promise((resolve, reject) => {
 		// Create a clean, serializable copy of `tm`
 		const cleanTb = JSON.parse(JSON.stringify(tb));
-
-		console.log("cleanTb", cleanTb);
 
 		const transaction = db.transaction(DB_TB_NAME, "readwrite", {
 			durability: DURABILITY,

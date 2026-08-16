@@ -21,6 +21,7 @@ describe("translation output builders", () => {
 
 	it("builds XLIFF 1.2 with escaped metadata and segments", () => {
 		const output = buildXliff1_2(makeUserData({ name: 'A & "B"' }));
+		expect(output).toContain("<sup:SchemaVersion>1</sup:SchemaVersion>");
 		expect(output).toContain("<sup:Name>A &amp; &quot;B&quot;</sup:Name>");
 		expect(output).toContain("Hallo &amp; willkommen.");
 	});
@@ -31,6 +32,7 @@ describe("translation output builders", () => {
 		const metadata = doc.getElementsByTagName("mda:metadata")[0];
 
 		expect(metadata.namespaceURI).toBe("urn:oasis:names:tc:xliff:metadata:2.0");
+		expect(output).toContain('type="schema_version">1</mda:meta>');
 		expect(validateXliff2_0Data(doc)).toBe(true);
 	});
 

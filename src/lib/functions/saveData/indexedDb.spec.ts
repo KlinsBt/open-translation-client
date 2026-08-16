@@ -18,6 +18,7 @@ describe("neutral document persistence compatibility", () => {
 
 		ensureProjectModels(userData);
 		const document = userData.translationData.documentModel!;
+		expect(userData.schemaVersion).toBe(1);
 		expect(document.id).toBe("project-123");
 		expect(document.units.map((unit) => unit.id)).toEqual(["unit-1", "unit-2"]);
 		expect(

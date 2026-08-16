@@ -19,6 +19,7 @@
 	} from "$lib/formats/safeInput";
 	import { importXliffProjectStreaming } from "$lib/formats/streamingImporters";
 	import { detectProjectFileFormat } from "$lib/formats/detect";
+	import { migrateProjectData } from "$lib/formats/persistenceMigrations";
 
 	let isDragging = $state(false);
 
@@ -36,7 +37,7 @@
 				);
 			if (detection.format === "json") {
 				const { text } = await readSafeTextFile(file);
-				const parsedData = parseSafeJson<UserData>(text);
+				const parsedData = migrateProjectData(parseSafeJson<unknown>(text));
 				if (!validateJsonData(parsedData))
 					throw new Error("Invalid Open TLC JSON project structure.");
 				saveData = parsedData;

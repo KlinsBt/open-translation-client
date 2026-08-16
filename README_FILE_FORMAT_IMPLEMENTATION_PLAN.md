@@ -155,9 +155,20 @@ must be removed until a real XLS converter exists.
       a concise issue preview instead of starting an unsafe download. Placeholder,
       markup, ICU nesting, code-policy, adapter-guard, full-regression,
       type-check, and production-build tests pass.
-- [ ] **FF-008 — Version stored project data.** Add migrations so richer format
+- [x] **FF-008 — Version stored project data.** Add migrations so richer format
       metadata can be introduced without invalidating existing IndexedDB saves,
       Open TLC JSON backups, joins/splits, TMs, or termbases.
+      Completed 2026-08-16: projects, translation memories, and termbases now use
+      independent versioned envelopes and ordered, deterministic migration maps.
+      Every active IndexedDB read/write and JSON, XLIFF, TMX, or TBX interchange
+      boundary upgrades legacy records before use; the oldest flat project shape
+      remains importable, while unknown extension metadata is retained. JSON and
+      Open TLC XLIFF backups emit the current schema marker, absent markers are
+      treated as legacy version 0, and unsupported future or malformed versions
+      fail with actionable typed errors instead of risking data loss. Migration
+      tests cover idempotence, corruption, rich package metadata, TM/TB data,
+      legacy/current/future files, and a join-backup-split restoration. All 181
+      unit tests, formatting, type-check, and a clean production build pass.
 - [ ] **FF-009 — Build a reusable filter test harness.** It must run extraction
       snapshots, identity and translated round trips, semantic package diffs,
       validators, malformed-input tests, Unicode tests, performance fixtures,

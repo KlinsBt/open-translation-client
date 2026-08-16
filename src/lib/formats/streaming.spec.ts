@@ -180,6 +180,7 @@ describe("streaming CAT interchange importers", () => {
 		const tmx = `<?xml version="1.0"?><tmx version="1.4"><header creationtool="OpenTLC" creationtoolversion="1" segtype="sentence" o-tmf="OpenTLC" adminlang="en" srclang="en" datatype="plaintext"><prop type="id">7</prop><prop type="name">Memory</prop></header><body><tu tuid="1"><tuv xml:lang="en"><seg>Hello</seg></tuv><tuv xml:lang="de"><seg>Hallo</seg></tuv></tu><tu tuid="2"><tuv xml:lang="en"><seg>World</seg></tuv><tuv xml:lang="de"><seg>Welt</seg></tuv></tu></body></tmx>`;
 		const result = await importTmxStreaming(textFile(tmx, "memory.tmx"));
 		expect(result.data).toEqual({
+			schemaVersion: 1,
 			id: 7,
 			name: "Memory",
 			terms: [
@@ -199,6 +200,7 @@ describe("streaming CAT interchange importers", () => {
 		const tbx = `<?xml version="1.0"?><tbx style="dca" type="TBX-Core" xml:lang="en"><tbxHeader><fileDesc><title>Terms</title><sourceDesc>OpenTLC ID: 9</sourceDesc></fileDesc></tbxHeader><text><body><conceptEntry id="c1"><langSec xml:lang="en-US"><termSec><term>file</term><termNote type="partOfSpeech">noun</termNote></termSec></langSec><langSec xml:lang="de"><termSec><term>Datei</term></termSec></langSec></conceptEntry></body></text></tbx>`;
 		const result = await importTbxStreaming(textFile(tbx, "terms.tbx"));
 		expect(result.data.id).toBe(9);
+		expect(result.data.schemaVersion).toBe(1);
 		expect(result.data.name).toBe("Terms");
 		expect(result.data.entries[0].terms).toMatchObject([
 			{ lang: "en", term: "file" },
@@ -218,11 +220,41 @@ describe("streaming CAT interchange importers", () => {
 			["project-2.0.xliff", buildXliff2_0(project)],
 		] as const) {
 			const result = await importXliffProjectStreaming(textFile(xml, name));
+			expect(result.data.schemaVersion).toBe(1);
 			expect(result.data.id).toBe(42);
 			expect(result.data.translationData.seg1).toEqual(["Hello", "World"]);
 			expect(result.data.translationData.seg2).toEqual(["Hallo", "Welt"]);
 			expect(result.data.translationData.checked).toEqual([true, false]);
 		}
+	});
+
+	it.each([
+		["project-1.2.xliff", buildXliff1_2(makeUserData())],
+		["project-2.0.xliff", buildXliff2_0(makeUserData())],
+	])("rejects a future Open TLC schema in %s", async (name, xml) => {
+		const futureXml = xml
+			.replace(
+				"<sup:SchemaVersion>1</sup:SchemaVersion>",
+				"<sup:SchemaVersion>2</sup:SchemaVersion>",
+			)
+			.replace('type="schema_version">1<', 'type="schema_version">2<');
+
+		await expect(
+			importXliffProjectStreaming(textFile(futureXml, name)),
+		).rejects.toMatchObject({ code: "FUTURE_VERSION", version: 2 });
+	});
+
+	it("upgrades an older XLIFF backup that has no schema marker", async () => {
+		const legacyXml = buildXliff2_0(makeUserData()).replace(
+			/^.*type="schema_version".*\n/m,
+			"",
+		);
+		const result = await importXliffProjectStreaming(
+			textFile(legacyXml, "legacy.xliff"),
+		);
+
+		expect(result.data.schemaVersion).toBe(1);
+		expect(result.data.translationData.seg1).toEqual(["Hello & welcome."]);
 	});
 });
 
