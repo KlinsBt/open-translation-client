@@ -131,7 +131,7 @@
 			<br />
 			<span>XLIFF 1.2</span>
 			<br />
-			<span>XLIFF 2.0</span>
+			<span>XLIFF 2.0 / 2.1</span>
 		</p>
 		<DragAndDropHere />
 		<button class="input-button-container">

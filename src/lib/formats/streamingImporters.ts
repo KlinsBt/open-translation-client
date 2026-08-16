@@ -16,6 +16,12 @@ import {
 	type ParsedXliff12Record,
 } from "./xliff12";
 import {
+	assembleXliff2Document,
+	contentToEditableText as contentToXliff2EditableText,
+	parseXliff2Record,
+	type ParsedXliff2Record,
+} from "./xliff2";
+import {
 	migrateProjectData,
 	migrateTbData,
 	migrateTmData,
@@ -184,8 +190,7 @@ export async function importXliffProjectStreaming(
 	context?: SafeInputContext,
 ): Promise<StreamingImportResult<UserData>> {
 	const xliff12Records: ParsedXliff12Record[] = [];
-	const xliff2Seg1: string[] = [];
-	const xliff2Seg2: string[] = [];
+	const xliff2Records: ParsedXliff2Record[] = [];
 	const metrics = await scanXmlRecords(
 		file,
 		{
@@ -199,15 +204,7 @@ export async function importXliffProjectStreaming(
 				xliff12Records.push(parseXliff12Record(recordXml, index, namespaces));
 				return;
 			}
-			const segments = Array.from(unit.getElementsByTagName("segment"));
-			for (const segment of segments) {
-				xliff2Seg1.push(
-					segment.getElementsByTagName("source")[0]?.textContent ?? "",
-				);
-				xliff2Seg2.push(
-					segment.getElementsByTagName("target")[0]?.textContent ?? "",
-				);
-			}
+			xliff2Records.push(parseXliff2Record(recordXml, index, namespaces));
 		},
 		context,
 	);
@@ -251,12 +248,32 @@ export async function importXliffProjectStreaming(
 					documentId: String(state.id ?? file.name),
 				})
 			: undefined;
-	const seg1 = xliff12Document
-		? xliff12Document.units.map((unit) => contentToEditableText(unit.source))
-		: xliff2Seg1;
-	const seg2 = xliff12Document
-		? xliff12Document.units.map((unit) => contentToEditableText(unit.target))
-		: xliff2Seg2;
+	const xliff2Document =
+		version >= 2
+			? assembleXliff2Document({
+					skeletonXml:
+						metrics.skeleton ??
+						(() => {
+							throw new SafeInputError(
+								"XML_MALFORMED",
+								"The XLIFF structural skeleton is missing.",
+							);
+						})(),
+					records: xliff2Records,
+					format: normalizedType,
+					documentId: String(state.id ?? file.name),
+				})
+			: undefined;
+	const documentModel = xliff12Document ?? xliff2Document;
+	const editableText = xliff12Document
+		? contentToEditableText
+		: contentToXliff2EditableText;
+	const seg1 = documentModel
+		? documentModel.units.map((unit) => editableText(unit.source))
+		: [];
+	const seg2 = documentModel
+		? documentModel.units.map((unit) => editableText(unit.target))
+		: [];
 	const checked =
 		state.checked.length === seg1.length
 			? state.checked
@@ -264,7 +281,11 @@ export async function importXliffProjectStreaming(
 				? xliff12Document.units.map(
 						(unit) => unit.state === "reviewed" || unit.state === "final",
 					)
-				: seg1.map(() => false);
+				: documentModel
+					? documentModel.units.map(
+							(unit) => unit.state === "reviewed" || unit.state === "final",
+						)
+					: seg1.map(() => false);
 	const numericId = Number(state.id);
 	return {
 		data: migrateProjectData({
@@ -285,7 +306,7 @@ export async function importXliffProjectStreaming(
 				segmentsMeta: state.editingState.segmentsMeta,
 				segmentJoinStates: state.editingState.segmentJoinStates,
 				parsingTokens: state.editingState.parsingTokens,
-				documentModel: xliff12Document ?? state.editingState.documentModel,
+				documentModel: documentModel ?? state.editingState.documentModel,
 				skeleton: state.editingState.skeleton,
 				filterOptions: state.editingState.filterOptions,
 				tm: state.tm,
@@ -319,7 +340,18 @@ function extractXliff2Header(
 	const metadataXml = findClosedElement(metrics.header, "metadata");
 	if (metadataXml) {
 		const metadata = parseXmlRecord(metadataXml, metrics.namespaceDeclarations);
-		for (const meta of Array.from(metadata.getElementsByTagName("mda:meta"))) {
+		const openTlcGroup = Array.from(metadata.getElementsByTagName("*")).find(
+			(element) =>
+				(element.localName || element.tagName.split(":").at(-1)) ===
+					"metaGroup" &&
+				element.getAttribute("category") === "open_tlc_metadata",
+		);
+		for (const meta of Array.from(
+			openTlcGroup?.getElementsByTagName("*") ?? [],
+		).filter(
+			(element) =>
+				(element.localName || element.tagName.split(":").at(-1)) === "meta",
+		)) {
 			values.set(meta.getAttribute("type") ?? "", meta.textContent ?? "");
 		}
 	}

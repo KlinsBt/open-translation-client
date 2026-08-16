@@ -32,7 +32,7 @@ The sequence is:
 | Area               | Present in the repository                                    | Main gap before it is production-grade                                           |
 | ------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
 | Source documents   | TXT, JSON, DOCX, XLSX, HTML                                  | Each uses a separate path; preservation and coverage vary                        |
-| Project exchange   | Open TLC JSON, XLIFF 1.2, XLIFF 2.0                          | Inline codes, standard metadata, validation, and foreign-extension preservation  |
+| Project exchange   | Open TLC JSON, XLIFF 1.2, XLIFF 2.0/2.1                      | Vendor-profile interoperability and typed module capabilities                    |
 | Translation memory | TMX 1.4 import/export and merge                              | TMX 1.4b Level 2, streaming, metadata, and multilingual edge cases               |
 | Terminology        | TBX import/export and merge, including `martif` handling     | Explicit dialect/version support, validation, references, and lossless metadata  |
 | Tests              | Parser, output, storage, segmentation, and consistency tests | Per-format conformance corpora, round trips, malformed inputs, and browser flows |
@@ -211,12 +211,27 @@ Complete these in order after FF-000 through FF-009.
       edit, round-trip, legacy-backup, and schema fixtures pass. All 222 unit
       tests and five Chromium smoke tests, formatting, type-check, zero-vulnerability
       production audit, and a clean production build pass.
-- [ ] **FF-101 — XLIFF 2.0 and 2.1 (`.xlf`, `.xliff`).** Support units with
+- [x] **FF-101 — XLIFF 2.0 and 2.1 (`.xlf`, `.xliff`).** Support units with
       multiple segments/ignorables, original data, inline `ph`, `pc`, `sc`/`ec`,
       `mrk`, notes, states, order, canResegment, and core preservation rules.
       Preserve unsupported modules losslessly; then add metadata, glossary,
       candidates, validation, and size/length modules as model capabilities
       land. XLIFF 1.x and 2.x need separate conforming serializers.
+      Completed 2026-08-16: a dedicated namespace-safe XLIFF 2.x path now
+      streams units into the neutral model without flattening multi-segment
+      units, ignorables, notes, states, target order, inherited translation and
+      resegmentation controls, original data, or protected `ph`, `pc`, `sc`/`ec`,
+      `mrk`, `sm`/`em`, and `cp` codes. Its structural placeholder skeleton
+      preserves multiple files, nested groups, empty structure, extension
+      attributes, and unsupported metadata, glossary, matches, validation,
+      size-restriction, and foreign modules for later typed model exposure.
+      Separate 2.0 and 2.1 serializers apply edits while retaining codes and
+      references, emit standard metadata and version-specific schema locations,
+      and are available in the export UI. Complex, prefixed, malformed,
+      reference, edit, round-trip, legacy-backup, and module fixtures pass both
+      matching official OASIS core schemas offline. All 232 unit tests and five
+      Chromium tests, formatting, type-check, zero-vulnerability production
+      audit, and a clean production build pass.
 - [ ] **FF-102 — Vendor XLIFF profiles.** Add fixture-led adapters/profiles for
       SDLXLIFF, MQXLIFF, MXLIFF, WordPress/Drupal XLIFF, and common e-learning
       XLIFF. Preserve vendor namespaces and skeleton data. Never emit a vendor

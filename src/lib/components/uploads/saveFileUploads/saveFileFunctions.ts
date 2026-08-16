@@ -1,4 +1,5 @@
 import { validateXliff12Xml } from "$lib/formats/xliff12";
+import { validateXliff2Xml } from "$lib/formats/xliff2";
 
 export function getXliffVersion(xliff: Document): number {
 	const xliffElement = xliff.getElementsByTagName("xliff")[0];
@@ -11,61 +12,8 @@ export function getXliffVersion(xliff: Document): number {
 }
 
 export function validateXliff2_0Data(xliffDocument: Document): boolean {
-	// Check if xliff root element exists
-	const xliffElement = xliffDocument.getElementsByTagName("xliff")[0];
-	if (!xliffElement) return false;
-
-	let version = xliffElement.getAttribute("version") ?? "0.0";
-
-	if (parseFloat(version) < 2.0) return false;
-
-	// Check srcLang and trgLang attributes
-	const srcLang = xliffElement.getAttribute("srcLang");
-	const trgLang = xliffElement.getAttribute("trgLang");
-	if (!srcLang || !trgLang) return false;
-
-	// Check file element
-	const fileElement = xliffElement.getElementsByTagName("file")[0];
-	if (!fileElement) return false;
-
-	// Check id attribute on file element
-	const idAttr = fileElement.getAttribute("id");
-	if (!idAttr || isNaN(Number(idAttr)) || Number(idAttr) <= 0) return false;
-
-	// Check metadata
-	const metadataElements = fileElement.getElementsByTagName("mda:metadata");
-	if (!metadataElements || metadataElements.length === 0) return false;
-	const metadataElement = metadataElements[0];
-
-	// Check metaGroup with category "open_tlc_metadata"
-	const metaGroupElements =
-		metadataElement.getElementsByTagName("mda:metaGroup");
-	let openTlcMetaGroup: Element | null = null;
-	for (let i = 0; i < metaGroupElements.length; i++) {
-		const category = metaGroupElements[i].getAttribute("category");
-		if (category === "open_tlc_metadata") {
-			openTlcMetaGroup = metaGroupElements[i];
-			break;
-		}
-	}
-	if (!openTlcMetaGroup) return false;
-
-	// Check meta elements with types "name", "type", and "type_ref"
-	const metaElements = openTlcMetaGroup.getElementsByTagName("mda:meta");
-	let hasName = false;
-	let hasType = false;
-	let hasTypeRef = false;
-
-	for (let i = 0; i < metaElements.length; i++) {
-		const typeAttr = metaElements[i].getAttribute("type");
-		if (typeAttr === "name") hasName = true;
-		else if (typeAttr === "type") hasType = true;
-		else if (typeAttr === "type_ref") hasTypeRef = true;
-	}
-
-	if (!hasName || !hasType || !hasTypeRef) return false;
-
-	return true;
+	return validateXliff2Xml(new XMLSerializer().serializeToString(xliffDocument))
+		.valid;
 }
 
 export function extractValuesFromXliff2_0(xliff: Document): string[] {

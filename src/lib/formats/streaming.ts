@@ -326,7 +326,11 @@ export function parseXmlRecord(
 	const document = safeParseXml(
 		`<stream-root${namespaceDeclarations ? ` ${namespaceDeclarations}` : ""}>${recordXml}</stream-root>`,
 	);
-	const record = document.documentElement.firstElementChild;
+	// Some DOM implementations do not expose firstElementChild consistently for
+	// namespace-rich XML, even though the element is present in childNodes.
+	const record = Array.from(document.documentElement.childNodes).find(
+		(node): node is Element => node.nodeType === 1,
+	);
 	if (!record)
 		throw new SafeInputError("XML_MALFORMED", "The XML record is empty.");
 	return record;

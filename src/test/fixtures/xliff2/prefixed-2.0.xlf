@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<x:xliff xmlns:x="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="fr">
+  <x:file id="prefixed">
+    <x:unit id="u1"><x:segment id="s1" state="translated"><x:source>Hello</x:source><x:target>Bonjour</x:target></x:segment></x:unit>
+  </x:file>
+</x:xliff>

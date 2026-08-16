@@ -270,7 +270,7 @@ describe("streaming CAT interchange importers", () => {
 
 	it("upgrades an older XLIFF backup that has no schema marker", async () => {
 		const legacyXml = buildXliff2_0(makeUserData()).replace(
-			/^.*type="schema_version".*\n/m,
+			/<mda:meta type="schema_version">[^<]*<\/mda:meta>/,
 			"",
 		);
 		const result = await importXliffProjectStreaming(

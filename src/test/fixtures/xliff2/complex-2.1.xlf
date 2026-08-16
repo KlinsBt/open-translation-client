@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0"
+  xmlns:acme="https://example.com/acme/xliff"
+  xmlns:mda="urn:oasis:names:tc:xliff:metadata:2.0"
+  xmlns:gls="urn:oasis:names:tc:xliff:glossary:2.0"
+  xmlns:mtc="urn:oasis:names:tc:xliff:matches:2.0"
+  xmlns:val="urn:oasis:names:tc:xliff:validation:2.0"
+  xmlns:slr="urn:oasis:names:tc:xliff:sizerestriction:2.0"
+  version="2.1" srcLang="en-US" trgLang="de-DE" xml:space="preserve">
+  <file id="f1" original="chapter-one.html" canResegment="no">
+    <skeleton href="chapter-one.skl"/>
+    <mda:metadata>
+      <mda:metaGroup category="vendor"><mda:meta type="workflow">legal</mda:meta></mda:metaGroup>
+    </mda:metadata>
+    <notes><note id="fn1" category="file">File note</note></notes>
+    <group id="g1" name="Introduction" canResegment="no">
+      <acme:groupInfo acme:flag="keep">foreign group data</acme:groupInfo>
+      <notes><note id="gn1">Group note</note></notes>
+      <unit id="u1" name="Greeting" canResegment="no" acme:flag="keep">
+        <mtc:matches><mtc:match id="match1" similarity="88.0"><source>Welcome</source><target>Willkommen</target></mtc:match></mtc:matches>
+        <gls:glossary><gls:glossEntry id="term1" ref="#s1"><gls:term source="Welcome">Willkommen</gls:term></gls:glossEntry></gls:glossary>
+        <val:validation><val:rule isPresent="Welcome"/></val:validation>
+        <slr:profiles generalProfile="xliff:codepoints"><slr:normalization>none</slr:normalization></slr:profiles>
+        <acme:unitData acme:mode="strict">preserve me</acme:unitData>
+        <notes>
+          <note id="n1" appliesTo="source" category="description" priority="2">Keep the greeting formal.</note>
+          <note id="n2" appliesTo="target">Reviewed by QA.</note>
+        </notes>
+        <originalData>
+          <data id="d1">&lt;strong&gt;</data>
+          <data id="d2">&lt;/strong&gt;</data>
+          <data id="d3">&lt;br/&gt;</data>
+        </originalData>
+        <segment id="s1" state="reviewed" canResegment="no">
+          <source xml:space="preserve">Hello <pc id="p1" dataRefStart="d1" dataRefEnd="d2" canDelete="no"><mrk id="m1" type="term">world</mrk></pc><ph id="br1" dataRef="d3" disp="↵"/>!</source>
+          <target order="2" xml:space="preserve">Hallo <pc id="p1" dataRefStart="d1" dataRefEnd="d2" canDelete="no"><mrk id="m1" type="term">Welt</mrk></pc><ph id="br1" dataRef="d3" disp="↵"/>!</target>
+        </segment>
+        <ignorable id="i1">
+          <source><sc id="c1" dataRef="d1"/>layout<ec startRef="c1" dataRef="d2"/></source>
+          <target><sc id="c1" dataRef="d1"/>Layout<ec startRef="c1" dataRef="d2"/></target>
+        </ignorable>
+        <segment id="s2" state="translated">
+          <source><sm id="mark1" type="comment"/>Second sentence.<em startRef="mark1"/><cp hex="00A0"/></source>
+          <target order="1"><sm id="mark1" type="comment"/>Zweiter Satz.<em startRef="mark1"/><cp hex="00A0"/></target>
+        </segment>
+      </unit>
+      <unit id="u2" translate="no">
+        <segment id="only" state="initial"><source>Do not translate</source></segment>
+      </unit>
+    </group>
+  </file>
+  <file id="f2" original="chapter-two.txt">
+    <unit id="u1">
+      <segment id="s1" state="final"><source>Done</source><target>Fertig</target></segment>
+    </unit>
+  </file>
+</xliff>

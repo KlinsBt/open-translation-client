@@ -92,7 +92,7 @@
 			<h3>XLIFF Formats</h3>
 			<p>
 				XLIFF formats are industry standard file formats that are widely used in
-				the translation industry. Open TLC supports both XLIFF 1.2 and XLIFF 2.0
+				the translation industry. Open TLC supports XLIFF 1.2, 2.0, and 2.1
 				formats for saving and exporting translation projects. These files can
 				be imported into other CAT-Tools that support XLIFF formats.
 			</p>

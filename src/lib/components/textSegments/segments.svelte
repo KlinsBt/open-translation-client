@@ -20,7 +20,10 @@
 	import { functionCreateExportFile } from "$lib/functions/outputGeneration/handleTranslationExport";
 
 	import { generateJsonSaveFile } from "$lib/functions/saveFileGeneration/generateJsonSaveFile";
-	import { generateXliffSaveFile2_0 } from "$lib/functions/saveFileGeneration/generateXliffSaveFile2_0";
+	import {
+		generateXliffSaveFile2_0,
+		generateXliffSaveFile2_1,
+	} from "$lib/functions/saveFileGeneration/generateXliffSaveFile2_0";
 	import { generateXliffSaveFile1_2 } from "$lib/functions/saveFileGeneration/generateXliffSaveFile1_2";
 	import {
 		getTbNamesAndIds,
@@ -111,6 +114,11 @@
 	function handleXliff2_0SaveFileDownload() {
 		if (!$singleUserData) return console.log("Data not found");
 		generateXliffSaveFile2_0($singleUserData);
+	}
+
+	function handleXliff2_1SaveFileDownload() {
+		if (!$singleUserData) return console.log("Data not found");
+		generateXliffSaveFile2_1($singleUserData);
 	}
 
 	function handleXliff1_2SaveFileDownload() {
@@ -481,6 +489,13 @@
 			onclick={handleXliff2_0SaveFileDownload}
 		>
 			Export as XLIFF 2.0
+		</button>
+		<button
+			style="width: 100%; margin: 0px"
+			class="toolbar-button"
+			onclick={handleXliff2_1SaveFileDownload}
+		>
+			Export as XLIFF 2.1
 		</button>
 	</div>
 {/snippet}
