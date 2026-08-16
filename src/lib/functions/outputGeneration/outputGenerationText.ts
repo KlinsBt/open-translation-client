@@ -5,6 +5,7 @@ import {
 	skeletonHasIdentityTargets,
 	type TextRangeReplacement,
 } from "$lib/formats/skeleton";
+import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
 
 async function generateTextFileDownload(textData: string, name: string) {
 	const blob: Blob = new Blob([textData], {
@@ -32,6 +33,7 @@ export async function generateTextTranslation(
 	translation: UserData,
 	// singleLineFormat: boolean, // if true, text is formatted as a single line
 ) {
+	assertProjectExportQuality(translation);
 	const name: string = translation.translationData.name || "translation";
 	await generateTextFileDownload(
 		buildTextTranslationFromProject(translation),

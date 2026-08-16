@@ -12,8 +12,10 @@ import {
 	parseColumns,
 	parseList,
 } from "$lib/formats/options";
+import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
 
 export async function createXlsxFromModifiedXmlText(translation: UserData) {
+	assertProjectExportQuality(translation);
 	const updatedXlsx = await buildXlsxTranslationPackage(translation);
 
 	const link = document.createElement("a");

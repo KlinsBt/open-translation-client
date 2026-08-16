@@ -5,6 +5,7 @@ import {
 	skeletonHasIdentityTargets,
 	type JsonValueReplacement,
 } from "$lib/formats/skeleton";
+import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
 // Note: do not rely on parsing preferences when reconstructing JSON output
 
 async function generateJsonFileDownload(jsonData: string, name: string) {
@@ -31,6 +32,7 @@ async function generateJsonFileDownload(jsonData: string, name: string) {
 }
 
 export async function generateJsonTranslation(translation: UserData) {
+	assertProjectExportQuality(translation);
 	const name: string = translation.translationData.name || "translation_file";
 	await generateJsonFileDownload(buildJsonTranslation(translation), name);
 }

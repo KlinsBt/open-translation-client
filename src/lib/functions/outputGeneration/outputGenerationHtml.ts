@@ -10,6 +10,7 @@ import {
 	type HtmlTextReplacement,
 } from "$lib/formats/skeleton";
 import { normalizeImportOptions, parseList } from "$lib/formats/options";
+import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
 
 async function generateHtmlFileDownload(htmlContent: string, name: string) {
 	const blob: Blob = new Blob([htmlContent], {
@@ -29,6 +30,7 @@ async function generateHtmlFileDownload(htmlContent: string, name: string) {
 }
 
 export async function createHtmlFromModifiedText(translation: UserData) {
+	assertProjectExportQuality(translation);
 	const updatedHtmlContent = buildHtmlTranslation(translation);
 	await generateHtmlFileDownload(
 		updatedHtmlContent,

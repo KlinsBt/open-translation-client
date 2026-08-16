@@ -138,9 +138,23 @@ must be removed until a real XLS converter exists.
       filename, including `.xlf`, `.xliff`, and generic XML MIME types. Ambiguous,
       renamed, uppercase, multi-extension, conflicting-metadata, package-family,
       project-file, type-check, full-regression, and production-build tests pass.
-- [ ] **FF-007 — Add shared inline-code and placeholder QA.** Detect missing,
+- [x] **FF-007 — Add shared inline-code and placeholder QA.** Detect missing,
       duplicated, reordered, or malformed tags and placeholders; support paired
       nesting constraints and format-specific reorder rules before export.
+      Completed 2026-08-16: one typed export-QA engine now compares every source
+      and target segment before a translated TXT, JSON, HTML, DOCX, or XLSX file
+      is downloaded. It recognizes sequential and positional printf tokens,
+      indexed/named/ICU braces, Mustache/triple-Mustache, `${name}` placeholders,
+      and XML/HTML paired, closing, self-closing, and void tags. Missing,
+      duplicated, unexpected, reordered, malformed, unbalanced, and crossed
+      tokens produce segment-addressed blocking errors. Rich neutral-document
+      codes are checked by stable ID, boundary type, pair ID, nesting, optional
+      deletion, and explicit or format-level reorder rules; HTML and DOCX permit
+      structurally valid movement while text, JSON, and XLSX retain source order.
+      All registered download adapters enforce the guard, and the editor reports
+      a concise issue preview instead of starting an unsafe download. Placeholder,
+      markup, ICU nesting, code-policy, adapter-guard, full-regression,
+      type-check, and production-build tests pass.
 - [ ] **FF-008 — Version stored project data.** Add migrations so richer format
       metadata can be introduced without invalidating existing IndexedDB saves,
       Open TLC JSON backups, joins/splits, TMs, or termbases.

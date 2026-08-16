@@ -118,6 +118,19 @@
 		generateXliffSaveFile1_2($singleUserData);
 	}
 
+	async function handleTranslationFileExport() {
+		try {
+			await functionCreateExportFile($singleUserData);
+			notifySuccess("Translation file exported");
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "The translation file could not be exported.",
+			);
+		}
+	}
+
 	function lockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
@@ -687,10 +700,7 @@
 		Export Save File
 		<SaveFile marginBottom="0px" />
 	</button>
-	<button
-		class="toolbar-button export"
-		onclick={() => functionCreateExportFile($singleUserData)}
-	>
+	<button class="toolbar-button export" onclick={handleTranslationFileExport}>
 		Export Translation File
 		<Export marginBottom="2px" />
 	</button>

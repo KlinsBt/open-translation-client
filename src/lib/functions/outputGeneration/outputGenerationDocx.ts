@@ -7,8 +7,10 @@ import {
 	skeletonHasIdentityTargets,
 	type DocxTextReplacement,
 } from "$lib/formats/skeleton";
+import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
 
 export async function createDocxFromModifiedXmlText(translation: UserData) {
+	assertProjectExportQuality(translation);
 	const updatedDocx = await buildDocxTranslationPackage(translation);
 
 	const link = document.createElement("a");
