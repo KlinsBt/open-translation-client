@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmx version="1.4">
+  <header creationtool="FixtureCAT" creationtoolversion="1" segtype="sentence" o-tmf="fixture" adminlang="en" srclang="en" datatype="html"/>
+  <body>
+    <tu tuid="broken-code">
+      <tuv xml:lang="en"><seg><bpt i="1" x="1">&lt;b></bpt>Broken</seg></tuv>
+      <tuv xml:lang="de"><seg>Kaputt</seg></tuv>
+    </tu>
+  </body>
+</tmx>

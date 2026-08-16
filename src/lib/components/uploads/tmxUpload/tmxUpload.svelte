@@ -63,7 +63,7 @@
 	}
 
 	function checkIfIdExists(id: number | undefined): boolean {
-		if (!id) return false;
+		if (id === undefined) return false;
 		const singleData: TmData | undefined = $tmData.find((d) => d.id === id);
 		sameIdTmData = singleData || null;
 		return !!singleData;
@@ -89,12 +89,10 @@
 		showLoading.set(true);
 		if (!extractedTmxData) return;
 		let tm: TmData = JSON.parse(JSON.stringify(extractedTmxData));
-		console.log("new tm: ", tm);
 		delete tm.id;
 		await saveNewTmToIndexedDB(tm);
 		const updatedTmData = await loadTmDataFromIndexedDB();
 		const newTm = updatedTmData[updatedTmData.length - 1];
-		console.log("Newly saved TM:", newTm);
 		singleTmData.set(newTm);
 		tmIdSelected.set(newTm.id!);
 		editTm.set(true);
@@ -145,7 +143,6 @@
 			const updatedTmData = await loadTmDataFromIndexedDB();
 			const newTm = updatedTmData[updatedTmData.length - 1];
 			singleTmData.set(newTm);
-			console.log("Newly saved TM:", newTm);
 			tmIdSelected.set(newTm.id!);
 			editTm.set(true);
 			showTmxModal.set(false);

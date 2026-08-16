@@ -1,6 +1,9 @@
 ﻿import type { FormatId } from "$lib/formats/formatIds";
 
-import type { NeutralDocument } from "$lib/formats/documentModel";
+import type {
+	NeutralDocument,
+	SegmentContent,
+} from "$lib/formats/documentModel";
 import type { DocumentSkeleton } from "$lib/formats/skeleton";
 import type { FormatOptionValues } from "$lib/formats/types";
 
@@ -96,21 +99,67 @@ export interface UserData {
 	};
 }
 
+export interface TmxTextMetadata {
+	text: string;
+	language?: string;
+	originalEncoding?: string;
+}
+
+export interface TmxProperty extends TmxTextMetadata {
+	type: string;
+}
+
+export interface TmxUserDefinedEncoding {
+	name: string;
+	base?: string;
+	maps: Record<string, string>[];
+}
+
+export interface TmxDocumentMetadata {
+	version: "1.4";
+	level: 1 | 2;
+	headerAttributes: Record<string, string>;
+	notes: TmxTextMetadata[];
+	properties: TmxProperty[];
+	userDefinedEncodings: TmxUserDefinedEncoding[];
+	doctype?: string;
+}
+
+export interface TmxUnitMetadata {
+	attributes: Record<string, string>;
+	notes: TmxTextMetadata[];
+	properties: TmxProperty[];
+	variantOrder: string[];
+}
+
+export interface TmxVariantMetadata {
+	attributes: Record<string, string>;
+	notes: TmxTextMetadata[];
+	properties: TmxProperty[];
+}
+
+export interface TmVariant {
+	[key: string]: unknown;
+	lang: string;
+	segment: string;
+	content?: SegmentContent;
+	tmx?: TmxVariantMetadata;
+}
+
+export interface TmTerm {
+	[key: string]: unknown;
+	tuid?: string;
+	source: TmVariant;
+	target: TmVariant[];
+	tmx?: TmxUnitMetadata;
+}
+
 export interface TmData {
 	schemaVersion?: number;
 	id?: number;
 	name?: string;
-	terms: {
-		// id: number;
-		source: {
-			lang: string;
-			segment: string;
-		};
-		target: {
-			lang: string;
-			segment: string;
-		}[];
-	}[];
+	terms: TmTerm[];
+	tmx?: TmxDocumentMetadata;
 }
 
 export interface TmEntry {

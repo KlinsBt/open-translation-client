@@ -1,0 +1,122 @@
+<!-- TMX 1.4 DTD, vendored from https://www.ttt.org/oscarStandards/tmx/tmx14.dtd -->
+<!ENTITY lt "&#38;#60;">
+<!ENTITY amp "&#38;#38;">
+<!ENTITY gt "&#62;">
+<!ENTITY apos "&#39;">
+<!ENTITY quot "&#34;">
+
+<!ENTITY % segtypes "block|paragraph|sentence|phrase">
+
+<!ELEMENT tmx (header, body)>
+<!ATTLIST tmx version CDATA #FIXED "1.4">
+
+<!ELEMENT header (note|prop|ude)*>
+<!ATTLIST header
+  creationtool CDATA #REQUIRED
+  creationtoolversion CDATA #REQUIRED
+  segtype (%segtypes;) #REQUIRED
+  o-tmf CDATA #REQUIRED
+  adminlang CDATA #REQUIRED
+  srclang CDATA #REQUIRED
+  datatype CDATA #REQUIRED
+  o-encoding CDATA #IMPLIED
+  creationdate CDATA #IMPLIED
+  creationid CDATA #IMPLIED
+  changedate CDATA #IMPLIED
+  changeid CDATA #IMPLIED>
+
+<!ELEMENT body (tu*)>
+
+<!ELEMENT note (#PCDATA)>
+<!ATTLIST note
+  o-encoding CDATA #IMPLIED
+  xml:lang CDATA #IMPLIED
+  lang CDATA #IMPLIED>
+
+<!ELEMENT ude (map+)>
+<!ATTLIST ude
+  name CDATA #REQUIRED
+  base CDATA #IMPLIED>
+
+<!ELEMENT map EMPTY>
+<!ATTLIST map
+  unicode CDATA #REQUIRED
+  code CDATA #IMPLIED
+  ent CDATA #IMPLIED
+  subst CDATA #IMPLIED>
+
+<!ELEMENT prop (#PCDATA)>
+<!ATTLIST prop
+  type CDATA #REQUIRED
+  xml:lang CDATA #IMPLIED
+  o-encoding CDATA #IMPLIED
+  lang CDATA #IMPLIED>
+
+<!ELEMENT tu ((note|prop)*, tuv+)>
+<!ATTLIST tu
+  tuid CDATA #IMPLIED
+  o-encoding CDATA #IMPLIED
+  datatype CDATA #IMPLIED
+  usagecount CDATA #IMPLIED
+  lastusagedate CDATA #IMPLIED
+  creationtool CDATA #IMPLIED
+  creationtoolversion CDATA #IMPLIED
+  creationdate CDATA #IMPLIED
+  creationid CDATA #IMPLIED
+  changedate CDATA #IMPLIED
+  segtype (%segtypes;) #IMPLIED
+  changeid CDATA #IMPLIED
+  o-tmf CDATA #IMPLIED
+  srclang CDATA #IMPLIED>
+
+<!ELEMENT tuv ((note|prop)*, seg)>
+<!ATTLIST tuv
+  xml:lang CDATA #REQUIRED
+  o-encoding CDATA #IMPLIED
+  datatype CDATA #IMPLIED
+  usagecount CDATA #IMPLIED
+  lastusagedate CDATA #IMPLIED
+  creationtool CDATA #IMPLIED
+  creationtoolversion CDATA #IMPLIED
+  creationdate CDATA #IMPLIED
+  creationid CDATA #IMPLIED
+  changedate CDATA #IMPLIED
+  o-tmf CDATA #IMPLIED
+  changeid CDATA #IMPLIED
+  lang CDATA #IMPLIED>
+
+<!ELEMENT seg (#PCDATA|bpt|ept|ph|it|hi|ut)*>
+
+<!ELEMENT bpt (#PCDATA|sub)*>
+<!ATTLIST bpt
+  i CDATA #REQUIRED
+  x CDATA #IMPLIED
+  type CDATA #IMPLIED>
+
+<!ELEMENT ept (#PCDATA|sub)*>
+<!ATTLIST ept i CDATA #REQUIRED>
+
+<!ELEMENT sub (#PCDATA|bpt|ept|it|ph|hi|ut)*>
+<!ATTLIST sub
+  datatype CDATA #IMPLIED
+  type CDATA #IMPLIED>
+
+<!ELEMENT it (#PCDATA|sub)*>
+<!ATTLIST it
+  pos (begin|end) #REQUIRED
+  x CDATA #IMPLIED
+  type CDATA #IMPLIED>
+
+<!ELEMENT ph (#PCDATA|sub)*>
+<!ATTLIST ph
+  x CDATA #IMPLIED
+  assoc CDATA #IMPLIED
+  type CDATA #IMPLIED>
+
+<!ELEMENT hi (#PCDATA|bpt|ept|it|ph|hi|ut)*>
+<!ATTLIST hi
+  x CDATA #IMPLIED
+  type CDATA #IMPLIED>
+
+<!ELEMENT ut (#PCDATA|sub)*>
+<!ATTLIST ut x CDATA #IMPLIED>

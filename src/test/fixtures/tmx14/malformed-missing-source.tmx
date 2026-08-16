@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmx version="1.4">
+  <header creationtool="FixtureCAT" creationtoolversion="1" segtype="sentence" o-tmf="fixture" adminlang="en" srclang="en" datatype="plaintext"/>
+  <body>
+    <tu tuid="missing-source">
+      <tuv xml:lang="fr"><seg>Bonjour</seg></tuv>
+      <tuv xml:lang="de"><seg>Hallo</seg></tuv>
+    </tu>
+  </body>
+</tmx>

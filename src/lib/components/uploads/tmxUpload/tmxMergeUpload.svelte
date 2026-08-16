@@ -18,11 +18,13 @@
 	} from "$lib/components/notifications/toastStore";
 	import { safeInputMessage } from "$lib/formats/safeInput";
 	import { importTmxStreaming } from "$lib/formats/streamingImporters";
+	import { mergeTmxData, type TmxMergePolicy } from "$lib/formats/tmx14";
 
 	let isDragging = $state(false);
 
 	let extractedTmxData: TmData | null = $state(null);
 	let combinedTmxData: TmData = { name: "Merged TMX", terms: [] };
+	let mergePolicy: TmxMergePolicy = $state("merge-targets");
 
 	async function processTmxFile(file: File | null): Promise<void> {
 		showLoading.set(true);
@@ -67,15 +69,15 @@
 		await processTmxFile(file);
 	}
 
-	async function mergeTmxFiles() {
-		let part1 = JSON.parse(JSON.stringify($singleTmData));
-		let part2 = JSON.parse(JSON.stringify(extractedTmxData));
-		combinedTmxData.terms.push(...part1.terms, ...part2.terms);
-		console.log("Merged data: ", combinedTmxData);
+	function mergeTmxFiles() {
+		if (!extractedTmxData) return;
+		combinedTmxData = mergeTmxData($singleTmData, extractedTmxData, {
+			policy: mergePolicy,
+		});
 	}
 
 	async function createNewProjectWithTmxFile() {
-		await mergeTmxFiles();
+		mergeTmxFiles();
 		showLoading.set(true);
 		if (combinedTmxData.terms.length === 0) return;
 		// console.log("new tm: ", combinedTmxData);
@@ -101,9 +103,8 @@
 	class:is-dragging={isDragging}
 >
 	<p class="info">
-		Upload another TMX file to merge with this current Translation Memory
-		crreating a new file with all Translation Units from the uploaded TMX file
-		and this selected TMX file.
+		Upload another TMX file and choose how duplicate source segments should be
+		handled. The result is saved as a new translation memory.
 	</p>
 	<DragAndDropHere />
 	{#if extractedTmxData === null || extractedTmxData === undefined}
@@ -117,6 +118,15 @@
 			/>
 		</button>
 	{:else}
+		<label class="merge-policy">
+			Duplicate policy
+			<select bind:value={mergePolicy}>
+				<option value="merge-targets">Merge unique targets</option>
+				<option value="keep-first">Keep first unit</option>
+				<option value="keep-last">Keep last unit</option>
+				<option value="keep-all">Keep every unit</option>
+			</select>
+		</label>
 		<button
 			class="input-button-container save"
 			onclick={() => createNewProjectWithTmxFile()}
@@ -150,6 +160,23 @@
 		max-width: 250px;
 		text-align: justify;
 		color: var(--color-theme-4);
+	}
+
+	.merge-policy {
+		display: grid;
+		gap: 4px;
+		width: 100%;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--color-theme-4);
+	}
+
+	.merge-policy select {
+		width: 100%;
+		padding: 7px;
+		border: 1px solid var(--color-theme-4);
+		border-radius: 4px;
+		background: white;
 	}
 
 	.input-button-container {

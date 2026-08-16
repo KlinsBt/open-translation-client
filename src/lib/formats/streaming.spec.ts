@@ -202,7 +202,7 @@ describe("streaming CAT interchange importers", () => {
 	it("imports TMX units without constructing a document-wide DOM", async () => {
 		const tmx = `<?xml version="1.0"?><tmx version="1.4"><header creationtool="OpenTLC" creationtoolversion="1" segtype="sentence" o-tmf="OpenTLC" adminlang="en" srclang="en" datatype="plaintext"><prop type="id">7</prop><prop type="name">Memory</prop></header><body><tu tuid="1"><tuv xml:lang="en"><seg>Hello</seg></tuv><tuv xml:lang="de"><seg>Hallo</seg></tuv></tu><tu tuid="2"><tuv xml:lang="en"><seg>World</seg></tuv><tuv xml:lang="de"><seg>Welt</seg></tuv></tu></body></tmx>`;
 		const result = await importTmxStreaming(textFile(tmx, "memory.tmx"));
-		expect(result.data).toEqual({
+		expect(result.data).toMatchObject({
 			schemaVersion: 1,
 			id: 7,
 			name: "Memory",
@@ -216,6 +216,12 @@ describe("streaming CAT interchange importers", () => {
 					target: [{ lang: "de", segment: "Welt" }],
 				},
 			],
+		});
+		expect(result.data.terms.map((term) => term.tuid)).toEqual(["1", "2"]);
+		expect(result.data.tmx).toMatchObject({
+			version: "1.4",
+			level: 1,
+			headerAttributes: { srclang: "en", segtype: "sentence" },
 		});
 	});
 

@@ -36,6 +36,8 @@ export interface BatchProcessingOptions {
 
 export interface XmlRecordScanOptions extends StreamingTextOptions {
 	recordNames: readonly string[];
+	/** Allows one inert, exactly matched external DOCTYPE; entity declarations remain forbidden. */
+	allowedDoctype?: RegExp;
 	maxRecordChars?: number;
 	maxHeaderChars?: number;
 	collectSkeleton?: boolean;
@@ -201,13 +203,7 @@ export async function scanXmlRecords(
 			break;
 		}
 		const safetyWindow = `${safetyTail}${next.value}`;
-		if (/<!DOCTYPE\b|<!ENTITY\b/i.test(safetyWindow)) {
-			throw new SafeInputError(
-				"XML_UNSAFE_DECLARATION",
-				"XML document type and entity declarations are disabled for safety.",
-			);
-		}
-		safetyTail = safetyWindow.slice(-32);
+		safetyTail = inspectXmlDeclarations(safetyWindow, options.allowedDoctype);
 		buffer += next.value;
 		maxBufferedChars = Math.max(maxBufferedChars, buffer.length);
 
@@ -301,6 +297,39 @@ export async function scanXmlRecords(
 		durationMs: performance.now() - startedAt,
 		textInfo,
 	};
+}
+
+function inspectXmlDeclarations(
+	window: string,
+	allowedDoctype: RegExp | undefined,
+): string {
+	if (/<!ENTITY\b/i.test(window))
+		throw new SafeInputError(
+			"XML_UNSAFE_DECLARATION",
+			"XML entity declarations are disabled for safety.",
+		);
+	let remainder = window;
+	while (true) {
+		const start = remainder.search(/<!DOCTYPE\b/i);
+		if (start < 0) return remainder.slice(-64);
+		const end = remainder.indexOf(">", start + 9);
+		if (end < 0) {
+			const pending = remainder.slice(start);
+			if (pending.length > 2048)
+				throw new SafeInputError(
+					"XML_UNSAFE_DECLARATION",
+					"The XML document type declaration is too large.",
+				);
+			return pending;
+		}
+		const declaration = remainder.slice(start, end + 1);
+		if (!allowedDoctype || !allowedDoctype.test(declaration))
+			throw new SafeInputError(
+				"XML_UNSAFE_DECLARATION",
+				"XML document type declarations are disabled unless an importer explicitly allows a known inert declaration.",
+			);
+		remainder = remainder.slice(end + 1);
+	}
 }
 
 function appendXmlSkeleton(

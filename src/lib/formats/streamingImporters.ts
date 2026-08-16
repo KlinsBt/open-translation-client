@@ -26,6 +26,12 @@ import {
 	detectXliffVendorProfile,
 } from "./xliffProfiles";
 import {
+	assembleTmxData,
+	parseTmxHeader,
+	parseTmxUnit,
+	type ParsedTmxUnit,
+} from "./tmx14";
+import {
 	migrateProjectData,
 	migrateTbData,
 	migrateTmData,
@@ -40,36 +46,18 @@ export async function importTmxStreaming(
 	file: File,
 	context?: SafeInputContext,
 ): Promise<StreamingImportResult<TmData>> {
-	const terms: TmData["terms"] = [];
+	const units: ParsedTmxUnit[] = [];
 	const metrics = await scanXmlRecords(
 		file,
-		{ recordNames: ["tu"], batchSize: 250 },
-		(recordXml, _index, namespaces) => {
+		{
+			recordNames: ["tu"],
+			batchSize: 250,
+			allowedDoctype:
+				/^<!DOCTYPE\s+tmx\s+SYSTEM\s+["'](?:tmx14\.dtd|https?:\/\/(?:www\.)?(?:lisa\.org\/tmx|ttt\.org\/oscarStandards\/tmx)\/tmx14\.dtd)["']\s*>$/i,
+		},
+		(recordXml, index, namespaces) => {
 			const unit = parseXmlRecord(recordXml, namespaces);
-			const tuid = unit.getAttribute("tuid");
-			if (tuid && Number.isNaN(Number(tuid)))
-				throw new SafeInputError(
-					"XML_MALFORMED",
-					`TMX tuid “${tuid}” is not numeric.`,
-				);
-			const variants = Array.from(unit.getElementsByTagName("tuv"));
-			if (variants.length < 2) return;
-			const values = variants.map((variant) => ({
-				lang:
-					variant.getAttribute("xml:lang") ??
-					variant.getAttributeNS(
-						"http://www.w3.org/XML/1998/namespace",
-						"lang",
-					) ??
-					"",
-				segment: variant.getElementsByTagName("seg")[0]?.textContent ?? "",
-			}));
-			if (values.some((value) => !value.lang || !value.segment))
-				throw new SafeInputError(
-					"XML_MALFORMED",
-					"Each TMX language variant needs xml:lang and segment text.",
-				);
-			terms.push({ source: values[0], target: values.slice(1) });
+			units.push(parseTmxUnit(unit, index));
 		},
 		context,
 	);
@@ -84,44 +72,22 @@ export async function importTmxStreaming(
 			"The TMX root element is missing.",
 		);
 	const headerXml = findClosedElement(metrics.header, "header");
-	if (!headerXml)
-		throw new SafeInputError("XML_MALFORMED", "The TMX header is missing.");
-	const header = parseXmlRecord(headerXml, metrics.namespaceDeclarations);
-	for (const attribute of [
-		"creationtool",
-		"creationtoolversion",
-		"segtype",
-		"o-tmf",
-		"adminlang",
-		"srclang",
-		"datatype",
-	]) {
-		if (!header.getAttribute(attribute))
-			throw new SafeInputError(
-				"XML_MALFORMED",
-				`The TMX header is missing ${attribute}.`,
+	const header = headerXml
+		? parseXmlRecord(headerXml, metrics.namespaceDeclarations)
+		: parseStartElement(
+				metrics.header,
+				"header",
+				metrics.namespaceDeclarations,
 			);
-	}
-	if (terms.length === 0)
-		throw new SafeInputError(
-			"XML_MALFORMED",
-			"The TMX file has no bilingual units.",
-		);
-	const properties = Array.from(header.getElementsByTagName("prop"));
-	const id = Number(
-		properties.find((property) => property.getAttribute("type") === "id")
-			?.textContent ?? 0,
+	if (!header)
+		throw new SafeInputError("XML_MALFORMED", "The TMX header is missing.");
+	const parsedHeader = parseTmxHeader(
+		root,
+		header,
+		metrics.header.match(/<!DOCTYPE\s+tmx\b[^>]*>/i)?.[0],
 	);
-	const name =
-		properties
-			.find((property) => property.getAttribute("type") === "name")
-			?.textContent?.trim() || "New TM";
 	return {
-		data: migrateTmData({
-			...(Number.isFinite(id) ? { id } : {}),
-			name,
-			terms,
-		}),
+		data: migrateTmData(assembleTmxData(parsedHeader, units)),
 		metrics,
 	};
 }

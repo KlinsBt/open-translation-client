@@ -33,7 +33,7 @@ The sequence is:
 | ------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
 | Source documents   | TXT, JSON, DOCX, XLSX, HTML                                  | Each uses a separate path; preservation and coverage vary                        |
 | Project exchange   | Open TLC JSON, XLIFF 1.2/2.x, protected vendor XLIFF imports | Origin-tool-verified vendor exports and typed module capabilities                |
-| Translation memory | TMX 1.4 import/export and merge                              | TMX 1.4b Level 2, streaming, metadata, and multilingual edge cases               |
+| Translation memory | TMX 1.4b Level 1/2 import, export, and policy-driven merge   | Broader vendor corpora and persistent indexing for very large memories           |
 | Terminology        | TBX import/export and merge, including `martif` handling     | Explicit dialect/version support, validation, references, and lossless metadata  |
 | Tests              | Parser, output, storage, segmentation, and consistency tests | Per-format conformance corpora, round trips, malformed inputs, and browser flows |
 
@@ -254,12 +254,32 @@ Complete these in order after FF-000 through FF-009.
       persistence, and the export guard. All 254 unit tests and five Chromium
       tests, formatting, type-check, zero-vulnerability production audit, and a
       clean production build pass.
-- [ ] **FF-103 — TMX 1.4b (`.tmx`).** Upgrade current support to Level 1 and
+- [x] **FF-103 — TMX 1.4b (`.tmx`).** Upgrade current support to Level 1 and
       Level 2: multilingual TUVs, `xml:lang`, inline `bpt`/`ept`/`it`/`ph`,
       notes, props, stable `tuid`, dates, usage metadata, encodings, and source
       language rules. Stream large memories, expose deterministic merge/dedupe
       policies, and validate against the TMX 1.4b DTD without resolving network
       entities.
+      Completed 2026-08-16: a dedicated TMX 1.4b model and serializer now keep
+      multilingual and repeated-language TUVs, alphanumeric `tuid` values,
+      header/TU/TUV attributes, notes, properties, dates, usage fields,
+      original encodings, and user-defined character maps through edits and
+      persisted storage. Source selection follows inherited per-unit `srclang`
+      and the `*all*` rule rather than assuming the first TUV. Level 2
+      `bpt`/`ept`, `it`, `ph`, and `hi` content is represented as protected
+      codes; edited text is overlaid without dropping native code data or
+      pair/order information. The importer remains record-streamed and the
+      1,500-unit fixture demonstrates bounded buffering and cooperative yields.
+      The merge UI now exposes deterministic keep-all, keep-first, keep-last,
+      and merge-unique-target policies. The official OSCAR DTD is vendored for
+      offline grammar checks; its representative fixture passes libxml2 DTD
+      validation, known `tmx14.dtd` declarations are treated as inert, and all
+      entity or unrecognized document-type declarations remain blocked. Three
+      XML fixtures, the official DTD, and 14 focused tests cover Level 1/2
+      output, edit round trips, multilingual edge cases, metadata persistence,
+      merge policies, safety, grammar rejection, and large input. All 268 unit
+      tests and five Chromium tests, formatting, type-check, zero-vulnerability
+      production audit, and a clean production build pass.
 - [ ] **FF-104 — TBX (`.tbx`).** Make support explicit for TBX-Core/TBX-Min v3
       and commonly encountered legacy TBX-Basic/`martif` data. Preserve the
       concept-oriented hierarchy, languages, multiple terms, status, part of
