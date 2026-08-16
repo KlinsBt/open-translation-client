@@ -10,6 +10,12 @@ import {
 	type SafeInputContext,
 } from "./safeInput";
 import {
+	assembleXliff12Document,
+	contentToEditableText,
+	parseXliff12Record,
+	type ParsedXliff12Record,
+} from "./xliff12";
+import {
 	migrateProjectData,
 	migrateTbData,
 	migrateTmData,
@@ -177,20 +183,30 @@ export async function importXliffProjectStreaming(
 	file: File,
 	context?: SafeInputContext,
 ): Promise<StreamingImportResult<UserData>> {
-	const seg1: string[] = [];
-	const seg2: string[] = [];
+	const xliff12Records: ParsedXliff12Record[] = [];
+	const xliff2Seg1: string[] = [];
+	const xliff2Seg2: string[] = [];
 	const metrics = await scanXmlRecords(
 		file,
-		{ recordNames: ["trans-unit", "unit"], batchSize: 500 },
-		(recordXml, _index, namespaces) => {
+		{
+			recordNames: ["trans-unit", "unit"],
+			batchSize: 500,
+			collectSkeleton: true,
+		},
+		(recordXml, index, namespaces) => {
 			const unit = parseXmlRecord(recordXml, namespaces);
-			const segments =
-				unit.localName === "trans-unit"
-					? [unit]
-					: Array.from(unit.getElementsByTagName("segment"));
+			if (unit.localName === "trans-unit") {
+				xliff12Records.push(parseXliff12Record(recordXml, index, namespaces));
+				return;
+			}
+			const segments = Array.from(unit.getElementsByTagName("segment"));
 			for (const segment of segments) {
-				seg1.push(segment.getElementsByTagName("source")[0]?.textContent ?? "");
-				seg2.push(segment.getElementsByTagName("target")[0]?.textContent ?? "");
+				xliff2Seg1.push(
+					segment.getElementsByTagName("source")[0]?.textContent ?? "",
+				);
+				xliff2Seg2.push(
+					segment.getElementsByTagName("target")[0]?.textContent ?? "",
+				);
 			}
 		},
 		context,
@@ -218,10 +234,37 @@ export async function importXliffProjectStreaming(
 		version >= 2
 			? extractXliff2Header(root, fileElement, metrics)
 			: extractXliff12Header(fileElement, metrics);
+	const normalizedType = normalizeType(state.type);
+	const xliff12Document =
+		version < 2
+			? assembleXliff12Document({
+					skeletonXml:
+						metrics.skeleton ??
+						(() => {
+							throw new SafeInputError(
+								"XML_MALFORMED",
+								"The XLIFF structural skeleton is missing.",
+							);
+						})(),
+					records: xliff12Records,
+					format: normalizedType,
+					documentId: String(state.id ?? file.name),
+				})
+			: undefined;
+	const seg1 = xliff12Document
+		? xliff12Document.units.map((unit) => contentToEditableText(unit.source))
+		: xliff2Seg1;
+	const seg2 = xliff12Document
+		? xliff12Document.units.map((unit) => contentToEditableText(unit.target))
+		: xliff2Seg2;
 	const checked =
 		state.checked.length === seg1.length
 			? state.checked
-			: seg1.map(() => false);
+			: xliff12Document
+				? xliff12Document.units.map(
+						(unit) => unit.state === "reviewed" || unit.state === "final",
+					)
+				: seg1.map(() => false);
 	const numericId = Number(state.id);
 	return {
 		data: migrateProjectData({
@@ -237,12 +280,12 @@ export async function importXliffProjectStreaming(
 				seg1,
 				seg2,
 				checked,
-				type: normalizeType(state.type),
+				type: normalizedType,
 				typeRef: state.typeRef,
 				segmentsMeta: state.editingState.segmentsMeta,
 				segmentJoinStates: state.editingState.segmentJoinStates,
 				parsingTokens: state.editingState.parsingTokens,
-				documentModel: state.editingState.documentModel,
+				documentModel: xliff12Document ?? state.editingState.documentModel,
 				skeleton: state.editingState.skeleton,
 				filterOptions: state.editingState.filterOptions,
 				tm: state.tm,
@@ -303,22 +346,44 @@ function extractXliff12Header(
 	const info = infoXml
 		? parseXmlRecord(infoXml, metrics.namespaceDeclarations)
 		: undefined;
-	const value = (name: string) =>
-		info?.getElementsByTagName(`sup:${name}`)[0]?.textContent ??
-		info?.getElementsByTagName(name)[0]?.textContent ??
-		"";
+	const legacyValue = (name: string) =>
+		Array.from(info?.getElementsByTagName("*") ?? []).find(
+			(element) =>
+				(element.localName || element.tagName.split(":").at(-1)) === name,
+		)?.textContent ?? "";
+	const projectNote = findClosedElements(metrics.header, "note")
+		.map((xml) => parseXmlRecord(xml, metrics.namespaceDeclarations))
+		.find((note) => note.getAttribute("from") === "OpenTLC");
+	const parsedEmbedded = parseJsonOr<unknown>(
+		projectNote?.textContent ?? undefined,
+		{},
+	);
+	const embedded =
+		parsedEmbedded !== null &&
+		typeof parsedEmbedded === "object" &&
+		!Array.isArray(parsedEmbedded)
+			? (parsedEmbedded as Record<string, unknown>)
+			: {};
+	const value = (legacyName: string, key: string): string => {
+		const current = embedded[key];
+		if (typeof current === "string") return current;
+		if (current !== undefined) return JSON.stringify(current);
+		return legacyValue(legacyName);
+	};
 	return {
-		schemaVersion: parseOptionalVersion(value("SchemaVersion")),
-		id: value("Id") || undefined,
-		name: value("Name") || "Unnamed Translation",
+		schemaVersion: parseOptionalVersion(
+			value("SchemaVersion", "schemaVersion"),
+		),
+		id: value("Id", "id") || undefined,
+		name: value("Name", "name") || "Unnamed Translation",
 		sourceLang: file.getAttribute("source-language") ?? "",
 		targetLang: file.getAttribute("target-language") ?? "",
-		checked: parseJsonOr(value("Checked"), []),
-		type: value("Type") || "text",
-		typeRef: parseJsonOr(value("TypeRef"), {}),
-		tm: parseJsonOr(value("Tm"), inactiveResource()),
-		tb: parseJsonOr(value("Tb"), inactiveResource()),
-		editingState: parseJsonOr(value("EditingState"), {}),
+		checked: parseJsonOr(value("Checked", "checked"), []),
+		type: value("Type", "type") || "text",
+		typeRef: parseJsonOr(value("TypeRef", "typeRef"), {}),
+		tm: parseJsonOr(value("Tm", "tm"), inactiveResource()),
+		tb: parseJsonOr(value("Tb", "tb"), inactiveResource()),
+		editingState: parseJsonOr(value("EditingState", "editingState"), {}),
 	};
 }
 
@@ -427,6 +492,19 @@ function findClosedElement(
 			"i",
 		),
 	)?.[0];
+}
+
+function findClosedElements(text: string, localName: string): string[] {
+	const escaped = escapeRegExp(localName);
+	return Array.from(
+		text.matchAll(
+			new RegExp(
+				`<((?:[\\w.-]+:)?${escaped})(?=[\\s>])[^>]*>[\\s\\S]*?<\\/\\1\\s*>`,
+				"gi",
+			),
+		),
+		(match) => match[0],
+	);
 }
 
 function parseJsonOr<T>(value: string | undefined, fallback: T): T {

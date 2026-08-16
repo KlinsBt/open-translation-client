@@ -1,3 +1,5 @@
+import { validateXliff12Xml } from "$lib/formats/xliff12";
+
 export function getXliffVersion(xliff: Document): number {
 	const xliffElement = xliff.getElementsByTagName("xliff")[0];
 	if (!xliffElement) return 0;
@@ -202,56 +204,9 @@ export function extractXliff2_0Data(
 }
 
 export function validateXliff1_2Data(xliffDocument: Document): boolean {
-	const xliffElement = xliffDocument.getElementsByTagName("xliff")[0];
-	if (!xliffElement) return false;
-
-	const version = xliffElement.getAttribute("version") ?? "0.0";
-	// Validate exact version 1.2
-	if (parseFloat(version) !== 1.2) return false;
-
-	const fileElement = xliffElement.getElementsByTagName("file")[0];
-	if (!fileElement) return false;
-
-	const srcLang = fileElement.getAttribute("source-language");
-	const trgLang = fileElement.getAttribute("target-language");
-	if (!srcLang || !trgLang) return false;
-
-	const headerElement = fileElement.getElementsByTagName("header")[0];
-	if (!headerElement) return false;
-
-	const groupElement = headerElement.getElementsByTagName("group")[0];
-	if (!groupElement) return false;
-
-	// Handle namespaces with proper resolver
-	const namespaceResolver = xliffDocument.createNSResolver(
-		xliffDocument.documentElement,
-	);
-	const supSourceInfo = xliffDocument.evaluate(
-		"//sup:SourceInfo",
-		xliffDocument,
-		namespaceResolver,
-		XPathResult.FIRST_ORDERED_NODE_TYPE,
-		null,
-	).singleNodeValue as Element;
-
-	if (!supSourceInfo) return false;
-
-	const supName = supSourceInfo.getElementsByTagNameNS(
-		"http://example.com/sup",
-		"Name",
-	)[0];
-	const supType = supSourceInfo.getElementsByTagNameNS(
-		"http://example.com/sup",
-		"Type",
-	)[0];
-	const supTypeRef = supSourceInfo.getElementsByTagNameNS(
-		"http://example.com/sup",
-		"TypeRef",
-	)[0];
-
-	if (!supName || !supType || !supTypeRef) return false;
-
-	return true;
+	return validateXliff12Xml(
+		new XMLSerializer().serializeToString(xliffDocument),
+	).valid;
 }
 
 export function extractXliff1_2Data(
@@ -273,18 +228,35 @@ export function extractXliff1_2Data(
 	let editingState: any = {};
 
 	if (withCustomData) {
-		const namespaceResolver = xliffDocument.createNSResolver(
-			xliffDocument.documentElement,
-		);
-		const supSourceInfo = xliffDocument.evaluate(
-			"//sup:SourceInfo",
-			xliffDocument,
-			namespaceResolver,
-			XPathResult.FIRST_ORDERED_NODE_TYPE,
-			null,
-		).singleNodeValue as Element;
+		const projectNote = Array.from(
+			fileElement.getElementsByTagName("note"),
+		).find((note) => note.getAttribute("from") === "OpenTLC");
+		if (projectNote?.textContent) {
+			try {
+				const metadata = JSON.parse(projectNote.textContent);
+				id = metadata.id ?? id;
+				name = metadata.name ?? name;
+				checked = metadata.checked ?? checked;
+				type = metadata.type ?? type;
+				typeRef = metadata.typeRef ?? typeRef;
+				tm = metadata.tm ?? tm;
+				tb = metadata.tb ?? tb;
+				editingState = metadata.editingState ?? editingState;
+			} catch {
+				// Fall through to the legacy extension metadata below.
+			}
+		}
+		const supSourceInfo = projectNote
+			? null
+			: (xliffDocument.evaluate(
+					"//sup:SourceInfo",
+					xliffDocument,
+					xliffDocument.createNSResolver(xliffDocument.documentElement),
+					XPathResult.FIRST_ORDERED_NODE_TYPE,
+					null,
+				).singleNodeValue as Element);
 
-		if (supSourceInfo) {
+		if (supSourceInfo && !projectNote) {
 			const supId = supSourceInfo.getElementsByTagNameNS(
 				"http://example.com/sup",
 				"Id",

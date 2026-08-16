@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2"
+       xmlns:vendor="urn:example:cat-extension"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       version="1.2"
+       xsi:schemaLocation="urn:example:cat-extension vendor-extension.xsd"
+       vendor:project="catalog-42">
+  <file original="site/index.html"
+        source-language="en-US"
+        target-language="de-DE"
+        datatype="html"
+        xml:space="preserve"
+        vendor:file-setting="locked">
+    <header>
+      <tool tool-id="fixture" tool-name="Conformance Fixture"/>
+      <vendor:project-data mode="review"/>
+    </header>
+    <body>
+      <group id="menu" restype="menu" vendor:group-setting="primary">
+        <vendor:group-data key="navigation"/>
+        <trans-unit id="welcome" approved="yes" translate="no" vendor:score="98">
+          <source xml:lang="en-US">Welcome <g id="g1" ctype="bold">home <x id="x1" ctype="image" equiv-text="[logo]"/></g><ph id="ph1" ctype="lb">&lt;br/&gt;</ph><bx id="bx1" rid="r2" ctype="link"/><ex id="ex1" rid="r2"/><bpt id="b1" rid="r3" ctype="italic">&lt;i&gt;</bpt>now<ept id="e1" rid="r3">&lt;/i&gt;</ept><it id="it1" pos="open" ctype="x-underline">&lt;u&gt;</it></source>
+          <target xml:lang="de-DE" state="needs-review-translation">Willkommen <g id="g1" ctype="bold">zu Hause <x id="x1" ctype="image" equiv-text="[logo]"/></g><ph id="ph1" ctype="lb">&lt;br/&gt;</ph><bx id="bx1" rid="r2" ctype="link"/><ex id="ex1" rid="r2"/><bpt id="b1" rid="r3" ctype="italic">&lt;i&gt;</bpt>jetzt<ept id="e1" rid="r3">&lt;/i&gt;</ept><it id="it1" pos="open" ctype="x-underline">&lt;u&gt;</it></target>
+          <context-group name="location" purpose="location">
+            <context context-type="sourcefile">site/index.html</context>
+            <context context-type="linenumber">12</context>
+          </context-group>
+          <note from="reviewer" priority="2" annotates="target">Keep the product name.</note>
+          <alt-trans origin="tm" match-quality="87">
+            <source>Welcome home</source>
+            <target>Willkommen daheim</target>
+          </alt-trans>
+          <vendor:unit-data status="verified"/>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
+  <file original="messages.txt"
+        source-language="fr"
+        target-language="es"
+        datatype="plaintext">
+    <body>
+      <trans-unit id="segmented" translate="yes">
+        <source>Un. Deux.</source>
+        <seg-source><mrk mtype="seg" mid="s1">Un.</mrk><mrk mtype="seg" mid="s2"> Deux.</mrk></seg-source>
+        <target state="translated"><mrk mtype="seg" mid="s1">Uno.</mrk><mrk mtype="seg" mid="s2"> Dos.</mrk></target>
+        <alt-trans mid="s2" origin="mt"><source>Deux.</source><target>Dos.</target></alt-trans>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

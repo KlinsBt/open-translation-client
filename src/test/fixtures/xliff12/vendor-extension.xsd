@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="urn:example:cat-extension"
+            xmlns:vendor="urn:example:cat-extension"
+            elementFormDefault="qualified">
+  <xsd:complexType name="openContent">
+    <xsd:sequence>
+      <xsd:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+    </xsd:sequence>
+    <xsd:anyAttribute processContents="lax"/>
+  </xsd:complexType>
+  <xsd:element name="project-data" type="vendor:openContent"/>
+  <xsd:element name="group-data" type="vendor:openContent"/>
+  <xsd:element name="unit-data" type="vendor:openContent"/>
+  <xsd:attribute name="project" type="xsd:string"/>
+  <xsd:attribute name="file-setting" type="xsd:string"/>
+  <xsd:attribute name="group-setting" type="xsd:string"/>
+  <xsd:attribute name="score" type="xsd:integer"/>
+</xsd:schema>

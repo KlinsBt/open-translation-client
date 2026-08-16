@@ -128,6 +128,29 @@ describe("incremental text and record scanning", () => {
 		expect(parseXmlRecord(records[1]).textContent).toBe("three");
 	});
 
+	it("carries ancestor namespace declarations into later streamed records", async () => {
+		const file = textFile(
+			'<root xmlns="urn:test"><item>one</item><scope xmlns:vendor="urn:vendor"><item><vendor:data key="two"/></item></scope></root>',
+			"namespaces.xml",
+		);
+		const values: string[] = [];
+		await scanXmlRecords(
+			file,
+			{ recordNames: ["item"], chunkBytes: 17 },
+			(record, _index, namespaces) => {
+				const element = parseXmlRecord(record, namespaces);
+				const vendorData = Array.from(element.getElementsByTagName("*")).find(
+					(child) =>
+						child.localName === "data" && child.namespaceURI === "urn:vendor",
+				);
+				values.push(
+					vendorData?.getAttribute("key") ?? element.textContent ?? "",
+				);
+			},
+		);
+		expect(values).toEqual(["one", "two"]);
+	});
+
 	it("honors cancellation between XML batches", async () => {
 		const controller = new AbortController();
 		const file = textFile(
@@ -237,6 +260,7 @@ describe("streaming CAT interchange importers", () => {
 				"<sup:SchemaVersion>1</sup:SchemaVersion>",
 				"<sup:SchemaVersion>2</sup:SchemaVersion>",
 			)
+			.replace("&quot;schemaVersion&quot;:1", "&quot;schemaVersion&quot;:2")
 			.replace('type="schema_version">1<', 'type="schema_version">2<');
 
 		await expect(

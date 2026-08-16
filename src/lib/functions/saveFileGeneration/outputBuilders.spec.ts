@@ -21,8 +21,10 @@ describe("translation output builders", () => {
 
 	it("builds XLIFF 1.2 with escaped metadata and segments", () => {
 		const output = buildXliff1_2(makeUserData({ name: 'A & "B"' }));
-		expect(output).toContain("<sup:SchemaVersion>1</sup:SchemaVersion>");
-		expect(output).toContain("<sup:Name>A &amp; &quot;B&quot;</sup:Name>");
+		expect(output).toContain('<note from="OpenTLC" annotates="general">');
+		expect(output).toContain(
+			"&quot;name&quot;:&quot;A &amp; \\&quot;B\\&quot;&quot;",
+		);
 		expect(output).toContain("Hallo &amp; willkommen.");
 	});
 

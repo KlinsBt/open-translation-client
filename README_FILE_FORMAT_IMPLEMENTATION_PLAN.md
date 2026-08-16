@@ -190,12 +190,27 @@ must be removed until a real XLS converter exists.
 
 Complete these in order after FF-000 through FF-009.
 
-- [ ] **FF-100 — XLIFF 1.2 (`.xlf`, `.xliff`).** Import and export standard
+- [x] **FF-100 — XLIFF 1.2 (`.xlf`, `.xliff`).** Import and export standard
       bilingual files, multiple `<file>` elements, groups, `trans-unit` IDs,
       source/target languages, `approved` and state data, notes, alt-trans,
       segmentation, `translate`, `xml:space`, and inline `g`, `x`, `bx`/`ex`,
       `bpt`/`ept`, `it`, and `ph` content. Preserve unknown namespaced
       extensions and validate against the official schema.
+      Completed 2026-08-16: the streaming importer now retains a compact
+      structural skeleton around individually parsed `trans-unit` records, so
+      multiple files, nested groups, local namespaces, stable IDs, per-file
+      languages, segmented `mrk` content, states, approval, translatability,
+      whitespace, contexts, notes, candidates, every listed inline-code family,
+      and foreign elements/attributes reach the rich document model without
+      flattening protected codes. The dedicated serializer reconstructs files,
+      groups, segmented units and inline markup, preserves registered extension
+      schemas, applies edits without dropping codes, and replaces the former
+      invalid header/group layout with strict XLIFF plus a standard metadata
+      note. Official OASIS strict and W3C dependency schemas are vendored for
+      offline libxml2/WASM validation; multi-file/vendor, malformed, namespace,
+      edit, round-trip, legacy-backup, and schema fixtures pass. All 222 unit
+      tests and five Chromium smoke tests, formatting, type-check, zero-vulnerability
+      production audit, and a clean production build pass.
 - [ ] **FF-101 — XLIFF 2.0 and 2.1 (`.xlf`, `.xliff`).** Support units with
       multiple segments/ignorables, original data, inline `ph`, `pc`, `sc`/`ec`,
       `mrk`, notes, states, order, canResegment, and core preservation rules.

@@ -11,6 +11,7 @@ export const LARGE_TEXT_MAX_BYTES = 512 * 1024 * 1024;
 export const DEFAULT_STREAM_CHUNK_BYTES = 256 * 1024;
 export const DEFAULT_MAX_XML_RECORD_CHARS = 16 * 1024 * 1024;
 export const DEFAULT_MAX_XML_HEADER_CHARS = 16 * 1024 * 1024;
+export const DEFAULT_MAX_XML_SKELETON_CHARS = 32 * 1024 * 1024;
 
 export interface StreamingTextOptions {
 	chunkBytes?: number;
@@ -37,11 +38,15 @@ export interface XmlRecordScanOptions extends StreamingTextOptions {
 	recordNames: readonly string[];
 	maxRecordChars?: number;
 	maxHeaderChars?: number;
+	collectSkeleton?: boolean;
+	maxSkeletonChars?: number;
 	batchSize?: number;
 }
 
 export interface XmlRecordScanResult {
 	header: string;
+	/** XML outside the streamed records, with a numbered placeholder per record. */
+	skeleton?: string;
 	namespaceDeclarations: string;
 	recordCount: number;
 	maxBufferedChars: number;
@@ -170,6 +175,8 @@ export async function scanXmlRecords(
 	const startedAt = performance.now();
 	const maxRecordChars = options.maxRecordChars ?? DEFAULT_MAX_XML_RECORD_CHARS;
 	const maxHeaderChars = options.maxHeaderChars ?? DEFAULT_MAX_XML_HEADER_CHARS;
+	const maxSkeletonChars =
+		options.maxSkeletonChars ?? DEFAULT_MAX_XML_SKELETON_CHARS;
 	const batchSize = Math.max(1, options.batchSize ?? 250);
 	const startPattern = new RegExp(
 		`<(?![!?/])(?:[\\w.-]+:)?(?:${options.recordNames.map(escapeRegExp).join("|")})(?=[\\s/>])`,
@@ -177,6 +184,7 @@ export async function scanXmlRecords(
 	);
 	let buffer = "";
 	let header = "";
+	let skeleton = options.collectSkeleton ? "" : undefined;
 	let recordCount = 0;
 	let maxBufferedChars = 0;
 	let yieldCount = 0;
@@ -212,14 +220,24 @@ export async function scanXmlRecords(
 					header += consumable;
 					assertHeaderSize(header, maxHeaderChars);
 				}
+				namespaceDeclarations = mergeNamespaceDeclarations(
+					namespaceDeclarations,
+					consumable,
+				);
+				skeleton = appendXmlSkeleton(skeleton, consumable, maxSkeletonChars);
 				buffer = buffer.slice(buffer.length - keep);
 				break;
 			}
+			const interstitial = buffer.slice(0, match.index);
 			if (!seenRecord) {
-				header += buffer.slice(0, match.index);
+				header += interstitial;
 				assertHeaderSize(header, maxHeaderChars);
-				namespaceDeclarations = collectNamespaceDeclarations(header);
 			}
+			namespaceDeclarations = mergeNamespaceDeclarations(
+				namespaceDeclarations,
+				interstitial,
+			);
+			skeleton = appendXmlSkeleton(skeleton, interstitial, maxSkeletonChars);
 			buffer = buffer.slice(match.index);
 			const recordEnd = findCompleteElementEnd(buffer);
 			if (recordEnd < 0) {
@@ -235,6 +253,11 @@ export async function scanXmlRecords(
 			const record = buffer.slice(0, recordEnd);
 			buffer = buffer.slice(recordEnd);
 			seenRecord = true;
+			skeleton = appendXmlSkeleton(
+				skeleton,
+				`<opentlc-stream-record xmlns="urn:opentlc:stream" index="${recordCount}"/>`,
+				maxSkeletonChars,
+			);
 			await onRecord(record, recordCount, namespaceDeclarations);
 			recordCount++;
 			context?.onProgress?.({
@@ -253,11 +276,14 @@ export async function scanXmlRecords(
 	if (!seenRecord) {
 		header += buffer;
 		assertHeaderSize(header, maxHeaderChars);
+		skeleton = appendXmlSkeleton(skeleton, buffer, maxSkeletonChars);
 	} else if (startPattern.test(buffer)) {
 		throw new SafeInputError(
 			"XML_MALFORMED",
 			"The final XML record is incomplete.",
 		);
+	} else {
+		skeleton = appendXmlSkeleton(skeleton, buffer, maxSkeletonChars);
 	}
 	if (recordCount === 0) {
 		throw new SafeInputError(
@@ -267,6 +293,7 @@ export async function scanXmlRecords(
 	}
 	return {
 		header,
+		...(skeleton === undefined ? {} : { skeleton }),
 		namespaceDeclarations,
 		recordCount,
 		maxBufferedChars,
@@ -274,6 +301,22 @@ export async function scanXmlRecords(
 		durationMs: performance.now() - startedAt,
 		textInfo,
 	};
+}
+
+function appendXmlSkeleton(
+	skeleton: string | undefined,
+	value: string,
+	maximum: number,
+): string | undefined {
+	if (skeleton === undefined || value.length === 0) return skeleton;
+	const next = skeleton + value;
+	if (next.length > maximum)
+		throw new SafeInputError(
+			"XML_MALFORMED",
+			`XML structure outside streamed records exceeds the ${maximum}-character safety limit.`,
+			{ limit: maximum },
+		);
+	return next;
 }
 
 export function parseXmlRecord(
@@ -463,13 +506,15 @@ function findTagClose(xml: string, start: number): number {
 	return -1;
 }
 
-function collectNamespaceDeclarations(header: string): string {
-	const rootStart = header.match(/<(?![!?/])[^>]+>/)?.[0] ?? "";
-	return [
-		...rootStart.matchAll(/\s(xmlns(?::[\w.-]+)?\s*=\s*(?:"[^"]*"|'[^']*'))/g),
-	]
-		.map((match) => match[1])
-		.join(" ");
+function mergeNamespaceDeclarations(current: string, xml: string): string {
+	const declarations = new Map<string, string>();
+	for (const source of [current, xml]) {
+		for (const match of source.matchAll(
+			/(?:^|\s)(xmlns(?::[\w.-]+)?)\s*=\s*("[^"]*"|'[^']*')/g,
+		))
+			declarations.set(match[1], `${match[1]}=${match[2]}`);
+	}
+	return [...declarations.values()].join(" ");
 }
 
 function assertHeaderSize(header: string, maximum: number): void {

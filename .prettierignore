@@ -7,6 +7,8 @@ yarn.lock
 .svelte-kit/
 build/
 Test files/
+src/test/fixtures/**/*.xlf
+src/test/fixtures/**/*.xsd
 
 # Archived prototypes are not part of the shipped application
 src/lib/components/uploads/unused/
