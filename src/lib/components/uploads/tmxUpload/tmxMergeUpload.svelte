@@ -1,7 +1,6 @@
 <script lang="ts">
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import type { TmData } from "$lib/types/types";
-	import { extractTmxData, validateTmxFile } from "./tmxFileFunctions";
 	import {
 		showLoading,
 		singleTmData,
@@ -17,7 +16,8 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
-	import { readSafeXmlFile, safeInputMessage } from "$lib/formats/safeInput";
+	import { safeInputMessage } from "$lib/formats/safeInput";
+	import { importTmxStreaming } from "$lib/formats/streamingImporters";
 
 	let isDragging = $state(false);
 
@@ -32,9 +32,7 @@
 			return;
 		}
 		try {
-			const tmxFile = await readSafeXmlFile(file);
-			if (!validateTmxFile(tmxFile)) throw new Error("Invalid TMX structure.");
-			extractedTmxData = extractTmxData(tmxFile);
+			extractedTmxData = (await importTmxStreaming(file)).data;
 			if (!extractedTmxData)
 				throw new Error("The TMX file needs at least two language pairs.");
 		} catch (error) {

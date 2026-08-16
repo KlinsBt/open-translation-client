@@ -6,14 +6,7 @@
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import type { UserData } from "$lib/types/types.js";
 	import { userData, showLoading } from "$lib/functions/saveData/stores.svelte";
-	import {
-		validateJsonData,
-		validateXliff2_0Data,
-		extractXliff2_0Data,
-		validateXliff1_2Data,
-		extractXliff1_2Data,
-		getXliffVersion,
-	} from "./saveFileFunctions.js";
+	import { validateJsonData } from "./saveFileFunctions.js";
 	import { setLoadingAndRender } from "$lib/functions/uiHelpers";
 	import {
 		notifyError,
@@ -21,10 +14,10 @@
 	} from "$lib/components/notifications/toastStore";
 	import {
 		readSafeTextFile,
-		readSafeXmlFile,
 		parseSafeJson,
 		safeInputMessage,
 	} from "$lib/formats/safeInput";
+	import { importXliffProjectStreaming } from "$lib/formats/streamingImporters";
 
 	let isDragging = $state(false);
 
@@ -43,21 +36,7 @@
 					throw new Error("Invalid Open TLC JSON project structure.");
 				saveData = parsedData;
 			} else if (fileName.endsWith(".xlf") || fileName.endsWith(".xliff")) {
-				const xliffDocument = await readSafeXmlFile(file);
-				const version = getXliffVersion(xliffDocument);
-				if (version === 1.2) {
-					saveData = extractXliff1_2Data(
-						xliffDocument,
-						validateXliff1_2Data(xliffDocument),
-					);
-				} else if (version >= 2.0) {
-					saveData = extractXliff2_0Data(
-						xliffDocument,
-						validateXliff2_0Data(xliffDocument),
-					);
-				} else {
-					throw new Error("Unsupported XLIFF version.");
-				}
+				saveData = (await importXliffProjectStreaming(file)).data;
 			} else {
 				throw new Error("Please upload a JSON, XLF, or XLIFF project file.");
 			}

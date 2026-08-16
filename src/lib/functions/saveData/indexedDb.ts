@@ -11,6 +11,7 @@ import {
 	validateDocumentSkeleton,
 } from "$lib/formats/skeleton";
 import { normalizeImportOptions } from "$lib/formats/options";
+import { processInBatches } from "$lib/formats/streaming";
 import {
 	tbData,
 	tmData,
@@ -23,6 +24,7 @@ const DB_USER_STORE_NAME = "UserData";
 const DB_TM_NAME = "TMData";
 const DB_TB_NAME = "TBData";
 const DURABILITY = "relaxed"; // "strict" or "relaxed"
+export const INDEXED_DB_WRITE_BATCH_SIZE = 100;
 
 let db: IDBDatabase | null = null;
 
@@ -232,28 +234,34 @@ export async function updateAllTranslationsOnIndexedDB(
 	fullUserData: UserData[],
 ): Promise<void> {
 	const db = await openDatabase();
+	await processInBatches(
+		fullUserData,
+		async (batch) => {
+			for (const data of batch) ensureProjectModels(data);
+			await writeTranslationBatch(db, batch);
+		},
+		{ batchSize: INDEXED_DB_WRITE_BATCH_SIZE },
+	);
+	await loadTranslationsUserDataFromIndexedDB();
+}
+
+function writeTranslationBatch(
+	database: IDBDatabase,
+	batch: readonly UserData[],
+): Promise<void> {
 	return new Promise((resolve, reject) => {
-		const transaction = db.transaction(DB_USER_STORE_NAME, "readwrite", {
+		const transaction = database.transaction(DB_USER_STORE_NAME, "readwrite", {
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
-
-		const updatePromises = fullUserData.map((data) => {
-			ensureProjectModels(data);
-			return new Promise<void>((res, rej) => {
-				const request = store.put(data);
-
-				request.onsuccess = () => res();
-				request.onerror = (event) => rej((event.target as IDBRequest).error);
-			});
-		});
-
-		Promise.all(updatePromises)
-			.then(() => {
-				loadTranslationsUserDataFromIndexedDB();
-				resolve();
-			})
-			.catch(reject);
+		transaction.oncomplete = () => resolve();
+		transaction.onerror = () =>
+			reject(transaction.error ?? new Error("IndexedDB transaction failed."));
+		transaction.onabort = () =>
+			reject(
+				transaction.error ?? new Error("IndexedDB transaction was aborted."),
+			);
+		for (const data of batch) store.put(data);
 	});
 }
 

@@ -102,10 +102,24 @@ must be removed until a real XLS converter exists.
       executed. Adapter operations expose progress and cancellation, with both
       controls wired into project creation. Adversarial, compatibility,
       persistence, round-trip, type-check, and production-build tests pass.
-- [ ] **FF-005 — Support large files without whole-document DOM copies.** Add
+- [x] **FF-005 — Support large files without whole-document DOM copies.** Add
       streaming/SAX-style XML and incremental text paths for TMX, TBX, XLIFF,
       CSV, and other large formats; batch IndexedDB writes and keep the UI
       responsive through workers where measurement justifies them.
+      Completed 2026-08-16: TMX, TBX-Core/martif, and Open TLC XLIFF 1.2/2.x
+      imports now scan bounded XML records and build only a small DOM per unit;
+      TXT uses chunked UTF-8/UTF-16 decoding with BOM preservation, and a shared
+      incremental CSV reader handles quoted delimiters, escaped quotes, and
+      embedded newlines. Streaming operations expose cancellation, byte/record
+      progress, safety limits, timing, buffer metrics, and cooperative main-thread
+      yields. Bulk project persistence now commits ordered 100-record IndexedDB
+      transactions instead of queuing every write at once. A 5,000-record stress
+      fixture keeps the scanner buffer below 2 KiB and verifies 50 scheduling
+      yields; this measurement favored cooperative batching over a worker because
+      worker transfer would duplicate the resulting in-memory model. Encoding,
+      chunk-boundary, unsafe-XML, oversized-record, cancellation, interchange,
+      CSV, persistence-batch, round-trip, type-check, and production-build tests
+      pass.
 - [ ] **FF-006 — Correct existing format detection.** Remove misleading `.doc`
       and `.xls` acceptance, distinguish OOXML/ODF/EPUB ZIP packages by their
       entries, handle generic XML MIME types, make extension checks exact and

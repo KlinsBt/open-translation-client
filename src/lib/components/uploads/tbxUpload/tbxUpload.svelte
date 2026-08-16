@@ -1,7 +1,6 @@
 <script lang="ts">
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import type { TbData } from "$lib/types/types";
-	import { extractTbxData, validateTbxFile } from "./tbxFileFunctions";
 	import {
 		showLoading,
 		tbData,
@@ -19,7 +18,8 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
-	import { readSafeXmlFile, safeInputMessage } from "$lib/formats/safeInput";
+	import { safeInputMessage } from "$lib/formats/safeInput";
+	import { importTbxStreaming } from "$lib/formats/streamingImporters";
 
 	let temporarySaveName: string = $state("");
 
@@ -37,9 +37,7 @@
 			return;
 		}
 		try {
-			const tbxFile = await readSafeXmlFile(file);
-			if (!validateTbxFile(tbxFile)) throw new Error("Invalid TBX structure.");
-			extractedTbxData = extractTbxData(tbxFile);
+			extractedTbxData = (await importTbxStreaming(file)).data;
 			if (!extractedTbxData) throw new Error("No TBX data was found.");
 			if (checkIfIdExists(extractedTbxData.id)) {
 				tbxDataIdExists = true;

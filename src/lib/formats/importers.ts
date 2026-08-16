@@ -37,6 +37,7 @@ import {
 	SafeInputError,
 	type SafeInputContext,
 } from "./safeInput";
+import { readStreamingTextFile } from "./streaming";
 
 function invalidResult(
 	error: unknown,
@@ -220,7 +221,7 @@ export async function validateTextFile(
 	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
 	try {
-		await readSafeTextFile(file, context);
+		await readStreamingTextFile(file, context);
 		return { valid: true };
 	} catch (error) {
 		return invalidResult(error, "The file is not readable text.");
@@ -233,7 +234,7 @@ export async function importTextFile(
 	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
 	const filterOptions = normalizeImportOptions("text", options);
-	const read = await readSafeTextFile(file, context);
+	const read = await readStreamingTextFile(file, context);
 	const text = read.text;
 	const mode = filterOptions.segmentationMode;
 	let segments: string[];
@@ -260,12 +261,13 @@ export async function importTextFile(
 				segmentIndex: index,
 			})),
 		}),
-		skeleton: await createPlainTextSkeleton(
-			file,
-			text,
-			segments,
-			createSkeletonSource(file, read),
-		),
+		skeleton: await createPlainTextSkeleton(file, text, segments, {
+			name: file.name,
+			mimeType: file.type,
+			encoding: read.encoding,
+			hasBom: read.hasBom,
+			originalFile: file,
+		}),
 		filterOptions,
 	};
 }
