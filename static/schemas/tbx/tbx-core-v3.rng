@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+  ns="urn:iso:std:iso:30042:ed-2"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <start><ref name="tbx"/></start>
+  <define name="tbx">
+    <element name="tbx">
+      <attribute name="style"><choice><value>dca</value><value>dct</value></choice></attribute>
+      <attribute name="type"><text/></attribute>
+      <attribute name="lang" ns="http://www.w3.org/XML/1998/namespace"><text/></attribute>
+      <ref name="header"/>
+      <element name="text">
+        <element name="body"><oneOrMore><ref name="concept"/></oneOrMore></element>
+      </element>
+    </element>
+  </define>
+  <define name="header">
+    <element name="tbxHeader"><oneOrMore><ref name="foreign"/></oneOrMore></element>
+  </define>
+  <define name="concept">
+    <element name="conceptEntry">
+      <attribute name="id"><data type="NCName"/></attribute>
+      <zeroOrMore><choice><ref name="metadata"/><ref name="language"/></choice></zeroOrMore>
+    </element>
+  </define>
+  <define name="language">
+    <element name="langSec">
+      <attribute name="lang" ns="http://www.w3.org/XML/1998/namespace"><text/></attribute>
+      <zeroOrMore><ref name="metadata"/></zeroOrMore>
+      <oneOrMore><ref name="term-section"/></oneOrMore>
+    </element>
+  </define>
+  <define name="term-section">
+    <element name="termSec">
+      <optional><attribute name="id"><data type="NCName"/></attribute></optional>
+      <element name="term"><zeroOrMore><choice><text/><ref name="foreign"/></choice></zeroOrMore></element>
+      <zeroOrMore><ref name="metadata"/></zeroOrMore>
+    </element>
+  </define>
+  <define name="metadata">
+    <choice>
+      <element name="note"><zeroOrMore><choice><text/><ref name="foreign"/></choice></zeroOrMore></element>
+      <element>
+        <choice>
+          <name>admin</name><name>descrip</name><name>ref</name><name>xref</name>
+          <name>termNote</name><name>transac</name><name>transacNote</name>
+          <name>adminGrp</name><name>descripGrp</name><name>transacGrp</name><name>termNoteGrp</name>
+        </choice>
+        <zeroOrMore><attribute><anyName/><text/></attribute></zeroOrMore>
+        <zeroOrMore><choice><text/><ref name="metadata"/><ref name="foreign"/></choice></zeroOrMore>
+      </element>
+      <ref name="foreign"/>
+    </choice>
+  </define>
+  <define name="foreign">
+    <element>
+      <anyName/>
+      <zeroOrMore><attribute><anyName/><text/></attribute></zeroOrMore>
+      <zeroOrMore><choice><text/><ref name="foreign"/></choice></zeroOrMore>
+    </element>
+  </define>
+</grammar>

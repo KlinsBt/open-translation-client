@@ -280,12 +280,29 @@ Complete these in order after FF-000 through FF-009.
       merge policies, safety, grammar rejection, and large input. All 268 unit
       tests and five Chromium tests, formatting, type-check, zero-vulnerability
       production audit, and a clean production build pass.
-- [ ] **FF-104 — TBX (`.tbx`).** Make support explicit for TBX-Core/TBX-Min v3
+- [x] **FF-104 — TBX (`.tbx`).** Make support explicit for TBX-Core/TBX-Min v3
       and commonly encountered legacy TBX-Basic/`martif` data. Preserve the
       concept-oriented hierarchy, languages, multiple terms, status, part of
       speech, definitions, notes, administrative metadata, IDs, and cross
       references. Distinguish DCA and DCT styles and validate against the
       selected dialect's local schema/constraint files.
+      Completed 2026-08-16: the streamed importer and typed persistence model
+      now distinguish TBX-Core, TBX-Min, and TBX-Basic v3 DCA/DCT from legacy
+      TBX-Basic v2 `martif`; retain exact BCP 47 tags, concepts, language
+      sections, repeated terms, `tig`/`ntig` and `termGrp`, native attributes,
+      IDs, category groups, definitions, status, part of speech, notes,
+      administrative data, and internal/external references; and overlay edits
+      onto a native structural skeleton instead of rebuilding a flattened
+      document. Known TBX-Basic v2 DTD declarations remain inert, while all
+      entity and unknown document-type declarations stay blocked. Checked-in
+      Core Relax NG and dialect constraint profiles provide offline structural,
+      style/namespace, category, placement, pick-list, ID, and reference checks.
+      Three dialect fixtures and 16 focused tests cover five v3 dialect/style
+      outputs, legacy and modern edit round trips, metadata persistence,
+      invalid constraints, offline grammar validation, and a 1,500-concept
+      bounded-buffer import. All 284 unit tests and five Chromium tests,
+      formatting, type-check, zero-vulnerability production audit, and an
+      isolated clean production build pass.
 - [ ] **FF-105 — DOCX family (`.docx`, later `.docm`, `.dotx`, `.dotm`).**
       Harden current round trips across paragraphs split into runs, styles,
       tabs/breaks, hyperlinks, fields, tracked changes policy, tables, headers,
@@ -560,6 +577,10 @@ events and reconstruct the original format.
 - [TMX 1.4b specification](https://www.ttt.org/oscarStandards/tmx/tmx14b.html)
 - [OSCAR exchange standards, including SRX 2.0](https://www.ttt.org/oscarStandards/)
 - [ISO 30042:2019 TBX overview](https://www.iso.org/standard/62510.html)
+- [TBXInfo public dialect and validation guidance](https://www.tbxinfo.net/tbx-dialects/)
+- [LTAC-Global TBX-Core schemas](https://ltac-global.github.io/TBX-Core_dialect/)
+- [LTAC-Global TBX-Min DCA/DCT schemas](https://ltac-global.github.io/TBX-Min_dialect/)
+- [LTAC-Global TBX-Basic DCA/DCT schemas](https://ltac-global.github.io/TBX-Basic_dialect/)
 - [W3C ITS 2.0](https://www.w3.org/TR/its20/)
 - [Microsoft Open XML package overview](https://learn.microsoft.com/en-us/office/open-xml/about-the-open-xml-sdk)
 - [GNU gettext PO format](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html)

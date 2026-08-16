@@ -226,13 +226,13 @@ describe("streaming CAT interchange importers", () => {
 	});
 
 	it("imports TBX-Core concept records incrementally", async () => {
-		const tbx = `<?xml version="1.0"?><tbx style="dca" type="TBX-Core" xml:lang="en"><tbxHeader><fileDesc><title>Terms</title><sourceDesc>OpenTLC ID: 9</sourceDesc></fileDesc></tbxHeader><text><body><conceptEntry id="c1"><langSec xml:lang="en-US"><termSec><term>file</term><termNote type="partOfSpeech">noun</termNote></termSec></langSec><langSec xml:lang="de"><termSec><term>Datei</term></termSec></langSec></conceptEntry></body></text></tbx>`;
+		const tbx = `<?xml version="1.0"?><tbx style="dca" type="TBX-Min" xml:lang="en" xmlns="urn:iso:std:iso:30042:ed-2"><tbxHeader><fileDesc><title>Terms</title><sourceDesc>OpenTLC ID: 9</sourceDesc></fileDesc></tbxHeader><text><body><conceptEntry id="c1"><langSec xml:lang="en-US"><termSec><term>file</term><termNote type="partOfSpeech">noun</termNote></termSec></langSec><langSec xml:lang="de"><termSec><term>Datei</term></termSec></langSec></conceptEntry></body></text></tbx>`;
 		const result = await importTbxStreaming(textFile(tbx, "terms.tbx"));
 		expect(result.data.id).toBe(9);
 		expect(result.data.schemaVersion).toBe(1);
 		expect(result.data.name).toBe("Terms");
 		expect(result.data.entries[0].terms).toMatchObject([
-			{ lang: "en", term: "file" },
+			{ lang: "en-US", term: "file" },
 			{ lang: "de", term: "Datei" },
 		]);
 	});

@@ -1,0 +1,8 @@
+{
+	"dialect": "TBX-Core",
+	"version": 3,
+	"styles": ["dca", "dct"],
+	"dctEquivalentToDca": true,
+	"dataCategories": {},
+	"source": "LTAC-Global/TBX-Core_dialect 1.0"
+}

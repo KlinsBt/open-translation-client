@@ -168,23 +168,86 @@ export interface TmEntry {
 	target: string;
 }
 
+export type TbxDialect = "TBX-Core" | "TBX-Min" | "TBX-Basic";
+export type TbxStyle = "dca" | "dct";
+
+export interface TbxDataCategory {
+	/** XML qualified name; DCT prefixes and unknown extension names are retained. */
+	name: string;
+	localName: string;
+	namespace?: string;
+	type?: string;
+	text: string;
+	attributes: Record<string, string>;
+	children: TbxDataCategory[];
+}
+
+export interface TbxLanguageSectionMetadata {
+	index: number;
+	name: "langSec" | "langSet";
+	language: string;
+	attributes: Record<string, string>;
+	dataCategories: TbxDataCategory[];
+}
+
+export interface TbxTermMetadata {
+	id?: string;
+	containerName: "termSec" | "tig" | "ntig" | "bare";
+	containerAttributes: Record<string, string>;
+	languageSectionIndex: number;
+	dataCategories: TbxDataCategory[];
+	termMarker: string;
+	originalTerm: string;
+	originalTermXml: string;
+}
+
+export interface TbxEntryMetadata {
+	id?: string;
+	recordName: "conceptEntry" | "termEntry";
+	attributes: Record<string, string>;
+	dataCategories: TbxDataCategory[];
+	languageSections: TbxLanguageSectionMetadata[];
+	version?: 2 | 3;
+	dialect?: TbxDialect;
+	style?: TbxStyle;
+	/** Native entry XML with numbered term-value markers for lossless rebuilding. */
+	skeletonXml?: string;
+}
+
+export interface TbxDocumentMetadata {
+	version: 2 | 3;
+	dialect: TbxDialect;
+	style: TbxStyle;
+	rootName: "tbx" | "martif";
+	rootAttributes: Record<string, string>;
+	/** Document XML outside streamed entries, with numbered entry placeholders. */
+	documentSkeletonXml?: string;
+	schemaAssets: string[];
+}
+
+export interface TbTerm {
+	[key: string]: unknown;
+	lang: string;
+	term: string;
+	notes: string[] | { type: string; text: string }[];
+	status?: string;
+	partOfSpeech?: string;
+	definition?: string;
+	tbx?: TbxTermMetadata;
+}
+
+export interface TbEntry {
+	[key: string]: unknown;
+	terms: TbTerm[];
+	tbx?: TbxEntryMetadata;
+}
+
 export interface TbData {
 	schemaVersion?: number;
 	id?: number;
 	name?: string;
-	entries: {
-		// id: number;
-		terms: {
-			lang: string;
-			term: string;
-			notes:
-				| string[]
-				| {
-						type: string;
-						text: string;
-				  }[];
-		}[];
-	}[];
+	entries: TbEntry[];
+	tbx?: TbxDocumentMetadata;
 }
 
 export interface ParagraphData {

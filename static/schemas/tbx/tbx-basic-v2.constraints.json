@@ -1,0 +1,10 @@
+{
+	"dialect": "TBX-Basic",
+	"version": 2,
+	"root": "martif",
+	"entry": "termEntry",
+	"language": "langSet",
+	"termContainers": ["tig", "ntig"],
+	"knownDoctype": "TBXBasiccoreStructV02.dtd",
+	"policy": "preserve legacy categories and groups; never resolve the external DTD"
+}

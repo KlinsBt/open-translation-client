@@ -135,6 +135,6 @@ describe("translation output builders", () => {
 		const doc = new DOMParser().parseFromString(output, "application/xml");
 		expect(validateTbxFile(doc)).toBe(true);
 		expect(output).toContain("Terms &amp; Notes");
-		expect(output).toContain('<termNote type="usage">IT &lt; term</termNote>');
+		expect(output).toContain("<note>usage: IT &lt; term</note>");
 	});
 });

@@ -1,0 +1,13 @@
+{
+	"dialect": "TBX-Min",
+	"version": 3,
+	"styles": ["dca", "dct"],
+	"dctNamespace": "http://www.tbxinfo.net/ns/min",
+	"dataCategories": {
+		"admin": ["customerSubset"],
+		"descrip": ["subjectField"],
+		"termNote": ["administrativeStatus", "partOfSpeech"],
+		"xref": ["externalCrossReference"]
+	},
+	"source": "LTAC-Global/TBX-Min_dialect 1.0.1"
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tbx type="TBX-Min" style="dct" xml:lang="en-GB"
+  xmlns="urn:iso:std:iso:30042:ed-2"
+  xmlns:min="http://www.tbxinfo.net/ns/min">
+  <tbxHeader>
+    <fileDesc>
+      <titleStmt><title>Astronomy terms</title></titleStmt>
+      <sourceDesc><p>OpenTLC ID: 71</p></sourceDesc>
+    </fileDesc>
+  </tbxHeader>
+  <text>
+    <body>
+      <conceptEntry id="black-hole">
+        <min:subjectField>astronomy</min:subjectField>
+        <min:externalCrossReference target="https://example.test/black-hole">reference</min:externalCrossReference>
+        <langSec xml:lang="en-GB">
+          <termSec id="term-en-1">
+            <term>black hole</term>
+            <min:partOfSpeech>noun</min:partOfSpeech>
+            <min:administrativeStatus>preferredTerm-admn-sts</min:administrativeStatus>
+            <note>Preferred spelling</note>
+          </termSec>
+          <termSec id="term-en-2">
+            <term>collapsed star</term>
+            <min:partOfSpeech>noun</min:partOfSpeech>
+            <min:administrativeStatus>admittedTerm-admn-sts</min:administrativeStatus>
+          </termSec>
+        </langSec>
+        <langSec xml:lang="de-DE">
+          <termSec id="term-de-1"><term>Schwarzes Loch</term></termSec>
+        </langSec>
+      </conceptEntry>
+    </body>
+  </text>
+</tbx>

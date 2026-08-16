@@ -7,6 +7,7 @@ import {
 import {
 	parseSafeJson,
 	SafeInputError,
+	safeParseXml,
 	type SafeInputContext,
 } from "./safeInput";
 import {
@@ -31,6 +32,12 @@ import {
 	parseTmxUnit,
 	type ParsedTmxUnit,
 } from "./tmx14";
+import {
+	parseTbxEntry,
+	readTbxDocumentMetadata,
+	TBX_V3_NAMESPACE,
+	validateTbxData,
+} from "./tbx";
 import {
 	migrateProjectData,
 	migrateTbData,
@@ -99,13 +106,16 @@ export async function importTbxStreaming(
 	const entries: TbData["entries"] = [];
 	const metrics = await scanXmlRecords(
 		file,
-		{ recordNames: ["conceptEntry", "termEntry"], batchSize: 250 },
-		(recordXml, _index, namespaces) => {
+		{
+			recordNames: ["conceptEntry", "termEntry"],
+			batchSize: 250,
+			collectSkeleton: true,
+			allowedDoctype:
+				/^<!DOCTYPE\s+martif\s+SYSTEM\s+["'](?:TBXBasiccoreStructV02\.dtd|https?:\/\/[^"']*TBXBasiccoreStructV02\.dtd)["']\s*>$/i,
+		},
+		(recordXml, index, namespaces) => {
 			const record = parseXmlRecord(recordXml, namespaces);
-			const entry =
-				record.localName.toLowerCase() === "conceptentry"
-					? extractConceptEntry(record)
-					: extractTermEntry(record);
+			const entry = parseTbxEntry(record, index);
 			if (entry.terms.length === 0)
 				throw new SafeInputError(
 					"XML_MALFORMED",
@@ -115,27 +125,77 @@ export async function importTbxStreaming(
 		},
 		context,
 	);
-	const root =
-		parseStartElement(metrics.header, "tbx", metrics.namespaceDeclarations) ??
-		parseStartElement(metrics.header, "martif", metrics.namespaceDeclarations);
-	if (!root)
+	if (!metrics.skeleton)
+		throw new SafeInputError(
+			"XML_MALFORMED",
+			"The TBX structural skeleton is missing.",
+		);
+	const skeletonDocument = safeParseXml(
+		metrics.skeleton.replace(/<!DOCTYPE\s+martif\b[^>]*>/i, ""),
+	);
+	const root = skeletonDocument.documentElement;
+	if (!["tbx", "martif"].includes(root.localName.toLowerCase()))
 		throw new SafeInputError(
 			"XML_MALFORMED",
 			"The TBX root element is missing.",
 		);
-	if (root.localName.toLowerCase() === "tbx") {
-		for (const attribute of ["style", "type", "xml:lang"])
-			if (!root.getAttribute(attribute))
-				throw new SafeInputError(
-					"XML_MALFORMED",
-					`The TBX root is missing ${attribute}.`,
-				);
-	} else if (!root.getAttribute("type") || !root.getAttribute("xml:lang")) {
+	const metadata = readTbxDocumentMetadata(root);
+	for (const entry of entries)
+		if (entry.tbx)
+			Object.assign(entry.tbx, {
+				version: metadata.version,
+				dialect: metadata.dialect,
+				style: metadata.style,
+			});
+	if (!root.getAttribute("type") || !root.getAttribute("xml:lang")) {
 		throw new SafeInputError(
 			"XML_MALFORMED",
-			"The martif root needs type and xml:lang attributes.",
+			"The TBX root needs type and xml:lang attributes.",
 		);
 	}
+	if (!["TBX-Core", "TBX-Min", "TBX-Basic"].includes(metadata.dialect))
+		throw new SafeInputError(
+			"XML_MALFORMED",
+			`The TBX dialect “${root.getAttribute("type") ?? ""}” is not supported.`,
+		);
+	if (
+		metadata.version === 3 &&
+		(!["dca", "dct"].includes(root.getAttribute("style") ?? "") ||
+			root.namespaceURI !== TBX_V3_NAMESPACE)
+	)
+		throw new SafeInputError(
+			"XML_MALFORMED",
+			`TBX v3 needs style dca/dct and the ${TBX_V3_NAMESPACE} namespace.`,
+		);
+	const directChildren = (element: Element, localName: string) =>
+		Array.from(element.childNodes).filter(
+			(node): node is Element =>
+				node.nodeType === 1 && (node as Element).localName === localName,
+		);
+	const headerName = metadata.version === 3 ? "tbxHeader" : "martifHeader";
+	const text = directChildren(root, "text")[0];
+	const body = text ? directChildren(text, "body")[0] : undefined;
+	if (!directChildren(root, headerName)[0] || !body)
+		throw new SafeInputError(
+			"XML_MALFORMED",
+			"The TBX header or text/body wrapper is missing.",
+		);
+	const bodyElements = Array.from(body.childNodes).filter(
+		(node): node is Element => node.nodeType === 1,
+	);
+	const placeholders = bodyElements.filter(
+		(node): node is Element =>
+			node.localName === "opentlc-stream-record" &&
+			node.namespaceURI === "urn:opentlc:stream",
+	);
+	if (
+		placeholders.length !== metrics.recordCount ||
+		bodyElements.length !== placeholders.length
+	)
+		throw new SafeInputError(
+			"XML_MALFORMED",
+			"TBX entries must be direct children of text/body.",
+		);
 	const titleXml = findClosedElement(metrics.header, "title");
 	const name = titleXml
 		? parseXmlRecord(
@@ -145,14 +205,22 @@ export async function importTbxStreaming(
 		: "Untitled TBX File";
 	const sourceDescription = findClosedElement(metrics.header, "sourceDesc");
 	const idMatch = sourceDescription?.match(/OpenTLC ID:\s*(\d+)/i);
-	return {
-		data: migrateTbData({
-			...(idMatch ? { id: Number(idMatch[1]) } : {}),
-			name,
-			entries,
-		}),
-		metrics,
-	};
+	const data = migrateTbData({
+		...(idMatch ? { id: Number(idMatch[1]) } : {}),
+		name,
+		entries,
+		tbx: {
+			...metadata,
+			documentSkeletonXml: metrics.skeleton,
+		},
+	});
+	const issue = validateTbxData(data)[0];
+	if (issue)
+		throw new SafeInputError(
+			"XML_MALFORMED",
+			`${issue.message} (${issue.path})`,
+		);
+	return { data, metrics };
 }
 
 export async function importXliffProjectStreaming(

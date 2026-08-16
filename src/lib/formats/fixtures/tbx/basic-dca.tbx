@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tbx type="TBX-Basic" style="dca" xml:lang="en"
+  xmlns="urn:iso:std:iso:30042:ed-2">
+  <tbxHeader>
+    <fileDesc><titleStmt><title>Interface terms</title></titleStmt><sourceDesc><p>Test fixture</p></sourceDesc></fileDesc>
+  </tbxHeader>
+  <text><body>
+    <conceptEntry id="save-command">
+      <descrip type="subjectField">software</descrip>
+      <descripGrp>
+        <descrip type="definition">Command that persists a document.</descrip>
+        <admin type="source">Open TLC manual</admin>
+      </descripGrp>
+      <ref type="crossReference" target="open-command">related command</ref>
+      <langSec xml:lang="en-US">
+        <termSec id="save-en">
+          <term>Save</term>
+          <termNote type="partOfSpeech">verb</termNote>
+          <termNote type="administrativeStatus">preferredTerm-admn-sts</termNote>
+          <descrip type="context">Select Save from the File menu.</descrip>
+          <admin type="projectSubset">desktop</admin>
+        </termSec>
+      </langSec>
+      <langSec xml:lang="de-DE"><termSec id="save-de"><term>Speichern</term></termSec></langSec>
+    </conceptEntry>
+    <conceptEntry id="open-command">
+      <langSec xml:lang="en-US"><termSec><term>Open</term></termSec></langSec>
+      <langSec xml:lang="de-DE"><termSec><term>Öffnen</term></termSec></langSec>
+    </conceptEntry>
+  </body></text>
+</tbx>
+

@@ -1,0 +1,26 @@
+{
+	"dialect": "TBX-Basic",
+	"version": 3,
+	"styles": ["dca", "dct"],
+	"dctNamespaces": [
+		"http://www.tbxinfo.net/ns/min",
+		"http://www.tbxinfo.net/ns/basic"
+	],
+	"dataCategories": {
+		"admin": ["customerSubset", "projectSubset", "source"],
+		"descrip": ["subjectField", "context", "definition"],
+		"ref": ["crossReference"],
+		"termNote": [
+			"administrativeStatus",
+			"partOfSpeech",
+			"geographicalUsage",
+			"grammaticalGender",
+			"termLocation",
+			"termType"
+		],
+		"transac": ["transactionType"],
+		"transacNote": ["responsibility"],
+		"xref": ["externalCrossReference", "xGraphic"]
+	},
+	"source": "LTAC-Global/TBX-Basic_dialect 1.2.1"
+}
