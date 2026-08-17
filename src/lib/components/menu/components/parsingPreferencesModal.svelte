@@ -6,7 +6,9 @@
 		setActiveParsingPreference,
 		deleteParsingPreference,
 		updateParsingPreference,
+		addSrxParsingPreference,
 	} from "$lib/functions/parsing/parsingPreferences";
+	import { buildSrx20Blob, importSrx20File } from "$lib/formats/srx20";
 	import {
 		notifySuccess,
 		notifyInfo,
@@ -25,6 +27,7 @@
 	let currentTokenInput: string = $state("");
 	let tokens: string[] = $state([]);
 	let editingId: string | null = $state(null);
+	let srxLanguageCode: string = $state("en");
 
 	function handleAddToken() {
 		// Only reject completely empty strings, but allow spaces if there's content
@@ -94,6 +97,43 @@
 		currentTokenInput = "";
 	}
 
+	async function handleSrxImport(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		try {
+			const document = await importSrx20File(file);
+			parsingPreferences = addSrxParsingPreference(
+				file.name.replace(/\.srx$/i, ""),
+				srxLanguageCode,
+				document,
+			);
+			notifySuccess("SRX 2.0 profile imported");
+		} catch (error) {
+			notifyError(error instanceof Error ? error.message : "Invalid SRX file");
+		} finally {
+			input.value = "";
+		}
+	}
+
+	function handleSrxExport(pref: ParsingPreference) {
+		if (!pref.srx) return;
+		try {
+			const url = URL.createObjectURL(buildSrx20Blob(pref.srx));
+			const anchor = document.createElement("a");
+			anchor.href = url;
+			anchor.download = `${pref.label.replace(/\.srx$/i, "")}.srx`;
+			document.body.appendChild(anchor);
+			anchor.click();
+			document.body.removeChild(anchor);
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "Could not export SRX",
+			);
+		}
+	}
+
 	// Helper function to visualize spaces in tokens
 	function displayToken(token: string): string {
 		// Replace spaces with a visible character for better UX
@@ -103,6 +143,29 @@
 
 {#snippet parsingSettings()}
 	<div class="options-container">
+		<div class="srx-import-section">
+			<p class="helper-text">
+				Import an SRX 2.0 workflow asset and choose the BCP 47 source-language
+				code its maps should evaluate.
+			</p>
+			<div class="token-input-wrapper">
+				<input
+					type="text"
+					aria-label="SRX source language code"
+					placeholder="Source language code (e.g. en-US)"
+					bind:value={srxLanguageCode}
+				/>
+				<label class="btn option srx-file-button">
+					Import SRX
+					<input
+						type="file"
+						accept=".srx,application/srx+xml,application/xml,text/xml"
+						onchange={handleSrxImport}
+					/>
+				</label>
+			</div>
+		</div>
+
 		<div class="parsing-form">
 			<input
 				type="text"
@@ -183,9 +246,17 @@
 									<span class="active-badge">(active)</span>
 								{/if}
 							</div>
-							<div class="tokens" title={pref.tokens.join(", ")}>
-								{pref.tokens.map((t) => displayToken(t)).join(", ")}
-							</div>
+							{#if pref.kind === "srx" && pref.srx}
+								<div class="tokens">
+									SRX 2.0 · {pref.languageCode} · {pref.srx.languageRules
+										.length}
+									rule sets
+								</div>
+							{:else}
+								<div class="tokens" title={pref.tokens.join(", ")}>
+									{pref.tokens.map((t) => displayToken(t)).join(", ")}
+								</div>
+							{/if}
 						</div>
 						<div class="actions">
 							<button
@@ -202,13 +273,22 @@
 							>
 								Delete
 							</button>
-							<button
-								class="btn option"
-								disabled={pref.id === "default"}
-								onclick={() => handleEditParsingPreference(pref)}
-							>
-								Edit
-							</button>
+							{#if pref.kind === "srx"}
+								<button
+									class="btn option"
+									onclick={() => handleSrxExport(pref)}
+								>
+									Export
+								</button>
+							{:else}
+								<button
+									class="btn option"
+									disabled={pref.id === "default"}
+									onclick={() => handleEditParsingPreference(pref)}
+								>
+									Edit
+								</button>
+							{/if}
 						</div>
 					</div>
 				{/if}
@@ -247,6 +327,34 @@
 		flex-direction: column;
 		gap: 12px;
 		flex-shrink: 0;
+	}
+
+	.srx-import-section {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding-bottom: 14px;
+		border-bottom: 1px solid var(--color-theme-8);
+	}
+
+	.srx-file-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.srx-file-button input[type="file"] {
+		display: none;
+	}
+
+	.srx-import-section input[type="text"] {
+		min-width: 0;
+		padding: 10px 12px;
+		border: 1px solid var(--color-theme-4);
+		border-radius: 5px;
+		font: inherit;
 	}
 
 	.parsing-form input {

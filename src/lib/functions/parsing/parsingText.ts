@@ -4,6 +4,7 @@ import { getActiveTokens } from "./parsingPreferences";
 export type PlainTextSegmentationMode =
 	| "preferences"
 	| "sentences"
+	| "srx"
 	| "paragraphs"
 	| "lines"
 	| "document";
@@ -138,6 +139,29 @@ export function segmentPlainText(
 			direction: detectPlainTextDirection(text),
 		});
 	}
+	return segments;
+}
+
+export function segmentPlainTextAtBreaks(
+	content: string,
+	breakPositions: readonly number[],
+): PlainTextSegment[] {
+	const segments: PlainTextSegment[] = [];
+	const contentStart = content.startsWith("\ufeff") ? 1 : 0;
+	let cursor = contentStart;
+	const boundaries = [...new Set(breakPositions)]
+		.filter(
+			(position) =>
+				Number.isInteger(position) &&
+				position > contentStart &&
+				position < content.length,
+		)
+		.sort((first, second) => first - second);
+	for (const boundary of boundaries) {
+		addPlainTextSegment(content, segments, cursor, boundary, "", true);
+		cursor = boundary;
+	}
+	addPlainTextSegment(content, segments, cursor, content.length, "", true);
 	return segments;
 }
 

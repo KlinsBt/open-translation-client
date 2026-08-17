@@ -13,8 +13,10 @@ import {
 } from "$lib/functions/parsing/parsingXlsx";
 import {
 	segmentPlainText,
+	segmentPlainTextAtBreaks,
 	type PlainTextSegmentationMode,
 } from "$lib/functions/parsing/parsingText";
+import { getActiveSrxProfile } from "$lib/functions/parsing/parsingPreferences";
 import {
 	getPresentationComments,
 	getPresentationSlides,
@@ -62,6 +64,7 @@ import {
 	type SafeInputContext,
 } from "./safeInput";
 import { readStreamingTextFile } from "./streaming";
+import { findSrxBreakPositions, SrxValidationError } from "./srx20";
 
 function invalidResult(
 	error: unknown,
@@ -454,7 +457,22 @@ export async function importTextFile(
 	const read = await readStreamingTextFile(file, context);
 	const text = read.text;
 	const mode = filterOptions.segmentationMode as PlainTextSegmentationMode;
-	const parsedSegments = segmentPlainText(text, mode);
+	const activeSrx = mode === "srx" ? getActiveSrxProfile() : undefined;
+	if (mode === "srx" && !activeSrx)
+		throw new SrxValidationError(
+			"Select an active SRX profile in Parsing preferences before importing TXT with SRX segmentation.",
+		);
+	const contentStart = text.startsWith("\ufeff") ? 1 : 0;
+	const parsedSegments = activeSrx
+		? segmentPlainTextAtBreaks(
+				text,
+				findSrxBreakPositions(
+					text.slice(contentStart),
+					activeSrx.document,
+					activeSrx.languageCode,
+				).map((position) => position + contentStart),
+			)
+		: segmentPlainText(text, mode);
 	const segments = parsedSegments.map((segment) => segment.text);
 	const replacements = parsedSegments.map(
 		(segment, unitIndex) =>
@@ -479,6 +497,13 @@ export async function importTextFile(
 		encoding: read.encoding,
 		hasBom: read.hasBom,
 		newlineStyles: [...new Set(text.match(/\r\n|\n|\r/g) ?? [])],
+		...(activeSrx
+			? {
+					segmentation: "srx-2.0",
+					srxLanguageCode: activeSrx.languageCode,
+					srxDocument: activeSrx.document,
+				}
+			: {}),
 	};
 	for (const [index, segment] of parsedSegments.entries()) {
 		const unit = document.units[index];

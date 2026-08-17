@@ -1,8 +1,18 @@
+import { serializeSrx20, type SrxDocument } from "$lib/formats/srx20";
+
 export interface ParsingPreference {
 	id: string;
 	label: string;
 	tokens: string[];
 	active: boolean;
+	kind?: "tokens" | "srx";
+	srx?: SrxDocument;
+	languageCode?: string;
+}
+
+export interface ActiveSrxProfile {
+	document: SrxDocument;
+	languageCode: string;
 }
 
 export const DEFAULT_TOKENS = [".", "?", "!", "。", "！", "？"];
@@ -13,6 +23,7 @@ const DEFAULT_PREF: ParsingPreference = {
 	label: "Default (sentence-based)",
 	tokens: DEFAULT_TOKENS,
 	active: true,
+	kind: "tokens",
 };
 
 function isBrowser() {
@@ -20,6 +31,21 @@ function isBrowser() {
 }
 
 function ensureDefaultPref(prefs: ParsingPreference[]): ParsingPreference[] {
+	prefs = prefs
+		.filter(
+			(preference) =>
+				preference &&
+				typeof preference.id === "string" &&
+				typeof preference.label === "string",
+		)
+		.map((preference) => ({
+			...preference,
+			kind: preference.kind === "srx" ? "srx" : "tokens",
+			tokens: Array.isArray(preference.tokens)
+				? preference.tokens.filter((token) => typeof token === "string")
+				: [],
+			active: preference.active === true,
+		}));
 	const existingDefault = prefs.find((p) => p.id === DEFAULT_PREF.id);
 	let updated = prefs;
 
@@ -59,6 +85,18 @@ function writeStore(data: ParsingPreference[]) {
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
+function normalizeLanguageCode(languageCode: string): string {
+	try {
+		const normalized = Intl.getCanonicalLocales(
+			languageCode.trim() || "und",
+		)[0];
+		if (normalized) return normalized;
+	} catch {
+		// Report one stable workflow-facing error below.
+	}
+	throw new Error("SRX source language must be a valid BCP 47 language code.");
+}
+
 export function loadParsingPreferences(): ParsingPreference[] {
 	const prefs = ensureDefaultPref(readStore());
 	writeStore(prefs);
@@ -80,8 +118,31 @@ export function addParsingPreference(
 		label: label || `Custom ${existing.length + 1}`,
 		tokens: tokens.map((t) => t.trim()).filter(Boolean),
 		active: false,
+		kind: "tokens",
 	};
 	existing.push(newPref);
+	const result = ensureDefaultPref(existing);
+	writeStore(result);
+	return result;
+}
+
+export function addSrxParsingPreference(
+	label: string,
+	languageCode: string,
+	document: SrxDocument,
+): ParsingPreference[] {
+	serializeSrx20(document);
+	const existing = ensureDefaultPref(readStore());
+	const id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+	existing.push({
+		id,
+		label: label || `SRX ${existing.length + 1}`,
+		tokens: [],
+		active: false,
+		kind: "srx",
+		srx: document,
+		languageCode: normalizeLanguageCode(languageCode),
+	});
 	const result = ensureDefaultPref(existing);
 	writeStore(result);
 	return result;
@@ -119,7 +180,7 @@ export function updateParsingPreference(
 	const prefs = ensureDefaultPref(readStore());
 	const updated = prefs.map((p) => {
 		if (p.id !== id) return p;
-		if (p.id === DEFAULT_PREF.id) return p; // default is immutable
+		if (p.id === DEFAULT_PREF.id || p.kind === "srx") return p;
 		return {
 			...p,
 			label: label || p.label,
@@ -134,7 +195,25 @@ export function updateParsingPreference(
 export function getActiveTokens(): string[] {
 	const prefs = ensureDefaultPref(readStore());
 	const active = prefs.find((p) => p.active);
-	return active ? active.tokens : DEFAULT_PREF.tokens;
+	return active?.kind !== "srx"
+		? (active?.tokens ?? DEFAULT_PREF.tokens)
+		: DEFAULT_PREF.tokens;
+}
+
+export function getActiveSrxProfile(): ActiveSrxProfile | undefined {
+	const active = ensureDefaultPref(readStore()).find(
+		(preference) => preference.active && preference.kind === "srx",
+	);
+	if (!active?.srx || !active.languageCode) return undefined;
+	try {
+		serializeSrx20(active.srx);
+		return {
+			document: active.srx,
+			languageCode: normalizeLanguageCode(active.languageCode),
+		};
+	} catch {
+		return undefined;
+	}
 }
 
 export function getDefaultTokens(): string[] {

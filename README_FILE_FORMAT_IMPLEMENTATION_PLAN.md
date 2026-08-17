@@ -188,7 +188,7 @@ they are not routed to the ZIP-based OOXML importers.
       suite runs each TXT, JSON, DOCX, XLSX, PPTX, and HTML adapter in real headless
       Chromium through import, edit, registered browser download, and re-import.
       Fixture-to-registry coverage fails automatically when a future adapter
-      omits these gates. The current suite has 367 unit tests and seven Chromium tests;
+      omits these gates. The current suite has 377 unit tests and seven Chromium tests;
       formatting, type-check, production dependency audit, and a clean build pass.
 
 ## Phase 1 — CAT interoperability and current high-use formats
@@ -434,11 +434,29 @@ Complete these in order after FF-000 through FF-009.
       mode, mixed newlines, empty files, BOM isolation, both UTF-16 byte orders,
       encoding conversion, normalization, bidi text, malformed bytes, join/split
       mapping, performance, and Chromium download/re-import.
-- [ ] **FF-110 — SRX 2.0 segmentation rules (`.srx`).** Import/export language
+- [x] **FF-110 — SRX 2.0 segmentation rules (`.srx`).** Import/export language
       maps and ordered break/no-break rules, validate the schema, and connect
       selected rules to deterministic project segmentation. Test cascade order,
       regular-expression compatibility, language-code matching, abbreviations,
       and round trips. Treat SRX as a workflow asset, not a translatable source.
+      Completed 2026-08-17: Parsing Preferences now imports, stores, activates,
+      deletes, and exports SRX 2.0 workflow profiles with a validated BCP 47 source
+      language. The strict parser requires the SRX namespace/version and schema
+      structure, preserves format handles and foreign header extensions, rejects
+      unsafe XML and broken map references, and validates generated output against
+      the checked-in official OSCAR XSD. TXT exposes an explicit SRX segmentation
+      mode; the selected profile, language code, and complete rule snapshot are
+      recorded in neutral project metadata while exact whitespace remains in the
+      TXT skeleton. Language maps aggregate in document order according to
+      `cascade`, and the first matching break/no-break rule decides each boundary.
+      Common ICU escapes, Unicode classes, quoted literals, and leading case flags
+      are adapted explicitly; incompatible constructs fail with diagnostics rather
+      than changing meaning silently. Rule matching scans once per rule, never
+      splits surrogate pairs, and is covered for cascade order, abbreviations,
+      language matching, Japanese punctuation, Unicode regex behavior, malformed
+      files, schema validation, semantic round trips, TXT integration, and a
+      250-segment deterministic performance case. SRX remains intentionally absent
+      from project-source format routing.
 
 ## Phase 2 — Common structured content and software localization
 
@@ -681,6 +699,8 @@ events and reconstruct the original format.
 - [Articulate Storyline course translation](https://www.articulatesupport.com/article/Storyline-360-Translating-Courses)
 - [TMX 1.4b specification](https://www.ttt.org/oscarStandards/tmx/tmx14b.html)
 - [OSCAR exchange standards, including SRX 2.0](https://www.ttt.org/oscarStandards/)
+- [OSCAR SRX 2.0 specification](https://www.ttt.org/oscarStandards/srx/srx20.html)
+- [Official SRX 2.0 XML Schema](https://www.ttt.org/oscarStandards/srx/srx20.xsd)
 - [ISO 30042:2019 TBX overview](https://www.iso.org/standard/62510.html)
 - [TBXInfo public dialect and validation guidance](https://www.tbxinfo.net/tbx-dialects/)
 - [LTAC-Global TBX-Core schemas](https://ltac-global.github.io/TBX-Core_dialect/)

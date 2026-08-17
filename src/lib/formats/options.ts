@@ -12,8 +12,16 @@ export const FORMAT_IMPORT_OPTIONS = {
 			label: "Segmentation",
 			type: "select",
 			defaultValue: "preferences",
-			choices: ["preferences", "sentences", "paragraphs", "lines", "document"],
-			description: "Choose how source text is divided into translation units.",
+			choices: [
+				"preferences",
+				"sentences",
+				"srx",
+				"paragraphs",
+				"lines",
+				"document",
+			],
+			description:
+				"Choose how source text is divided; SRX uses the active imported SRX profile.",
 		},
 		{
 			id: "outputEncoding",
