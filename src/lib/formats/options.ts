@@ -178,6 +178,58 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Include numeric and boolean cell values. Formula cells are always protected.",
 		},
 	],
+	pptx: [
+		{
+			id: "slides",
+			label: "Slides",
+			type: "text",
+			defaultValue: "",
+			placeholder: "All, or e.g. 1-5, 8",
+			description: "Import all slides or a 1-based range list.",
+		},
+		{
+			id: "includeNotes",
+			label: "Speaker notes",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeComments",
+			label: "Comments as notes",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Attach slide comments as non-translatable translator notes.",
+		},
+		{
+			id: "includeAltText",
+			label: "Shape alt text",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeChartText",
+			label: "Chart drawing text",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Import addressable DrawingML text without changing formulas or cached values.",
+		},
+		{
+			id: "includeSmartArtText",
+			label: "SmartArt text",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeMastersLayouts",
+			label: "Masters and layouts",
+			type: "boolean",
+			defaultValue: false,
+			description:
+				"Include reusable master and layout text; disabled by default to avoid duplicates.",
+		},
+	],
 	html: [
 		{
 			id: "includeTextNodes",

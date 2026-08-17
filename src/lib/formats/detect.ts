@@ -242,12 +242,7 @@ async function detectZipPackage(
 		return supportedPackage(adapters, "xlsx", "xl/workbook.xml");
 	}
 	if (paths.has("ppt/presentation.xml")) {
-		return unsupported(
-			paths.has("ppt/vbaProject.bin") ? "PPTM" : "PPTX",
-			"high",
-			["package", "signature"],
-			"A PowerPoint OOXML package was detected, but presentation import is not implemented yet.",
-		);
+		return supportedPackage(adapters, "pptx", "ppt/presentation.xml");
 	}
 
 	const odf = odfLabel(packageDetails.mimetype);

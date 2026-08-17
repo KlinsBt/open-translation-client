@@ -12,6 +12,11 @@ import {
 	type WorkbookCellValue,
 } from "$lib/functions/parsing/parsingXlsx";
 import { createTextSegmentsWithRegexGeneralTextAlgo } from "$lib/functions/parsing/parsingText";
+import {
+	getPresentationComments,
+	getPresentationSlides,
+	segmentPresentationPackage,
+} from "$lib/functions/parsing/parsingPptx";
 import type {
 	FormatImportResult,
 	FormatOptionValues,
@@ -35,6 +40,7 @@ import {
 	type HtmlTextReplacement,
 	type JsonValueReplacement,
 	type XlsxTextReplacement,
+	type PptxTextReplacement,
 } from "./skeleton";
 import {
 	normalizeImportOptions,
@@ -178,6 +184,160 @@ export async function importDocxFile(
 		skeleton: await createPackageSkeleton(
 			file,
 			"docx",
+			content,
+			replacements,
+			archive.source,
+		),
+		filterOptions,
+		typeRef: content,
+		segmentsMeta: meta,
+	};
+}
+
+export async function validatePptxFile(
+	file: File,
+	context?: SafeInputContext,
+): Promise<FormatValidationResult> {
+	try {
+		const { parts } = await readSafeZipPackage(file, context);
+		const presentationXml = parts["ppt/presentation.xml"];
+		if (typeof presentationXml !== "string")
+			return {
+				valid: false,
+				reason: "The PPTX package has no ppt/presentation.xml.",
+			};
+		const presentation = safeParseXml(presentationXml, context);
+		if (presentation.documentElement.localName !== "presentation")
+			return {
+				valid: false,
+				reason: "ppt/presentation.xml has no presentation root element.",
+			};
+		const slideIds = Array.from(presentation.getElementsByTagName("*")).filter(
+			(element) => element.localName === "sldId",
+		).length;
+		const slides = getPresentationSlides(parts);
+		if (slides.length !== slideIds)
+			return {
+				valid: false,
+				reason:
+					"One or more presentation slide relationships are missing or invalid.",
+			};
+		for (const slide of slides) {
+			const xml = parts[slide.path];
+			if (typeof xml !== "string")
+				return {
+					valid: false,
+					reason: `The slide part ${slide.path} is missing.`,
+				};
+			if (safeParseXml(xml, context).documentElement.localName !== "sld")
+				return {
+					valid: false,
+					reason: `${slide.path} has no slide root element.`,
+				};
+		}
+		for (const [path, content] of Object.entries(parts)) {
+			if (typeof content !== "string") continue;
+			const expected =
+				path === "[Content_Types].xml"
+					? "Types"
+					: /(?:^|\/)\_rels\/[^/]+\.rels$/i.test(path)
+						? "Relationships"
+						: undefined;
+			if (
+				expected &&
+				safeParseXml(content, context).documentElement.localName !== expected
+			)
+				return {
+					valid: false,
+					reason: `${path} has an invalid package root element.`,
+				};
+		}
+		return { valid: true };
+	} catch (error) {
+		return invalidResult(error, "The file is not a readable PPTX package.");
+	}
+}
+
+export async function importPptxFile(
+	file: File,
+	options?: Readonly<FormatOptionValues>,
+	context?: SafeInputContext,
+): Promise<FormatImportResult> {
+	const filterOptions = normalizeImportOptions("pptx", options);
+	const archive = await readSafeZipPackage(file, context);
+	const content = archive.parts;
+	if (typeof content["ppt/presentation.xml"] !== "string")
+		throw new Error("The PPTX package has no ppt/presentation.xml.");
+	const slideCatalog = getPresentationSlides(content);
+	const parsed = segmentPresentationPackage(content, undefined, {
+		slides: parsePositiveRanges(filterOptions.slides, slideCatalog.length),
+		includeNotes: filterOptions.includeNotes === true,
+		includeMastersLayouts: filterOptions.includeMastersLayouts === true,
+		includeChartText: filterOptions.includeChartText === true,
+		includeSmartArtText: filterOptions.includeSmartArtText === true,
+		includeAltText: filterOptions.includeAltText === true,
+	});
+	const segments = parsed.segments.map(
+		(segment) => `${segment.text}${segment.separator}`,
+	);
+	const meta = parsed.segments.map((segment) => segment.meta);
+	const replacements: PptxTextReplacement[] = meta.map((entry, unitIndex) =>
+		entry.kind === "text"
+			? {
+					kind: "pptx-text",
+					unitIndex,
+					part: entry.part,
+					storage: "text",
+					separator: entry.separator,
+					fragments: entry.fragments.map((fragment) => ({ ...fragment })),
+				}
+			: {
+					kind: "pptx-text",
+					unitIndex,
+					part: entry.part,
+					storage: "attribute",
+					elementIndex: entry.elementIndex,
+					attribute: entry.attribute,
+				},
+	);
+	const document = createNeutralDocument({
+		format: "pptx",
+		sourceSegments: segments,
+		sourceLocations: meta.map((entry, index) => ({
+			part: entry.part,
+			...(entry.kind === "text"
+				? { paragraph: entry.fragments[0]?.paragraphIndex }
+				: { path: [entry.elementIndex, entry.attribute] }),
+			segmentIndex: index,
+			metadata: { storage: entry.kind },
+		})),
+	});
+	if (filterOptions.includeComments === true) {
+		const comments = getPresentationComments(content, parsed.slides);
+		document.metadata = {
+			...document.metadata,
+			pptxComments: comments.map((comment) => ({ ...comment })),
+		};
+		for (const comment of comments) {
+			const unit = document.units.find(
+				(entry) => entry.sourceLocation?.part === comment.slidePath,
+			);
+			if (unit)
+				unit.notes.push({
+					category: "pptx-slide-comment",
+					text: comment.authorId
+						? `[Author ${comment.authorId}] ${comment.text}`
+						: comment.text,
+				});
+		}
+	}
+	return {
+		kind: "segments",
+		segments,
+		document,
+		skeleton: await createPackageSkeleton(
+			file,
+			"pptx",
 			content,
 			replacements,
 			archive.source,

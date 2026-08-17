@@ -3,6 +3,7 @@ import { createHtmlFromModifiedText } from "$lib/functions/outputGeneration/outp
 import { generateJsonTranslation } from "$lib/functions/outputGeneration/outputGenerationJson";
 import { generateTextTranslation } from "$lib/functions/outputGeneration/outputGenerationText";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
+import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
 	importDocxFile,
 	importHtmlFile,
@@ -14,6 +15,8 @@ import {
 	validateJsonFile,
 	validateTextFile,
 	validateXlsxFile,
+	importPptxFile,
+	validatePptxFile,
 } from "./importers";
 import { FORMAT_IDS, type FormatId } from "./formatIds";
 import type { FormatAdapter } from "./types";
@@ -22,6 +25,7 @@ import { decodeTextBytes, type SafeInputContext } from "./safeInput";
 import { detectFileFormat, type FormatDetection } from "./detect";
 import { DOCX_FAMILY_EXTENSIONS, DOCX_FAMILY_MIME_TYPES } from "./docxPackage";
 import { XLSX_FAMILY_EXTENSIONS, XLSX_FAMILY_MIME_TYPES } from "./xlsxPackage";
+import { PPTX_FAMILY_EXTENSIONS, PPTX_FAMILY_MIME_TYPES } from "./pptxPackage";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -93,6 +97,19 @@ const adapters = [
 		validate: validateXlsxFile,
 		importFile: importXlsxFile,
 		exportFile: createXlsxFromModifiedXmlText,
+	},
+	{
+		id: "pptx",
+		label: "PPTX",
+		extensions: PPTX_FAMILY_EXTENSIONS,
+		mimeTypes: Object.values(PPTX_FAMILY_MIME_TYPES),
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.pptx,
+		sniff: async (file, context) =>
+			(await validatePptxFile(file, context)).valid,
+		validate: validatePptxFile,
+		importFile: importPptxFile,
+		exportFile: createPptxFromModifiedXmlText,
 	},
 	{
 		id: "html",

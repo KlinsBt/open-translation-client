@@ -246,10 +246,69 @@ const xlsxFixture: FormatConformanceFixture = {
 	expectedPackageChanges: ["xl/sharedStrings.xml"],
 };
 
+const pptxMime =
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation";
+const pptxFixture: FormatConformanceFixture = {
+	id: "pptx",
+	fileName: "unicode.pptx",
+	mimeType: pptxMime,
+	createValidFile: async () =>
+		zipFile(
+			{
+				"[Content_Types].xml":
+					'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>',
+				"ppt/presentation.xml":
+					'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldIdLst><p:sldId id="256" r:id="rId7"/></p:sldIdLst></p:presentation>',
+				"ppt/_rels/presentation.xml.rels":
+					'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide9.xml"/></Relationships>',
+				"ppt/slides/slide9.xml": `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`,
+				"custom/keep.bin": encoder.encode("untouched PPTX data"),
+			},
+			"unicode.pptx",
+			pptxMime,
+		),
+	createMalformedFile: async () =>
+		textFile("not a zip", "broken.pptx", pptxMime),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			slides: "",
+			includeNotes: true,
+			includeComments: true,
+			includeAltText: true,
+			includeChartText: true,
+			includeSmartArtText: true,
+			includeMastersLayouts: false,
+		},
+		skeleton: { kind: "package", replacementKinds: ["pptx-text"] },
+		units: [{ id: "unit-1", part: "ppt/slides/slide9.xml", path: null }],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		zipFile(
+			{
+				"ppt/presentation.xml":
+					'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst></p:presentation>',
+				"ppt/_rels/presentation.xml.rels":
+					'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>',
+				"ppt/slides/slide1.xml": `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:cSld><p:spTree>${Array.from(
+					{ length: units },
+					(_, index) =>
+						`<p:sp><p:txBody><a:p><a:r><a:t>Message ${index}</a:t></a:r></a:p></p:txBody></p:sp>`,
+				).join("")}</p:spTree></p:cSld></p:sld>`,
+			},
+			"performance.pptx",
+			pptxMime,
+		),
+	expectedPackageChanges: ["ppt/slides/slide9.xml"],
+};
+
 export const FORMAT_CONFORMANCE_FIXTURES = [
 	textFixture,
 	jsonFixture,
 	docxFixture,
 	xlsxFixture,
+	pptxFixture,
 	htmlFixture,
 ] as const satisfies readonly FormatConformanceFixture[];

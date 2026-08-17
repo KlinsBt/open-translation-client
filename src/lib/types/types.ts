@@ -28,6 +28,21 @@ export interface DocxSegmentMeta {
 	fragments: DocxFragmentMeta[];
 }
 
+export type PptxSegmentMeta =
+	| {
+			kind: "text";
+			part: string;
+			separator?: string;
+			fragments: DocxFragmentMeta[];
+	  }
+	| {
+			kind: "attribute";
+			part: string;
+			elementIndex: number;
+			attribute: "title" | "descr";
+			separator?: string;
+	  };
+
 export interface JsonSegmentMeta {
 	path: string[];
 	separator?: string;
@@ -46,7 +61,11 @@ export type HtmlSegmentMeta =
 			separator?: string;
 	  };
 
-export type SegmentMeta = DocxSegmentMeta | JsonSegmentMeta | HtmlSegmentMeta;
+export type SegmentMeta =
+	| DocxSegmentMeta
+	| PptxSegmentMeta
+	| JsonSegmentMeta
+	| HtmlSegmentMeta;
 
 export interface SegmentJoinBoundary {
 	sourceOffset: number;

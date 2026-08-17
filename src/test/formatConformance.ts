@@ -11,6 +11,7 @@ import { buildJsonTranslation } from "$lib/functions/outputGeneration/outputGene
 import { buildHtmlTranslation } from "$lib/functions/outputGeneration/outputGenerationHtml";
 import { buildDocxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationDocx";
 import { buildXlsxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationXlsx";
+import { buildPptxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationPptx";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -134,6 +135,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildDocxTranslationPackage(project);
 		case "xlsx":
 			return buildXlsxTranslationPackage(project);
+		case "pptx":
+			return buildPptxTranslationPackage(project);
 	}
 }
 

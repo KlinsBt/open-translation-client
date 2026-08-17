@@ -85,9 +85,11 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.json,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.html,.htm",
+			".txt,.json,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm",
 		);
-		expect(getSupportedFormatLabels()).toBe("TXT, JSON, DOCX, XLSX, HTML");
+		expect(getSupportedFormatLabels()).toBe(
+			"TXT, JSON, DOCX, XLSX, PPTX, HTML",
+		);
 	});
 
 	it("uses content and exact metadata while handling uppercase extensions", async () => {
@@ -253,15 +255,17 @@ describe("format adapter registry", () => {
 		},
 	);
 
-	it("distinguishes unsupported OOXML, OpenDocument, EPUB, and generic ZIP packages", async () => {
+	it("distinguishes supported PPTX from OpenDocument, EPUB, and generic ZIP packages", async () => {
+		const pptx = await zipFile(
+			{ "ppt/presentation.xml": "<presentation/>" },
+			"slides.pptx",
+		);
+		await expect(detectFormatWithConfidence(pptx)).resolves.toMatchObject({
+			formatId: "pptx",
+			label: "PPTX",
+			supported: true,
+		});
 		const cases = [
-			[
-				await zipFile(
-					{ "ppt/presentation.xml": "<presentation/>" },
-					"slides.pptx",
-				),
-				"PPTX",
-			],
 			[
 				await zipFile(
 					{

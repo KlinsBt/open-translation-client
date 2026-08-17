@@ -27,6 +27,8 @@ export type CombineResult = SegmentEditResult;
 
 const XLSX_EDIT_ERROR =
 	"XLSX segments cannot be split or joined because worksheet cell alignment must be preserved.";
+const PPTX_EDIT_ERROR =
+	"PPTX segments cannot be split or joined because slide shape and run alignment must be preserved.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -82,6 +84,7 @@ function validateForStructuralEdit(
 	}
 
 	if (translation.type === "xlsx") return XLSX_EDIT_ERROR;
+	if (translation.type === "pptx") return PPTX_EDIT_ERROR;
 	if (translation.type === "text") return undefined;
 
 	if (

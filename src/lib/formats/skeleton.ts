@@ -73,13 +73,31 @@ export interface XlsxTextReplacement extends ReplacementBase {
 	originalText?: string;
 }
 
+export type PptxTextReplacement = ReplacementBase &
+	(
+		| {
+				kind: "pptx-text";
+				part: string;
+				storage: "text";
+				fragments: DocxTextReplacement["fragments"];
+		  }
+		| {
+				kind: "pptx-text";
+				part: string;
+				storage: "attribute";
+				elementIndex: number;
+				attribute: "title" | "descr";
+		  }
+	);
+
 export type SkeletonReplacement =
 	| TextRangeReplacement
 	| JsonValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
 	| DocxTextReplacement
-	| XlsxTextReplacement;
+	| XlsxTextReplacement
+	| PptxTextReplacement;
 
 export interface DocumentSkeleton {
 	schemaVersion: typeof DOCUMENT_SKELETON_VERSION;
@@ -171,7 +189,7 @@ export async function createPlainTextSkeleton(
 
 export async function createPackageSkeleton(
 	file: File,
-	format: "docx" | "xlsx",
+	format: "docx" | "xlsx" | "pptx",
 	parts: Record<string, string | Blob>,
 	replacements: SkeletonReplacement[],
 	source?: SkeletonSource,
@@ -417,7 +435,7 @@ export function getTextSkeletonContent(
 
 export function getPackageSkeleton(
 	skeleton: DocumentSkeleton | undefined,
-	format: "docx" | "xlsx",
+	format: "docx" | "xlsx" | "pptx",
 ): (DocumentSkeleton & { payload: PackageSkeletonPayload }) | undefined {
 	return skeleton?.format === format && skeleton.payload.kind === "package"
 		? (skeleton as DocumentSkeleton & { payload: PackageSkeletonPayload })
@@ -511,7 +529,11 @@ export function createSkeletonFromLegacy(
 	};
 	const meta = options.segmentsMeta ?? [];
 
-	if (options.format === "docx" || options.format === "xlsx") {
+	if (
+		options.format === "docx" ||
+		options.format === "xlsx" ||
+		options.format === "pptx"
+	) {
 		const parts =
 			options.typeRef && typeof options.typeRef === "object"
 				? (options.typeRef as Record<string, string | Blob>)
@@ -533,6 +555,41 @@ export function createSkeletonFromLegacy(
 					separator: candidate.separator,
 					fragments: candidate.fragments.map((fragment) => ({ ...fragment })),
 				});
+			}
+		}
+		if (options.format === "pptx") {
+			for (const [unitIndex, entry] of meta.entries()) {
+				const candidate = entry as {
+					kind?: string;
+					part?: string;
+					separator?: string;
+					fragments?: DocxTextReplacement["fragments"];
+					elementIndex?: number;
+					attribute?: "title" | "descr";
+				};
+				if (typeof candidate.part !== "string") continue;
+				if (candidate.kind === "text" && Array.isArray(candidate.fragments))
+					replacements.push({
+						kind: "pptx-text",
+						unitIndex,
+						part: candidate.part,
+						storage: "text",
+						separator: candidate.separator,
+						fragments: candidate.fragments.map((fragment) => ({ ...fragment })),
+					});
+				if (
+					candidate.kind === "attribute" &&
+					Number.isInteger(candidate.elementIndex) &&
+					(candidate.attribute === "title" || candidate.attribute === "descr")
+				)
+					replacements.push({
+						kind: "pptx-text",
+						unitIndex,
+						part: candidate.part,
+						storage: "attribute",
+						elementIndex: candidate.elementIndex!,
+						attribute: candidate.attribute,
+					});
 			}
 		}
 		return {

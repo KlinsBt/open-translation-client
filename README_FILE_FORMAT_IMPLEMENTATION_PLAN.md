@@ -29,13 +29,13 @@ The sequence is:
 
 ## Current baseline (not yet the completion matrix)
 
-| Area               | Present in the repository                                    | Main gap before it is production-grade                                           |
-| ------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| Source documents   | TXT, JSON, DOCX/DOCM/DOTX/DOTM, XLSX/XLSM/XLTX/XLTM, HTML    | Each uses a separate path; preservation and coverage vary                        |
-| Project exchange   | Open TLC JSON, XLIFF 1.2/2.x, protected vendor XLIFF imports | Origin-tool-verified vendor exports and typed module capabilities                |
-| Translation memory | TMX 1.4b Level 1/2 import, export, and policy-driven merge   | Broader vendor corpora and persistent indexing for very large memories           |
-| Terminology        | TBX import/export and merge, including `martif` handling     | Explicit dialect/version support, validation, references, and lossless metadata  |
-| Tests              | Parser, output, storage, segmentation, and consistency tests | Per-format conformance corpora, round trips, malformed inputs, and browser flows |
+| Area               | Present in the repository                                                                | Main gap before it is production-grade                                           |
+| ------------------ | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Source documents   | TXT, JSON, DOCX/DOCM/DOTX/DOTM, XLSX/XLSM/XLTX/XLTM, PPTX/PPTM/POTX/POTM/PPSX/PPSM, HTML | Each uses a separate path; preservation and coverage vary                        |
+| Project exchange   | Open TLC JSON, XLIFF 1.2/2.x, protected vendor XLIFF imports                             | Origin-tool-verified vendor exports and typed module capabilities                |
+| Translation memory | TMX 1.4b Level 1/2 import, export, and policy-driven merge                               | Broader vendor corpora and persistent indexing for very large memories           |
+| Terminology        | TBX import/export and merge, including `martif` handling                                 | Explicit dialect/version support, validation, references, and lossless metadata  |
+| Tests              | Parser, output, storage, segmentation, and consistency tests                             | Per-format conformance corpora, round trips, malformed inputs, and browser flows |
 
 Legacy binary `.doc` and `.xls` files remain explicit conversion candidates;
 they are not routed to the ZIP-based OOXML importers.
@@ -48,7 +48,7 @@ they are not routed to the ZIP-based OOXML importers.
       import options, importer, exporter, and validator. Keep MIME and extension
       hints, but never trust either without content sniffing.
       Completed 2026-08-16: the active upload/import/export path now uses the
-      registry, all five current formats have adapters and validation hooks, and
+      registry, all six current formats have adapters and validation hooks, and
       focused registry/import tests pass. Deeper signature enforcement remains
       tracked by FF-006 so existing uploads are not changed silently here.
 - [x] **FF-001 — Define a rich neutral document model.** Represent stable unit
@@ -70,7 +70,7 @@ they are not routed to the ZIP-based OOXML importers.
       immutable skeleton with original bytes, text or package parts, and typed
       replacement locations. Exporters patch fresh skeleton copies, identity
       exports reuse exact originals, JSON retains layout and primitive types,
-      and DOCX/XLSX retain unknown relationships, namespaces, and binary parts.
+      and DOCX/XLSX/PPTX retain unknown relationships, namespaces, and binary parts.
       Legacy projects and split/join edits rebuild aligned replacement mappings;
       identity, translated round-trip, persistence, and malformed-state tests pass.
 - [x] **FF-003 — Add configurable filter options.** Support format-specific
@@ -82,7 +82,9 @@ they are not routed to the ZIP-based OOXML importers.
       TXT segmentation modes, JSON wildcard paths and primitive-value policy,
       DOCX story, revision, drawing, and paragraph controls, XLSX
       worksheet/column/row/hidden-sheet/content filters plus key-value and
-      multilingual-column modes, and HTML text and attribute selection.
+      multilingual-column modes, HTML text and attribute selection, and PPTX
+      slide ranges plus notes, comments, alt text, chart, SmartArt, and
+      master/layout policies.
       Options persist in IndexedDB and Open TLC XLIFF
       saves, are backfilled for older projects, and are reused by exporters.
       Unit, selective-import, persistence, interchange, and filtered round-trip
@@ -131,8 +133,9 @@ they are not routed to the ZIP-based OOXML importers.
       case-insensitively, MIME parameters are stripped, and contradictory names
       or MIME values cannot override structural signatures. Safe ZIP inspection
       distinguishes the supported DOCX/DOCM/DOTX/DOTM and
-      XLSX/XLSM/XLTX/XLTM families from PPTX/PPTM, ODT/ODS/ODP, EPUB, and
-      unknown ZIP containers by internal entries and declared media types.
+      XLSX/XLSM/XLTX/XLTM and PPTX/PPTM/POTX/POTM/PPSX/PPSM families from
+      ODT/ODS/ODP, EPUB, and unknown ZIP containers by internal entries and
+      declared media types.
       Legacy OLE `.doc`/`.xls`/`.ppt`, RTF, and generic XML
       are recognized but reported as unsupported instead of routed to an
       incompatible importer; misleading legacy upload hints were removed.
@@ -144,7 +147,7 @@ they are not routed to the ZIP-based OOXML importers.
       duplicated, reordered, or malformed tags and placeholders; support paired
       nesting constraints and format-specific reorder rules before export.
       Completed 2026-08-16: one typed export-QA engine now compares every source
-      and target segment before a translated TXT, JSON, HTML, DOCX, or XLSX file
+      and target segment before a translated TXT, JSON, HTML, DOCX, XLSX, or PPTX file
       is downloaded. It recognizes sequential and positional printf tokens,
       indexed/named/ICU braces, Mustache/triple-Mustache, `${name}` placeholders,
       and XML/HTML paired, closing, self-closing, and void tags. Missing,
@@ -152,7 +155,7 @@ they are not routed to the ZIP-based OOXML importers.
       tokens produce segment-addressed blocking errors. Rich neutral-document
       codes are checked by stable ID, boundary type, pair ID, nesting, optional
       deletion, and explicit or format-level reorder rules; HTML and DOCX permit
-      structurally valid movement while text, JSON, and XLSX retain source order.
+      structurally valid movement while text, JSON, XLSX, and PPTX retain source order.
       All registered download adapters enforce the guard, and the editor reports
       a concise issue preview instead of starting an unsafe download. Placeholder,
       markup, ICU nesting, code-policy, adapter-guard, full-regression,
@@ -179,13 +182,13 @@ they are not routed to the ZIP-based OOXML importers.
       explicit fixture for every registered adapter and runs stable extraction
       snapshots, valid/malformed validation, byte-identical identity exports,
       translated export validation and re-import, combining-mark/RTL/non-BMP
-      Unicode checks, and timed 250-unit performance fixtures. DOCX and XLSX add
+      Unicode checks, and timed 250-unit performance fixtures. DOCX, XLSX, and PPTX add
       uncompressed part-level semantic diffs that reject added, removed, or
       unexpectedly changed package parts. A separate Playwright-backed Vitest
-      suite runs each TXT, JSON, DOCX, XLSX, and HTML adapter in real headless
+      suite runs each TXT, JSON, DOCX, XLSX, PPTX, and HTML adapter in real headless
       Chromium through import, edit, registered browser download, and re-import.
       Fixture-to-registry coverage fails automatically when a future adapter
-      omits these gates. All 214 unit tests and five Chromium smoke tests,
+      omits these gates. The current suite has 341 unit tests and seven Chromium tests;
       formatting, type-check, production dependency audit, and a clean build pass.
 
 ## Phase 1 — CAT interoperability and current high-use formats
@@ -364,11 +367,30 @@ Complete these in order after FF-000 through FF-009.
       three-sheet repository fixture reopens and exports to PDF in headless
       LibreOffice. Full ISO/IEC 29500 schema validation and semantic import of
       modern threaded comments remain explicit future hardening work.
-- [ ] **FF-107 — PPTX family (`.pptx`, later `.pptm`, `.potx`, `.potm`, `.ppsx`).**
+- [ ] **FF-107 — PPTX family (`.pptx`, `.pptm`, `.potx`, `.potm`, `.ppsx`, `.ppsm`).**
       Add slides in relationship order, grouped shapes, tables, charts, SmartArt
       text where safely addressable, masters/layouts, notes, comments, alt text,
       and run-level formatting. Preserve media, animations, links, themes, and
       macro parts; test that PowerPoint and LibreOffice can reopen output.
+
+  - [x] Implement content-first detection, family/MIME retention, relationship-
+        ordered slides, slide-range filtering, grouped shapes, tables, run-
+        preserving DrawingML text, speaker notes, optional masters/layouts,
+        safely addressable chart and SmartArt text, and shape `title`/`descr`.
+  - [x] Keep fields, chart formulas/caches, comments, media, animations,
+        hyperlinks, themes, unknown parts, and VBA opaque; expose classic and
+        modern comments as non-translatable notes and block unsafe split/join.
+  - [x] Cover relationship order, formatting, tables, notes placeholders,
+        comments, alt text, charts, SmartArt, macros, malformed relationships
+        and XML, identity bytes, narrow package diffs, Unicode, 250-unit
+        performance, real repository input, and browser export/re-import. A
+        translated real two-slide fixture reopens in LibreOffice 25.8.2.2 and
+        exports as a two-page PDF.
+  - [ ] Reopen translated macro-free and macro-enabled fixtures in native
+        Microsoft PowerPoint on Windows or macOS and record the application
+        version. This is the only remaining completion gate; PowerPoint is
+        unavailable in the current Linux verification environment.
+
 - [ ] **FF-108 — HTML and XHTML (`.html`, `.htm`, `.xhtml`).** Harden the current
       filter for malformed HTML, entities, inline tags, comments, whitespace,
       language/direction, `translate=no`, ITS metadata, and configurable
@@ -639,6 +661,10 @@ events and reconstruct the original format.
 - [Microsoft Word header and footer package relationships](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-remove-the-headers-and-footers-from-a-word-processing-document)
 - [Microsoft Word comments-part guidance](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-retrieve-comments-from-a-word-processing-document)
 - [Microsoft DOCM-to-DOCX macro-part behavior](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-convert-a-word-processing-document-from-the-docm-to-the-docx-file-format)
+- [Microsoft PresentationML document structure](https://learn.microsoft.com/en-us/office/open-xml/presentation/structure-of-a-presentationml-document)
+- [Microsoft PresentationML notes-slide guidance](https://learn.microsoft.com/en-us/office/open-xml/presentation/working-with-notes-slides)
+- [Microsoft PresentationML comments guidance](https://learn.microsoft.com/en-us/office/open-xml/presentation/working-with-comments)
+- [Microsoft PresentationML extensions overview](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-pptx/b9ff79b4-5e24-4c85-b567-e5f43d498375)
 - [GNU gettext PO format](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html)
 - [Android string resources](https://developer.android.com/guide/topics/resources/string-resource)
 - [Apple string catalogs](https://developer.apple.com/documentation/xcode/localizing-and-varying-text-with-a-string-catalog)
