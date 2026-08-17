@@ -209,6 +209,55 @@ const yamlFixture: FormatConformanceFixture = {
 		),
 };
 
+const poHeader = `msgid ""
+msgstr ""
+"Project-Id-Version: conformance\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\\n"
+
+`;
+
+const poFixture: FormatConformanceFixture = {
+	id: "po",
+	fileName: "unicode.po",
+	mimeType: "text/x-gettext-translation",
+	createValidFile: async () =>
+		textFile(
+			`${poHeader}#. UI message\n#: src/main.c:1\n#, c-format\nmsgid ${JSON.stringify(CONFORMANCE_UNICODE_SOURCE)}\nmsgstr ""\n`,
+			"unicode.po",
+			"text/x-gettext-translation",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'msgid "Broken"\nmsgstr "unterminated\n',
+			"broken.po",
+			"text/x-gettext-translation",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			includeFuzzy: true,
+			includeObsolete: false,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["po-string"] },
+		units: [{ id: "unit-1", part: "unicode.po", path: ["1", "msgstr"] }],
+	},
+	identityTargetSegments: [""],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	expectTranslatedTargetSegments: true,
+	createPerformanceFile: async (units) =>
+		textFile(
+			`${poHeader}${Array.from(
+				{ length: units },
+				(_, index) => `msgid "Message ${index}"\nmsgstr ""\n`,
+			).join("\n")}`,
+			"performance.po",
+			"text/x-gettext-translation",
+		),
+};
+
 const htmlFixture: FormatConformanceFixture = {
 	id: "html",
 	fileName: "unicode.html",
@@ -410,6 +459,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	csvFixture,
 	jsonFixture,
 	yamlFixture,
+	poFixture,
 	docxFixture,
 	xlsxFixture,
 	pptxFixture,

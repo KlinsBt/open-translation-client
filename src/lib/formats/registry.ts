@@ -4,6 +4,7 @@ import { generateJsonTranslation } from "$lib/functions/outputGeneration/outputG
 import { generateTextTranslation } from "$lib/functions/outputGeneration/outputGenerationText";
 import { generateCsvTranslation } from "$lib/functions/outputGeneration/outputGenerationCsv";
 import { generateYamlTranslation } from "$lib/functions/outputGeneration/outputGenerationYaml";
+import { generatePoTranslation } from "$lib/functions/outputGeneration/outputGenerationPo";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -31,6 +32,7 @@ import { DOCX_FAMILY_EXTENSIONS, DOCX_FAMILY_MIME_TYPES } from "./docxPackage";
 import { XLSX_FAMILY_EXTENSIONS, XLSX_FAMILY_MIME_TYPES } from "./xlsxPackage";
 import { PPTX_FAMILY_EXTENSIONS, PPTX_FAMILY_MIME_TYPES } from "./pptxPackage";
 import { importYamlFile, validateYamlFile } from "./yamlFamily";
+import { importPoFile, validatePoFile } from "./poFamily";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -100,6 +102,23 @@ const adapters = [
 		validate: validateYamlFile,
 		importFile: importYamlFile,
 		exportFile: generateYamlTranslation,
+	},
+	{
+		id: "po",
+		label: "GNU gettext PO/POT",
+		extensions: ["po", "pot"],
+		mimeTypes: [
+			"text/x-gettext-translation",
+			"application/x-gettext-translation",
+			"text/x-gettext-translation-template",
+		],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.po,
+		sniff: (file, context) =>
+			sniffText(file, /^(?:#.*\r?\n)*\s*(?:msgctxt\s+)?msgid\s+"/, context),
+		validate: validatePoFile,
+		importFile: importPoFile,
+		exportFile: generatePoTranslation,
 	},
 	{
 		id: "docx",

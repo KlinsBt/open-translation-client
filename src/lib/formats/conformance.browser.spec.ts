@@ -42,9 +42,16 @@ describe("browser adapter import/edit/export smoke tests", () => {
 				outputFile(fixture, downloaded!),
 				fixture.importOptions,
 			);
-			expect(snapshotExtraction(reimported).segments).toEqual(
-				fixture.translatedSegments,
-			);
+			if (fixture.expectTranslatedTargetSegments) {
+				expect(reimported.kind).toBe("segments");
+				if (reimported.kind !== "segments")
+					throw new Error("Expected bilingual segment import");
+				expect(reimported.targetSegments).toEqual(fixture.translatedSegments);
+			} else {
+				expect(snapshotExtraction(reimported).segments).toEqual(
+					fixture.translatedSegments,
+				);
+			}
 		});
 	}
 });

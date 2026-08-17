@@ -221,6 +221,33 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Keep each scalar intact by default so block styles and application placeholders remain stable.",
 		},
 	],
+	po: [
+		{
+			id: "includeFuzzy",
+			label: "Include fuzzy entries",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Import fuzzy translations for review while retaining their workflow flag.",
+		},
+		{
+			id: "includeObsolete",
+			label: "Include obsolete entries",
+			type: "boolean",
+			defaultValue: false,
+			description:
+				"Expose #~ entries for archival review. They remain obsolete on export.",
+		},
+		{
+			id: "segmentationMode",
+			label: "Entry segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+			description:
+				"Keep each msgstr or plural form intact by default so gettext alignment remains stable.",
+		},
+	],
 	docx: [
 		{
 			id: "paragraphs",

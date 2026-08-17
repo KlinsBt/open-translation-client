@@ -16,6 +16,7 @@ export type SafeInputErrorCode =
 	| "TEXT_INVALID_ENCODING"
 	| "JSON_MALFORMED"
 	| "YAML_MALFORMED"
+	| "PO_MALFORMED"
 	| "XML_UNSAFE_DECLARATION"
 	| "XML_MALFORMED";
 
@@ -57,7 +58,12 @@ export const DEFAULT_SAFE_INPUT_POLICY: Readonly<SafeInputPolicy> = {
 	maxExpansionRatio: 200,
 };
 
-export type SupportedTextEncoding = "utf-8" | "utf-16le" | "utf-16be";
+export type SupportedTextEncoding =
+	| "utf-8"
+	| "utf-16le"
+	| "utf-16be"
+	| "iso-8859-1"
+	| "windows-1252";
 
 export interface SafeTextFile {
 	bytes: Uint8Array;

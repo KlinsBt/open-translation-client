@@ -72,6 +72,14 @@ export interface YamlSegmentMeta {
 	separator?: string;
 }
 
+export interface PoSegmentMeta {
+	entryIndex: number;
+	pluralIndex?: number;
+	msgctxt?: string;
+	msgid: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -117,6 +125,7 @@ export type SegmentMeta =
 	| CsvSegmentMeta
 	| JsonSegmentMeta
 	| YamlSegmentMeta
+	| PoSegmentMeta
 	| HtmlSegmentMeta;
 
 export interface SegmentJoinBoundary {

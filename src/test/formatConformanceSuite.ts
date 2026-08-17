@@ -64,7 +64,8 @@ export function registerFormatConformanceSuite(
 					const identity = projectFromConformanceImport(
 						fixture,
 						imported,
-						fixture.extractionSnapshot.segments,
+						fixture.identityTargetSegments ??
+							fixture.extractionSnapshot.segments,
 					);
 					const output = await buildConformanceOutput(identity);
 
@@ -95,9 +96,18 @@ export function registerFormatConformanceSuite(
 						translatedFile,
 						fixture.importOptions,
 					);
-					expect(snapshotExtraction(reimported).segments).toEqual(
-						fixture.translatedSegments,
-					);
+					if (fixture.expectTranslatedTargetSegments) {
+						expect(reimported.kind).toBe("segments");
+						if (reimported.kind !== "segments")
+							throw new Error("Expected bilingual segment import");
+						expect(reimported.targetSegments).toEqual(
+							fixture.translatedSegments,
+						);
+					} else {
+						expect(snapshotExtraction(reimported).segments).toEqual(
+							fixture.translatedSegments,
+						);
+					}
 				});
 
 				it("preserves combining marks, RTL text, and non-BMP Unicode", async () => {

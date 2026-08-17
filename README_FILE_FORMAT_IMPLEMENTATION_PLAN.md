@@ -531,12 +531,31 @@ Complete these in order after FF-000 through FF-009.
       document, duplicate-key, custom-tag, block-style, non-string, selector,
       UTF-16, mapping-corruption, 1,000-value performance, and browser download
       coverage verifies the workflow.
-- [ ] **FF-203 — GNU gettext (`.po`, `.pot`).** Support headers, contexts,
+- [x] **FF-203 — GNU gettext (`.po`, `.pot`).** Support headers, contexts,
       singular and plural messages, every `msgstr[n]`, translator/extracted
       comments, references, flags, previous/obsolete entries, continued strings,
       charsets, and format placeholders. Validate plural counts and run gettext
       checks where available; POT is source/template import, not a translated
       deliverable by default.
+      Completed 2026-08-17: a strict source-ranged PO parser now retains the
+      header entry, contexts, singular/plural IDs, every contiguous `msgstr[n]`,
+      translator and extracted comments, references, flags, previous strings,
+      fuzzy state, obsolete `#~` entries, blank-line layout, C escapes, and
+      continued-string wrapping. Header metadata drives plural-count validation
+      and records the declared charset. UTF-8/UTF-16 and byte-order marks remain
+      lossless; ISO-8859-1 and Windows-1252 catalogs round-trip when targets are
+      representable and fail clearly rather than corrupting other characters.
+      Existing PO translations import bilingually. POT targets start blank and
+      download as `.po` deliverables by default. Exact fragment edits change only
+      `msgstr` text, retain workflow/source syntax and identity bytes, then parse
+      the generated catalog again. Context, plural index, flags, comments, and
+      references become unit context/notes; fuzzy and obsolete inclusion are
+      configurable. Placeholder QA covers printf forms, structural editing is
+      blocked to protect entry/plural alignment, and stale mappings fail closed.
+      Unit, conformance, malformed grammar, duplicate-key, plural-header,
+      charset, escape, POT, obsolete/fuzzy, 1,000-message performance, browser
+      download, and conditional GNU `msgfmt --check --check-format` tests verify
+      the workflow.
 - [ ] **FF-204 — XML plus ITS 2.0 (`.xml`).** Provide safe generic XML extraction
       configured by XPath-like selectors and ITS translate, elements-within-text,
       preserve-space, ID, locale, terminology, and localization-note data. Keep

@@ -35,6 +35,8 @@ const LOCJSON_EDIT_ERROR =
 	"LocJSON units cannot be split or joined because each ordered source/target array is one format-level unit.";
 const YAML_EDIT_ERROR =
 	"YAML scalars cannot be split or joined because scalar style, chomping, anchors, and syntax ranges must remain aligned.";
+const PO_EDIT_ERROR =
+	"Gettext entries cannot be split or joined because msgid/msgstr and plural-form alignment must be preserved.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -93,6 +95,7 @@ function validateForStructuralEdit(
 	if (translation.type === "pptx") return PPTX_EDIT_ERROR;
 	if (translation.type === "csv") return CSV_EDIT_ERROR;
 	if (translation.type === "yaml") return YAML_EDIT_ERROR;
+	if (translation.type === "po") return PO_EDIT_ERROR;
 	if (
 		translation.type === "json" &&
 		translation.segmentsMeta?.some(

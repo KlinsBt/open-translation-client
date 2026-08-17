@@ -1,4 +1,5 @@
 import type { FormatId } from "./formatIds";
+import type { SupportedTextEncoding } from "./safeInput";
 import { decodeTextBytes, readSafeFileBytes } from "./safeInput";
 import { parseJsonSyntax, type JsonPrimitiveNode } from "./jsonSyntax";
 
@@ -7,7 +8,7 @@ export const DOCUMENT_SKELETON_VERSION = 1 as const;
 export interface SkeletonSource {
 	name: string;
 	mimeType: string;
-	encoding?: "utf-8" | "utf-16le" | "utf-16be";
+	encoding?: SupportedTextEncoding;
 	hasBom?: boolean;
 	originalFile?: Blob;
 }
@@ -80,6 +81,18 @@ export interface YamlScalarReplacement extends ReplacementBase {
 		| "BLOCK_FOLDED";
 }
 
+export interface PoStringReplacement extends ReplacementBase {
+	kind: "po-string";
+	entryIndex: number;
+	pluralIndex?: number;
+	originalValue: string;
+	fragments: Array<{
+		start: number;
+		end: number;
+		originalValue: string;
+	}>;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -144,6 +157,7 @@ export type SkeletonReplacement =
 	| CsvFieldReplacement
 	| JsonValueReplacement
 	| YamlScalarReplacement
+	| PoStringReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
 	| DocxTextReplacement
@@ -237,7 +251,7 @@ function locateJoinedTextRanges(
 
 export async function createTextSkeleton(
 	file: File,
-	format: "text" | "csv" | "json" | "yaml" | "html",
+	format: "text" | "csv" | "json" | "yaml" | "po" | "html",
 	content: string,
 	replacements: SkeletonReplacement[],
 	source?: SkeletonSource,
@@ -580,6 +594,24 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				].includes(replacement.style))
 		) {
 			issues.push("YAML scalar replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "po-string" &&
+			(!Number.isInteger(replacement.entryIndex) ||
+				replacement.entryIndex < 0 ||
+				(replacement.pluralIndex !== undefined &&
+					(!Number.isInteger(replacement.pluralIndex) ||
+						replacement.pluralIndex < 0)) ||
+				typeof replacement.originalValue !== "string" ||
+				!replacement.fragments.length ||
+				replacement.fragments.some(
+					(fragment) =>
+						fragment.start < 0 ||
+						fragment.end < fragment.start ||
+						typeof fragment.originalValue !== "string",
+				))
+		) {
+			issues.push("PO string replacement metadata is invalid.");
 		}
 	}
 	return { valid: issues.length === 0, issues };

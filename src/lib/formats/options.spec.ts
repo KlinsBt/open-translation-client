@@ -42,6 +42,16 @@ describe("format import options", () => {
 			segmentationMode: "value",
 		});
 		expect(
+			normalizeImportOptions("po", {
+				includeFuzzy: "false",
+				includeObsolete: "true",
+			}),
+		).toEqual({
+			includeFuzzy: false,
+			includeObsolete: true,
+			segmentationMode: "value",
+		});
+		expect(
 			normalizeImportOptions("xlsx", {
 				importMode: "invalid",
 				headerRows: "2",

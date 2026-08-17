@@ -14,6 +14,7 @@ import { buildXlsxTranslationPackage } from "$lib/functions/outputGeneration/out
 import { buildPptxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import { buildCsvTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationCsv";
 import { buildYamlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationYaml";
+import { buildPoTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationPo";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -43,7 +44,9 @@ export interface FormatConformanceFixture {
 	createMalformedFile(): Promise<File>;
 	expectMalformedImportFailure: boolean;
 	extractionSnapshot: ExtractionSnapshot;
+	identityTargetSegments?: string[];
 	translatedSegments: string[];
+	expectTranslatedTargetSegments?: boolean;
 	createPerformanceFile(units: number): Promise<File>;
 	performanceOptions?: Readonly<FormatOptionValues>;
 	expectedPackageChanges?: string[];
@@ -131,6 +134,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildJsonTranslationBlob(project);
 		case "yaml":
 			return buildYamlTranslationBlob(project);
+		case "po":
+			return buildPoTranslationBlob(project);
 		case "html":
 			return new Blob([buildHtmlTranslation(project)], { type: "text/html" });
 		case "docx":
