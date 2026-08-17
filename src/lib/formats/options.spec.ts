@@ -23,6 +23,9 @@ describe("format import options", () => {
 			normalizeImportOptions("text", { segmentationMode: "invalid" }),
 		).toEqual({
 			segmentationMode: "preferences",
+			outputEncoding: "source",
+			byteOrderMark: "preserve",
+			unicodeNormalization: "preserve",
 		});
 		expect(
 			normalizeImportOptions("xlsx", {

@@ -382,7 +382,12 @@ describe("registered importers and validators", () => {
 		).resolves.toMatchObject({
 			kind: "segments",
 			segments: ["First line", "Second line"],
-			filterOptions: { segmentationMode: "lines" },
+			filterOptions: {
+				segmentationMode: "lines",
+				outputEncoding: "source",
+				byteOrderMark: "preserve",
+				unicodeNormalization: "preserve",
+			},
 			document: {
 				format: "text",
 				schemaVersion: 1,

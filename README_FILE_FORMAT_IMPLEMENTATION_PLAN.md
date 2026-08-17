@@ -188,7 +188,7 @@ they are not routed to the ZIP-based OOXML importers.
       suite runs each TXT, JSON, DOCX, XLSX, PPTX, and HTML adapter in real headless
       Chromium through import, edit, registered browser download, and re-import.
       Fixture-to-registry coverage fails automatically when a future adapter
-      omits these gates. The current suite has 355 unit tests and seven Chromium tests;
+      omits these gates. The current suite has 367 unit tests and seven Chromium tests;
       formatting, type-check, production dependency audit, and a clean build pass.
 
 ## Phase 1 — CAT interoperability and current high-use formats
@@ -416,9 +416,24 @@ Complete these in order after FF-000 through FF-009.
       Chromium import/edit/export/re-import are covered. External linked ITS rule
       files are deliberately retained but not fetched during standalone import;
       broader XPath evaluation remains future multi-file workflow hardening.
-- [ ] **FF-109 — Plain text (`.txt`).** Finish encoding/BOM and newline
+- [x] **FF-109 — Plain text (`.txt`).** Finish encoding/BOM and newline
       preservation, configurable line/paragraph/sentence modes, empty lines,
       Unicode normalization policy, bidirectional text, and byte-safe export.
+      Completed 2026-08-17: the TXT adapter now extracts exact editable ranges
+      without normalizing source bytes or exposing a BOM as translatable text.
+      Preference-based sentence, explicit sentence, paragraph, line, and whole-
+      document modes preserve mixed CRLF/LF/CR endings, blank and whitespace-only
+      lines, surrounding whitespace, and final newlines through targeted export.
+      UTF-8, UTF-16LE, and UTF-16BE source encoding and BOM state are preserved by
+      default; explicit output-encoding and preserve/add/remove BOM policies are
+      available, identity export reuses the original bytes, and changed output is
+      encoded with invalid surrogate rejection. Target normalization defaults to
+      byte-preserving behavior and optionally supports NFC, NFD, NFKC, or NFKD.
+      First-strong source direction is recorded for LTR/RTL/neutral units while
+      bidi control characters remain untouched. Tests cover every segmentation
+      mode, mixed newlines, empty files, BOM isolation, both UTF-16 byte orders,
+      encoding conversion, normalization, bidi text, malformed bytes, join/split
+      mapping, performance, and Chromium download/re-import.
 - [ ] **FF-110 — SRX 2.0 segmentation rules (`.srx`).** Import/export language
       maps and ordered break/no-break rules, validate the schema, and connect
       selected rules to deterministic project segmentation. Test cascade order,
@@ -674,6 +689,8 @@ events and reconstruct the original format.
 - [W3C ITS 2.0](https://www.w3.org/TR/its20/)
 - [WHATWG HTML parsing model](https://html.spec.whatwg.org/multipage/parsing.html)
 - [W3C guidance for the HTML `translate` attribute](https://www.w3.org/International/questions/qa-translate-flag)
+- [Unicode Standard Annex #15: Normalization Forms](https://www.unicode.org/reports/tr15/)
+- [Unicode Standard Annex #9: Bidirectional Algorithm](https://www.unicode.org/reports/tr9/)
 - [Microsoft Open XML package overview](https://learn.microsoft.com/en-us/office/open-xml/about-the-open-xml-sdk)
 - [Microsoft SpreadsheetML document structure](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/structure-of-a-spreadsheetml-document)
 - [Microsoft SpreadsheetML formula and cached-value guidance](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/working-with-formulas)

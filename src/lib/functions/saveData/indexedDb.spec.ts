@@ -31,6 +31,9 @@ describe("neutral document persistence compatibility", () => {
 		});
 		expect(userData.translationData.filterOptions).toEqual({
 			segmentationMode: "preferences",
+			outputEncoding: "source",
+			byteOrderMark: "preserve",
+			unicodeNormalization: "preserve",
 		});
 	});
 

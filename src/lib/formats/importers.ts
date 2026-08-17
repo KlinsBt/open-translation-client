@@ -11,7 +11,10 @@ import {
 	type WorkbookCellComment,
 	type WorkbookCellValue,
 } from "$lib/functions/parsing/parsingXlsx";
-import { createTextSegmentsWithRegexGeneralTextAlgo } from "$lib/functions/parsing/parsingText";
+import {
+	segmentPlainText,
+	type PlainTextSegmentationMode,
+} from "$lib/functions/parsing/parsingText";
 import {
 	getPresentationComments,
 	getPresentationSlides,
@@ -32,7 +35,6 @@ import {
 } from "./documentModel";
 import {
 	createPackageSkeleton,
-	createPlainTextSkeleton,
 	createTextSkeleton,
 	findJsonPrimitiveLocations,
 	type DocxTextReplacement,
@@ -41,6 +43,7 @@ import {
 	type JsonValueReplacement,
 	type XlsxTextReplacement,
 	type PptxTextReplacement,
+	type TextRangeReplacement,
 } from "./skeleton";
 import {
 	normalizeImportOptions,
@@ -450,32 +453,44 @@ export async function importTextFile(
 	const filterOptions = normalizeImportOptions("text", options);
 	const read = await readStreamingTextFile(file, context);
 	const text = read.text;
-	const mode = filterOptions.segmentationMode;
-	let segments: string[];
-	if (mode === "document") {
-		segments = text.trim().length > 0 ? [text] : [];
-	} else if (mode === "lines") {
-		segments = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
-	} else if (mode === "paragraphs") {
-		segments = text
-			.split(/(?:\r?\n){2,}/)
-			.map((paragraph) => paragraph.trim())
-			.filter(Boolean);
-	} else {
-		[segments] = createTextSegmentsWithRegexGeneralTextAlgo(text);
+	const mode = filterOptions.segmentationMode as PlainTextSegmentationMode;
+	const parsedSegments = segmentPlainText(text, mode);
+	const segments = parsedSegments.map((segment) => segment.text);
+	const replacements = parsedSegments.map(
+		(segment, unitIndex) =>
+			({
+				kind: "text-range",
+				unitIndex,
+				start: segment.start,
+				end: segment.end,
+				separator: segment.separator,
+			}) satisfies TextRangeReplacement,
+	);
+	const document = createNeutralDocument({
+		format: "text",
+		sourceSegments: segments,
+		sourceLocations: parsedSegments.map((segment, index) => ({
+			part: file.name,
+			line: segment.line,
+			segmentIndex: index,
+		})),
+	});
+	document.metadata = {
+		encoding: read.encoding,
+		hasBom: read.hasBom,
+		newlineStyles: [...new Set(text.match(/\r\n|\n|\r/g) ?? [])],
+	};
+	for (const [index, segment] of parsedSegments.entries()) {
+		const unit = document.units[index];
+		if (!unit) continue;
+		unit.source.direction = segment.direction;
+		unit.contexts.push({ type: "text-direction", value: segment.direction });
 	}
 	return {
 		kind: "segments",
 		segments,
-		document: createNeutralDocument({
-			format: "text",
-			sourceSegments: segments,
-			sourceLocations: segments.map((_, index) => ({
-				part: file.name,
-				segmentIndex: index,
-			})),
-		}),
-		skeleton: await createPlainTextSkeleton(file, text, segments, {
+		document,
+		skeleton: await createTextSkeleton(file, "text", text, replacements, {
 			name: file.name,
 			mimeType: file.type,
 			encoding: read.encoding,

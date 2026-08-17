@@ -167,6 +167,40 @@ function locateTextRanges(
 	return replacements;
 }
 
+function locateJoinedTextRanges(
+	content: string,
+	segments: readonly string[],
+	current: readonly TextRangeReplacement[],
+): TextRangeReplacement[] {
+	const original = [...current].sort(
+		(first, second) => first.start - second.start,
+	);
+	const replacements: TextRangeReplacement[] = [];
+	let originalIndex = 0;
+	for (const [unitIndex, segment] of segments.entries()) {
+		const first = original[originalIndex];
+		if (!first) return [];
+		let reconstructed = "";
+		let last = first;
+		while (
+			originalIndex < original.length &&
+			reconstructed.length < segment.length
+		) {
+			last = original[originalIndex++];
+			reconstructed += content.slice(last.start, last.end);
+		}
+		if (reconstructed !== segment) return [];
+		replacements.push({
+			kind: "text-range",
+			unitIndex,
+			start: first.start,
+			end: last.end,
+			separator: last.separator,
+		});
+	}
+	return originalIndex === original.length ? replacements : [];
+}
+
 export async function createTextSkeleton(
 	file: File,
 	format: "text" | "json" | "html",
@@ -714,6 +748,20 @@ export function synchronizeSkeletonReplacements(
 	segmentsMeta?: readonly unknown[],
 ): DocumentSkeleton | undefined {
 	if (!skeleton || skeleton.format === "xlsx") return skeleton;
+	if (skeleton.format === "text" && skeleton.payload.kind === "text") {
+		let replacements = locateTextRanges(skeleton.payload.content, segments);
+		if (replacements.length !== segments.length) {
+			replacements = locateJoinedTextRanges(
+				skeleton.payload.content,
+				segments,
+				skeleton.replacements.filter(
+					(replacement): replacement is TextRangeReplacement =>
+						replacement.kind === "text-range",
+				),
+			);
+		}
+		return { ...skeleton, replacements };
+	}
 	const typeRef =
 		skeleton.payload.kind === "text"
 			? skeleton.payload.content

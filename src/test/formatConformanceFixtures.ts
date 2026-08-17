@@ -51,7 +51,12 @@ const textFixture: FormatConformanceFixture = {
 	expectMalformedImportFailure: true,
 	extractionSnapshot: {
 		segments: [CONFORMANCE_UNICODE_SOURCE],
-		filterOptions: { segmentationMode: "document" },
+		filterOptions: {
+			segmentationMode: "document",
+			outputEncoding: "source",
+			byteOrderMark: "preserve",
+			unicodeNormalization: "preserve",
+		},
 		skeleton: { kind: "text", replacementKinds: ["text-range"] },
 		units: [{ id: "unit-1", part: "unicode.txt", path: null }],
 	},

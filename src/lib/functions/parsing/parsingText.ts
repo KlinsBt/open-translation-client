@@ -1,6 +1,146 @@
 import { splitTextWithPreferences } from "./splitWithPreferences";
 import { getActiveTokens } from "./parsingPreferences";
 
+export type PlainTextSegmentationMode =
+	| "preferences"
+	| "sentences"
+	| "paragraphs"
+	| "lines"
+	| "document";
+
+export interface PlainTextSegment {
+	text: string;
+	start: number;
+	end: number;
+	separator: string;
+	line: number;
+	direction: "ltr" | "rtl" | "auto";
+}
+
+const LINE_BREAK = /\r\n|\n|\r/g;
+const PARAGRAPH_BREAK =
+	/(?:\r\n|\r(?!\n)|(?<!\r)\n)[\t\f\v ]*(?:\r\n|\r(?!\n)|(?<!\r)\n)(?:(?:[\t\f\v ]*)(?:\r\n|\r(?!\n)|(?<!\r)\n))*/g;
+const RTL_CHARACTER = /[\p{Script=Arabic}\p{Script=Hebrew}]/u;
+const STRONG_LTR_CHARACTER = /\p{Letter}/u;
+
+export function detectPlainTextDirection(text: string): "ltr" | "rtl" | "auto" {
+	for (const character of text) {
+		if (RTL_CHARACTER.test(character)) return "rtl";
+		if (STRONG_LTR_CHARACTER.test(character)) return "ltr";
+	}
+	return "auto";
+}
+
+function lineAt(content: string, offset: number): number {
+	LINE_BREAK.lastIndex = 0;
+	let line = 1;
+	let match: RegExpExecArray | null;
+	while ((match = LINE_BREAK.exec(content)) && match.index < offset) line++;
+	return line;
+}
+
+function addPlainTextSegment(
+	content: string,
+	segments: PlainTextSegment[],
+	rawStart: number,
+	rawEnd: number,
+	separator = "",
+	trimOuterWhitespace = false,
+) {
+	let start = rawStart;
+	let end = rawEnd;
+	if (trimOuterWhitespace) {
+		while (start < end && /\s/.test(content[start])) start++;
+		while (end > start && /\s/.test(content[end - 1])) end--;
+	}
+	const text = content.slice(start, end);
+	if (!text.trim()) return;
+	segments.push({
+		text,
+		start,
+		end,
+		separator,
+		line: lineAt(content, start),
+		direction: detectPlainTextDirection(text),
+	});
+}
+
+/**
+ * Segments TXT without modifying the source string. Returned offsets point to
+ * the exact editable ranges; BOMs, line endings, empty lines, and surrounding
+ * whitespace remain outside those ranges in the skeleton.
+ */
+export function segmentPlainText(
+	content: string,
+	mode: PlainTextSegmentationMode,
+	tokens?: string[],
+): PlainTextSegment[] {
+	const segments: PlainTextSegment[] = [];
+	const contentStart = content.startsWith("\ufeff") ? 1 : 0;
+
+	if (mode === "document") {
+		addPlainTextSegment(content, segments, contentStart, content.length);
+		return segments;
+	}
+
+	if (mode === "lines") {
+		LINE_BREAK.lastIndex = 0;
+		let cursor = contentStart;
+		let match: RegExpExecArray | null;
+		while ((match = LINE_BREAK.exec(content))) {
+			if (match.index < contentStart) continue;
+			addPlainTextSegment(content, segments, cursor, match.index, match[0]);
+			cursor = match.index + match[0].length;
+		}
+		addPlainTextSegment(content, segments, cursor, content.length);
+		return segments;
+	}
+
+	if (mode === "paragraphs") {
+		PARAGRAPH_BREAK.lastIndex = 0;
+		let cursor = contentStart;
+		let match: RegExpExecArray | null;
+		while ((match = PARAGRAPH_BREAK.exec(content))) {
+			if (match.index < contentStart) continue;
+			addPlainTextSegment(
+				content,
+				segments,
+				cursor,
+				match.index,
+				match[0],
+				true,
+			);
+			cursor = match.index + match[0].length;
+		}
+		addPlainTextSegment(content, segments, cursor, content.length, "", true);
+		return segments;
+	}
+
+	const body = content.slice(contentStart);
+	for (const piece of splitTextWithPreferences(
+		body,
+		tokens ?? getActiveTokens(),
+	)) {
+		const trailingWhitespace = piece.separator.match(/\s+$/)?.[0] ?? "";
+		const visibleSeparator = trailingWhitespace
+			? piece.separator.slice(0, -trailingWhitespace.length)
+			: piece.separator;
+		const text = `${piece.text}${visibleSeparator}`;
+		if (!text.trim()) continue;
+		const start = contentStart + piece.start;
+		const end = start + text.length;
+		segments.push({
+			text,
+			start,
+			end,
+			separator: trailingWhitespace,
+			line: lineAt(content, start),
+			direction: detectPlainTextDirection(text),
+		});
+	}
+	return segments;
+}
+
 // More sophisticated filter using the array of strings as
 // filter criteria to create text segments
 const PARSE_CRITERIA: string[] = [".", "?", "!", ". ", "? ", "! "];

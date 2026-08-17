@@ -6,7 +6,7 @@ import type {
 } from "$lib/formats/types";
 import type { UserData } from "$lib/types/types";
 import { PROJECT_SCHEMA_VERSION } from "$lib/formats/persistenceMigrations";
-import { buildTextTranslationFromProject } from "$lib/functions/outputGeneration/outputGenerationText";
+import { buildTextTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationText";
 import { buildJsonTranslation } from "$lib/functions/outputGeneration/outputGenerationJson";
 import { buildHtmlTranslation } from "$lib/functions/outputGeneration/outputGenerationHtml";
 import { buildDocxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationDocx";
@@ -122,9 +122,7 @@ export function projectFromConformanceImport(
 export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 	switch (project.translationData.type) {
 		case "text":
-			return new Blob([buildTextTranslationFromProject(project)], {
-				type: "text/plain",
-			});
+			return buildTextTranslationBlob(project);
 		case "json":
 			return new Blob([buildJsonTranslation(project)], {
 				type: "application/json",
