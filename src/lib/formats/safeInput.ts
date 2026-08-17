@@ -24,6 +24,8 @@ export type SafeInputErrorCode =
 	| "PROPERTIES_MALFORMED"
 	| "RESX_INVALID"
 	| "QT_TS_INVALID"
+	| "INI_MALFORMED"
+	| "INI_SELECTION_REQUIRED"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

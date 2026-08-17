@@ -487,6 +487,51 @@ const qtTsFixture: FormatConformanceFixture = {
 		),
 };
 
+const iniFixture: FormatConformanceFixture = {
+	id: "ini",
+	fileName: "messages.ini",
+	mimeType: "text/plain",
+	createValidFile: async () =>
+		textFile(
+			`# Home title\n[ui]\nwelcome=${CONFORMANCE_UNICODE_SOURCE}\nlocked=Keep\n`,
+			"messages.ini",
+			"text/plain",
+		),
+	createMalformedFile: async () =>
+		textFile("[unterminated\nkey=value", "bad.ini", "text/plain"),
+	expectMalformedImportFailure: true,
+	importOptions: { profile: "generic", keySelectors: "ui.welcome" },
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			profile: "generic",
+			keySelectors: "ui.welcome",
+			targetLocale: "",
+			includeEmpty: false,
+		},
+		skeleton: { kind: "text", replacementKinds: ["ini-value"] },
+		units: [
+			{
+				id: "ui:welcome",
+				part: "messages.ini",
+				path: ["ui", "welcome"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`[messages]\n${Array.from(
+				{ length: units },
+				(_, index) => `message_${index}=Message ${index}`,
+			).join("\n")}`,
+			"performance.ini",
+			"text/plain",
+		),
+	performanceOptions: { profile: "generic", keySelectors: "messages.*" },
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -743,6 +788,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	propertiesFixture,
 	resxFixture,
 	qtTsFixture,
+	iniFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

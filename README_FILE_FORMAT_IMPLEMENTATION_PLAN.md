@@ -690,10 +690,30 @@ Complete these in order after FF-000 through FF-009.
       bilingual states, comments/locations, numerus/variants, inline markup,
       UTF-16, 1,000-message performance, detection, and browser download coverage
       verifies the workflow.
-- [ ] **FF-210 — INI and desktop/resource text (`.ini`, `.desktop`, `.lang`).**
+- [x] **FF-210 — INI and desktop/resource text (`.ini`, `.desktop`, `.lang`).**
       Preserve sections, comments, whitespace, duplicate keys, locale suffixes,
       escapes, and ordering; require a profile or user selection for
       translatable keys.
+      Completed 2026-08-18: one line-ranged adapter now routes generic INI,
+      freedesktop desktop entries, and key/value language resources. Generic INI
+      fails with `INI_SELECTION_REQUIRED` until comma-separated key or
+      `section.key` glob selectors are supplied, preventing accidental translation
+      of configuration values. Desktop mode exposes the standardized human-facing
+      Name/GenericName/Comment/Keywords family, pairs an existing requested locale
+      suffix bilingually, and inserts a missing localized key immediately beside
+      its base key without rewriting the file. Lang mode exposes all values.
+      Sections, comments, blank lines, `=`/`:` choice, leading value whitespace,
+      duplicate definitions and warnings, ordering, locale suffixes, unrelated
+      keys, CRLF/LF, common escapes, desktop `\\s`/escaped-semicolon behavior,
+      encoding/BOM, and identity bytes remain stable. Keys and sections are
+      protected context, comments are notes, and empty values are optional.
+      Export reparses the selected profile, blocks placeholder regressions,
+      split/join, stale mappings, and malformed lines. JSON signature detection
+      now validates JSON before overriding `[section]` INI metadata. Unit,
+      conformance, explicit-selection, all three profiles, locale pairing and
+      insertion, duplicates/comments/escapes, UTF-16, malformed syntax,
+      1,000-value performance, detection, and browser download coverage verifies
+      the workflow.
 - [ ] **FF-211 — PHP localization arrays (`.php`).** Parse a deliberately limited
       static array grammar or a mature AST; never use `eval`, import, or execute.
       Preserve keys, comments, nesting, escapes, and placeholders, and reject

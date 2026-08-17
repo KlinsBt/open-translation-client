@@ -54,6 +54,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	properties: { allowTagReorder: false, allowInlineCodeReorder: false },
 	resx: { allowTagReorder: false, allowInlineCodeReorder: false },
 	"qt-ts": { allowTagReorder: true, allowInlineCodeReorder: true },
+	ini: { allowTagReorder: false, allowInlineCodeReorder: false },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },

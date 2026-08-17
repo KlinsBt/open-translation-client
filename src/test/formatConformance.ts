@@ -21,6 +21,7 @@ import { buildAppleLocalizationTranslationBlob } from "$lib/functions/outputGene
 import { buildPropertiesTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationProperties";
 import { buildResxTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationResx";
 import { buildQtTsTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQtTs";
+import { buildIniTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationIni";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -152,6 +153,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildResxTranslationBlob(project);
 		case "qt-ts":
 			return buildQtTsTranslationBlob(project);
+		case "ini":
+			return buildIniTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

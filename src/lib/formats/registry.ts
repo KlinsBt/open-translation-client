@@ -11,6 +11,7 @@ import { generateAppleLocalizationTranslation } from "$lib/functions/outputGener
 import { generatePropertiesTranslation } from "$lib/functions/outputGeneration/outputGenerationProperties";
 import { generateResxTranslation } from "$lib/functions/outputGeneration/outputGenerationResx";
 import { generateQtTsTranslation } from "$lib/functions/outputGeneration/outputGenerationQtTs";
+import { generateIniTranslation } from "$lib/functions/outputGeneration/outputGenerationIni";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -54,6 +55,7 @@ import {
 } from "./propertiesFamily";
 import { importResxFile, validateResxFile } from "./resxFamily";
 import { importQtTsFile, validateQtTsFile } from "./qtTsFamily";
+import { importIniFile, validateIniFile } from "./iniFamily";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -240,6 +242,21 @@ const adapters = [
 		validate: validateQtTsFile,
 		importFile: importQtTsFile,
 		exportFile: generateQtTsTranslation,
+	},
+	{
+		id: "ini",
+		label: "INI/desktop/lang",
+		extensions: ["ini", "desktop", "lang"],
+		mimeTypes: ["text/plain", "application/x-desktop"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.ini,
+		sniff: async (file, context) =>
+			["ini", "desktop", "lang"].includes(
+				file.name.toLowerCase().split(".").at(-1) ?? "",
+			) && (await validateIniFile(file, context)).valid,
+		validate: validateIniFile,
+		importFile: importIniFile,
+		exportFile: generateIniTranslation,
 	},
 	{
 		id: "xml",

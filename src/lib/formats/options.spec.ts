@@ -77,6 +77,12 @@ describe("format import options", () => {
 			includeVanished: false,
 			includeObsolete: true,
 		});
+		expect(normalizeImportOptions("ini", { includeEmpty: "true" })).toEqual({
+			profile: "auto",
+			keySelectors: "",
+			targetLocale: "",
+			includeEmpty: true,
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

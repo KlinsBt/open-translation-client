@@ -9,6 +9,7 @@ export const FORMAT_IDS = [
 	"properties",
 	"resx",
 	"qt-ts",
+	"ini",
 	"xml",
 	"docx",
 	"xlsx",

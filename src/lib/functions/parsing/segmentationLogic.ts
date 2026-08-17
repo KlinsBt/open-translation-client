@@ -49,6 +49,8 @@ const RESX_EDIT_ERROR =
 	"RESX values cannot be split or joined because data names, comments, and XML value ranges must remain aligned.";
 const QT_TS_EDIT_ERROR =
 	"Qt TS messages cannot be split or joined because contexts, numerus forms, variants, and translation ranges must remain aligned.";
+const INI_EDIT_ERROR =
+	"INI resource values cannot be split or joined because sections, keys, locale suffixes, and line ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -113,6 +115,7 @@ function validateForStructuralEdit(
 	if (translation.type === "properties") return PROPERTIES_EDIT_ERROR;
 	if (translation.type === "resx") return RESX_EDIT_ERROR;
 	if (translation.type === "qt-ts") return QT_TS_EDIT_ERROR;
+	if (translation.type === "ini") return INI_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

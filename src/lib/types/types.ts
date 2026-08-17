@@ -153,6 +153,20 @@ export interface QtTsSegmentMeta {
 	separator?: string;
 }
 
+export interface IniSegmentMeta {
+	profile: "generic" | "desktop" | "lang";
+	section: string;
+	key: string;
+	locale?: string;
+	start: number;
+	end: number;
+	originalValue: string;
+	insertionStart?: number;
+	insertionTextPrefix?: string;
+	insertionTextSuffix?: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -204,6 +218,7 @@ export type SegmentMeta =
 	| PropertiesSegmentMeta
 	| ResxSegmentMeta
 	| QtTsSegmentMeta
+	| IniSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

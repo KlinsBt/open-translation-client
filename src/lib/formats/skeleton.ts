@@ -165,6 +165,20 @@ export interface QtTsValueReplacement extends ReplacementBase {
 	stateAttributeEnd?: number;
 }
 
+export interface IniValueReplacement extends ReplacementBase {
+	kind: "ini-value";
+	profile: "generic" | "desktop" | "lang";
+	section: string;
+	key: string;
+	locale?: string;
+	start: number;
+	end: number;
+	originalValue: string;
+	insertionStart?: number;
+	insertionTextPrefix?: string;
+	insertionTextSuffix?: string;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -235,6 +249,7 @@ export type SkeletonReplacement =
 	| PropertiesValueReplacement
 	| ResxValueReplacement
 	| QtTsValueReplacement
+	| IniValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -340,6 +355,7 @@ export async function createTextSkeleton(
 		| "properties"
 		| "resx"
 		| "qt-ts"
+		| "ini"
 		| "xml"
 		| "html",
 	content: string,
@@ -759,6 +775,16 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				typeof replacement.originalValue !== "string")
 		) {
 			issues.push("Qt TS value replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "ini-value" &&
+			(!["generic", "desktop", "lang"].includes(replacement.profile) ||
+				!replacement.key ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string")
+		) {
+			issues.push("INI value replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&

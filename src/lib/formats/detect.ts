@@ -102,7 +102,8 @@ export async function detectFileFormat(
 			if (await candidate.sniff(file, context))
 				return supportedContent(candidate, extension, mimeType);
 		const adapter = adapters.find((candidate) => candidate.id === "json");
-		if (adapter) return supportedContent(adapter, extension, mimeType);
+		if (adapter && (await adapter.validate(file, context)).valid)
+			return supportedContent(adapter, extension, mimeType);
 	}
 	if (textKind === "html") {
 		const adapter = adapters.find((candidate) => candidate.id === textKind);

@@ -346,6 +346,37 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: false,
 		},
 	],
+	ini: [
+		{
+			id: "profile",
+			label: "INI resource profile",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "generic", "desktop", "lang"],
+		},
+		{
+			id: "keySelectors",
+			label: "Translatable keys",
+			type: "text",
+			defaultValue: "",
+			placeholder: "Required for generic INI, e.g. ui.title, message_*",
+			description:
+				"Comma-separated key or section.key patterns; * is supported. Generic INI imports require an explicit selection.",
+		},
+		{
+			id: "targetLocale",
+			label: "Desktop target locale",
+			type: "text",
+			defaultValue: "",
+			placeholder: "e.g. de, pt_BR",
+		},
+		{
+			id: "includeEmpty",
+			label: "Include empty values",
+			type: "boolean",
+			defaultValue: false,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",
