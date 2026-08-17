@@ -248,6 +248,22 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Keep each msgstr or plural form intact by default so gettext alignment remains stable.",
 		},
 	],
+	android: [
+		{
+			id: "includeNonTranslatable",
+			label: "Include translatable=false resources",
+			type: "boolean",
+			defaultValue: false,
+			description:
+				"Expose locked Android resources for review while preserving their translatable flag.",
+		},
+		{
+			id: "includeEmpty",
+			label: "Include empty resources",
+			type: "boolean",
+			defaultValue: false,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

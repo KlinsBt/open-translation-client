@@ -39,6 +39,8 @@ const PO_EDIT_ERROR =
 	"Gettext entries cannot be split or joined because msgid/msgstr and plural-form alignment must be preserved.";
 const XML_EDIT_ERROR =
 	"XML values cannot be split or joined because text, CDATA, attribute, namespace, and ITS ranges must remain aligned.";
+const ANDROID_EDIT_ERROR =
+	"Android resources cannot be split or joined because keys, arrays, plurals, and inline markup must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -98,6 +100,7 @@ function validateForStructuralEdit(
 	if (translation.type === "csv") return CSV_EDIT_ERROR;
 	if (translation.type === "yaml") return YAML_EDIT_ERROR;
 	if (translation.type === "po") return PO_EDIT_ERROR;
+	if (translation.type === "android") return ANDROID_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

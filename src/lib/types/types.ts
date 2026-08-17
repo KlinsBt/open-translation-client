@@ -90,6 +90,19 @@ export interface XmlSegmentMeta {
 	separator?: string;
 }
 
+export interface AndroidSegmentMeta {
+	resourceType: "string" | "string-array" | "plurals";
+	name: string;
+	index?: number;
+	quantity?: string;
+	start: number;
+	end: number;
+	originalValue: string;
+	formatted: boolean;
+	translatable: boolean;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -136,6 +149,7 @@ export type SegmentMeta =
 	| JsonSegmentMeta
 	| YamlSegmentMeta
 	| PoSegmentMeta
+	| AndroidSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

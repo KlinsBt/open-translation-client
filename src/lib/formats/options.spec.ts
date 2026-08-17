@@ -51,6 +51,11 @@ describe("format import options", () => {
 			includeObsolete: true,
 			segmentationMode: "value",
 		});
+		expect(
+			normalizeImportOptions("android", {
+				includeNonTranslatable: "true",
+			}),
+		).toEqual({ includeNonTranslatable: true, includeEmpty: false });
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

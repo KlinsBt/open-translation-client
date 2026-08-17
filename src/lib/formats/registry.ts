@@ -6,6 +6,7 @@ import { generateCsvTranslation } from "$lib/functions/outputGeneration/outputGe
 import { generateYamlTranslation } from "$lib/functions/outputGeneration/outputGenerationYaml";
 import { generatePoTranslation } from "$lib/functions/outputGeneration/outputGenerationPo";
 import { generateXmlTranslation } from "$lib/functions/outputGeneration/outputGenerationXml";
+import { generateAndroidResourcesTranslation } from "$lib/functions/outputGeneration/outputGenerationAndroid";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -35,6 +36,10 @@ import { PPTX_FAMILY_EXTENSIONS, PPTX_FAMILY_MIME_TYPES } from "./pptxPackage";
 import { importYamlFile, validateYamlFile } from "./yamlFamily";
 import { importPoFile, validatePoFile } from "./poFamily";
 import { importXmlFile, validateXmlFile } from "./xmlFamily";
+import {
+	importAndroidResourcesFile,
+	validateAndroidResourcesFile,
+} from "./androidResources";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -121,6 +126,28 @@ const adapters = [
 		validate: validatePoFile,
 		importFile: importPoFile,
 		exportFile: generatePoTranslation,
+	},
+	{
+		id: "android",
+		label: "Android resources",
+		extensions: ["xml"],
+		mimeTypes: ["application/xml", "text/xml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.android,
+		sniff: async (file, context) => {
+			if (
+				!(await sniffText(
+					file,
+					/^(?:<\?xml[^?]*\?>\s*)?(?:<!--[\s\S]*?-->\s*)*<resources(?:\s|>)/,
+					context,
+				))
+			)
+				return false;
+			return (await validateAndroidResourcesFile(file, context)).valid;
+		},
+		validate: validateAndroidResourcesFile,
+		importFile: importAndroidResourcesFile,
+		exportFile: generateAndroidResourcesTranslation,
 	},
 	{
 		id: "xml",
@@ -216,11 +243,13 @@ export async function detectFormatWithConfidence(
 }
 
 export function getFormatAcceptValue(): string {
-	return adapters
-		.flatMap((adapter) =>
-			adapter.extensions.map((extension) => `.${extension}`),
-		)
-		.join(",");
+	return [
+		...new Set(
+			adapters.flatMap((adapter) =>
+				adapter.extensions.map((extension) => `.${extension}`),
+			),
+		),
+	].join(",");
 }
 
 export function getSupportedFormatLabels(): string {

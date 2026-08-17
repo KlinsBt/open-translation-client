@@ -99,6 +99,14 @@ export async function detectFileFormat(
 		if (adapter) return supportedContent(adapter, extension, mimeType);
 	}
 	if (textKind === "xml") {
+		for (const candidate of adapters.filter(
+			(adapter) =>
+				adapter.id !== "xml" &&
+				adapter.id !== "html" &&
+				adapter.mimeTypes.some((type) => isGenericXmlMime(type)),
+		))
+			if (await candidate.sniff(file, context))
+				return supportedContent(candidate, extension, mimeType);
 		const adapter = adapters.find((candidate) => candidate.id === "xml");
 		if (adapter) return supportedContent(adapter, extension, mimeType);
 		const metadata = metadataEvidence(

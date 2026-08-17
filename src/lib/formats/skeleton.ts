@@ -103,6 +103,18 @@ export interface XmlValueReplacement extends ReplacementBase {
 	originalValue: string;
 }
 
+export interface AndroidValueReplacement extends ReplacementBase {
+	kind: "android-value";
+	resourceType: "string" | "string-array" | "plurals";
+	name: string;
+	index?: number;
+	quantity?: string;
+	start: number;
+	end: number;
+	originalValue: string;
+	formatted: boolean;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -168,6 +180,7 @@ export type SkeletonReplacement =
 	| JsonValueReplacement
 	| YamlScalarReplacement
 	| PoStringReplacement
+	| AndroidValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -262,7 +275,7 @@ function locateJoinedTextRanges(
 
 export async function createTextSkeleton(
 	file: File,
-	format: "text" | "csv" | "json" | "yaml" | "po" | "xml" | "html",
+	format: "text" | "csv" | "json" | "yaml" | "po" | "android" | "xml" | "html",
 	content: string,
 	replacements: SkeletonReplacement[],
 	source?: SkeletonSource,
@@ -542,7 +555,8 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 			(replacement.kind === "text-range" ||
 				replacement.kind === "csv-field" ||
 				replacement.kind === "json-value" ||
-				replacement.kind === "yaml-scalar") &&
+				replacement.kind === "yaml-scalar" ||
+				replacement.kind === "android-value") &&
 			(replacement.start < 0 || replacement.end < replacement.start)
 		) {
 			issues.push("Replacement text ranges are invalid.");
@@ -623,6 +637,17 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				))
 		) {
 			issues.push("PO string replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "android-value" &&
+			(!["string", "string-array", "plurals"].includes(
+				replacement.resourceType,
+			) ||
+				!replacement.name ||
+				typeof replacement.originalValue !== "string" ||
+				typeof replacement.formatted !== "boolean")
+		) {
+			issues.push("Android value replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&

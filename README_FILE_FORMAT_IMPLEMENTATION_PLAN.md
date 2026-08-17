@@ -577,10 +577,28 @@ Complete these in order after FF-000 through FF-009.
       rejected. Unit, conformance, malformed/unsafe input, selector, local/global
       ITS, UTF-16, escaping, CDATA, 1,000-value performance, registry detection,
       and browser download coverage verify the workflow.
-- [ ] **FF-205 — Android resources (`strings.xml`).** Support `<string>`, string
+- [x] **FF-205 — Android resources (`strings.xml`).** Support `<string>`, string
       arrays, plurals, comments, `translatable=false`, formatted flags, markup,
       escapes, positional printf tokens, and `<xliff:g>` placeholders. Preserve
       resource keys and reject target placeholder/plural regressions.
+      Completed 2026-08-17: a dedicated Android XML profile now extracts whole
+      rich values from named strings, indexed string-array items, and validated
+      plural quantities instead of flattening them into generic XML text nodes.
+      It preserves keys, order, comments, whitespace, resource/group attributes,
+      namespaces, encoding/BOM, Android backslash escapes, inline styling, and
+      `<xliff:g>` markup through exact inner-range edits. `translatable=false`
+      and empty resources are excluded by default and can be included explicitly;
+      `formatted=false` disables printf enforcement for literal percent content.
+      Neutral units carry resource type/key, array index, plural relationship,
+      quantity, developer notes, formatting state, and source location. Export QA
+      blocks missing, duplicated, malformed, or unexpected markup and positional
+      printf placeholders, and treats each xliff placeholder ID as protected.
+      The exporter safely XML-escapes changed text, retains well-formed markup,
+      reparses the full resource document, leaves identity bytes untouched, and
+      rejects stale mappings or structural split/join edits. Unit, conformance,
+      malformed/unsafe input, locking/options, escaping, UTF-16, rich markup,
+      plural/array, 1,000-resource performance, detection, and browser download
+      coverage verifies the profile.
 - [ ] **FF-206 — Apple localization (`.strings`, `.stringsdict`, `.xcstrings`).**
       Support encodings, comments, escapes, keys, substitutions, plural/device
       variations, extraction states, and source-language metadata. Treat

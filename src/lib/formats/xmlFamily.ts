@@ -40,6 +40,11 @@ export interface XmlElementLocation {
 	selectorPath: string[];
 	attributes: XmlAttributeLocation[];
 	namespaces: Record<string, string>;
+	startTagStart: number;
+	startTagEnd: number;
+	endTagStart?: number;
+	endTagEnd?: number;
+	selfClosing: boolean;
 	localTranslate?: boolean;
 	globalTranslate?: boolean;
 	effectiveTranslate: boolean;
@@ -106,7 +111,11 @@ export function parseXmlSyntax(
 		}
 		if (content.startsWith("</", cursor)) {
 			const end = findXmlTagEnd(content, cursor);
-			stack.pop();
+			const element = stack.pop();
+			if (element) {
+				element.endTagStart = cursor;
+				element.endTagEnd = end;
+			}
 			cursor = end + 1;
 			continue;
 		}
@@ -155,6 +164,9 @@ export function parseXmlSyntax(
 			selectorPath: [...(parent?.selectorPath ?? []), name],
 			attributes,
 			namespaces,
+			startTagStart: cursor,
+			startTagEnd: end,
+			selfClosing,
 			localTranslate: itsBoolean(attributes, "translate"),
 			effectiveTranslate: true,
 		};

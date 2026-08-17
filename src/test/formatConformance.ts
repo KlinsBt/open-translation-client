@@ -16,6 +16,7 @@ import { buildCsvTranslationBlob } from "$lib/functions/outputGeneration/outputG
 import { buildYamlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationYaml";
 import { buildPoTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationPo";
 import { buildXmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationXml";
+import { buildAndroidResourcesTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationAndroid";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -137,6 +138,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildYamlTranslationBlob(project);
 		case "po":
 			return buildPoTranslationBlob(project);
+		case "android":
+			return buildAndroidResourcesTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

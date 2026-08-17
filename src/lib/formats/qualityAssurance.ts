@@ -49,6 +49,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	json: { allowTagReorder: false, allowInlineCodeReorder: false },
 	yaml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	po: { allowTagReorder: false, allowInlineCodeReorder: false },
+	android: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },
@@ -136,7 +137,15 @@ export function runProjectExportQuality(
 			unit && (hasInlineCodes(unit.source) || hasInlineCodes(unit.target));
 		const source = rich ? contentText(unit.source) : (data.seg1[index] ?? "");
 		const target = rich ? contentText(unit.target) : (data.seg2[index] ?? "");
-		compareProtectedText(source, target, index, unit?.id, policy, issues);
+		compareProtectedText(
+			source,
+			target,
+			index,
+			unit?.id,
+			policy,
+			issues,
+			data.type === "android" && unit?.metadata?.formatted === false,
+		);
 		if (data.type === "json" && model?.metadata?.profile === "chrome")
 			compareChromePlaceholders(source, target, index, unit?.id, issues);
 		if (rich && unit)
@@ -225,9 +234,10 @@ function compareProtectedText(
 	unitId: string | undefined,
 	policy: FormatQaPolicy,
 	issues: ExportQaIssue[],
+	ignorePrintf = false,
 ): void {
-	const sourceScan = scanProtectedTokens(source);
-	const targetScan = scanProtectedTokens(target);
+	const sourceScan = scanProtectedTokens(source, ignorePrintf);
+	const targetScan = scanProtectedTokens(target, ignorePrintf);
 	for (const malformed of sourceScan.malformedPlaceholders)
 		pushIssue(
 			issues,
@@ -536,10 +546,10 @@ function validateInlineNesting(
 		);
 }
 
-function scanProtectedTokens(text: string): TokenScan {
+function scanProtectedTokens(text: string, ignorePrintf = false): TokenScan {
 	const placeholders: ProtectedToken[] = [];
 	const malformedPlaceholders: string[] = [];
-	scanPrintf(text, placeholders, malformedPlaceholders);
+	if (!ignorePrintf) scanPrintf(text, placeholders, malformedPlaceholders);
 	scanBracedPlaceholders(text, placeholders, malformedPlaceholders);
 	const { tags, malformed } = scanTags(text);
 	return {
@@ -682,8 +692,15 @@ function scanTags(text: string): {
 		const standalone =
 			!closing && (/\/\s*>$/.test(raw) || HTML_VOID_TAGS.has(name));
 		const boundary = closing ? "end" : standalone ? "standalone" : "start";
+		const xliffId =
+			name === "xliff:g"
+				? tail
+						.match(/\bid\s*=\s*(?:"([^"]+)"|'([^']+)')/i)
+						?.slice(1)
+						.find(Boolean)
+				: undefined;
 		tags.push({
-			key: `tag:${boundary}:${name}`,
+			key: `tag:${boundary}:${name}${xliffId ? `:${xliffId}` : ""}`,
 			raw,
 			index,
 			orderSensitive: true,

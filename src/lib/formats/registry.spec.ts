@@ -88,7 +88,7 @@ describe("format adapter registry", () => {
 			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -108,6 +108,15 @@ describe("format adapter registry", () => {
 		await expect(
 			detectFormat(textFile('msgid "Hello"\nmsgstr ""\n', "MESSAGES.PO", "")),
 		).resolves.toMatchObject({ id: "po" });
+		await expect(
+			detectFormat(
+				textFile(
+					'<resources><string name="hello">Hi</string></resources>',
+					"STRINGS.XML",
+					"application/xml",
+				),
+			),
+		).resolves.toMatchObject({ id: "android" });
 		await expect(
 			detectFormat(
 				textFile("<catalog><message>Hi</message></catalog>", "DATA.XML", ""),

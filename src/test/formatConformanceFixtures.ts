@@ -258,6 +258,51 @@ const poFixture: FormatConformanceFixture = {
 		),
 };
 
+const androidFixture: FormatConformanceFixture = {
+	id: "android",
+	fileName: "strings.xml",
+	mimeType: "application/xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="utf-8"?>\n<resources><!-- Home title --><string name="welcome">${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</string><string name="locked" translatable="false">Keep</string></resources>\n`,
+			"strings.xml",
+			"application/xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<resources><plurals name="count"><item quantity="one">One</item></plurals></resources>',
+			"broken.xml",
+			"application/xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			includeNonTranslatable: false,
+			includeEmpty: false,
+		},
+		skeleton: { kind: "text", replacementKinds: ["android-value"] },
+		units: [
+			{
+				id: "welcome",
+				part: "strings.xml",
+				path: ["resources", "string", "welcome", "value"],
+			},
+		],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<resources>${Array.from(
+				{ length: units },
+				(_, index) =>
+					`<string name="message_${index}">Message ${index}</string>`,
+			).join("")}</resources>`,
+			"performance.xml",
+			"application/xml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -509,6 +554,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	jsonFixture,
 	yamlFixture,
 	poFixture,
+	androidFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

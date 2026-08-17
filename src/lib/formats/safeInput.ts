@@ -19,6 +19,7 @@ export type SafeInputErrorCode =
 	| "PO_MALFORMED"
 	| "XML_UNSAFE_DECLARATION"
 	| "XML_UNSUPPORTED_ITS"
+	| "ANDROID_RESOURCE_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

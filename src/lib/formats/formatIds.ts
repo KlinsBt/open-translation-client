@@ -4,6 +4,7 @@ export const FORMAT_IDS = [
 	"json",
 	"yaml",
 	"po",
+	"android",
 	"xml",
 	"docx",
 	"xlsx",
