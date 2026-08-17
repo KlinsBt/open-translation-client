@@ -248,6 +248,47 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Keep each msgstr or plural form intact by default so gettext alignment remains stable.",
 		},
 	],
+	xml: [
+		{
+			id: "elementSelectors",
+			label: "Translatable elements",
+			type: "text",
+			defaultValue: "//*",
+			placeholder: "e.g. //title, /catalog/item/description",
+			description:
+				"Comma-separated XPath-like element paths. Supports //name, /absolute/path, qualified names, and //*.",
+		},
+		{
+			id: "attributeSelectors",
+			label: "Translatable attributes",
+			type: "text",
+			defaultValue: "",
+			placeholder: "e.g. //@title, //image/@alt",
+			description:
+				"Attributes are protected unless selected explicitly or by a supported ITS rule.",
+		},
+		{
+			id: "respectIts",
+			label: "Respect ITS 2.0 metadata",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Honor local ITS translate, withinText, preserveSpace, terminology, locale, language, ID, and localization-note metadata plus basic translateRule selectors.",
+		},
+		{
+			id: "includeCdata",
+			label: "Include CDATA text",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "segmentationMode",
+			label: "Text-node segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	docx: [
 		{
 			id: "paragraphs",

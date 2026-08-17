@@ -37,6 +37,8 @@ const YAML_EDIT_ERROR =
 	"YAML scalars cannot be split or joined because scalar style, chomping, anchors, and syntax ranges must remain aligned.";
 const PO_EDIT_ERROR =
 	"Gettext entries cannot be split or joined because msgid/msgstr and plural-form alignment must be preserved.";
+const XML_EDIT_ERROR =
+	"XML values cannot be split or joined because text, CDATA, attribute, namespace, and ITS ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -96,6 +98,7 @@ function validateForStructuralEdit(
 	if (translation.type === "csv") return CSV_EDIT_ERROR;
 	if (translation.type === "yaml") return YAML_EDIT_ERROR;
 	if (translation.type === "po") return PO_EDIT_ERROR;
+	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&
 		translation.segmentsMeta?.some(

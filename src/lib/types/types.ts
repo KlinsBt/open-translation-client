@@ -80,6 +80,16 @@ export interface PoSegmentMeta {
 	separator?: string;
 }
 
+export interface XmlSegmentMeta {
+	kind: "text" | "cdata" | "attribute";
+	path: string[];
+	attribute?: string;
+	start: number;
+	end: number;
+	originalValue: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -126,6 +136,7 @@ export type SegmentMeta =
 	| JsonSegmentMeta
 	| YamlSegmentMeta
 	| PoSegmentMeta
+	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 
 export interface SegmentJoinBoundary {

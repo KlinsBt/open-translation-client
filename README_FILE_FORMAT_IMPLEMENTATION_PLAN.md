@@ -556,11 +556,27 @@ Complete these in order after FF-000 through FF-009.
       charset, escape, POT, obsolete/fuzzy, 1,000-message performance, browser
       download, and conditional GNU `msgfmt --check --check-format` tests verify
       the workflow.
-- [ ] **FF-204 — XML plus ITS 2.0 (`.xml`).** Provide safe generic XML extraction
+- [x] **FF-204 — XML plus ITS 2.0 (`.xml`).** Provide safe generic XML extraction
       configured by XPath-like selectors and ITS translate, elements-within-text,
       preserve-space, ID, locale, terminology, and localization-note data. Keep
       namespaces, CDATA, entities, processing instructions, attribute order where
       possible, and untouched nodes. Profiles below should reuse this adapter.
+      Completed 2026-08-17: a namespace-aware positional XML scanner now exposes
+      text, optional CDATA, and explicitly selected quoted attributes through a
+      conservative XPath-like selector subset while retaining exact character
+      ranges. Local and inherited ITS 2.0 `translate` data and the safe basic
+      `translateRule` subset control extraction; unsupported XPath constructs
+      fail closed. XML IDs/languages, terminology, locale filters,
+      elements-within-text, preserve-space, and child localization notes are
+      recorded as neutral unit metadata. Export escapes text and attributes by
+      context, safely splits target CDATA terminators, reparses the result, and
+      preserves namespaces, entity spelling, comments, processing instructions,
+      attribute order and quoting, source encoding/BOM, whitespace, and identity
+      bytes outside edited ranges. DTD and entity declarations stay disabled,
+      split/join is blocked to protect XML boundaries, and stale mappings are
+      rejected. Unit, conformance, malformed/unsafe input, selector, local/global
+      ITS, UTF-16, escaping, CDATA, 1,000-value performance, registry detection,
+      and browser download coverage verify the workflow.
 - [ ] **FF-205 — Android resources (`strings.xml`).** Support `<string>`, string
       arrays, plurals, comments, `translatable=false`, formatted flags, markup,
       escapes, positional printf tokens, and `<xliff:g>` placeholders. Preserve

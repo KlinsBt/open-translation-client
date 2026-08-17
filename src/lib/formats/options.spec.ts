@@ -51,6 +51,13 @@ describe("format import options", () => {
 			includeObsolete: true,
 			segmentationMode: "value",
 		});
+		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
+			elementSelectors: "//*",
+			attributeSelectors: "",
+			respectIts: false,
+			includeCdata: true,
+			segmentationMode: "value",
+		});
 		expect(
 			normalizeImportOptions("xlsx", {
 				importMode: "invalid",

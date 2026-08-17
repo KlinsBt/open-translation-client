@@ -258,6 +258,55 @@ const poFixture: FormatConformanceFixture = {
 		),
 };
 
+const xmlFixture: FormatConformanceFixture = {
+	id: "xml",
+	fileName: "unicode.xml",
+	mimeType: "application/xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="UTF-8"?>\n<catalog xmlns:its="http://www.w3.org/2005/11/its"><message id="welcome">${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</message><locked its:translate="no">Keep</locked><!--preserve--></catalog>\n`,
+			"unicode.xml",
+			"application/xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<!DOCTYPE x [<!ENTITY e SYSTEM "file:///etc/passwd">]><x>&e;</x>',
+			"broken.xml",
+			"application/xml",
+		),
+	expectMalformedImportFailure: true,
+	importOptions: { elementSelectors: "//message" },
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			elementSelectors: "//message",
+			attributeSelectors: "",
+			respectIts: true,
+			includeCdata: true,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["xml-value"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "unicode.xml",
+				path: ["catalog[1]", "message[1]", "#text"],
+			},
+		],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<catalog>${Array.from(
+				{ length: units },
+				(_, index) => `<message>Message ${index}</message>`,
+			).join("")}</catalog>`,
+			"performance.xml",
+			"application/xml",
+		),
+	performanceOptions: { elementSelectors: "//message" },
+};
+
 const htmlFixture: FormatConformanceFixture = {
 	id: "html",
 	fileName: "unicode.html",
@@ -460,6 +509,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	jsonFixture,
 	yamlFixture,
 	poFixture,
+	xmlFixture,
 	docxFixture,
 	xlsxFixture,
 	pptxFixture,

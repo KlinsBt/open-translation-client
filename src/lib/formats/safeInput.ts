@@ -18,6 +18,7 @@ export type SafeInputErrorCode =
 	| "YAML_MALFORMED"
 	| "PO_MALFORMED"
 	| "XML_UNSAFE_DECLARATION"
+	| "XML_UNSUPPORTED_ITS"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

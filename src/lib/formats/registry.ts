@@ -5,6 +5,7 @@ import { generateTextTranslation } from "$lib/functions/outputGeneration/outputG
 import { generateCsvTranslation } from "$lib/functions/outputGeneration/outputGenerationCsv";
 import { generateYamlTranslation } from "$lib/functions/outputGeneration/outputGenerationYaml";
 import { generatePoTranslation } from "$lib/functions/outputGeneration/outputGenerationPo";
+import { generateXmlTranslation } from "$lib/functions/outputGeneration/outputGenerationXml";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -33,6 +34,7 @@ import { XLSX_FAMILY_EXTENSIONS, XLSX_FAMILY_MIME_TYPES } from "./xlsxPackage";
 import { PPTX_FAMILY_EXTENSIONS, PPTX_FAMILY_MIME_TYPES } from "./pptxPackage";
 import { importYamlFile, validateYamlFile } from "./yamlFamily";
 import { importPoFile, validatePoFile } from "./poFamily";
+import { importXmlFile, validateXmlFile } from "./xmlFamily";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -119,6 +121,19 @@ const adapters = [
 		validate: validatePoFile,
 		importFile: importPoFile,
 		exportFile: generatePoTranslation,
+	},
+	{
+		id: "xml",
+		label: "XML + ITS 2.0",
+		extensions: ["xml"],
+		mimeTypes: ["application/xml", "text/xml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.xml,
+		sniff: (file, context) =>
+			sniffText(file, /^<\?xml\s|^<[A-Za-z_][\w.:-]*(?:\s|>)/, context),
+		validate: validateXmlFile,
+		importFile: importXmlFile,
+		exportFile: generateXmlTranslation,
 	},
 	{
 		id: "docx",

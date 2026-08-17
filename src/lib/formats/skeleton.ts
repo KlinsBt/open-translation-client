@@ -93,6 +93,16 @@ export interface PoStringReplacement extends ReplacementBase {
 	}>;
 }
 
+export interface XmlValueReplacement extends ReplacementBase {
+	kind: "xml-value";
+	location: "text" | "cdata" | "attribute";
+	path: string[];
+	attribute?: string;
+	start: number;
+	end: number;
+	originalValue: string;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -158,6 +168,7 @@ export type SkeletonReplacement =
 	| JsonValueReplacement
 	| YamlScalarReplacement
 	| PoStringReplacement
+	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
 	| DocxTextReplacement
@@ -251,7 +262,7 @@ function locateJoinedTextRanges(
 
 export async function createTextSkeleton(
 	file: File,
-	format: "text" | "csv" | "json" | "yaml" | "po" | "html",
+	format: "text" | "csv" | "json" | "yaml" | "po" | "xml" | "html",
 	content: string,
 	replacements: SkeletonReplacement[],
 	source?: SkeletonSource,
@@ -612,6 +623,17 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				))
 		) {
 			issues.push("PO string replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "xml-value" &&
+			(!Array.isArray(replacement.path) ||
+				replacement.path.some((part) => typeof part !== "string") ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string" ||
+				(replacement.location === "attribute" && !replacement.attribute))
+		) {
+			issues.push("XML value replacement metadata is invalid.");
 		}
 	}
 	return { valid: issues.length === 0, issues };
