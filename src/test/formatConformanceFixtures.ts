@@ -439,6 +439,54 @@ const resxFixture: FormatConformanceFixture = {
 		),
 };
 
+const qtTsFixture: FormatConformanceFixture = {
+	id: "qt-ts",
+	fileName: "catalog.ts",
+	mimeType: "application/xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE TS>\n<TS version="2.1" language="de" sourcelanguage="en"><context><name>Main</name><message id="welcome"><location filename="main.cpp" line="7"/><source>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</source><extracomment>Home title</extracomment><translation type="unfinished"></translation></message></context></TS>\n`,
+			"catalog.ts",
+			"application/xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			"<TS><context><message></context></TS>",
+			"bad.ts",
+			"application/xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			includeUnfinished: true,
+			includeVanished: false,
+			includeObsolete: false,
+		},
+		skeleton: { kind: "text", replacementKinds: ["qt-ts-value"] },
+		units: [
+			{
+				id: "welcome",
+				part: "catalog.ts",
+				path: ["TS", "Main", "welcome", "translation"],
+			},
+		],
+	},
+	identityTargetSegments: [""],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	expectTranslatedTargetSegments: true,
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<TS><context><name>Main</name>${Array.from(
+				{ length: units },
+				(_, index) =>
+					`<message id="message_${index}"><source>Message ${index}</source><translation></translation></message>`,
+			).join("")}</context></TS>`,
+			"performance.ts",
+			"application/xml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -694,6 +742,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	appleFixture,
 	propertiesFixture,
 	resxFixture,
+	qtTsFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

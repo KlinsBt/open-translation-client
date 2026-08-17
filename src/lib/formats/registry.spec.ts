@@ -85,10 +85,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 

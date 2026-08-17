@@ -23,6 +23,7 @@ export type SafeInputErrorCode =
 	| "APPLE_LOCALIZATION_INVALID"
 	| "PROPERTIES_MALFORMED"
 	| "RESX_INVALID"
+	| "QT_TS_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

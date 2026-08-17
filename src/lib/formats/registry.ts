@@ -10,6 +10,7 @@ import { generateAndroidResourcesTranslation } from "$lib/functions/outputGenera
 import { generateAppleLocalizationTranslation } from "$lib/functions/outputGeneration/outputGenerationApple";
 import { generatePropertiesTranslation } from "$lib/functions/outputGeneration/outputGenerationProperties";
 import { generateResxTranslation } from "$lib/functions/outputGeneration/outputGenerationResx";
+import { generateQtTsTranslation } from "$lib/functions/outputGeneration/outputGenerationQtTs";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -52,6 +53,7 @@ import {
 	validatePropertiesFile,
 } from "./propertiesFamily";
 import { importResxFile, validateResxFile } from "./resxFamily";
+import { importQtTsFile, validateQtTsFile } from "./qtTsFamily";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -221,6 +223,23 @@ const adapters = [
 		validate: validateResxFile,
 		importFile: importResxFile,
 		exportFile: generateResxTranslation,
+	},
+	{
+		id: "qt-ts",
+		label: "Qt Linguist TS",
+		extensions: ["ts"],
+		mimeTypes: ["application/xml", "text/xml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["qt-ts"],
+		sniff: async (file, context) =>
+			(await sniffText(
+				file,
+				/^(?:<\?xml[^?]*\?>\s*)?<!DOCTYPE TS>\s*<TS(?:\s|>)|^(?:<\?xml[^?]*\?>\s*)?<TS(?:\s|>)/,
+				context,
+			)) && (await validateQtTsFile(file, context)).valid,
+		validate: validateQtTsFile,
+		importFile: importQtTsFile,
+		exportFile: generateQtTsTranslation,
 	},
 	{
 		id: "xml",

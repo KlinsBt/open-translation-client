@@ -53,6 +53,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	apple: { allowTagReorder: false, allowInlineCodeReorder: false },
 	properties: { allowTagReorder: false, allowInlineCodeReorder: false },
 	resx: { allowTagReorder: false, allowInlineCodeReorder: false },
+	"qt-ts": { allowTagReorder: true, allowInlineCodeReorder: true },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },
@@ -107,6 +108,7 @@ const HTML_VOID_TAGS = new Set([
 const PRINTF_PATTERN =
 	/%(?:(\d+)\$)?[-+#0 ']*(?:\d+|\*)?(?:\.(?:\d+|\*))?[hlLzjt]*([@diuoxXfFeEgGaAcspn])/g;
 const APPLE_SUBSTITUTION_PATTERN = /%#@([A-Za-z_][\w.-]*)@/g;
+const QT_PLACEHOLDER_PATTERN = /%(?:L(\d+)|(\d+)(?![\d$])|n)/g;
 
 export function runProjectExportQuality(
 	project: UserData,
@@ -578,6 +580,19 @@ function scanPrintf(
 			covered.add(match.index + offset);
 		placeholders.push({
 			key: `apple-substitution:${match[1]}`,
+			raw: match[0],
+			index: match.index,
+			orderSensitive: false,
+		});
+	}
+	QT_PLACEHOLDER_PATTERN.lastIndex = 0;
+	for (const match of text.matchAll(QT_PLACEHOLDER_PATTERN)) {
+		if ([...match[0]].some((_, offset) => covered.has(match.index + offset)))
+			continue;
+		for (let offset = 0; offset < match[0].length; offset++)
+			covered.add(match.index + offset);
+		placeholders.push({
+			key: `qt:${match[0]}`,
 			raw: match[0],
 			index: match.index,
 			orderSensitive: false,

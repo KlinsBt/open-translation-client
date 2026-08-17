@@ -70,6 +70,13 @@ describe("format import options", () => {
 				includeExplicitSystemStrings: "false",
 			}),
 		).toEqual({ includeEmpty: false, includeExplicitSystemStrings: false });
+		expect(
+			normalizeImportOptions("qt-ts", { includeObsolete: "true" }),
+		).toEqual({
+			includeUnfinished: true,
+			includeVanished: false,
+			includeObsolete: true,
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

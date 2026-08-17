@@ -667,10 +667,29 @@ Complete these in order after FF-000 through FF-009.
       resources, options/comments/types, CDATA, UTF-16, placeholders,
       1,000-resource performance, detection, and browser download coverage
       verifies the workflow.
-- [ ] **FF-209 — Qt Linguist (`.ts`).** Support contexts, IDs, source,
+- [x] **FF-209 — Qt Linguist (`.ts`).** Support contexts, IDs, source,
       translation states, comments, locations, length variants, numerus forms,
       inline markup, and vanished/obsolete messages. Validate XML and placeholder
       parity.
+      Completed 2026-08-17: the Qt Linguist profile safely accepts the fixed
+      `<!DOCTYPE TS>` marker without resolving a DTD and rejects every other
+      declaration. It imports source and existing translations bilingually,
+      retains TS/source/target languages, context names, stable message IDs,
+      source locations, old-source/developer/translator comments, workflow type,
+      numerus forms, and length variants as neutral relationships and metadata.
+      Finished, unfinished, vanished, and obsolete inclusion policies are
+      independent. Exact target-range edits preserve message/context order,
+      locations, comments, extensions, attributes, line endings, encoding/BOM,
+      and identity bytes; a fully translated unfinished target has only its
+      existing type attribute removed, while vanished/obsolete states remain.
+      Escaped inline markup stays markup in the editor and valid escaped XML on
+      disk. Structurally nested source/target nodes are protected with warnings
+      instead of flattened. Export reparses the complete TS, blocks stale mapping
+      and split/join, and enforces markup plus Qt `%1`, `%L1`, `%n`, printf, and
+      shared placeholder parity. Unit, conformance, fixed/unsafe DOCTYPE,
+      bilingual states, comments/locations, numerus/variants, inline markup,
+      UTF-16, 1,000-message performance, detection, and browser download coverage
+      verifies the workflow.
 - [ ] **FF-210 — INI and desktop/resource text (`.ini`, `.desktop`, `.lang`).**
       Preserve sections, comments, whitespace, duplicate keys, locale suffixes,
       escapes, and ordering; require a profile or user selection for

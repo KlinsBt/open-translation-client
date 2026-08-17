@@ -139,6 +139,20 @@ export interface ResxSegmentMeta {
 	separator?: string;
 }
 
+export interface QtTsSegmentMeta {
+	context: string;
+	messageId?: string;
+	form?: number;
+	variant?: number;
+	start: number;
+	end: number;
+	originalValue: string;
+	state?: string;
+	stateAttributeStart?: number;
+	stateAttributeEnd?: number;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -189,6 +203,7 @@ export type SegmentMeta =
 	| AppleSegmentMeta
 	| PropertiesSegmentMeta
 	| ResxSegmentMeta
+	| QtTsSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

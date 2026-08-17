@@ -326,6 +326,26 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Other typed, serialized, binary, or mimetype resources always remain protected.",
 		},
 	],
+	"qt-ts": [
+		{
+			id: "includeUnfinished",
+			label: "Include unfinished translations",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeVanished",
+			label: "Include vanished messages",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeObsolete",
+			label: "Include obsolete messages",
+			type: "boolean",
+			defaultValue: false,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

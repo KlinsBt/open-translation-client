@@ -151,6 +151,20 @@ export interface ResxValueReplacement extends ReplacementBase {
 	type?: string;
 }
 
+export interface QtTsValueReplacement extends ReplacementBase {
+	kind: "qt-ts-value";
+	context: string;
+	messageId?: string;
+	form?: number;
+	variant?: number;
+	start: number;
+	end: number;
+	originalValue: string;
+	state?: string;
+	stateAttributeStart?: number;
+	stateAttributeEnd?: number;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -220,6 +234,7 @@ export type SkeletonReplacement =
 	| AppleValueReplacement
 	| PropertiesValueReplacement
 	| ResxValueReplacement
+	| QtTsValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -324,6 +339,7 @@ export async function createTextSkeleton(
 		| "apple"
 		| "properties"
 		| "resx"
+		| "qt-ts"
 		| "xml"
 		| "html",
 	content: string,
@@ -734,6 +750,15 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				!["text", "cdata"].includes(replacement.location))
 		) {
 			issues.push("RESX value replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "qt-ts-value" &&
+			(!replacement.context ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string")
+		) {
+			issues.push("Qt TS value replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&

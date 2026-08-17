@@ -8,6 +8,7 @@ export const FORMAT_IDS = [
 	"apple",
 	"properties",
 	"resx",
+	"qt-ts",
 	"xml",
 	"docx",
 	"xlsx",
