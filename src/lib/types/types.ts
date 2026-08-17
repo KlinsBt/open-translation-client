@@ -129,6 +129,16 @@ export interface PropertiesSegmentMeta {
 	separator?: string;
 }
 
+export interface ResxSegmentMeta {
+	name: string;
+	start: number;
+	end: number;
+	originalValue: string;
+	location: "text" | "cdata";
+	type?: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -178,6 +188,7 @@ export type SegmentMeta =
 	| AndroidSegmentMeta
 	| AppleSegmentMeta
 	| PropertiesSegmentMeta
+	| ResxSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

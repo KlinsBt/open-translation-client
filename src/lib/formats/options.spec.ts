@@ -65,6 +65,11 @@ describe("format import options", () => {
 		expect(
 			normalizeImportOptions("properties", { includeEmpty: "true" }),
 		).toEqual({ sourceEncoding: "auto", includeEmpty: true });
+		expect(
+			normalizeImportOptions("resx", {
+				includeExplicitSystemStrings: "false",
+			}),
+		).toEqual({ includeEmpty: false, includeExplicitSystemStrings: false });
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

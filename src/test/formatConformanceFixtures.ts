@@ -393,6 +393,52 @@ const propertiesFixture: FormatConformanceFixture = {
 		),
 };
 
+const resxFixture: FormatConformanceFixture = {
+	id: "resx",
+	fileName: "Resources.resx",
+	mimeType: "application/xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="utf-8"?>\n<root><resheader name="resmimetype"><value>text/microsoft-resx</value></resheader><data name="welcome" xml:space="preserve"><value>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</value><comment>Home title</comment></data><data name="binary" mimetype="application/x-microsoft.net.object.binary.base64"><value>AAEC</value></data></root>\n`,
+			"Resources.resx",
+			"application/xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			"<root><data><value>Missing name</value></data></root>",
+			"bad.resx",
+			"application/xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			includeEmpty: false,
+			includeExplicitSystemStrings: true,
+		},
+		skeleton: { kind: "text", replacementKinds: ["resx-value"] },
+		units: [
+			{
+				id: "welcome",
+				part: "Resources.resx",
+				path: ["root", "data", "welcome", "value"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<root>${Array.from(
+				{ length: units },
+				(_, index) =>
+					`<data name="message_${index}"><value>Message ${index}</value></data>`,
+			).join("")}</root>`,
+			"performance.resx",
+			"application/xml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -647,6 +693,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	androidFixture,
 	appleFixture,
 	propertiesFixture,
+	resxFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

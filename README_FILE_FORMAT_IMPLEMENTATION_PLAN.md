@@ -646,10 +646,27 @@ Complete these in order after FF-000 through FF-009.
       input, comments/separators, duplicate keys, escape/control behavior,
       multiline CRLF, single-byte identity, placeholder regression, 1,000-entry
       performance, detection, and browser download coverage verifies the workflow.
-- [ ] **FF-208 — .NET resources (`.resx`).** Translate string `<data>` values
+- [x] **FF-208 — .NET resources (`.resx`).** Translate string `<data>` values
       while preserving names, comments, type/mimetype metadata, aliases, headers,
       whitespace, and non-string serialized resources. Never deserialize or
       instantiate embedded objects.
+      Completed 2026-08-17: a dedicated positional RESX profile now exposes only
+      untyped strings and, optionally, values explicitly declared as
+      `System.String`. Named `data` records with other types or any `mimetype`,
+      plus schemas, aliases/assemblies, headers, binary/base64 payloads, and nested
+      XML values remain inert source bytes; no serializer, type loader, reflection,
+      or object construction is used. Data names/types become protected context,
+      comments become translator notes, duplicate names produce warnings, and
+      empty strings are optional. Exact value-range export retains attribute and
+      element order, namespaces, comments, whitespace, `xml:space`, entity
+      spelling outside changes, encoding/BOM, and identity bytes. Plain targets
+      are XML-escaped; CDATA stays CDATA, adjacent sections re-import as one value,
+      and embedded target terminators split safely. The generated document is
+      reparsed, placeholder regressions and stale mappings fail closed, and
+      split/join is blocked. Unit, conformance, unsafe/malformed XML, inert object
+      resources, options/comments/types, CDATA, UTF-16, placeholders,
+      1,000-resource performance, detection, and browser download coverage
+      verifies the workflow.
 - [ ] **FF-209 — Qt Linguist (`.ts`).** Support contexts, IDs, source,
       translation states, comments, locations, length variants, numerus forms,
       inline markup, and vanished/obsolete messages. Validate XML and placeholder

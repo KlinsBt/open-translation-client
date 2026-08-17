@@ -22,6 +22,7 @@ export type SafeInputErrorCode =
 	| "ANDROID_RESOURCE_INVALID"
 	| "APPLE_LOCALIZATION_INVALID"
 	| "PROPERTIES_MALFORMED"
+	| "RESX_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

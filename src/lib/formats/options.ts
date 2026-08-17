@@ -310,6 +310,22 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: false,
 		},
 	],
+	resx: [
+		{
+			id: "includeEmpty",
+			label: "Include empty string resources",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeExplicitSystemStrings",
+			label: "Include typed System.String values",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Other typed, serialized, binary, or mimetype resources always remain protected.",
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

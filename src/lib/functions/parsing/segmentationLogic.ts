@@ -45,6 +45,8 @@ const APPLE_EDIT_ERROR =
 	"Apple localization units cannot be split or joined because keys, catalog languages, and variation paths must remain aligned.";
 const PROPERTIES_EDIT_ERROR =
 	"Properties values cannot be split or joined because keys and physical continuation lines must remain aligned.";
+const RESX_EDIT_ERROR =
+	"RESX values cannot be split or joined because data names, comments, and XML value ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -107,6 +109,7 @@ function validateForStructuralEdit(
 	if (translation.type === "android") return ANDROID_EDIT_ERROR;
 	if (translation.type === "apple") return APPLE_EDIT_ERROR;
 	if (translation.type === "properties") return PROPERTIES_EDIT_ERROR;
+	if (translation.type === "resx") return RESX_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

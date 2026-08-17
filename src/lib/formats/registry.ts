@@ -9,6 +9,7 @@ import { generateXmlTranslation } from "$lib/functions/outputGeneration/outputGe
 import { generateAndroidResourcesTranslation } from "$lib/functions/outputGeneration/outputGenerationAndroid";
 import { generateAppleLocalizationTranslation } from "$lib/functions/outputGeneration/outputGenerationApple";
 import { generatePropertiesTranslation } from "$lib/functions/outputGeneration/outputGenerationProperties";
+import { generateResxTranslation } from "$lib/functions/outputGeneration/outputGenerationResx";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -50,6 +51,7 @@ import {
 	importPropertiesFile,
 	validatePropertiesFile,
 } from "./propertiesFamily";
+import { importResxFile, validateResxFile } from "./resxFamily";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -202,6 +204,23 @@ const adapters = [
 		validate: validatePropertiesFile,
 		importFile: importPropertiesFile,
 		exportFile: generatePropertiesTranslation,
+	},
+	{
+		id: "resx",
+		label: ".NET RESX",
+		extensions: ["resx"],
+		mimeTypes: ["application/xml", "text/xml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.resx,
+		sniff: async (file, context) =>
+			(await sniffText(
+				file,
+				/^(?:<\?xml[^?]*\?>\s*)?<root(?:\s|>)[\s\S]*<(?:data|resheader)(?:\s|>)/,
+				context,
+			)) && (await validateResxFile(file, context)).valid,
+		validate: validateResxFile,
+		importFile: importResxFile,
+		exportFile: generateResxTranslation,
 	},
 	{
 		id: "xml",

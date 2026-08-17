@@ -141,6 +141,16 @@ export interface PropertiesValueReplacement extends ReplacementBase {
 	fragments: Array<{ start: number; end: number; originalValue: string }>;
 }
 
+export interface ResxValueReplacement extends ReplacementBase {
+	kind: "resx-value";
+	name: string;
+	start: number;
+	end: number;
+	originalValue: string;
+	location: "text" | "cdata";
+	type?: string;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -209,6 +219,7 @@ export type SkeletonReplacement =
 	| AndroidValueReplacement
 	| AppleValueReplacement
 	| PropertiesValueReplacement
+	| ResxValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -312,6 +323,7 @@ export async function createTextSkeleton(
 		| "android"
 		| "apple"
 		| "properties"
+		| "resx"
 		| "xml"
 		| "html",
 	content: string,
@@ -712,6 +724,16 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				))
 		) {
 			issues.push("Properties value replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "resx-value" &&
+			(!replacement.name ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string" ||
+				!["text", "cdata"].includes(replacement.location))
+		) {
+			issues.push("RESX value replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&
