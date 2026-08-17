@@ -87,6 +87,10 @@ describe("format import options", () => {
 			pathSelectors: "",
 			includeEmpty: true,
 		});
+		expect(normalizeImportOptions("markup", { profile: "invalid" })).toEqual({
+			profile: "auto",
+			includeHtmlText: true,
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

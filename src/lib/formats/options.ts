@@ -394,6 +394,23 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: false,
 		},
 	],
+	markup: [
+		{
+			id: "profile",
+			label: "Markup profile",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "markdown", "asciidoc"],
+		},
+		{
+			id: "includeHtmlText",
+			label: "Include text around inline HTML",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"HTML tags remain protected; text between inline tags is exposed. Raw script, style, pre, and comment blocks remain protected.",
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

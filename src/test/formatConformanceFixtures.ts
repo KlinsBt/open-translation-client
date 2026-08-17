@@ -575,6 +575,51 @@ const phpFixture: FormatConformanceFixture = {
 		),
 };
 
+const markupFixture: FormatConformanceFixture = {
+	id: "markup",
+	fileName: "guide.md",
+	mimeType: "text/markdown",
+	createValidFile: async () =>
+		textFile(
+			`---\ntitle: protected\n---\n# ${CONFORMANCE_UNICODE_SOURCE}\n\n\`protected()\` [reference](https://example.com)\n`,
+			"guide.md",
+			"text/markdown",
+		),
+	createMalformedFile: async () =>
+		textFile("```js\nconst unclosed = true;", "bad.md", "text/markdown"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE, "reference"],
+		filterOptions: { profile: "markdown", includeHtmlText: true },
+		skeleton: {
+			kind: "text",
+			replacementKinds: ["markup-text", "markup-text"],
+		},
+		units: [
+			{
+				id: "line-4-span-0",
+				part: "guide.md",
+				path: ["markdown", 4, 0],
+			},
+			{
+				id: "line-6-span-0",
+				part: "guide.md",
+				path: ["markdown", 6, 0],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE, "reference"],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET, "Referenz"],
+	createPerformanceFile: async (units) =>
+		textFile(
+			Array.from({ length: units }, (_, index) => `Message ${index}`).join(
+				"\n",
+			),
+			"performance.md",
+			"text/markdown",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -833,6 +878,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	qtTsFixture,
 	iniFixture,
 	phpFixture,
+	markupFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

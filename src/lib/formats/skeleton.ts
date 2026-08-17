@@ -188,6 +188,16 @@ export interface PhpValueReplacement extends ReplacementBase {
 	quote: "'" | '"';
 }
 
+export interface MarkupTextReplacement extends ReplacementBase {
+	kind: "markup-text";
+	profile: "markdown" | "asciidoc";
+	line: number;
+	span: number;
+	start: number;
+	end: number;
+	originalValue: string;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -260,6 +270,7 @@ export type SkeletonReplacement =
 	| QtTsValueReplacement
 	| IniValueReplacement
 	| PhpValueReplacement
+	| MarkupTextReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -367,6 +378,7 @@ export async function createTextSkeleton(
 		| "qt-ts"
 		| "ini"
 		| "php"
+		| "markup"
 		| "xml"
 		| "html",
 	content: string,
@@ -807,6 +819,19 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				!["'", '\"'].includes(replacement.quote))
 		) {
 			issues.push("PHP value replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "markup-text" &&
+			(!["markdown", "asciidoc"].includes(replacement.profile) ||
+				!Number.isInteger(replacement.line) ||
+				replacement.line < 1 ||
+				!Number.isInteger(replacement.span) ||
+				replacement.span < 0 ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string")
+		) {
+			issues.push("Markup text replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&

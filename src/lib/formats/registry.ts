@@ -13,6 +13,7 @@ import { generateResxTranslation } from "$lib/functions/outputGeneration/outputG
 import { generateQtTsTranslation } from "$lib/functions/outputGeneration/outputGenerationQtTs";
 import { generateIniTranslation } from "$lib/functions/outputGeneration/outputGenerationIni";
 import { generatePhpTranslation } from "$lib/functions/outputGeneration/outputGenerationPhp";
+import { generateLightweightMarkupTranslation } from "$lib/functions/outputGeneration/outputGenerationMarkup";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -61,6 +62,10 @@ import {
 	importPhpLocalizationFile,
 	validatePhpLocalizationFile,
 } from "./phpLocalization";
+import {
+	importLightweightMarkupFile,
+	validateLightweightMarkupFile,
+} from "./lightweightMarkup";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -276,6 +281,21 @@ const adapters = [
 		validate: validatePhpLocalizationFile,
 		importFile: importPhpLocalizationFile,
 		exportFile: generatePhpTranslation,
+	},
+	{
+		id: "markup",
+		label: "Markdown/AsciiDoc",
+		extensions: ["md", "markdown", "adoc", "asciidoc"],
+		mimeTypes: ["text/markdown", "text/asciidoc", "text/plain"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.markup,
+		sniff: async (file, context) =>
+			["md", "markdown", "adoc", "asciidoc"].includes(
+				file.name.toLowerCase().split(".").at(-1) ?? "",
+			) && (await validateLightweightMarkupFile(file, context)).valid,
+		validate: validateLightweightMarkupFile,
+		importFile: importLightweightMarkupFile,
+		exportFile: generateLightweightMarkupTranslation,
 	},
 	{
 		id: "xml",

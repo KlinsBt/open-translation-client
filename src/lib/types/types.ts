@@ -176,6 +176,16 @@ export interface PhpSegmentMeta {
 	separator?: string;
 }
 
+export interface MarkupSegmentMeta {
+	profile: "markdown" | "asciidoc";
+	line: number;
+	span: number;
+	start: number;
+	end: number;
+	originalValue: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -229,6 +239,7 @@ export type SegmentMeta =
 	| QtTsSegmentMeta
 	| IniSegmentMeta
 	| PhpSegmentMeta
+	| MarkupSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

@@ -733,10 +733,27 @@ Complete these in order after FF-000 through FF-009.
       selector, duplicate, escape, Unicode/UTF-16, 1,000-value performance,
       detection, identity, translated re-import, and browser download coverage
       verifies the workflow.
-- [ ] **FF-212 — Markdown and AsciiDoc (`.md`, `.markdown`, `.adoc`, `.asciidoc`).**
+- [x] **FF-212 — Markdown and AsciiDoc (`.md`, `.markdown`, `.adoc`, `.asciidoc`).**
       Preserve front matter, code, URLs, references, directives, attributes,
       tables, embedded HTML, inline markup, hard line breaks, and protected spans.
       Segment rendered prose without corrupting source syntax.
+      Completed 2026-08-18: one source-range adapter auto-routes Markdown and
+      AsciiDoc without rendering or normalizing either language. It exposes prose
+      spans in headings, lists/admonitions, paragraphs, link labels, tables, and
+      optionally text between inline HTML tags, while retaining exact markup
+      delimiters and whitespace. YAML/TOML front matter, Markdown fenced and
+      indented code, reference definitions and destinations, autolinks, URLs,
+      inline code, entities, hard-break markers, raw HTML comments/script/style/
+      pre blocks, AsciiDoc attributes, includes, conditionals, anchors, macros,
+      passthrough/listing/comment blocks, and table delimiters stay protected.
+      Unterminated front matter, code/protected blocks, and raw HTML fail with
+      line diagnostics. Exact edits preserve CRLF/LF, extensions, encoding/BOM,
+      protected syntax, and identity bytes; export reparses the document, rejects
+      inserted physical line breaks and stale mappings, applies shared placeholder
+      QA, and blocks structural split/join. Unit, conformance, malformed block,
+      protected-span, inline HTML, table, Unicode/UTF-16, 1,000-line performance,
+      detection, identity, translated re-import, and browser download coverage
+      verifies both profiles.
 - [ ] **FF-213 — Subtitles (`.srt`, `.vtt`, then `.sbv`).** Preserve cue IDs,
       timecodes, settings, comments/notes, inline cue markup, line breaks, and
       ordering. Add QA for start/end validity, overlap policy, characters per

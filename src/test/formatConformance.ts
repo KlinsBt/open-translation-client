@@ -23,6 +23,7 @@ import { buildResxTranslationBlob } from "$lib/functions/outputGeneration/output
 import { buildQtTsTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQtTs";
 import { buildIniTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationIni";
 import { buildPhpTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationPhp";
+import { buildLightweightMarkupTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationMarkup";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -158,6 +159,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildIniTranslationBlob(project);
 		case "php":
 			return buildPhpTranslationBlob(project);
+		case "markup":
+			return buildLightweightMarkupTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

@@ -11,6 +11,7 @@ export const FORMAT_IDS = [
 	"qt-ts",
 	"ini",
 	"php",
+	"markup",
 	"xml",
 	"docx",
 	"xlsx",

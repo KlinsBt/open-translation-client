@@ -53,6 +53,8 @@ const INI_EDIT_ERROR =
 	"INI resource values cannot be split or joined because sections, keys, locale suffixes, and line ranges must remain aligned.";
 const PHP_EDIT_ERROR =
 	"PHP localization values cannot be split or joined because array paths and string ranges must remain aligned.";
+const MARKUP_EDIT_ERROR =
+	"Markdown and AsciiDoc prose spans cannot be split or joined because protected inline syntax and source ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -119,6 +121,7 @@ function validateForStructuralEdit(
 	if (translation.type === "qt-ts") return QT_TS_EDIT_ERROR;
 	if (translation.type === "ini") return INI_EDIT_ERROR;
 	if (translation.type === "php") return PHP_EDIT_ERROR;
+	if (translation.type === "markup") return MARKUP_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&
