@@ -34,6 +34,19 @@ export interface TextRangeReplacement extends ReplacementBase {
 	end: number;
 }
 
+export interface CsvFieldReplacement extends ReplacementBase {
+	kind: "csv-field";
+	row: number;
+	column: number;
+	start: number;
+	end: number;
+	originalValue: string;
+	delimiter: string;
+	quote: '"' | "'" | null;
+	escapeMode: "double" | "backslash";
+	quoted: boolean;
+}
+
 export interface JsonValueReplacement extends ReplacementBase {
 	kind: "json-value";
 	path: string[];
@@ -103,6 +116,7 @@ export type PptxTextReplacement = ReplacementBase &
 
 export type SkeletonReplacement =
 	| TextRangeReplacement
+	| CsvFieldReplacement
 	| JsonValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -203,7 +217,7 @@ function locateJoinedTextRanges(
 
 export async function createTextSkeleton(
 	file: File,
-	format: "text" | "json" | "html",
+	format: "text" | "csv" | "json" | "html",
 	content: string,
 	replacements: SkeletonReplacement[],
 	source?: SkeletonSource,
@@ -547,10 +561,29 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 		}
 		if (
 			(replacement.kind === "text-range" ||
+				replacement.kind === "csv-field" ||
 				replacement.kind === "json-value") &&
 			(replacement.start < 0 || replacement.end < replacement.start)
 		) {
 			issues.push("Replacement text ranges are invalid.");
+		}
+		if (
+			replacement.kind === "csv-field" &&
+			(typeof replacement.originalValue !== "string" ||
+				typeof replacement.delimiter !== "string" ||
+				replacement.delimiter.length !== 1 ||
+				(replacement.quote !== null &&
+					replacement.quote !== '"' &&
+					replacement.quote !== "'") ||
+				(replacement.escapeMode !== "double" &&
+					replacement.escapeMode !== "backslash") ||
+				typeof replacement.quoted !== "boolean" ||
+				!Number.isInteger(replacement.row) ||
+				!Number.isInteger(replacement.column) ||
+				replacement.row < 0 ||
+				replacement.column < 0)
+		) {
+			issues.push("CSV field replacement metadata is invalid.");
 		}
 	}
 	return { valid: issues.length === 0, issues };
@@ -747,7 +780,8 @@ export function synchronizeSkeletonReplacements(
 	segments: readonly string[],
 	segmentsMeta?: readonly unknown[],
 ): DocumentSkeleton | undefined {
-	if (!skeleton || skeleton.format === "xlsx") return skeleton;
+	if (!skeleton || skeleton.format === "xlsx" || skeleton.format === "csv")
+		return skeleton;
 	if (skeleton.format === "text" && skeleton.payload.kind === "text") {
 		let replacements = locateTextRanges(skeleton.payload.content, segments);
 		if (replacements.length !== segments.length) {

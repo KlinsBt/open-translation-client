@@ -49,6 +49,96 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Preserve target code points or normalize translated text during export.",
 		},
 	],
+	csv: [
+		{
+			id: "delimiter",
+			label: "Delimiter",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "comma", "tab", "semicolon", "pipe"],
+			description:
+				"Detect the delimiter from the extension/content or select it explicitly.",
+		},
+		{
+			id: "quoteCharacter",
+			label: "Quote character",
+			type: "select",
+			defaultValue: "double",
+			choices: ["double", "single", "none"],
+		},
+		{
+			id: "escapeMode",
+			label: "Quote escaping",
+			type: "select",
+			defaultValue: "double",
+			choices: ["double", "backslash"],
+			description:
+				"RFC 4180 doubles quote characters; backslash mode supports common nonstandard exports.",
+		},
+		{
+			id: "hasHeader",
+			label: "First row is a header",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "importMode",
+			label: "Delimited-text mode",
+			type: "select",
+			defaultValue: "all-text",
+			choices: ["all-text", "source-column", "multilingual-columns"],
+			description:
+				"Import every selected text field, one source column, or paired source and target columns.",
+		},
+		{
+			id: "keyColumn",
+			label: "Key column",
+			type: "text",
+			defaultValue: "A",
+			placeholder: "Header, A, or 1",
+		},
+		{
+			id: "sourceColumn",
+			label: "Source column",
+			type: "text",
+			defaultValue: "B",
+			placeholder: "Header, B, or 2",
+		},
+		{
+			id: "targetColumn",
+			label: "Target column",
+			type: "text",
+			defaultValue: "C",
+			placeholder: "Header, C, or 3",
+		},
+		{
+			id: "contextColumn",
+			label: "Context column",
+			type: "text",
+			defaultValue: "",
+			placeholder: "Optional header, D, or 4",
+		},
+		{
+			id: "skipEmptyFields",
+			label: "Skip empty fields",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "outputEncoding",
+			label: "Output encoding",
+			type: "select",
+			defaultValue: "source",
+			choices: ["source", "utf-8", "utf-16le", "utf-16be"],
+		},
+		{
+			id: "byteOrderMark",
+			label: "Byte-order mark",
+			type: "select",
+			defaultValue: "preserve",
+			choices: ["preserve", "always", "never"],
+		},
+	],
 	json: [
 		{
 			id: "pathSelectors",

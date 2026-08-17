@@ -48,6 +48,15 @@ export interface JsonSegmentMeta {
 	separator?: string;
 }
 
+export interface CsvSegmentMeta {
+	row: number;
+	column: number;
+	sourceColumn: number;
+	separator?: string;
+	key?: string;
+	context?: string;
+}
+
 export type HtmlSegmentMeta =
 	| {
 			kind: "text";
@@ -81,6 +90,7 @@ export type HtmlSegmentMeta =
 export type SegmentMeta =
 	| DocxSegmentMeta
 	| PptxSegmentMeta
+	| CsvSegmentMeta
 	| JsonSegmentMeta
 	| HtmlSegmentMeta;
 

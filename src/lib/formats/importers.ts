@@ -27,7 +27,7 @@ import type {
 	FormatOptionValues,
 	FormatValidationResult,
 } from "./types";
-import type { TypeRef } from "$lib/types/types";
+import type { CsvSegmentMeta, TypeRef } from "$lib/types/types";
 import {
 	createNeutralDocument,
 	type NeutralDocument,
@@ -46,6 +46,7 @@ import {
 	type XlsxTextReplacement,
 	type PptxTextReplacement,
 	type TextRangeReplacement,
+	type CsvFieldReplacement,
 } from "./skeleton";
 import {
 	normalizeImportOptions,
@@ -65,6 +66,13 @@ import {
 } from "./safeInput";
 import { readStreamingTextFile } from "./streaming";
 import { findSrxBreakPositions, SrxValidationError } from "./srx20";
+import {
+	CsvParseError,
+	isCsvFormulaInjection,
+	parseCsv,
+	resolveCsvColumn,
+	resolveCsvDialect,
+} from "./csv";
 
 function invalidResult(
 	error: unknown,
@@ -523,6 +531,221 @@ export async function importTextFile(
 			originalFile: file,
 		}),
 		filterOptions,
+	};
+}
+
+export async function validateCsvFile(
+	file: File,
+	context?: SafeInputContext,
+): Promise<FormatValidationResult> {
+	try {
+		const options = normalizeImportOptions("csv");
+		const read = await readSafeTextFile(file, context);
+		const table = parseCsv(
+			read.text,
+			resolveCsvDialect(read.text, file.name, options),
+		);
+		if (table.rows.length === 0)
+			return { valid: false, reason: "The CSV/TSV file is empty." };
+		return { valid: true };
+	} catch (error) {
+		return invalidResult(
+			error,
+			error instanceof CsvParseError
+				? error.message
+				: "The file is not valid CSV or TSV text.",
+		);
+	}
+}
+
+export async function importCsvFile(
+	file: File,
+	options?: Readonly<FormatOptionValues>,
+	context?: SafeInputContext,
+): Promise<FormatImportResult> {
+	const filterOptions = normalizeImportOptions("csv", options);
+	const read = await readSafeTextFile(file, context);
+	const content = read.text;
+	const table = parseCsv(
+		content,
+		resolveCsvDialect(content, file.name, filterOptions),
+	);
+	if (table.rows.length === 0) throw new Error("The CSV/TSV file is empty.");
+
+	const hasHeader = Boolean(filterOptions.hasHeader);
+	const header = hasHeader ? table.rows[0]?.fields : undefined;
+	const dataRows = table.rows.slice(hasHeader ? 1 : 0);
+	const mode = String(filterOptions.importMode);
+	const sourceColumn = resolveCsvColumn(
+		String(filterOptions.sourceColumn),
+		header,
+		"source",
+	);
+	const targetColumn = resolveCsvColumn(
+		String(filterOptions.targetColumn),
+		header,
+		"target",
+	);
+	const keyColumn = resolveCsvColumn(
+		String(filterOptions.keyColumn),
+		header,
+		"key",
+	);
+	const contextColumn = resolveCsvColumn(
+		String(filterOptions.contextColumn),
+		header,
+		"context",
+	);
+	if (mode !== "all-text" && sourceColumn === undefined)
+		throw new Error("Source-column modes require a source column.");
+	if (mode === "multilingual-columns" && targetColumn === undefined)
+		throw new Error("Multilingual-column mode requires a target column.");
+	if (mode === "multilingual-columns" && sourceColumn === targetColumn)
+		throw new Error("Source and target columns must be different.");
+
+	const segments: string[] = [];
+	const targetSegments: string[] = [];
+	const replacements: CsvFieldReplacement[] = [];
+	const meta: CsvSegmentMeta[] = [];
+	const locations: SourceLocation[] = [];
+	const unitDetails: Array<{
+		key?: string;
+		context?: string;
+		sourceFormula: boolean;
+		targetFormula: boolean;
+	}> = [];
+	const skipEmpty = Boolean(filterOptions.skipEmptyFields);
+
+	const addUnit = (
+		row: (typeof table.rows)[number],
+		sourceIndex: number,
+		destinationIndex: number,
+	) => {
+		const source = row.fields[sourceIndex];
+		const destination = row.fields[destinationIndex];
+		if (!source || !destination) return;
+		if (skipEmpty && source.value.length === 0) return;
+		const unitIndex = segments.length;
+		const key =
+			keyColumn === undefined ? undefined : row.fields[keyColumn]?.value;
+		const context =
+			contextColumn === undefined
+				? undefined
+				: row.fields[contextColumn]?.value;
+		segments.push(source.value);
+		targetSegments.push(
+			mode === "multilingual-columns" ? destination.value : "",
+		);
+		replacements.push({
+			kind: "csv-field",
+			unitIndex,
+			row: row.row,
+			column: destinationIndex,
+			start: destination.start,
+			end: destination.end,
+			originalValue: destination.value,
+			delimiter: table.dialect.delimiter,
+			quote: table.dialect.quote,
+			escapeMode: table.dialect.escapeMode,
+			quoted: destination.quoted,
+		});
+		meta.push({
+			row: row.row,
+			column: destinationIndex,
+			sourceColumn: sourceIndex,
+			...(key ? { key } : {}),
+			...(context ? { context } : {}),
+		});
+		locations.push({
+			part: file.name,
+			row: row.row + 1,
+			column: sourceIndex + 1,
+			path: [row.row, sourceIndex],
+			segmentIndex: unitIndex,
+			metadata: { destinationColumn: destinationIndex + 1 },
+		});
+		unitDetails.push({
+			...(key ? { key } : {}),
+			...(context ? { context } : {}),
+			sourceFormula: isCsvFormulaInjection(source.value),
+			targetFormula: isCsvFormulaInjection(destination.value),
+		});
+	};
+
+	for (const row of dataRows) {
+		if (mode === "all-text") {
+			for (const field of row.fields) addUnit(row, field.column, field.column);
+		} else {
+			addUnit(
+				row,
+				sourceColumn!,
+				mode === "multilingual-columns" ? targetColumn! : sourceColumn!,
+			);
+		}
+	}
+
+	const document = createNeutralDocument({
+		format: "csv",
+		sourceSegments: segments,
+		targetSegments,
+		sourceLocations: locations,
+	});
+	let formulaWarningCount = 0;
+	for (const [index, details] of unitDetails.entries()) {
+		const unit = document.units[index];
+		if (!unit) continue;
+		if (details.key)
+			unit.contexts.push({ type: "csv-key", value: details.key });
+		if (details.context)
+			unit.contexts.push({ type: "csv-context", value: details.context });
+		if (details.sourceFormula) {
+			formulaWarningCount++;
+			unit.notes.push({
+				category: "csv-formula-injection",
+				appliesTo: "source",
+				priority: 1,
+				text: "This field begins with a character that spreadsheet software may execute as a formula. It is preserved as data; review it before opening the export in a spreadsheet.",
+			});
+		}
+		if (details.targetFormula && mode === "multilingual-columns") {
+			formulaWarningCount++;
+			unit.notes.push({
+				category: "csv-formula-injection",
+				appliesTo: "target",
+				priority: 1,
+				text: "The existing target begins with a character that spreadsheet software may execute as a formula. It is preserved as data.",
+			});
+		}
+	}
+	const widths = table.rows.map((row) => row.fields.length);
+	const expectedWidth = widths[0] ?? 0;
+	document.metadata = {
+		delimiter: table.dialect.delimiter,
+		quote: table.dialect.quote,
+		escapeMode: table.dialect.escapeMode,
+		hasHeader,
+		rowCount: table.rows.length,
+		raggedRows: widths
+			.map((width, index) => (width === expectedWidth ? -1 : index + 1))
+			.filter((row) => row > 0),
+		formulaInjectionWarnings: formulaWarningCount,
+	};
+
+	return {
+		kind: "segments",
+		segments,
+		targetSegments,
+		document,
+		skeleton: await createTextSkeleton(
+			file,
+			"csv",
+			content,
+			replacements,
+			createSkeletonSource(file, read),
+		),
+		filterOptions,
+		typeRef: { dialect: table.dialect } as unknown as TypeRef,
+		segmentsMeta: meta,
 	};
 }
 

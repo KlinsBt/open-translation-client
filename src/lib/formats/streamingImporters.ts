@@ -1,4 +1,5 @@
 import type { TbData, TmData, Type, UserData } from "$lib/types/types";
+import { FORMAT_IDS } from "./formatIds";
 import {
 	parseXmlRecord,
 	scanXmlRecords,
@@ -606,9 +607,7 @@ function normalizeLang(value: string): string {
 }
 
 function normalizeType(value: string): Type {
-	return ["text", "json", "docx", "xlsx", "html"].includes(value)
-		? (value as Type)
-		: "text";
+	return FORMAT_IDS.includes(value as Type) ? (value as Type) : "text";
 }
 
 function escapeRegExp(value: string): string {

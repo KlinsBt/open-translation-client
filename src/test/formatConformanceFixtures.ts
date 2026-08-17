@@ -72,6 +72,60 @@ const textFixture: FormatConformanceFixture = {
 	performanceOptions: { segmentationMode: "lines" },
 };
 
+const csvFixture: FormatConformanceFixture = {
+	id: "csv",
+	fileName: "unicode.csv",
+	mimeType: "text/csv",
+	importOptions: {
+		importMode: "source-column",
+		sourceColumn: "Source",
+		keyColumn: "Key",
+		contextColumn: "Context",
+	},
+	createValidFile: async () =>
+		textFile(
+			`Key,Source,Context,Locked\r\nwelcome,${JSON.stringify(CONFORMANCE_UNICODE_SOURCE)},UI,keep\r\n`,
+			"unicode.csv",
+			"text/csv",
+		),
+	createMalformedFile: async () =>
+		textFile('Key,Source\r\nwelcome,"unterminated', "broken.csv", "text/csv"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			delimiter: "auto",
+			quoteCharacter: "double",
+			escapeMode: "double",
+			hasHeader: true,
+			importMode: "source-column",
+			keyColumn: "Key",
+			sourceColumn: "Source",
+			targetColumn: "C",
+			contextColumn: "Context",
+			skipEmptyFields: true,
+			outputEncoding: "source",
+			byteOrderMark: "preserve",
+		},
+		skeleton: { kind: "text", replacementKinds: ["csv-field"] },
+		units: [{ id: "unit-1", part: "unicode.csv", path: [1, 1] }],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`Key,Source\r\n${Array.from(
+				{ length: units },
+				(_, index) => `${index},Message ${index}`,
+			).join("\r\n")}`,
+			"performance.csv",
+			"text/csv",
+		),
+	performanceOptions: {
+		importMode: "source-column",
+		sourceColumn: "Source",
+	},
+};
+
 const jsonFixture: FormatConformanceFixture = {
 	id: "json",
 	fileName: "unicode.json",
@@ -313,6 +367,7 @@ const pptxFixture: FormatConformanceFixture = {
 
 export const FORMAT_CONFORMANCE_FIXTURES = [
 	textFixture,
+	csvFixture,
 	jsonFixture,
 	docxFixture,
 	xlsxFixture,

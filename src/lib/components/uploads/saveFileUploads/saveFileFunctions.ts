@@ -1,5 +1,6 @@
 import { validateXliff12Xml } from "$lib/formats/xliff12";
 import { validateXliff2Xml } from "$lib/formats/xliff2";
+import { FORMAT_IDS } from "$lib/formats/formatIds";
 
 export function getXliffVersion(xliff: Document): number {
 	const xliffElement = xliff.getElementsByTagName("xliff")[0];
@@ -357,7 +358,7 @@ export function validateJsonData(data: any): boolean {
 		td.checked.length !== td.seg1.length
 	)
 		return false;
-	if (!["text", "json", "docx", "xlsx", "html"].includes(td.type)) return false;
+	if (!FORMAT_IDS.includes(td.type)) return false;
 	if (typeof td.typeRef !== "string" && typeof td.typeRef !== "object")
 		return false;
 

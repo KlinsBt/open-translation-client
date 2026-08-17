@@ -460,11 +460,29 @@ Complete these in order after FF-000 through FF-009.
 
 ## Phase 2 — Common structured content and software localization
 
-- [ ] **FF-200 — CSV and TSV (`.csv`, `.tsv`).** Add delimiter, quote, escape,
+- [x] **FF-200 — CSV and TSV (`.csv`, `.tsv`).** Add delimiter, quote, escape,
       encoding, header, multiline-field, source/target/key/context column, and
       multilingual-column options. Preserve row order and nontranslated cells;
       test commas, tabs, CRLF, embedded newlines, formulas-as-data, and CSV
       injection warnings.
+      Completed 2026-08-17: one CSV/TSV adapter now offers auto/comma/tab/
+      semicolon/pipe delimiters, double/single/no quoting, doubled or backslash
+      escapes, header handling, empty-field filtering, source-only and paired
+      multilingual columns, and header-name/letter/number selectors for source,
+      target, key, and context. Its strict state-machine parser supports RFC 4180
+      CRLF, embedded record breaks, escaped quotes, final records with or without
+      line endings, UTF-8/UTF-16 byte-order marks, registered TSV metadata, and
+      useful malformed-input offsets. Positional field skeletons rewrite only
+      selected destination cells, retain original quoting when possible, quote
+      newly unsafe values, and preserve row order, ragged rows, line endings,
+      headers, nontranslated cells, source encoding, and identity bytes. Formula-
+      like values stay data rather than being evaluated or silently altered;
+      source/target notes and export-time warnings flag ASCII and full-width CSV
+      injection prefixes. Split/join is blocked because it would invalidate cell
+      alignment. Unit, conformance, performance, and browser smoke coverage checks
+      comma/tab dialects, custom escaping, multiline fields, CRLF, formulas,
+      injection warnings, malformed quotes/encodings, column modes, ragged rows,
+      exact UTF-16 identity, translated re-import, and download behavior.
 - [ ] **FF-201 — JSON families (`.json`, `.arb`, i18next/Chrome/locJSON profiles).**
       Replace value-coercing traversal with a lossless syntax tree. Configure
       translatable paths and key/context fields; preserve ordering, indentation,
@@ -701,6 +719,9 @@ events and reconstruct the original format.
 - [OSCAR exchange standards, including SRX 2.0](https://www.ttt.org/oscarStandards/)
 - [OSCAR SRX 2.0 specification](https://www.ttt.org/oscarStandards/srx/srx20.html)
 - [Official SRX 2.0 XML Schema](https://www.ttt.org/oscarStandards/srx/srx20.xsd)
+- [RFC 4180 CSV format and `text/csv` registration](https://www.rfc-editor.org/rfc/rfc4180)
+- [IANA `text/tab-separated-values` registration](https://www.iana.org/assignments/media-types/text/tab-separated-values)
+- [OWASP CSV/formula injection guidance](https://owasp.org/www-community/attacks/CSV_Injection)
 - [ISO 30042:2019 TBX overview](https://www.iso.org/standard/62510.html)
 - [TBXInfo public dialect and validation guidance](https://www.tbxinfo.net/tbx-dialects/)
 - [LTAC-Global TBX-Core schemas](https://ltac-global.github.io/TBX-Core_dialect/)

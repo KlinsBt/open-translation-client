@@ -85,10 +85,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.json,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, JSON, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -99,6 +99,18 @@ describe("format adapter registry", () => {
 		await expect(
 			detectFormat(textFile("plain", "NOTES.TXT", "")),
 		).resolves.toMatchObject({ id: "text" });
+		await expect(
+			detectFormat(textFile("Key,Source\n1,Hello", "MESSAGES.CSV", "text/csv")),
+		).resolves.toMatchObject({ id: "csv" });
+		await expect(
+			detectFormat(
+				textFile(
+					"Key\tSource\n1\tHello",
+					"MESSAGES.TSV",
+					"text/tab-separated-values",
+				),
+			),
+		).resolves.toMatchObject({ id: "csv" });
 		await expect(
 			detectFormat(textFile("<p>Hi</p>", "page.HTM", "")),
 		).resolves.toMatchObject({ id: "html" });

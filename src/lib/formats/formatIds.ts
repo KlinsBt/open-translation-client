@@ -1,5 +1,6 @@
 export const FORMAT_IDS = [
 	"text",
+	"csv",
 	"json",
 	"docx",
 	"xlsx",

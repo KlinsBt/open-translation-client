@@ -2,6 +2,7 @@ import { createDocxFromModifiedXmlText } from "$lib/functions/outputGeneration/o
 import { createHtmlFromModifiedText } from "$lib/functions/outputGeneration/outputGenerationHtml";
 import { generateJsonTranslation } from "$lib/functions/outputGeneration/outputGenerationJson";
 import { generateTextTranslation } from "$lib/functions/outputGeneration/outputGenerationText";
+import { generateCsvTranslation } from "$lib/functions/outputGeneration/outputGenerationCsv";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -9,11 +10,13 @@ import {
 	importHtmlFile,
 	importJsonFile,
 	importTextFile,
+	importCsvFile,
 	importXlsxFile,
 	validateDocxFile,
 	validateHtmlFile,
 	validateJsonFile,
 	validateTextFile,
+	validateCsvFile,
 	validateXlsxFile,
 	importPptxFile,
 	validatePptxFile,
@@ -59,6 +62,18 @@ const adapters = [
 		validate: validateTextFile,
 		importFile: importTextFile,
 		exportFile: generateTextTranslation,
+	},
+	{
+		id: "csv",
+		label: "CSV/TSV",
+		extensions: ["csv", "tsv"],
+		mimeTypes: ["text/csv", "text/tab-separated-values"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.csv,
+		sniff: async () => false,
+		validate: validateCsvFile,
+		importFile: importCsvFile,
+		exportFile: generateCsvTranslation,
 	},
 	{
 		id: "json",
