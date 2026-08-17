@@ -38,7 +38,6 @@ import {
 import {
 	createPackageSkeleton,
 	createTextSkeleton,
-	findJsonPrimitiveLocations,
 	type DocxTextReplacement,
 	type HtmlAttributeReplacement,
 	type HtmlTextReplacement,
@@ -53,11 +52,9 @@ import {
 	parseColumns,
 	parseList,
 	parsePositiveRanges,
-	matchesJsonSelector,
 } from "./options";
 import {
 	createSkeletonSource,
-	parseSafeJson,
 	readSafeTextFile,
 	readSafeZipPackage,
 	safeParseXml,
@@ -73,6 +70,8 @@ import {
 	resolveCsvColumn,
 	resolveCsvDialect,
 } from "./csv";
+import { parseJsonSyntax, type JsonSyntaxDocument } from "./jsonSyntax";
+import { extractJsonProfile, resolveJsonProfile } from "./jsonProfiles";
 
 function invalidResult(
 	error: unknown,
@@ -368,7 +367,7 @@ export async function validateJsonFile(
 ): Promise<FormatValidationResult> {
 	try {
 		const { text } = await readSafeTextFile(file, context);
-		parseSafeJson(text);
+		parseLosslessJson(text);
 		return { valid: true };
 	} catch (error) {
 		return invalidResult(error, "The file does not contain valid JSON.");
@@ -381,56 +380,156 @@ export async function importJsonFile(
 	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
 	const filterOptions = normalizeImportOptions("json", options);
-	const selectors = parseList(filterOptions.pathSelectors);
 	const read = await readSafeTextFile(file, context);
 	const content = read.text;
-	const jsonData = parseSafeJson(content);
+	const syntax = parseLosslessJson(content);
+	const profile = resolveJsonProfile(
+		syntax,
+		file.name,
+		String(filterOptions.profile),
+	);
+	const extracted = extractJsonProfile(syntax, profile, filterOptions);
 	const segments: string[] = [];
-	const meta: { path: string[]; separator?: string }[] = [];
+	const targetSegments: string[] = [];
+	const meta: Array<{
+		path: string[];
+		address?: number[];
+		start?: number;
+		end?: number;
+		originalValue?: string;
+		valueType?: JsonValueReplacement["valueType"];
+		profile?: typeof profile;
+		key?: string;
+		context?: string;
+		separator?: string;
+	}> = [];
 	const replacements: JsonValueReplacement[] = [];
-	for (const location of findJsonPrimitiveLocations(content)) {
-		if (!matchesJsonSelector(location.path, selectors)) continue;
-		if (
-			filterOptions.includeNonStringValues === false &&
-			location.valueType !== "string"
-		)
-			continue;
-		const text = String(location.value);
-		const pieces = splitTextWithPreferences(text).filter(
+	const unitDetails: Array<(typeof extracted)[number]> = [];
+	for (const extraction of extracted) {
+		const text = extraction.sourceText;
+		const segmentationMode =
+			profile === "locjson" ? "value" : String(filterOptions.segmentationMode);
+		const pieces =
+			segmentationMode === "value"
+				? [{ text, separator: "" }]
+				: segmentationMode === "sentences"
+					? segmentPlainText(text, "sentences")
+					: splitTextWithPreferences(text);
+		const visiblePieces = pieces.filter(
 			(piece) => piece.text.trim().length > 0,
 		);
 		const effectivePieces =
-			pieces.length > 0 ? pieces : [{ text, separator: "" }];
+			visiblePieces.length > 0 ? visiblePieces : [{ text, separator: "" }];
 		for (const piece of effectivePieces) {
 			const unitIndex = segments.length;
 			segments.push(`${piece.text}${piece.separator ?? ""}`);
+			targetSegments.push(
+				effectivePieces.length === 1 ? extraction.targetText : "",
+			);
+			const destination = extraction.destinationNodes[0];
+			const originalValue = extraction.destinationNodes
+				.map((node) =>
+					node.valueType === "string" ? String(node.value) : node.raw,
+				)
+				.join("");
 			meta.push({
-				path: [...location.path],
+				path: [...destination.path],
+				address: [...destination.address],
+				start: destination.start,
+				end: destination.end,
+				originalValue,
+				valueType: destination.valueType,
+				profile,
+				...(extraction.key ? { key: extraction.key } : {}),
+				...(extraction.context ? { context: extraction.context } : {}),
 				separator: piece.separator ?? "",
 			});
 			replacements.push({
 				kind: "json-value",
 				unitIndex,
-				path: [...location.path],
-				start: location.start,
-				end: location.end,
-				valueType: location.valueType,
+				path: [...destination.path],
+				address: [...destination.address],
+				start: destination.start,
+				end: destination.end,
+				valueType: destination.valueType,
+				originalValue,
+				profile,
 				separator: piece.separator ?? "",
+				...(extraction.destinationNodes.length > 1
+					? {
+							fragments: extraction.destinationNodes.map((node) => ({
+								start: node.start,
+								end: node.end,
+								originalValue: String(node.value),
+							})),
+						}
+					: {}),
 			});
+			unitDetails.push(extraction);
 		}
+	}
+	const duplicateKeys = syntax.duplicateKeys.map((duplicate) => ({
+		path: [...duplicate.path],
+		occurrences: duplicate.occurrences,
+	}));
+	const document = createNeutralDocument({
+		format: "json",
+		sourceSegments: segments,
+		targetSegments,
+		sourceLocations: unitDetails.map((entry, index) => ({
+			part: file.name,
+			path: [...entry.sourceNodes[0].path],
+			segmentIndex: index,
+			metadata: {
+				address: [...entry.sourceNodes[0].address],
+				destinationPath: [...entry.destinationNodes[0].path],
+			},
+		})),
+	});
+	document.metadata = {
+		profile,
+		duplicateKeys,
+		encoding: read.encoding,
+		hasBom: read.hasBom,
+		...(profile === "arb"
+			? {
+					locale:
+						syntax.primitives.find(
+							(node) =>
+								node.valueType === "string" &&
+								node.path.length === 1 &&
+								node.path[0] === "@@locale",
+						)?.value ?? null,
+				}
+			: {}),
+	};
+	for (const [index, details] of unitDetails.entries()) {
+		const unit = document.units[index];
+		if (!unit) continue;
+		unit.contexts.push(...details.contexts.map((entry) => ({ ...entry })));
+		if (details.key)
+			unit.contexts.push({ type: "json-key", value: details.key });
+		if (details.context)
+			unit.contexts.push({ type: "json-context", value: details.context });
+		unit.notes.push(...details.notes.map((note) => ({ ...note })));
+		const duplicate = syntax.duplicateKeys.find((entry) =>
+			entry.path.every(
+				(part, pathIndex) => details.sourceNodes[0].path[pathIndex] === part,
+			),
+		);
+		if (duplicate)
+			unit.notes.push({
+				category: "json-duplicate-key",
+				appliesTo: "source",
+				priority: 1,
+				text: `The JSON key “${duplicate.key}” occurs ${duplicate.occurrences} times in this object. All occurrences are preserved, but consumers may choose different values.`,
+			});
 	}
 	return {
 		kind: "segments",
 		segments,
-		document: createNeutralDocument({
-			format: "json",
-			sourceSegments: segments,
-			sourceLocations: meta.map((entry, index) => ({
-				part: file.name,
-				path: entry.path,
-				segmentIndex: index,
-			})),
-		}),
+		targetSegments,
+		document,
 		skeleton: await createTextSkeleton(
 			file,
 			"json",
@@ -439,9 +538,22 @@ export async function importJsonFile(
 			createSkeletonSource(file, read),
 		),
 		filterOptions,
-		typeRef: { data: jsonData, meta } as unknown as TypeRef,
+		typeRef: { profile, duplicateKeys } as unknown as TypeRef,
 		segmentsMeta: meta,
 	};
+}
+
+function parseLosslessJson(content: string): JsonSyntaxDocument {
+	try {
+		return parseJsonSyntax(content);
+	} catch (error) {
+		throw new SafeInputError(
+			"JSON_MALFORMED",
+			error instanceof Error
+				? error.message
+				: "The file does not contain valid JSON.",
+		);
+	}
 }
 
 export async function validateTextFile(

@@ -146,8 +146,12 @@ const jsonFixture: FormatConformanceFixture = {
 	extractionSnapshot: {
 		segments: [CONFORMANCE_UNICODE_SOURCE],
 		filterOptions: {
+			profile: "auto",
 			pathSelectors: "message",
 			includeNonStringValues: false,
+			segmentationMode: "value",
+			keyField: "",
+			contextField: "",
 		},
 		skeleton: { kind: "text", replacementKinds: ["json-value"] },
 		units: [{ id: "unit-1", part: "unicode.json", path: ["message"] }],

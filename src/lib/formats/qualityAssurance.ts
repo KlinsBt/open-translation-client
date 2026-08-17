@@ -134,6 +134,8 @@ export function runProjectExportQuality(
 		const source = rich ? contentText(unit.source) : (data.seg1[index] ?? "");
 		const target = rich ? contentText(unit.target) : (data.seg2[index] ?? "");
 		compareProtectedText(source, target, index, unit?.id, policy, issues);
+		if (data.type === "json" && model?.metadata?.profile === "chrome")
+			compareChromePlaceholders(source, target, index, unit?.id, issues);
 		if (rich && unit)
 			compareInlineCodes(
 				unit.source,
@@ -145,6 +147,56 @@ export function runProjectExportQuality(
 			);
 	}
 	return { valid: issues.length === 0, issues, checkedUnits: unitCount };
+}
+
+function compareChromePlaceholders(
+	source: string,
+	target: string,
+	unitIndex: number,
+	unitId: string | undefined,
+	issues: ExportQaIssue[],
+): void {
+	compareTokenCounts(
+		scanChromePlaceholders(source),
+		scanChromePlaceholders(target),
+		unitIndex,
+		unitId,
+		"PLACEHOLDER",
+		issues,
+	);
+}
+
+function scanChromePlaceholders(text: string): ProtectedToken[] {
+	const tokens: ProtectedToken[] = [];
+	for (let index = 0; index < text.length; index++) {
+		if (text[index] !== "$") continue;
+		if (text[index + 1] === "$") {
+			index++;
+			continue;
+		}
+		const named = text.slice(index).match(/^\$([A-Za-z_][A-Za-z0-9_@]*)\$/);
+		if (named) {
+			tokens.push({
+				key: `chrome:${named[1].toLowerCase()}`,
+				raw: named[0],
+				index,
+				orderSensitive: false,
+			});
+			index += named[0].length - 1;
+			continue;
+		}
+		const positional = text.slice(index).match(/^\$(\d+)/);
+		if (positional) {
+			tokens.push({
+				key: `chrome-position:${positional[1]}`,
+				raw: positional[0],
+				index,
+				orderSensitive: false,
+			});
+			index += positional[0].length - 1;
+		}
+	}
+	return tokens;
 }
 
 export function assertProjectExportQuality(project: UserData): void {

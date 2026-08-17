@@ -1,5 +1,6 @@
 import type { FormatId } from "./formatIds";
 import { decodeTextBytes, readSafeFileBytes } from "./safeInput";
+import { parseJsonSyntax, type JsonPrimitiveNode } from "./jsonSyntax";
 
 export const DOCUMENT_SKELETON_VERSION = 1 as const;
 
@@ -50,9 +51,17 @@ export interface CsvFieldReplacement extends ReplacementBase {
 export interface JsonValueReplacement extends ReplacementBase {
 	kind: "json-value";
 	path: string[];
+	address?: number[];
 	start: number;
 	end: number;
 	valueType: "string" | "number" | "boolean" | "null";
+	originalValue?: string;
+	profile?: "generic" | "arb" | "i18next" | "chrome" | "locjson";
+	fragments?: Array<{
+		start: number;
+		end: number;
+		originalValue: string;
+	}>;
 }
 
 export interface HtmlTextReplacement extends ReplacementBase {
@@ -132,13 +141,7 @@ export interface DocumentSkeleton {
 	replacements: SkeletonReplacement[];
 }
 
-export interface JsonPrimitiveLocation {
-	path: string[];
-	start: number;
-	end: number;
-	value: string | number | boolean | null;
-	valueType: JsonValueReplacement["valueType"];
-}
+export type JsonPrimitiveLocation = JsonPrimitiveNode;
 
 async function sourceFromFile(
 	file: File,
@@ -262,133 +265,10 @@ export async function createPackageSkeleton(
 	};
 }
 
-class JsonLocationParser {
-	private cursor = 0;
-	readonly locations: JsonPrimitiveLocation[] = [];
-
-	constructor(private readonly text: string) {}
-
-	parse(): JsonPrimitiveLocation[] {
-		this.skipWhitespace();
-		this.parseValue([]);
-		this.skipWhitespace();
-		if (this.cursor !== this.text.length)
-			throw new Error("Unexpected JSON content.");
-		return this.locations;
-	}
-
-	private skipWhitespace() {
-		while (/\s/.test(this.text[this.cursor] ?? "")) this.cursor++;
-	}
-
-	private parseStringToken(): { start: number; end: number; value: string } {
-		const start = this.cursor;
-		if (this.text[this.cursor] !== '"')
-			throw new Error("Expected JSON string.");
-		this.cursor++;
-		let escaped = false;
-		while (this.cursor < this.text.length) {
-			const character = this.text[this.cursor++];
-			if (escaped) {
-				escaped = false;
-				continue;
-			}
-			if (character === "\\") {
-				escaped = true;
-				continue;
-			}
-			if (character === '"') {
-				const end = this.cursor;
-				return {
-					start,
-					end,
-					value: JSON.parse(this.text.slice(start, end)),
-				};
-			}
-		}
-		throw new Error("Unterminated JSON string.");
-	}
-
-	private parseValue(path: string[]) {
-		this.skipWhitespace();
-		const character = this.text[this.cursor];
-		if (character === "{") return this.parseObject(path);
-		if (character === "[") return this.parseArray(path);
-		if (character === '"') {
-			const token = this.parseStringToken();
-			this.locations.push({ ...token, path, valueType: "string" });
-			return;
-		}
-
-		const start = this.cursor;
-		while (
-			this.cursor < this.text.length &&
-			![",", "]", "}"].includes(this.text[this.cursor]) &&
-			!/\s/.test(this.text[this.cursor])
-		) {
-			this.cursor++;
-		}
-		const end = this.cursor;
-		const raw = this.text.slice(start, end);
-		const value = JSON.parse(raw) as number | boolean | null;
-		this.locations.push({
-			path,
-			start,
-			end,
-			value,
-			valueType:
-				value === null
-					? "null"
-					: typeof value === "number"
-						? "number"
-						: "boolean",
-		});
-	}
-
-	private parseObject(path: string[]) {
-		this.cursor++;
-		this.skipWhitespace();
-		if (this.text[this.cursor] === "}") {
-			this.cursor++;
-			return;
-		}
-		while (this.cursor < this.text.length) {
-			this.skipWhitespace();
-			const key = this.parseStringToken().value;
-			this.skipWhitespace();
-			if (this.text[this.cursor++] !== ":") throw new Error("Expected colon.");
-			this.parseValue([...path, key]);
-			this.skipWhitespace();
-			const delimiter = this.text[this.cursor++];
-			if (delimiter === "}") return;
-			if (delimiter !== ",") throw new Error("Expected object delimiter.");
-		}
-		throw new Error("Unterminated JSON object.");
-	}
-
-	private parseArray(path: string[]) {
-		this.cursor++;
-		this.skipWhitespace();
-		if (this.text[this.cursor] === "]") {
-			this.cursor++;
-			return;
-		}
-		let index = 0;
-		while (this.cursor < this.text.length) {
-			this.parseValue([...path, String(index++)]);
-			this.skipWhitespace();
-			const delimiter = this.text[this.cursor++];
-			if (delimiter === "]") return;
-			if (delimiter !== ",") throw new Error("Expected array delimiter.");
-		}
-		throw new Error("Unterminated JSON array.");
-	}
-}
-
 export function findJsonPrimitiveLocations(
 	content: string,
 ): JsonPrimitiveLocation[] {
-	return new JsonLocationParser(content).parse();
+	return parseJsonSyntax(content).primitives;
 }
 
 export function applyTextSkeleton(
@@ -415,16 +295,38 @@ export function applyJsonSkeleton(
 	replacements: readonly JsonValueReplacement[],
 	translations: readonly string[],
 ): string {
-	const grouped = new Map<string, JsonValueReplacement[]>();
+	const edits: Array<{ start: number; end: number; encoded: string }> = [];
 	for (const replacement of replacements) {
+		if (!replacement.fragments?.length) continue;
+		const translated = translations[replacement.unitIndex] ?? "";
+		const original = replacement.fragments
+			.map((fragment) => fragment.originalValue)
+			.join("");
+		if (translated === original) continue;
+		const pieces = splitJsonArrayTranslation(
+			translated,
+			replacement.fragments.map((fragment) => fragment.originalValue),
+		);
+		for (const [index, fragment] of replacement.fragments.entries()) {
+			edits.push({
+				start: fragment.start,
+				end: fragment.end,
+				encoded: JSON.stringify(pieces[index] ?? ""),
+			});
+		}
+	}
+
+	const grouped = new Map<string, JsonValueReplacement[]>();
+	for (const replacement of replacements.filter(
+		(replacement) => !replacement.fragments?.length,
+	)) {
 		const key = `${replacement.start}:${replacement.end}`;
 		const values = grouped.get(key) ?? [];
 		values.push(replacement);
 		grouped.set(key, values);
 	}
 
-	let output = content;
-	const groups = [...grouped.values()].sort((a, b) => b[0].start - a[0].start);
+	const groups = [...grouped.values()];
 	for (const group of groups) {
 		let translated = "";
 		for (const replacement of group.sort((a, b) => a.unitIndex - b.unitIndex)) {
@@ -443,16 +345,13 @@ export function applyJsonSkeleton(
 			translated += `${piece}${separator}`;
 		}
 		const originalRaw = content.slice(group[0].start, group[0].end);
-		const originalValue = JSON.parse(originalRaw) as
-			| string
-			| number
-			| boolean
-			| null;
-		if (translated === String(originalValue)) continue;
+		const originalValue =
+			group[0].originalValue ?? String(JSON.parse(originalRaw));
+		if (translated === originalValue) continue;
 		let encoded: string;
 		switch (group[0].valueType) {
 			case "number":
-				encoded = Number.isFinite(Number(translated))
+				encoded = isJsonNumber(translated)
 					? translated
 					: JSON.stringify(translated);
 				break;
@@ -468,9 +367,47 @@ export function applyJsonSkeleton(
 			default:
 				encoded = JSON.stringify(translated);
 		}
-		output = `${output.slice(0, group[0].start)}${encoded}${output.slice(group[0].end)}`;
+		edits.push({ start: group[0].start, end: group[0].end, encoded });
 	}
+
+	let output = content;
+	for (const edit of edits.sort((first, second) => second.start - first.start))
+		output = `${output.slice(0, edit.start)}${edit.encoded}${output.slice(edit.end)}`;
 	return output;
+}
+
+function isJsonNumber(value: string): boolean {
+	return /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(value);
+}
+
+function splitJsonArrayTranslation(
+	translation: string,
+	originalPieces: readonly string[],
+): string[] {
+	if (originalPieces.length <= 1) return [translation];
+	const characters = Array.from(translation);
+	const originalLengths = originalPieces.map(
+		(piece) => Array.from(piece).length,
+	);
+	const originalTotal = originalLengths.reduce(
+		(sum, length) => sum + length,
+		0,
+	);
+	if (originalTotal === 0)
+		return [translation, ...originalPieces.slice(1).map(() => "")];
+	const pieces: string[] = [];
+	let cursor = 0;
+	let consumedOriginal = 0;
+	for (let index = 0; index < originalPieces.length - 1; index++) {
+		consumedOriginal += originalLengths[index];
+		const boundary = Math.round(
+			(characters.length * consumedOriginal) / originalTotal,
+		);
+		pieces.push(characters.slice(cursor, boundary).join(""));
+		cursor = boundary;
+	}
+	pieces.push(characters.slice(cursor).join(""));
+	return pieces;
 }
 
 export function skeletonHasIdentityTargets(
@@ -585,6 +522,27 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 		) {
 			issues.push("CSV field replacement metadata is invalid.");
 		}
+		if (
+			replacement.kind === "json-value" &&
+			replacement.address !== undefined &&
+			(!Array.isArray(replacement.address) ||
+				replacement.address.some((part) => !Number.isInteger(part) || part < 0))
+		) {
+			issues.push("JSON syntax addresses are invalid.");
+		}
+		if (
+			replacement.kind === "json-value" &&
+			replacement.fragments?.some(
+				(fragment) =>
+					!Number.isInteger(fragment.start) ||
+					!Number.isInteger(fragment.end) ||
+					fragment.start < 0 ||
+					fragment.end < fragment.start ||
+					typeof fragment.originalValue !== "string",
+			)
+		) {
+			issues.push("JSON string-array fragment mappings are invalid.");
+		}
 	}
 	return { valid: issues.length === 0, issues };
 }
@@ -695,12 +653,28 @@ export function createSkeletonFromLegacy(
 	} else if (options.format === "json") {
 		const locations = findJsonPrimitiveLocations(content);
 		replacements = meta.flatMap<SkeletonReplacement>((entry, unitIndex) => {
-			const candidate = entry as { path?: string[]; separator?: string };
+			const candidate = entry as {
+				path?: string[];
+				address?: number[];
+				start?: number;
+				end?: number;
+				originalValue?: string;
+				profile?: JsonValueReplacement["profile"];
+				separator?: string;
+			};
 			if (!Array.isArray(candidate.path)) return [];
-			const location = locations.find(
-				(value) =>
-					value.path.length === candidate.path!.length &&
-					value.path.every((part, index) => part === candidate.path![index]),
+			const location = locations.find((value) =>
+				candidate.start !== undefined && candidate.end !== undefined
+					? value.start === candidate.start && value.end === candidate.end
+					: candidate.address
+						? value.address.length === candidate.address.length &&
+							value.address.every(
+								(part, index) => part === candidate.address![index],
+							)
+						: value.path.length === candidate.path!.length &&
+							value.path.every(
+								(part, index) => part === candidate.path![index],
+							),
 			);
 			return location
 				? [
@@ -708,9 +682,16 @@ export function createSkeletonFromLegacy(
 							kind: "json-value" as const,
 							unitIndex,
 							path: [...candidate.path],
+							address: [...location.address],
 							start: location.start,
 							end: location.end,
 							valueType: location.valueType,
+							originalValue:
+								candidate.originalValue ??
+								(location.valueType === "string"
+									? String(location.value)
+									: location.raw),
+							profile: candidate.profile,
 							separator: candidate.separator,
 						},
 					]

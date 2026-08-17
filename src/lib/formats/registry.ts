@@ -77,8 +77,8 @@ const adapters = [
 	},
 	{
 		id: "json",
-		label: "JSON",
-		extensions: ["json"],
+		label: "JSON families",
+		extensions: ["json", "arb", "locjson"],
 		mimeTypes: ["application/json", "text/json"],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.json,

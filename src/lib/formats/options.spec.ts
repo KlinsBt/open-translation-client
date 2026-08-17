@@ -16,8 +16,12 @@ describe("format import options", () => {
 				unknown: "ignored",
 			}),
 		).toEqual({
+			profile: "auto",
 			pathSelectors: "",
 			includeNonStringValues: false,
+			segmentationMode: "value",
+			keyField: "",
+			contextField: "",
 		});
 		expect(
 			normalizeImportOptions("text", { segmentationMode: "invalid" }),

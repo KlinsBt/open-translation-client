@@ -45,6 +45,14 @@ export type PptxSegmentMeta =
 
 export interface JsonSegmentMeta {
 	path: string[];
+	address?: number[];
+	start?: number;
+	end?: number;
+	originalValue?: string;
+	valueType?: "string" | "number" | "boolean" | "null";
+	profile?: "generic" | "arb" | "i18next" | "chrome" | "locjson";
+	key?: string;
+	context?: string;
 	separator?: string;
 }
 

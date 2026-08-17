@@ -483,12 +483,33 @@ Complete these in order after FF-000 through FF-009.
       comma/tab dialects, custom escaping, multiline fields, CRLF, formulas,
       injection warnings, malformed quotes/encodings, column modes, ragged rows,
       exact UTF-16 identity, translated re-import, and download behavior.
-- [ ] **FF-201 — JSON families (`.json`, `.arb`, i18next/Chrome/locJSON profiles).**
+- [x] **FF-201 — JSON families (`.json`, `.arb`, i18next/Chrome/locJSON profiles).**
       Replace value-coercing traversal with a lossless syntax tree. Configure
       translatable paths and key/context fields; preserve ordering, indentation,
       numbers, booleans, nulls, arrays, duplicate-key warnings, ICU messages,
       placeholders, plurals, and metadata. Add ARB and well-known JSON profiles
       only after generic JSON is safe.
+      Completed 2026-08-17: active JSON imports now use a strict positional syntax
+      tree instead of object coercion, retaining property/array order, whitespace,
+      escapes, exact numeric spellings, primitive types, duplicate members, source
+      encoding/BOM, and untouched bytes. Generic JSON supports wildcard path
+      selectors, optional primitive values, sibling key/context fields, and
+      value-safe segmentation. Conservative profile routing adds `.arb`,
+      `.locjson`, and structurally valid Chrome `messages.json` auto-detection;
+      i18next remains explicit because ordinary nested JSON has no distinguishing
+      schema. ARB resource descriptions, locale, ICU text, and placeholder names;
+      i18next v4 plural suffixes and full resource keys; and Chrome descriptions,
+      message names, and dollar placeholders are exposed as notes/contexts without
+      translating metadata. Draft LocJSON source/target string arrays are one
+      ordered format unit, preserve extensions and comments, update only the
+      existing translation side, and reject missing sources or duplicate unit
+      keys. Export applies exact syntax-range edits, keeps unchanged files byte
+      identical, validates primitive replacements, preserves family extensions,
+      and refuses stale or non-unique mappings. Split/join remains available only
+      within the same ordinary JSON value and is blocked for LocJSON. Unit,
+      persistence, conformance, performance, malformed-input, UTF-16, duplicate-
+      key, profile, placeholder-QA, mapping-corruption, and browser download tests
+      cover the workflow.
 - [ ] **FF-202 — YAML 1.2 (`.yaml`, `.yml`).** Preserve comments, anchors,
       aliases, tags, scalar styles, block chomping, document boundaries, key
       order, and non-string types through a concrete syntax tree. Default to
@@ -722,6 +743,12 @@ events and reconstruct the original format.
 - [RFC 4180 CSV format and `text/csv` registration](https://www.rfc-editor.org/rfc/rfc4180)
 - [IANA `text/tab-separated-values` registration](https://www.iana.org/assignments/media-types/text/tab-separated-values)
 - [OWASP CSV/formula injection guidance](https://owasp.org/www-community/attacks/CSV_Injection)
+- [RFC 8259 JSON grammar and interoperability guidance](https://www.rfc-editor.org/rfc/rfc8259)
+- [ECMA-404 JSON syntax](https://ecma-international.org/publications-and-standards/standards/ecma-404/)
+- [Flutter ARB and ICU localization guidance](https://docs.flutter.dev/ui/internationalization)
+- [Chrome extension localization message format](https://developer.chrome.com/docs/extensions/how-to/ui/localization-message-formats)
+- [i18next plural resource conventions](https://www.i18next.com/translation-function/plurals)
+- [LocJSON draft interchange specification](https://github.com/loctools/locjson)
 - [ISO 30042:2019 TBX overview](https://www.iso.org/standard/62510.html)
 - [TBXInfo public dialect and validation guidance](https://www.tbxinfo.net/tbx-dialects/)
 - [LTAC-Global TBX-Core schemas](https://ltac-global.github.io/TBX-Core_dialect/)

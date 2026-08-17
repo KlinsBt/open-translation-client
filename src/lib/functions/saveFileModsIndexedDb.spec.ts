@@ -85,8 +85,12 @@ describe("new-project neutral model persistence", () => {
 		);
 		expect(mocks.update.mock.calls[0][0].translationData.filterOptions).toEqual(
 			{
+				profile: "auto",
 				pathSelectors: "messages.*",
 				includeNonStringValues: false,
+				segmentationMode: "value",
+				keyField: "",
+				contextField: "",
 			},
 		);
 	});

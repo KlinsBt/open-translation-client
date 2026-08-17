@@ -85,16 +85,22 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
 	it("uses content and exact metadata while handling uppercase extensions", async () => {
 		await expect(
 			detectFormat(textFile("{}", "wrong.TXT", "application/json")),
+		).resolves.toMatchObject({ id: "json" });
+		await expect(
+			detectFormat(textFile('{"hello":"Hi"}', "APP_EN.ARB", "")),
+		).resolves.toMatchObject({ id: "json" });
+		await expect(
+			detectFormat(textFile('{"units":[]}', "CATALOG.LOCJSON", "")),
 		).resolves.toMatchObject({ id: "json" });
 		await expect(
 			detectFormat(textFile("plain", "NOTES.TXT", "")),
@@ -159,7 +165,7 @@ describe("format adapter registry", () => {
 			),
 		).resolves.toMatchObject({
 			formatId: "json",
-			label: "JSON",
+			label: "JSON families",
 			supported: true,
 			confidence: "high",
 			evidence: ["content", "extension", "mime"],
@@ -443,10 +449,13 @@ describe("registered importers and validators", () => {
 		expect(result.kind).toBe("segments");
 		if (result.kind !== "segments") throw new Error("Expected segments");
 		expect(result.segments).toEqual(["Hello", "2"]);
-		expect(result.segmentsMeta).toEqual([
+		expect(result.segmentsMeta).toMatchObject([
 			{ path: ["title"], separator: "" },
 			{ path: ["nested", "count"], separator: "" },
 		]);
+		expect(
+			result.segmentsMeta?.map((entry) => "address" in entry && entry.address),
+		).toEqual([[0], [1, 0]]);
 		expect(result.document.units.map((unit) => unit.id)).toEqual([
 			"unit-1",
 			"unit-2",

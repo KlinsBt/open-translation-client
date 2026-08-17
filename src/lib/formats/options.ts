@@ -141,6 +141,15 @@ export const FORMAT_IMPORT_OPTIONS = {
 	],
 	json: [
 		{
+			id: "profile",
+			label: "JSON profile",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "generic", "arb", "i18next", "chrome", "locjson"],
+			description:
+				"Auto detects ARB, LocJSON, and Chrome messages; select i18next explicitly because generic nested JSON is structurally ambiguous.",
+		},
+		{
 			id: "pathSelectors",
 			label: "JSON paths",
 			type: "text",
@@ -155,6 +164,33 @@ export const FORMAT_IMPORT_OPTIONS = {
 			type: "boolean",
 			defaultValue: true,
 			description: "Import primitive values as well as strings.",
+		},
+		{
+			id: "segmentationMode",
+			label: "Value segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+			description:
+				"Keep each resource value intact by default, especially for ICU and placeholder-bearing messages.",
+		},
+		{
+			id: "keyField",
+			label: "Sibling key field",
+			type: "text",
+			defaultValue: "",
+			placeholder: "e.g. id",
+			description:
+				"For generic JSON, use a sibling primitive as the unit key and exclude it from translation.",
+		},
+		{
+			id: "contextField",
+			label: "Sibling context field",
+			type: "text",
+			defaultValue: "",
+			placeholder: "e.g. description",
+			description:
+				"For generic JSON, attach a sibling primitive as translator context and exclude it from translation.",
 		},
 	],
 	docx: [

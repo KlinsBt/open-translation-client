@@ -31,6 +31,8 @@ const PPTX_EDIT_ERROR =
 	"PPTX segments cannot be split or joined because slide shape and run alignment must be preserved.";
 const CSV_EDIT_ERROR =
 	"CSV/TSV segments cannot be split or joined because row and column alignment must be preserved.";
+const LOCJSON_EDIT_ERROR =
+	"LocJSON units cannot be split or joined because each ordered source/target array is one format-level unit.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -88,6 +90,13 @@ function validateForStructuralEdit(
 	if (translation.type === "xlsx") return XLSX_EDIT_ERROR;
 	if (translation.type === "pptx") return PPTX_EDIT_ERROR;
 	if (translation.type === "csv") return CSV_EDIT_ERROR;
+	if (
+		translation.type === "json" &&
+		translation.segmentsMeta?.some(
+			(entry) => "profile" in entry && entry.profile === "locjson",
+		)
+	)
+		return LOCJSON_EDIT_ERROR;
 	if (translation.type === "text") return undefined;
 
 	if (
@@ -170,8 +179,9 @@ function splitMetaEntry(
 
 	if (translation.type === "json" && isJsonMetaEntry(entry)) {
 		return {
-			first: { path: [...entry.path], separator: "" },
+			first: { ...entry, path: [...entry.path], separator: "" },
 			second: {
+				...entry,
 				path: [...entry.path],
 				separator: entry.separator ?? "",
 			},
@@ -397,8 +407,17 @@ function combineMetaEntries(
 		if (!samePath(current.path, next.path)) {
 			return { error: "Cannot join segments from different JSON fields." };
 		}
+		if (
+			current.start !== next.start ||
+			current.end !== next.end ||
+			JSON.stringify(current.address ?? []) !==
+				JSON.stringify(next.address ?? [])
+		) {
+			return { error: "Cannot join segments from different JSON values." };
+		}
 		return {
 			entry: {
+				...current,
 				path: [...current.path],
 				separator: next.separator ?? "",
 			},

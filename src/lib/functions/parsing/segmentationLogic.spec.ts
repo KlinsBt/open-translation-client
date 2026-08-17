@@ -73,14 +73,39 @@ describe("segment splitting", () => {
 			seg1: ["Hello. "],
 			seg2: ["Hallo. "],
 			checked: [true],
-			segmentsMeta: [{ path: ["message"], separator: ". " }],
+			segmentsMeta: [
+				{
+					path: ["message"],
+					address: [0],
+					start: 12,
+					end: 21,
+					originalValue: "Hello. ",
+					valueType: "string",
+					profile: "generic",
+					separator: ". ",
+				},
+			],
 		}).translationData;
 		const result = splitSegmentData(data, 0, 5);
 
 		expect(result.error).toBeUndefined();
 		expect(result.data.segmentsMeta).toEqual([
-			{ path: ["message"], separator: "" },
-			{ path: ["message"], separator: ". " },
+			expect.objectContaining({
+				path: ["message"],
+				address: [0],
+				start: 12,
+				end: 21,
+				profile: "generic",
+				separator: "",
+			}),
+			expect.objectContaining({
+				path: ["message"],
+				address: [0],
+				start: 12,
+				end: 21,
+				profile: "generic",
+				separator: ". ",
+			}),
 		]);
 		expect(result.data.seg2).toEqual(["Hallo", ""]);
 		expect(
@@ -94,7 +119,14 @@ describe("segment splitting", () => {
 		const joinedAgain = combineSegmentData(result.data, 0);
 		expect(joinedAgain.data.seg2).toEqual(["Hallo"]);
 		expect(joinedAgain.data.segmentsMeta).toEqual([
-			{ path: ["message"], separator: ". " },
+			expect.objectContaining({
+				path: ["message"],
+				address: [0],
+				start: 12,
+				end: 21,
+				profile: "generic",
+				separator: ". ",
+			}),
 		]);
 		expect(
 			reconstructJsonFromValues(
@@ -367,6 +399,23 @@ describe("segment joining", () => {
 		expect(result.error).toMatch(/different JSON fields/);
 		expect(result.data).toBe(data);
 		expect(data).toEqual(snapshot);
+	});
+
+	it("rejects joining duplicate JSON members that share a path but not a syntax address", () => {
+		const data = makeUserData({
+			type: "json",
+			seg1: ["First", "Second"],
+			seg2: ["Erste", "Zweite"],
+			checked: [false, false],
+			segmentsMeta: [
+				{ path: ["message"], address: [0], start: 12, end: 19 },
+				{ path: ["message"], address: [1], start: 31, end: 39 },
+			],
+		}).translationData;
+		const result = combineSegmentData(data, 0);
+
+		expect(result.error).toMatch(/different JSON values/);
+		expect(result.data).toBe(data);
 	});
 
 	it("round-trips joined HTML text through its original node", () => {

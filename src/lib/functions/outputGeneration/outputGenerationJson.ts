@@ -2,54 +2,58 @@ import type { UserData } from "$lib/types/types";
 import {
 	applyJsonSkeleton,
 	getTextSkeletonContent,
-	skeletonHasIdentityTargets,
 	type JsonValueReplacement,
 } from "$lib/formats/skeleton";
 import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
+import { encodeTextBytes } from "./outputGenerationText";
 // Note: do not rely on parsing preferences when reconstructing JSON output
 
-async function generateJsonFileDownload(jsonData: string, name: string) {
-	// Converts JSON data to a Blob
-	const blob: Blob = new Blob([jsonData], {
-		type: "application/json",
-	});
-
-	// Creates a URL for the Blob
+async function generateJsonFileDownload(blob: Blob, name: string) {
 	const url: string = URL.createObjectURL(blob);
-
-	// Creates a temporary <a> element to trigger the download
 	const a: HTMLAnchorElement = document.createElement("a");
 	a.href = url;
-	a.download = `${name}.json`;
-
-	// Appends the element, triggers the download, and removes the element
+	a.download = name;
 	document.body.appendChild(a);
 	a.click();
 	document.body.removeChild(a);
-
-	// Revokes the URL to release memory
 	URL.revokeObjectURL(url);
 }
 
 export async function generateJsonTranslation(translation: UserData) {
 	assertProjectExportQuality(translation);
-	const name: string = translation.translationData.name || "translation_file";
-	await generateJsonFileDownload(buildJsonTranslation(translation), name);
+	const data = translation.translationData;
+	const sourceName = data.skeleton?.source.name ?? "translation.json";
+	const extension = getJsonOutputExtension(sourceName);
+	const requestedName = data.name || sourceName;
+	const name = /\.(?:json|arb|locjson)$/i.test(requestedName)
+		? requestedName
+		: `${requestedName}.${extension}`;
+	await generateJsonFileDownload(buildJsonTranslationBlob(translation), name);
 }
 
 export function buildJsonTranslation(translation: UserData): string {
 	const data = translation.translationData;
 	const skeletonContent = getTextSkeletonContent(data.skeleton, "json");
 	if (skeletonContent !== undefined) {
-		if (skeletonHasIdentityTargets(data.seg1, data.seg2))
-			return skeletonContent;
 		const replacements = data.skeleton!.replacements.filter(
 			(replacement): replacement is JsonValueReplacement =>
 				replacement.kind === "json-value",
 		);
-		if (replacements.length === data.seg2.length) {
+		const mappingsAlign =
+			replacements.length === data.seg2.length &&
+			new Set(replacements.map((replacement) => replacement.unitIndex)).size ===
+				replacements.length &&
+			replacements.every(
+				(replacement) =>
+					replacement.unitIndex >= 0 &&
+					replacement.unitIndex < data.seg2.length,
+			);
+		if (mappingsAlign) {
 			return applyJsonSkeleton(skeletonContent, replacements, data.seg2);
 		}
+		throw new Error(
+			`JSON export cannot continue because its ${replacements.length} syntax mappings do not align uniquely with ${data.seg2.length} target segments.`,
+		);
 	}
 
 	const typeRef: any = translation.translationData.typeRef;
@@ -65,6 +69,27 @@ export function buildJsonTranslation(translation: UserData): string {
 		segMeta,
 	);
 	return JSON.stringify(JSON.parse(JSON.stringify(newJsonObject)), null, 2);
+}
+
+export function buildJsonTranslationBlob(translation: UserData): Blob {
+	const data = translation.translationData;
+	const content = buildJsonTranslation(translation);
+	const sourceContent = getTextSkeletonContent(data.skeleton, "json");
+	if (sourceContent === content && data.skeleton?.source.originalFile)
+		return data.skeleton.source.originalFile;
+	const encoding = data.skeleton?.source.encoding ?? "utf-8";
+	const hasBom = data.skeleton?.source.hasBom ?? false;
+	return new Blob([encodeTextBytes(content, encoding, hasBom)], {
+		type: `application/json;charset=${encoding}`,
+	});
+}
+
+export function getJsonOutputExtension(
+	sourceName: string,
+): "json" | "arb" | "locjson" {
+	if (/\.arb$/i.test(sourceName)) return "arb";
+	if (/\.locjson$/i.test(sourceName)) return "locjson";
+	return "json";
 }
 
 export type JsonMetaEntry = { path: string[]; separator?: string } | number;
