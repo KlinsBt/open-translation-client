@@ -127,6 +127,8 @@ const htmlFixture: FormatConformanceFixture = {
 		filterOptions: {
 			includeTextNodes: true,
 			translatableAttributes: "placeholder,value,alt,title",
+			excludedElements: "script,style,code",
+			respectTranslateMetadata: true,
 		},
 		skeleton: { kind: "text", replacementKinds: ["html-text"] },
 		units: [{ id: "unit-1", part: "unicode.html", path: [0, 0] }],

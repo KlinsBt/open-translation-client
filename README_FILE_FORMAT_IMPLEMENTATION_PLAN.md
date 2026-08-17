@@ -82,9 +82,9 @@ they are not routed to the ZIP-based OOXML importers.
       TXT segmentation modes, JSON wildcard paths and primitive-value policy,
       DOCX story, revision, drawing, and paragraph controls, XLSX
       worksheet/column/row/hidden-sheet/content filters plus key-value and
-      multilingual-column modes, HTML text and attribute selection, and PPTX
-      slide ranges plus notes, comments, alt text, chart, SmartArt, and
-      master/layout policies.
+      multilingual-column modes, HTML text, attribute, protected-element, and
+      translate-metadata selection, and PPTX slide ranges plus notes, comments,
+      alt text, chart, SmartArt, and master/layout policies.
       Options persist in IndexedDB and Open TLC XLIFF
       saves, are backfilled for older projects, and are reused by exporters.
       Unit, selective-import, persistence, interchange, and filtered round-trip
@@ -188,7 +188,7 @@ they are not routed to the ZIP-based OOXML importers.
       suite runs each TXT, JSON, DOCX, XLSX, PPTX, and HTML adapter in real headless
       Chromium through import, edit, registered browser download, and re-import.
       Fixture-to-registry coverage fails automatically when a future adapter
-      omits these gates. The current suite has 341 unit tests and seven Chromium tests;
+      omits these gates. The current suite has 355 unit tests and seven Chromium tests;
       formatting, type-check, production dependency audit, and a clean build pass.
 
 ## Phase 1 — CAT interoperability and current high-use formats
@@ -391,12 +391,31 @@ Complete these in order after FF-000 through FF-009.
         version. This is the only remaining completion gate; PowerPoint is
         unavailable in the current Linux verification environment.
 
-- [ ] **FF-108 — HTML and XHTML (`.html`, `.htm`, `.xhtml`).** Harden the current
+- [x] **FF-108 — HTML and XHTML (`.html`, `.htm`, `.xhtml`).** Harden the current
       filter for malformed HTML, entities, inline tags, comments, whitespace,
       language/direction, `translate=no`, ITS metadata, and configurable
       translatable attributes such as `alt`, `title`, and placeholders. Exclude
       script/style/code by policy and prevent DOM serialization from rewriting
       unrelated markup when a targeted patch is possible.
+      Completed 2026-08-17: extraction now records raw text and attribute ranges
+      and export patches only ranges whose target changed. Doctypes, comments,
+      tag/attribute case, quote style, inline and void tags, entity spelling,
+      whitespace, scripts, styles, and all unrelated malformed-but-recoverable
+      source bytes therefore remain untouched. Named/numeric entities are decoded
+      for translation and safely re-escaped only when their containing range is
+      edited; quoted and unquoted attributes have separate escaping policies.
+      Native inherited `translate` and local ITS translate flags are honored with
+      explicit child overrides, and common inline ITS element/class/id translate
+      rules plus localization notes are supported. Language and direction inherit
+      into unit content and contexts. Script/style are always protected, code is
+      protected by default, and both protected elements and translatable attributes
+      are configurable. HTML optional-end-tag recovery, literal less-than text,
+      raw-text elements, split/join metadata, `.html`/`.htm`/`.xhtml` family output,
+      strict well-formed XHTML validation, a real script-bearing repository file,
+      250-unit performance, identity/translated round trips, narrow raw diffs, and
+      Chromium import/edit/export/re-import are covered. External linked ITS rule
+      files are deliberately retained but not fetched during standalone import;
+      broader XPath evaluation remains future multi-file workflow hardening.
 - [ ] **FF-109 — Plain text (`.txt`).** Finish encoding/BOM and newline
       preservation, configurable line/paragraph/sentence modes, empty lines,
       Unicode normalization policy, bidirectional text, and byte-safe export.
@@ -653,6 +672,8 @@ events and reconstruct the original format.
 - [LTAC-Global TBX-Min DCA/DCT schemas](https://ltac-global.github.io/TBX-Min_dialect/)
 - [LTAC-Global TBX-Basic DCA/DCT schemas](https://ltac-global.github.io/TBX-Basic_dialect/)
 - [W3C ITS 2.0](https://www.w3.org/TR/its20/)
+- [WHATWG HTML parsing model](https://html.spec.whatwg.org/multipage/parsing.html)
+- [W3C guidance for the HTML `translate` attribute](https://www.w3.org/International/questions/qa-translate-flag)
 - [Microsoft Open XML package overview](https://learn.microsoft.com/en-us/office/open-xml/about-the-open-xml-sdk)
 - [Microsoft SpreadsheetML document structure](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/structure-of-a-spreadsheetml-document)
 - [Microsoft SpreadsheetML formula and cached-value guidance](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/working-with-formulas)

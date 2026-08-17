@@ -176,12 +176,32 @@ function splitMetaEntry(
 	}
 
 	if (translation.type === "html" && isHtmlMetaEntry(entry)) {
+		const targeted =
+			typeof entry.sourceText === "string" &&
+			Number.isInteger(entry.start) &&
+			Number.isInteger(entry.end);
 		return {
-			first: { ...entry, path: [...entry.path], separator: "" },
+			first: {
+				...entry,
+				path: [...entry.path],
+				separator: "",
+				...(targeted
+					? {
+							sourceText: translation.seg1[idx].slice(0, splitAt),
+							suffix: "",
+						}
+					: {}),
+			},
 			second: {
 				...entry,
 				path: [...entry.path],
 				separator: entry.separator ?? "",
+				...(targeted
+					? {
+							sourceText: translation.seg1[idx].slice(splitAt),
+							prefix: "",
+						}
+					: {}),
 			},
 		};
 	}
@@ -397,6 +417,13 @@ function combineMetaEntries(
 				...current,
 				path: [...current.path],
 				separator: next.separator ?? "",
+				...(typeof current.sourceText === "string" &&
+				typeof next.sourceText === "string"
+					? {
+							sourceText: `${current.sourceText}${next.sourceText}`,
+							suffix: next.suffix,
+						}
+					: {}),
 			},
 		};
 	}

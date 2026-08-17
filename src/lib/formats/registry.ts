@@ -114,7 +114,7 @@ const adapters = [
 	{
 		id: "html",
 		label: "HTML",
-		extensions: ["html", "htm"],
+		extensions: ["html", "htm", "xhtml"],
 		mimeTypes: ["text/html", "application/xhtml+xml"],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.html,

@@ -246,6 +246,23 @@ export const FORMAT_IMPORT_OPTIONS = {
 			description:
 				"Comma-separated HTML attribute names; leave empty for none.",
 		},
+		{
+			id: "excludedElements",
+			label: "Protected elements",
+			type: "text",
+			defaultValue: "script,style,code",
+			placeholder: "script, style, code",
+			description:
+				"Comma-separated element names whose content is never extracted. Script and style always remain protected.",
+		},
+		{
+			id: "respectTranslateMetadata",
+			label: "Respect translate metadata",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Honor inherited HTML translate and local ITS translate metadata.",
+		},
 	],
 } as const satisfies Record<FormatId, readonly FormatImportOption[]>;
 

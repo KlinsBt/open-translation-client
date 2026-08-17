@@ -45,12 +45,23 @@ export interface JsonValueReplacement extends ReplacementBase {
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
+	start?: number;
+	end?: number;
+	sourceText?: string;
+	prefix?: string;
+	suffix?: string;
 }
 
 export interface HtmlAttributeReplacement extends ReplacementBase {
 	kind: "html-attribute";
 	path: number[];
 	attribute: string;
+	start?: number;
+	end?: number;
+	sourceText?: string;
+	prefix?: string;
+	suffix?: string;
+	quote?: '"' | "'" | "unquoted";
 }
 
 export interface DocxTextReplacement extends ReplacementBase {
@@ -645,6 +656,12 @@ export function createSkeletonFromLegacy(
 				path?: number[];
 				attribute?: string;
 				separator?: string;
+				start?: number;
+				end?: number;
+				sourceText?: string;
+				prefix?: string;
+				suffix?: string;
+				quote?: '"' | "'" | "unquoted";
 			};
 			if (!Array.isArray(candidate.path)) return [];
 			if (candidate.kind === "attribute" && candidate.attribute) {
@@ -655,6 +672,12 @@ export function createSkeletonFromLegacy(
 						path: [...candidate.path],
 						attribute: candidate.attribute,
 						separator: candidate.separator,
+						start: candidate.start,
+						end: candidate.end,
+						sourceText: candidate.sourceText,
+						prefix: candidate.prefix,
+						suffix: candidate.suffix,
+						quote: candidate.quote,
 					},
 				];
 			}
@@ -665,6 +688,11 @@ export function createSkeletonFromLegacy(
 							unitIndex,
 							path: [...candidate.path],
 							separator: candidate.separator,
+							start: candidate.start,
+							end: candidate.end,
+							sourceText: candidate.sourceText,
+							prefix: candidate.prefix,
+							suffix: candidate.suffix,
 						},
 					]
 				: [];

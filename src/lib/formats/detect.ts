@@ -269,7 +269,7 @@ async function detectZipPackage(
 		"ZIP archive",
 		"medium",
 		["signature", "package"],
-		"The ZIP container is valid, but it does not contain a supported DOCX or XLSX package structure.",
+		"The ZIP container is valid, but it does not contain a supported DOCX, XLSX, or PPTX package structure.",
 	);
 }
 

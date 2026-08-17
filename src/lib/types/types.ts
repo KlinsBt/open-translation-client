@@ -53,12 +53,29 @@ export type HtmlSegmentMeta =
 			kind: "text";
 			path: number[];
 			separator?: string;
+			start?: number;
+			end?: number;
+			sourceText?: string;
+			prefix?: string;
+			suffix?: string;
+			language?: string;
+			direction?: "ltr" | "rtl" | "auto";
+			note?: string;
 	  }
 	| {
 			kind: "attribute";
 			path: number[];
 			attribute: string;
 			separator?: string;
+			start?: number;
+			end?: number;
+			sourceText?: string;
+			prefix?: string;
+			suffix?: string;
+			quote?: '"' | "'" | "unquoted";
+			language?: string;
+			direction?: "ltr" | "rtl" | "auto";
+			note?: string;
 	  };
 
 export type SegmentMeta =

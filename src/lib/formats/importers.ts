@@ -960,9 +960,23 @@ export async function validateHtmlFile(
 ): Promise<FormatValidationResult> {
 	try {
 		const { text } = await readSafeTextFile(file, context);
-		return text.trim().length > 0
-			? { valid: true }
-			: { valid: false, reason: "The HTML file is empty." };
+		if (!text.trim())
+			return { valid: false, reason: "The HTML file is empty." };
+		if (
+			/\.xhtml$/i.test(file.name) ||
+			/application\/xhtml\+xml/i.test(file.type)
+		) {
+			const document = safeParseXml(
+				text.replace(/<!doctype\s+html\s*>/i, ""),
+				context,
+			);
+			if (document.documentElement.localName.toLowerCase() !== "html")
+				return {
+					valid: false,
+					reason: "The XHTML document has no html root element.",
+				};
+		}
+		return { valid: true };
 	} catch (error) {
 		return invalidResult(error, "The HTML file is not readable text.");
 	}
@@ -979,6 +993,8 @@ export async function importHtmlFile(
 	const { allSegments, meta } = segmentHtmlContent(html, undefined, {
 		includeTextNodes: filterOptions.includeTextNodes === true,
 		translatableAttributes: parseList(filterOptions.translatableAttributes),
+		excludedElements: parseList(filterOptions.excludedElements),
+		respectTranslateMetadata: filterOptions.respectTranslateMetadata === true,
 	});
 	const replacements = meta.map((entry, unitIndex) =>
 		entry.kind === "attribute"
@@ -988,33 +1004,67 @@ export async function importHtmlFile(
 					path: [...entry.path],
 					attribute: entry.attribute,
 					separator: entry.separator,
+					start: entry.start,
+					end: entry.end,
+					sourceText: entry.sourceText,
+					prefix: entry.prefix,
+					suffix: entry.suffix,
+					quote: entry.quote,
 				} satisfies HtmlAttributeReplacement)
 			: ({
 					kind: "html-text",
 					unitIndex,
 					path: [...entry.path],
 					separator: entry.separator,
+					start: entry.start,
+					end: entry.end,
+					sourceText: entry.sourceText,
+					prefix: entry.prefix,
+					suffix: entry.suffix,
 				} satisfies HtmlTextReplacement),
 	);
 	return {
 		kind: "segments",
 		segments: allSegments,
-		document: createNeutralDocument({
-			format: "html",
-			sourceSegments: allSegments,
-			sourceLocations: meta.map(
-				(entry, index) =>
-					({
-						part: file.name,
-						path: entry.path,
-						segmentIndex: index,
-						metadata:
-							entry.kind === "attribute"
-								? { kind: entry.kind, attribute: entry.attribute }
-								: { kind: entry.kind },
-					}) satisfies SourceLocation,
-			),
-		}),
+		document: (() => {
+			const document = createNeutralDocument({
+				format: "html",
+				sourceSegments: allSegments,
+				sourceLocations: meta.map(
+					(entry, index) =>
+						({
+							part: file.name,
+							path: entry.path,
+							segmentIndex: index,
+							metadata:
+								entry.kind === "attribute"
+									? { kind: entry.kind, attribute: entry.attribute }
+									: { kind: entry.kind },
+						}) satisfies SourceLocation,
+				),
+			});
+			for (const [index, entry] of meta.entries()) {
+				const unit = document.units[index];
+				if (!unit) continue;
+				if (entry.language) {
+					unit.source.language = entry.language;
+					unit.contexts.push({ type: "html-language", value: entry.language });
+				}
+				if (entry.direction) {
+					unit.source.direction = entry.direction;
+					unit.contexts.push({
+						type: "html-direction",
+						value: entry.direction,
+					});
+				}
+				if (entry.note)
+					unit.notes.push({
+						category: "its-localization-note",
+						text: entry.note,
+					});
+			}
+			return document;
+		})(),
 		skeleton: await createTextSkeleton(
 			file,
 			"html",
