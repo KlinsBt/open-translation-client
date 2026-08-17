@@ -20,6 +20,7 @@ export type SafeInputErrorCode =
 	| "XML_UNSAFE_DECLARATION"
 	| "XML_UNSUPPORTED_ITS"
 	| "ANDROID_RESOURCE_INVALID"
+	| "APPLE_LOCALIZATION_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

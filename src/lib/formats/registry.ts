@@ -7,6 +7,7 @@ import { generateYamlTranslation } from "$lib/functions/outputGeneration/outputG
 import { generatePoTranslation } from "$lib/functions/outputGeneration/outputGenerationPo";
 import { generateXmlTranslation } from "$lib/functions/outputGeneration/outputGenerationXml";
 import { generateAndroidResourcesTranslation } from "$lib/functions/outputGeneration/outputGenerationAndroid";
+import { generateAppleLocalizationTranslation } from "$lib/functions/outputGeneration/outputGenerationApple";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -40,6 +41,10 @@ import {
 	importAndroidResourcesFile,
 	validateAndroidResourcesFile,
 } from "./androidResources";
+import {
+	importAppleLocalizationFile,
+	validateAppleLocalizationFile,
+} from "./appleLocalization";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -148,6 +153,36 @@ const adapters = [
 		validate: validateAndroidResourcesFile,
 		importFile: importAndroidResourcesFile,
 		exportFile: generateAndroidResourcesTranslation,
+	},
+	{
+		id: "apple",
+		label: "Apple localization",
+		extensions: ["strings", "stringsdict", "xcstrings"],
+		mimeTypes: [
+			"text/plain",
+			"application/xml",
+			"text/xml",
+			"application/json",
+		],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.apple,
+		sniff: async (file, context) => {
+			const extension = file.name.toLowerCase().split(".").at(-1);
+			if (["strings", "stringsdict", "xcstrings"].includes(extension ?? ""))
+				return (await validateAppleLocalizationFile(file, context)).valid;
+			if (
+				!(await sniffText(
+					file,
+					/^(?:<\?xml[^?]*\?>\s*)?(?:<!DOCTYPE[^>]*>\s*)?<plist(?:\s|>)|^\{[\s\S]*"sourceLanguage"[\s\S]*"strings"|^(?:\/\*[\s\S]*?\*\/\s*)*"(?:[^"\\]|\\.)+"\s*=/,
+					context,
+				))
+			)
+				return false;
+			return (await validateAppleLocalizationFile(file, context)).valid;
+		},
+		validate: validateAppleLocalizationFile,
+		importFile: importAppleLocalizationFile,
+		exportFile: generateAppleLocalizationTranslation,
 	},
 	{
 		id: "xml",

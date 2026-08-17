@@ -115,6 +115,24 @@ export interface AndroidValueReplacement extends ReplacementBase {
 	formatted: boolean;
 }
 
+export interface AppleValueReplacement extends ReplacementBase {
+	kind: "apple-value";
+	profile: "strings" | "stringsdict" | "xcstrings";
+	key: string;
+	path: string[];
+	start: number;
+	end: number;
+	originalValue: string;
+	quote?: '"';
+	targetLanguage?: string;
+	insertionGroup?: string;
+	insertionStart?: number;
+	sourceObjectStart?: number;
+	sourceObjectEnd?: number;
+	relativePath?: string[];
+	insertLocalizationsProperty?: boolean;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -181,6 +199,7 @@ export type SkeletonReplacement =
 	| YamlScalarReplacement
 	| PoStringReplacement
 	| AndroidValueReplacement
+	| AppleValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -275,7 +294,16 @@ function locateJoinedTextRanges(
 
 export async function createTextSkeleton(
 	file: File,
-	format: "text" | "csv" | "json" | "yaml" | "po" | "android" | "xml" | "html",
+	format:
+		| "text"
+		| "csv"
+		| "json"
+		| "yaml"
+		| "po"
+		| "android"
+		| "apple"
+		| "xml"
+		| "html",
 	content: string,
 	replacements: SkeletonReplacement[],
 	source?: SkeletonSource,
@@ -556,7 +584,8 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				replacement.kind === "csv-field" ||
 				replacement.kind === "json-value" ||
 				replacement.kind === "yaml-scalar" ||
-				replacement.kind === "android-value") &&
+				replacement.kind === "android-value" ||
+				replacement.kind === "apple-value") &&
 			(replacement.start < 0 || replacement.end < replacement.start)
 		) {
 			issues.push("Replacement text ranges are invalid.");
@@ -648,6 +677,15 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				typeof replacement.formatted !== "boolean")
 		) {
 			issues.push("Android value replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "apple-value" &&
+			(!["strings", "stringsdict", "xcstrings"].includes(replacement.profile) ||
+				!replacement.key ||
+				!Array.isArray(replacement.path) ||
+				typeof replacement.originalValue !== "string")
+		) {
+			issues.push("Apple value replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&

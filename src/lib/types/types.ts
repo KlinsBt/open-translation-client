@@ -103,6 +103,24 @@ export interface AndroidSegmentMeta {
 	separator?: string;
 }
 
+export interface AppleSegmentMeta {
+	profile: "strings" | "stringsdict" | "xcstrings";
+	key: string;
+	path: string[];
+	start: number;
+	end: number;
+	originalValue: string;
+	quote?: '"';
+	targetLanguage?: string;
+	insertionGroup?: string;
+	insertionStart?: number;
+	sourceObjectStart?: number;
+	sourceObjectEnd?: number;
+	relativePath?: string[];
+	insertLocalizationsProperty?: boolean;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -150,6 +168,7 @@ export type SegmentMeta =
 	| YamlSegmentMeta
 	| PoSegmentMeta
 	| AndroidSegmentMeta
+	| AppleSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

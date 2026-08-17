@@ -264,6 +264,35 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: false,
 		},
 	],
+	apple: [
+		{
+			id: "profile",
+			label: "Apple localization profile",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "strings", "stringsdict", "xcstrings"],
+		},
+		{
+			id: "sourceLanguage",
+			label: "Source language",
+			type: "text",
+			defaultValue: "",
+			placeholder: "Catalog metadata or e.g. en",
+		},
+		{
+			id: "targetLanguage",
+			label: "Target language",
+			type: "text",
+			defaultValue: "",
+			placeholder: "Existing catalog language or BCP 47 tag",
+		},
+		{
+			id: "includeStale",
+			label: "Include stale catalog entries",
+			type: "boolean",
+			defaultValue: true,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

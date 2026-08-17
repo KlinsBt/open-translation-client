@@ -50,6 +50,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	yaml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	po: { allowTagReorder: false, allowInlineCodeReorder: false },
 	android: { allowTagReorder: true, allowInlineCodeReorder: true },
+	apple: { allowTagReorder: false, allowInlineCodeReorder: false },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },
@@ -102,7 +103,8 @@ const HTML_VOID_TAGS = new Set([
 ]);
 
 const PRINTF_PATTERN =
-	/%(?:(\d+)\$)?[-+#0 ']*(?:\d+|\*)?(?:\.(?:\d+|\*))?[hlLzjt]*([diuoxXfFeEgGaAcspn])/g;
+	/%(?:(\d+)\$)?[-+#0 ']*(?:\d+|\*)?(?:\.(?:\d+|\*))?[hlLzjt]*([@diuoxXfFeEgGaAcspn])/g;
+const APPLE_SUBSTITUTION_PATTERN = /%#@([A-Za-z_][\w.-]*)@/g;
 
 export function runProjectExportQuality(
 	project: UserData,
@@ -567,8 +569,19 @@ function scanPrintf(
 	placeholders: ProtectedToken[],
 	malformed: string[],
 ): void {
-	PRINTF_PATTERN.lastIndex = 0;
 	const covered = new Set<number>();
+	APPLE_SUBSTITUTION_PATTERN.lastIndex = 0;
+	for (const match of text.matchAll(APPLE_SUBSTITUTION_PATTERN)) {
+		for (let offset = 0; offset < match[0].length; offset++)
+			covered.add(match.index + offset);
+		placeholders.push({
+			key: `apple-substitution:${match[1]}`,
+			raw: match[0],
+			index: match.index,
+			orderSensitive: false,
+		});
+	}
+	PRINTF_PATTERN.lastIndex = 0;
 	for (const match of text.matchAll(PRINTF_PATTERN)) {
 		const index = match.index;
 		for (let offset = 0; offset < match[0].length; offset++)

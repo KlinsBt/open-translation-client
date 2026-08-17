@@ -94,7 +94,17 @@ export async function detectFileFormat(
 	}
 
 	const textKind = sniffTextKind(prefix);
-	if (textKind === "json" || textKind === "html") {
+	if (textKind === "json") {
+		for (const candidate of adapters.filter(
+			(adapter) =>
+				adapter.id !== "json" && adapter.mimeTypes.includes("application/json"),
+		))
+			if (await candidate.sniff(file, context))
+				return supportedContent(candidate, extension, mimeType);
+		const adapter = adapters.find((candidate) => candidate.id === "json");
+		if (adapter) return supportedContent(adapter, extension, mimeType);
+	}
+	if (textKind === "html") {
 		const adapter = adapters.find((candidate) => candidate.id === textKind);
 		if (adapter) return supportedContent(adapter, extension, mimeType);
 	}

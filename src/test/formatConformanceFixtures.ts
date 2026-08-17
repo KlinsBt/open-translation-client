@@ -303,6 +303,49 @@ const androidFixture: FormatConformanceFixture = {
 		),
 };
 
+const appleFixture: FormatConformanceFixture = {
+	id: "apple",
+	fileName: "Localizable.strings",
+	mimeType: "text/plain",
+	createValidFile: async () =>
+		textFile(
+			`/* Home title */\n"welcome" = ${JSON.stringify(CONFORMANCE_UNICODE_SOURCE)};\n`,
+			"Localizable.strings",
+			"text/plain",
+		),
+	createMalformedFile: async () =>
+		textFile('"broken" = "unterminated;', "broken.strings", "text/plain"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			profile: "auto",
+			sourceLanguage: "",
+			targetLanguage: "",
+			includeStale: true,
+		},
+		skeleton: { kind: "text", replacementKinds: ["apple-value"] },
+		units: [
+			{
+				id: "welcome:",
+				part: "Localizable.strings",
+				path: ["welcome"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			Array.from(
+				{ length: units },
+				(_, index) => `"message_${index}" = "Message ${index}";`,
+			).join("\n"),
+			"performance.strings",
+			"text/plain",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -555,6 +598,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	yamlFixture,
 	poFixture,
 	androidFixture,
+	appleFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

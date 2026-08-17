@@ -599,10 +599,31 @@ Complete these in order after FF-000 through FF-009.
       malformed/unsafe input, locking/options, escaping, UTF-16, rich markup,
       plural/array, 1,000-resource performance, detection, and browser download
       coverage verifies the profile.
-- [ ] **FF-206 — Apple localization (`.strings`, `.stringsdict`, `.xcstrings`).**
+- [x] **FF-206 — Apple localization (`.strings`, `.stringsdict`, `.xcstrings`).**
       Support encodings, comments, escapes, keys, substitutions, plural/device
       variations, extraction states, and source-language metadata. Treat
       `.xcstrings` as a structured catalog rather than generic JSON.
+      Completed 2026-08-17: one Apple adapter now routes three lossless profile
+      parsers. The strict OpenStep parser preserves comments, key/value order,
+      duplicate-key warnings, semicolons, Unicode/octal/common escapes, and
+      UTF-8/UTF-16 bytes while editing only quoted values. The `.stringsdict`
+      profile accepts the fixed standard Apple plist declaration without loading
+      its external DTD, rejects every other DTD/entity declaration, walks nested
+      dictionaries, protects type metadata, and exposes localized format and all
+      CLDR-style plural strings with relationships. The positional `.xcstrings`
+      parser retains JSON syntax and extensions, uses `sourceLanguage`, selects
+      or explicitly configures the target BCP 47 localization, imports existing
+      targets bilingually, records comments/extraction states, walks nested
+      plural/device/substitution variation `stringUnit` leaves, and can add a
+      missing target localization—including catalogs where the source is only the
+      resource key—without reserializing unrelated JSON. Stale entries are
+      optional. Export preserves identity bytes and source encoding/BOM, rejects
+      mismatched target variation shapes and stale mappings, updates target state,
+      blocks structural split/join, and enforces Apple `%@`, positional printf,
+      and `%#@name@` substitution parity. Unit, conformance, malformed/unsafe
+      input, all three profiles, comments/states, missing-language insertion,
+      plurals, UTF-16, escaping, 1,000-entry performance, detection, and browser
+      download coverage verifies the workflows.
 - [ ] **FF-207 — Java and Mozilla properties (`.properties`).** Preserve comments,
       separators, continuations, escapes, key order, encodings, duplicate keys,
       and MessageFormat/printf placeholders. Do not treat keys as translatable by

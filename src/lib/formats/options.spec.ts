@@ -56,6 +56,12 @@ describe("format import options", () => {
 				includeNonTranslatable: "true",
 			}),
 		).toEqual({ includeNonTranslatable: true, includeEmpty: false });
+		expect(normalizeImportOptions("apple", { includeStale: "false" })).toEqual({
+			profile: "auto",
+			sourceLanguage: "",
+			targetLanguage: "",
+			includeStale: false,
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

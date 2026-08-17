@@ -41,6 +41,8 @@ const XML_EDIT_ERROR =
 	"XML values cannot be split or joined because text, CDATA, attribute, namespace, and ITS ranges must remain aligned.";
 const ANDROID_EDIT_ERROR =
 	"Android resources cannot be split or joined because keys, arrays, plurals, and inline markup must remain aligned.";
+const APPLE_EDIT_ERROR =
+	"Apple localization units cannot be split or joined because keys, catalog languages, and variation paths must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -101,6 +103,7 @@ function validateForStructuralEdit(
 	if (translation.type === "yaml") return YAML_EDIT_ERROR;
 	if (translation.type === "po") return PO_EDIT_ERROR;
 	if (translation.type === "android") return ANDROID_EDIT_ERROR;
+	if (translation.type === "apple") return APPLE_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&
