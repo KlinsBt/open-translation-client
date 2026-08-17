@@ -85,6 +85,15 @@ export const FORMAT_IMPORT_OPTIONS = {
 	],
 	xlsx: [
 		{
+			id: "importMode",
+			label: "Spreadsheet mode",
+			type: "select",
+			defaultValue: "all-text",
+			choices: ["all-text", "key-value", "multilingual-columns"],
+			description:
+				"All-text imports selected text cells. Key-value uses a key and value column. Multilingual mode pairs source and target columns by row.",
+		},
+		{
 			id: "worksheetPaths",
 			label: "Worksheets",
 			type: "text",
@@ -98,7 +107,8 @@ export const FORMAT_IMPORT_OPTIONS = {
 			type: "text",
 			defaultValue: "",
 			placeholder: "All, or e.g. A, C-F",
-			description: "Column letters and ranges for inline and value cells.",
+			description:
+				"Column letters and ranges for all-text mode. Paired modes use the columns below.",
 		},
 		{
 			id: "rows",
@@ -113,6 +123,45 @@ export const FORMAT_IMPORT_OPTIONS = {
 			label: "Include hidden sheets",
 			type: "boolean",
 			defaultValue: true,
+		},
+		{
+			id: "keyColumn",
+			label: "Key/context column",
+			type: "text",
+			defaultValue: "A",
+			placeholder: "A, or blank when optional",
+			description:
+				"Required in key-value mode; optional context in multilingual mode.",
+		},
+		{
+			id: "sourceColumn",
+			label: "Source/value column",
+			type: "text",
+			defaultValue: "B",
+			placeholder: "B",
+		},
+		{
+			id: "targetColumn",
+			label: "Target column",
+			type: "text",
+			defaultValue: "C",
+			placeholder: "C",
+			description: "Used by multilingual-column mode.",
+		},
+		{
+			id: "headerRows",
+			label: "Header rows",
+			type: "number",
+			defaultValue: 1,
+			description: "Rows at the start of each selected sheet to exclude.",
+		},
+		{
+			id: "includeCellComments",
+			label: "Cell comments as notes",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Attach legacy cell comments as non-translatable translator notes.",
 		},
 		{
 			id: "includeSharedStrings",

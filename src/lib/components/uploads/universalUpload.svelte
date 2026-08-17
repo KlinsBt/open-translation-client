@@ -209,6 +209,7 @@
 					imported.document,
 					imported.skeleton,
 					imported.filterOptions,
+					imported.targetSegments,
 				);
 			}
 

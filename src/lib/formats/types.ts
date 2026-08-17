@@ -41,6 +41,7 @@ export type FormatImportResult =
 	| {
 			kind: "segments";
 			segments: string[];
+			targetSegments?: string[];
 			document: NeutralDocument;
 			skeleton: DocumentSkeleton;
 			filterOptions: FormatOptionValues;

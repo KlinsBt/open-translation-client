@@ -4,7 +4,13 @@ import {
 } from "$lib/functions/parsing/parsingDocx";
 import { segmentHtmlContent } from "$lib/functions/parsing/parsingHtml";
 import { splitTextWithPreferences } from "$lib/functions/parsing/splitWithPreferences";
-import { segmentWorkbookStrings } from "$lib/functions/parsing/parsingXlsx";
+import {
+	getWorkbookCellComments,
+	getWorkbookCellValues,
+	segmentWorkbookStrings,
+	type WorkbookCellComment,
+	type WorkbookCellValue,
+} from "$lib/functions/parsing/parsingXlsx";
 import { createTextSegmentsWithRegexGeneralTextAlgo } from "$lib/functions/parsing/parsingText";
 import type {
 	FormatImportResult,
@@ -12,7 +18,13 @@ import type {
 	FormatValidationResult,
 } from "./types";
 import type { TypeRef } from "$lib/types/types";
-import { createNeutralDocument, type SourceLocation } from "./documentModel";
+import {
+	createNeutralDocument,
+	type NeutralDocument,
+	type SourceLocation,
+	type UnitContext,
+	type UnitNote,
+} from "./documentModel";
 import {
 	createPackageSkeleton,
 	createPlainTextSkeleton,
@@ -361,6 +373,253 @@ export async function validateXlsxFile(
 	}
 }
 
+type XlsxImportMode = "all-text" | "key-value" | "multilingual-columns";
+
+interface XlsxUnitAnnotation {
+	contexts: UnitContext[];
+	notes: UnitNote[];
+	metadata: Record<string, unknown>;
+}
+
+interface XlsxModeImport {
+	segments: string[];
+	targetSegments: string[];
+	sourceLocations: SourceLocation[];
+	replacements: XlsxTextReplacement[];
+	document: NeutralDocument;
+}
+
+function parseSingleXlsxColumn(
+	value: FormatOptionValues[string] | undefined,
+	label: string,
+	optional = false,
+): number | null {
+	if (optional && !String(value ?? "").trim()) return null;
+	const columns = parseColumns(value);
+	if (!columns || columns.size !== 1)
+		throw new Error(`${label} must contain exactly one Excel column letter.`);
+	return [...columns][0];
+}
+
+function columnLetters(column: number): string {
+	let value = column;
+	let letters = "";
+	while (value > 0) {
+		value--;
+		letters = String.fromCharCode(65 + (value % 26)) + letters;
+		value = Math.floor(value / 26);
+	}
+	return letters;
+}
+
+function xlsxCellKey(sheetPath: string, cellReference: string): string {
+	return `${sheetPath}\u0000${cellReference.toUpperCase()}`;
+}
+
+function commentsForCells(
+	comments: ReadonlyMap<string, WorkbookCellComment[]>,
+	cells: ReadonlyArray<Pick<WorkbookCellValue, "sheetPath" | "cellReference">>,
+): UnitNote[] {
+	const seen = new Set<string>();
+	const notes: UnitNote[] = [];
+	for (const cell of cells) {
+		for (const comment of comments.get(
+			xlsxCellKey(cell.sheetPath, cell.cellReference),
+		) ?? []) {
+			const text = comment.author
+				? `${comment.author}: ${comment.text}`
+				: comment.text;
+			const key = `${comment.cellReference}\u0000${text}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			notes.push({
+				category: "xlsx-cell-comment",
+				text,
+				appliesTo: "unit",
+			});
+		}
+	}
+	return notes;
+}
+
+function attachXlsxAnnotations(
+	document: NeutralDocument,
+	annotations: readonly XlsxUnitAnnotation[],
+): NeutralDocument {
+	return {
+		...document,
+		units: document.units.map((unit, index) => ({
+			...unit,
+			contexts: annotations[index]?.contexts ?? unit.contexts,
+			notes: annotations[index]?.notes ?? unit.notes,
+			metadata: {
+				...unit.metadata,
+				...(annotations[index]?.metadata ?? {}),
+			},
+		})),
+	};
+}
+
+function importXlsxTableMode(
+	content: Record<string, string | Blob>,
+	filterOptions: FormatOptionValues,
+	mode: Exclude<XlsxImportMode, "all-text">,
+): XlsxModeImport {
+	const keyColumn = parseSingleXlsxColumn(
+		filterOptions.keyColumn,
+		"Key/context column",
+		mode === "multilingual-columns",
+	);
+	const sourceColumn = parseSingleXlsxColumn(
+		filterOptions.sourceColumn,
+		"Source/value column",
+	)!;
+	const targetColumn =
+		mode === "multilingual-columns"
+			? parseSingleXlsxColumn(filterOptions.targetColumn, "Target column")!
+			: sourceColumn;
+	if (sourceColumn === targetColumn && mode === "multilingual-columns")
+		throw new Error("Source and target columns must be different.");
+	if (keyColumn === sourceColumn || keyColumn === targetColumn)
+		throw new Error(
+			"Key/context, source, and target columns must be different.",
+		);
+	const headerRows = Math.max(
+		0,
+		Math.trunc(Number(filterOptions.headerRows) || 0),
+	);
+	const workbookFilter = {
+		worksheetPaths: parseList(filterOptions.worksheetPaths),
+		rows: parsePositiveRanges(filterOptions.rows),
+		includeHiddenSheets: filterOptions.includeHiddenSheets === true,
+	};
+	const cells = getWorkbookCellValues(content, workbookFilter);
+	const byCell = new Map(
+		cells.map((cell) => [
+			xlsxCellKey(cell.sheetPath, cell.cellReference),
+			cell,
+		]),
+	);
+	const comments = new Map<string, WorkbookCellComment[]>();
+	if (filterOptions.includeCellComments === true) {
+		for (const comment of getWorkbookCellComments(content, workbookFilter)) {
+			const key = xlsxCellKey(comment.sheetPath, comment.cellReference);
+			comments.set(key, [...(comments.get(key) ?? []), comment]);
+		}
+	}
+	const sheetOrder = new Map<string, number>();
+	for (const cell of cells)
+		if (!sheetOrder.has(cell.sheetPath))
+			sheetOrder.set(cell.sheetPath, sheetOrder.size);
+	const sourceCells = cells
+		.filter(
+			(cell) =>
+				cell.column === sourceColumn &&
+				cell.row > headerRows &&
+				!cell.isFormula &&
+				cell.text.length > 0 &&
+				(cell.storage !== "shared-string" ||
+					filterOptions.includeSharedStrings === true) &&
+				(cell.storage !== "cell-value" ||
+					filterOptions.includeCellValues === true),
+		)
+		.sort(
+			(first, second) =>
+				(sheetOrder.get(first.sheetPath) ?? 0) -
+					(sheetOrder.get(second.sheetPath) ?? 0) || first.row - second.row,
+		);
+	const segments: string[] = [];
+	const targetSegments: string[] = [];
+	const sourceLocations: SourceLocation[] = [];
+	const replacements: XlsxTextReplacement[] = [];
+	const annotations: XlsxUnitAnnotation[] = [];
+	const unitIds: string[] = [];
+
+	for (const sourceCell of sourceCells) {
+		const keyCell =
+			keyColumn === null
+				? undefined
+				: byCell.get(
+						xlsxCellKey(
+							sourceCell.sheetPath,
+							`${columnLetters(keyColumn)}${sourceCell.row}`,
+						),
+					);
+		if (mode === "key-value" && (!keyCell || !keyCell.text)) continue;
+		const targetReference = `${columnLetters(targetColumn)}${sourceCell.row}`;
+		const targetCell = byCell.get(
+			xlsxCellKey(sourceCell.sheetPath, targetReference),
+		);
+		if (targetCell?.isFormula) continue;
+		const targetText =
+			mode === "multilingual-columns" ? (targetCell?.text ?? "") : "";
+		const unitIndex = segments.length;
+		segments.push(sourceCell.text);
+		targetSegments.push(targetText);
+		unitIds.push(`xlsx:${sourceCell.sheetPath}:${sourceCell.row}`);
+		sourceLocations.push({
+			part: sourceCell.sheetPath,
+			sheet: sourceCell.sheetName,
+			cell: sourceCell.cellReference,
+			row: sourceCell.row,
+			column: sourceCell.column,
+			segmentIndex: unitIndex,
+			metadata: {
+				xlsxMode: mode,
+				...(keyCell
+					? { key: keyCell.text, keyCell: keyCell.cellReference }
+					: {}),
+				targetCell: targetReference,
+			},
+		});
+		replacements.push({
+			kind: "xlsx-text",
+			unitIndex,
+			part: sourceCell.sheetPath,
+			storage: targetCell?.storage ?? "inline-string",
+			localIndex: unitIndex,
+			cellReference: targetReference,
+			originalText:
+				mode === "key-value" ? sourceCell.text : (targetCell?.text ?? ""),
+		});
+		const relatedCells = [sourceCell, ...(keyCell ? [keyCell] : [])];
+		if (targetCell) relatedCells.push(targetCell);
+		annotations.push({
+			contexts: [
+				{ type: "xlsx-sheet", value: sourceCell.sheetName },
+				{ type: "xlsx-cell", value: sourceCell.cellReference },
+				{ type: "xlsx-row", value: String(sourceCell.row) },
+				...(keyCell
+					? [{ type: "xlsx-key", value: keyCell.text } satisfies UnitContext]
+					: []),
+			],
+			notes: commentsForCells(comments, relatedCells),
+			metadata: {
+				xlsxMode: mode,
+				targetCell: targetReference,
+				...(keyCell ? { key: keyCell.text } : {}),
+			},
+		});
+	}
+	const document = attachXlsxAnnotations(
+		createNeutralDocument({
+			format: "xlsx",
+			sourceSegments: segments,
+			targetSegments,
+			sourceLocations,
+			unitIds,
+		}),
+		annotations,
+	);
+	return {
+		segments,
+		targetSegments,
+		sourceLocations,
+		replacements,
+		document,
+	};
+}
+
 export async function importXlsxFile(
 	file: File,
 	options?: Readonly<FormatOptionValues>,
@@ -371,6 +630,25 @@ export async function importXlsxFile(
 	const content = archive.parts;
 	if (typeof content["xl/workbook.xml"] !== "string") {
 		throw new Error("The XLSX package has no xl/workbook.xml.");
+	}
+	const importMode = filterOptions.importMode as XlsxImportMode;
+	if (importMode !== "all-text") {
+		const table = importXlsxTableMode(content, filterOptions, importMode);
+		return {
+			kind: "segments",
+			segments: table.segments,
+			targetSegments: table.targetSegments,
+			document: table.document,
+			skeleton: await createPackageSkeleton(
+				file,
+				"xlsx",
+				content,
+				table.replacements,
+				archive.source,
+			),
+			filterOptions,
+			typeRef: content,
+		};
 	}
 
 	const workbook = segmentWorkbookStrings(content, undefined, {
@@ -384,13 +662,52 @@ export async function importXlsxFile(
 	const { allSegments } = workbook;
 	const sourceLocations: SourceLocation[] = [];
 	const replacements: XlsxTextReplacement[] = [];
+	const annotations: XlsxUnitAnnotation[] = [];
+	const comments = new Map<string, WorkbookCellComment[]>();
+	if (filterOptions.includeCellComments === true) {
+		for (const comment of getWorkbookCellComments(content, {
+			worksheetPaths: parseList(filterOptions.worksheetPaths),
+			rows: parsePositiveRanges(filterOptions.rows),
+			includeHiddenSheets: filterOptions.includeHiddenSheets === true,
+		})) {
+			const key = xlsxCellKey(comment.sheetPath, comment.cellReference);
+			comments.set(key, [...(comments.get(key) ?? []), comment]);
+		}
+	}
 	for (const [index] of workbook.shared.segments.entries()) {
+		const sharedSegment = workbook.shared.segments[index];
+		const references = workbook.sheets.flatMap((sheet) =>
+			sheet.sharedStringCells.filter(
+				(reference) => reference.itemIndex === sharedSegment.itemIndex,
+			),
+		);
+		const primary = references[0];
 		sourceLocations.push({
-			part: "xl/sharedStrings.xml",
+			part: primary?.sheetPath ?? "xl/sharedStrings.xml",
+			...(primary
+				? {
+						sheet: primary.sheetName,
+						cell: primary.cellReference,
+					}
+				: {}),
 			segmentIndex: sourceLocations.length,
 			metadata: {
 				sharedStringSegment: index,
-				sharedStringItem: workbook.shared.segments[index].itemIndex,
+				sharedStringItem: sharedSegment.itemIndex,
+				cellReferences: references.map(
+					(reference) => `${reference.sheetName}!${reference.cellReference}`,
+				),
+			},
+		});
+		annotations.push({
+			contexts: references.map((reference) => ({
+				type: "xlsx-cell",
+				value: `${reference.sheetName}!${reference.cellReference}`,
+			})),
+			notes: commentsForCells(comments, references),
+			metadata: {
+				xlsxStorage: "shared-string",
+				sharedStringItem: sharedSegment.itemIndex,
 			},
 		});
 		replacements.push({
@@ -405,8 +722,20 @@ export async function importXlsxFile(
 		for (const [localIndex, segment] of sheet.inlineSegments.entries()) {
 			sourceLocations.push({
 				part: sheet.sheetPath,
+				sheet: sheet.sheetName,
+				cell: segment.cellReference,
+				...(segment.row !== null ? { row: segment.row } : {}),
+				...(segment.column !== null ? { column: segment.column } : {}),
 				segmentIndex: sourceLocations.length,
 				metadata: { fragmentCount: segment.fragments.length },
+			});
+			annotations.push({
+				contexts: [
+					{ type: "xlsx-sheet", value: sheet.sheetName },
+					{ type: "xlsx-cell", value: segment.cellReference },
+				],
+				notes: commentsForCells(comments, [segment]),
+				metadata: { xlsxStorage: "inline-string" },
 			});
 			replacements.push({
 				kind: "xlsx-text",
@@ -416,10 +745,22 @@ export async function importXlsxFile(
 				localIndex,
 			});
 		}
-		for (const [localIndex] of sheet.valueSegments.entries()) {
+		for (const [localIndex, segment] of sheet.valueSegments.entries()) {
 			sourceLocations.push({
 				part: sheet.sheetPath,
+				sheet: sheet.sheetName,
+				cell: segment.cellReference,
+				...(segment.row !== null ? { row: segment.row } : {}),
+				...(segment.column !== null ? { column: segment.column } : {}),
 				segmentIndex: sourceLocations.length,
+			});
+			annotations.push({
+				contexts: [
+					{ type: "xlsx-sheet", value: sheet.sheetName },
+					{ type: "xlsx-cell", value: segment.cellReference },
+				],
+				notes: commentsForCells(comments, [segment]),
+				metadata: { xlsxStorage: "cell-value" },
 			});
 			replacements.push({
 				kind: "xlsx-text",
@@ -433,11 +774,14 @@ export async function importXlsxFile(
 	return {
 		kind: "segments",
 		segments: allSegments,
-		document: createNeutralDocument({
-			format: "xlsx",
-			sourceSegments: allSegments,
-			sourceLocations,
-		}),
+		document: attachXlsxAnnotations(
+			createNeutralDocument({
+				format: "xlsx",
+				sourceSegments: allSegments,
+				sourceLocations,
+			}),
+			annotations,
+		),
 		skeleton: await createPackageSkeleton(
 			file,
 			"xlsx",

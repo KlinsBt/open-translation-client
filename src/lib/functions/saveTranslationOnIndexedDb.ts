@@ -68,6 +68,7 @@ export async function saveAndOpenNewFileWithStringArray(
 	documentModel?: NeutralDocument,
 	skeleton?: DocumentSkeleton,
 	filterOptions?: FormatOptionValues,
+	initialTargetSegments?: readonly string[],
 ) {
 	let data: UserData[] = await loadTranslationsUserDataFromIndexedDB();
 	await saveNewTranslationToUserDataFromArrayOfStrings(
@@ -83,6 +84,7 @@ export async function saveAndOpenNewFileWithStringArray(
 		documentModel,
 		skeleton,
 		filterOptions,
+		initialTargetSegments,
 	);
 	data = await loadTranslationsUserDataFromIndexedDB();
 	const singleData = data[data.length - 1];

@@ -24,6 +24,20 @@ describe("format import options", () => {
 		).toEqual({
 			segmentationMode: "preferences",
 		});
+		expect(
+			normalizeImportOptions("xlsx", {
+				importMode: "invalid",
+				headerRows: "2",
+				includeCellComments: "false",
+			}),
+		).toMatchObject({
+			importMode: "all-text",
+			headerRows: 2,
+			includeCellComments: false,
+			keyColumn: "A",
+			sourceColumn: "B",
+			targetColumn: "C",
+		});
 	});
 
 	it("parses lists, paragraph ranges, and spreadsheet columns", () => {

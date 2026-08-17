@@ -74,6 +74,34 @@ export interface SharedStringCellReference {
 	valueNode: Element;
 }
 
+export type XlsxCellStorage = "shared-string" | "inline-string" | "cell-value";
+
+export interface WorkbookCellValue {
+	sheetPath: string;
+	sheetName: string;
+	cellReference: string;
+	row: number;
+	column: number;
+	text: string;
+	storage: XlsxCellStorage;
+	itemIndex?: number;
+	isFormula: boolean;
+}
+
+export interface WorkbookCellComment {
+	sheetPath: string;
+	sheetName: string;
+	cellReference: string;
+	author?: string;
+	text: string;
+}
+
+export interface XlsxCellTranslation {
+	sheetPath: string;
+	cellReference: string;
+	text: string;
+}
+
 export interface SheetSegmentation {
 	sheetPath: string;
 	sheetName: string;
@@ -124,7 +152,15 @@ function childByLocalName(parent: Element, name: string): Element | undefined {
 }
 
 function textElements(parent: Element): Element[] {
-	return elementsByLocalName(parent, "t");
+	return elementsByLocalName(parent, "t").filter((node) => {
+		let ancestor: Node | null = node.parentNode;
+		while (ancestor && ancestor !== parent) {
+			if (ancestor.nodeType === 1 && (ancestor as Element).localName === "rPh")
+				return false;
+			ancestor = ancestor.parentNode;
+		}
+		return true;
+	});
 }
 
 function buildNodeRanges(textNodes: Element[]): NodeRange[] {
@@ -273,6 +309,18 @@ function sheetMatchesSelectors(
 	return selectors.some((selector) => candidates.has(selector.toLowerCase()));
 }
 
+function selectedSheetCatalog(
+	parts: Record<string, string | Blob>,
+	filterOptions: XlsxFilterOptions,
+): WorkbookSheetInfo[] {
+	return getWorkbookSheetCatalog(parts).filter(
+		(sheet) =>
+			sheetMatchesSelectors(sheet, filterOptions.worksheetPaths) &&
+			((filterOptions.includeHiddenSheets ?? true) ||
+				sheet.state === "visible"),
+	);
+}
+
 export function segmentSharedStringsXml(
 	sharedStringsXml: string,
 	tokensOverride?: string[],
@@ -418,12 +466,7 @@ export function segmentWorkbookStrings(
 	filterOptions: XlsxFilterOptions = {},
 ): WorkbookSegmentation {
 	const sheetCatalog = getWorkbookSheetCatalog(parts);
-	const selectedCatalog = sheetCatalog.filter(
-		(sheet) =>
-			sheetMatchesSelectors(sheet, filterOptions.worksheetPaths) &&
-			((filterOptions.includeHiddenSheets ?? true) ||
-				sheet.state === "visible"),
-	);
+	const selectedCatalog = selectedSheetCatalog(parts, filterOptions);
 	const sheets = selectedCatalog.map((sheet) =>
 		segmentSheet(
 			parts[sheet.path] as string,
@@ -466,6 +509,143 @@ export function segmentWorkbookStrings(
 		]),
 	];
 	return { shared, sheets, sheetCatalog, allSegments };
+}
+
+function sharedStringItemTexts(parts: Record<string, string | Blob>): string[] {
+	const xml = parts["xl/sharedStrings.xml"];
+	if (typeof xml !== "string") return [];
+	return elementsByLocalName(safeParseXml(xml), "si").map((item) =>
+		textElements(item)
+			.map((node) => node.textContent ?? "")
+			.join(""),
+	);
+}
+
+export function getWorkbookCellValues(
+	parts: Record<string, string | Blob>,
+	filterOptions: XlsxFilterOptions = {},
+): WorkbookCellValue[] {
+	const sharedItems = sharedStringItemTexts(parts);
+	const values: WorkbookCellValue[] = [];
+	for (const sheet of selectedSheetCatalog(parts, filterOptions)) {
+		const xml = parts[sheet.path];
+		if (typeof xml !== "string") continue;
+		const document = safeParseXml(xml);
+		for (const cell of elementsByLocalName(document, "c")) {
+			const cellReference = cell.getAttribute("r") ?? "";
+			const column = columnNumber(cellReference);
+			const row = rowNumber(cellReference, cell);
+			if (column === null || row === null) continue;
+			if (filterOptions.columns && !filterOptions.columns.has(column)) continue;
+			if (filterOptions.rows && !filterOptions.rows.has(row)) continue;
+			const type = cell.getAttribute("t") ?? "";
+			const isFormula = Boolean(childByLocalName(cell, "f"));
+			if (type === "s") {
+				const itemIndex = Number(childByLocalName(cell, "v")?.textContent);
+				values.push({
+					sheetPath: sheet.path,
+					sheetName: sheet.name,
+					cellReference,
+					row,
+					column,
+					text:
+						Number.isInteger(itemIndex) && itemIndex >= 0
+							? (sharedItems[itemIndex] ?? "")
+							: "",
+					storage: "shared-string",
+					...(Number.isInteger(itemIndex) && itemIndex >= 0
+						? { itemIndex }
+						: {}),
+					isFormula,
+				});
+				continue;
+			}
+			if (type === "inlineStr") {
+				const container = childByLocalName(cell, "is") ?? cell;
+				values.push({
+					sheetPath: sheet.path,
+					sheetName: sheet.name,
+					cellReference,
+					row,
+					column,
+					text: textElements(container)
+						.map((node) => node.textContent ?? "")
+						.join(""),
+					storage: "inline-string",
+					isFormula,
+				});
+				continue;
+			}
+			values.push({
+				sheetPath: sheet.path,
+				sheetName: sheet.name,
+				cellReference,
+				row,
+				column,
+				text: childByLocalName(cell, "v")?.textContent ?? "",
+				storage: type === "str" ? "inline-string" : "cell-value",
+				isFormula,
+			});
+		}
+	}
+	return values;
+}
+
+function relationshipPartPath(ownerPath: string): string {
+	const separator = ownerPath.lastIndexOf("/");
+	const directory = separator >= 0 ? ownerPath.slice(0, separator) : "";
+	const fileName = ownerPath.slice(separator + 1);
+	return `${directory ? `${directory}/` : ""}_rels/${fileName}.rels`;
+}
+
+export function getWorkbookCellComments(
+	parts: Record<string, string | Blob>,
+	filterOptions: XlsxFilterOptions = {},
+): WorkbookCellComment[] {
+	const comments: WorkbookCellComment[] = [];
+	for (const sheet of selectedSheetCatalog(parts, filterOptions)) {
+		const relationshipsXml = parts[relationshipPartPath(sheet.path)];
+		if (typeof relationshipsXml !== "string") continue;
+		const relationships = safeParseXml(relationshipsXml);
+		const sheetDirectory = sheet.path.slice(0, sheet.path.lastIndexOf("/"));
+		for (const relationship of elementsByLocalName(
+			relationships,
+			"Relationship",
+		)) {
+			if (
+				!relationship.getAttribute("Type")?.toLowerCase().endsWith("/comments")
+			)
+				continue;
+			const target = relationship.getAttribute("Target");
+			if (!target) continue;
+			const commentsPath = resolvePackageTarget(sheetDirectory, target);
+			const commentsXml = parts[commentsPath];
+			if (typeof commentsXml !== "string") continue;
+			const document = safeParseXml(commentsXml);
+			const authors = elementsByLocalName(document, "author").map(
+				(author) => author.textContent ?? "",
+			);
+			for (const comment of elementsByLocalName(document, "comment")) {
+				const cellReference = comment.getAttribute("ref") ?? "";
+				if (!cellReference) continue;
+				const authorId = Number(comment.getAttribute("authorId"));
+				const text = textElements(comment)
+					.map((node) => node.textContent ?? "")
+					.join("");
+				if (!text) continue;
+				comments.push({
+					sheetPath: sheet.path,
+					sheetName: sheet.name,
+					cellReference,
+					...(Number.isInteger(authorId) && authors[authorId]
+						? { author: authors[authorId] }
+						: {}),
+					text,
+				});
+			}
+		}
+	}
+	return comments;
 }
 
 function setPreservedText(node: Element, text: string): void {
@@ -526,6 +706,209 @@ function serializeSpreadsheetXml(document: Document): string {
 	return new XMLSerializer()
 		.serializeToString(document)
 		.replaceAll("&nbsp;", "&#160;");
+}
+
+function replaceWholeText(nodes: Element[], replacement: string): boolean {
+	const original = nodes.map((node) => node.textContent ?? "").join("");
+	const fragments = buildNodeRanges(nodes).map((range) => ({
+		node: range.node,
+		start: 0,
+		end: range.end - range.start,
+	}));
+	if (
+		fragments.length === 0 ||
+		fragments.every((fragment) => fragment.end === 0)
+	)
+		return false;
+	applySegmentEdits([{ text: original, fragments }], [replacement]);
+	return true;
+}
+
+function directChildrenByLocalName(parent: Element, name: string): Element[] {
+	return Array.from(parent.childNodes).filter(
+		(child): child is Element =>
+			child.nodeType === 1 && (child as Element).localName === name,
+	);
+}
+
+function insertByNumericAttribute(
+	parent: Element,
+	element: Element,
+	name: string,
+	value: number,
+): void {
+	const next = Array.from(parent.childNodes).find(
+		(child) =>
+			child.nodeType === 1 &&
+			Number((child as Element).getAttribute(name)) > value,
+	);
+	parent.insertBefore(element, next ?? null);
+}
+
+function findOrCreateCell(document: Document, reference: string): Element {
+	const existing = elementsByLocalName(document, "c").find(
+		(cell) => cell.getAttribute("r")?.toUpperCase() === reference.toUpperCase(),
+	);
+	if (existing) return existing;
+	const rowIndex = Number(reference.match(/(\d+)$/)?.[1]);
+	const columnIndex = columnNumber(reference);
+	if (!Number.isInteger(rowIndex) || rowIndex <= 0 || columnIndex === null)
+		throw new Error(`Invalid XLSX target cell reference: ${reference}`);
+	const namespace = document.documentElement.namespaceURI;
+	let sheetData = elementsByLocalName(document, "sheetData")[0];
+	if (!sheetData) {
+		sheetData = document.createElementNS(namespace, "sheetData");
+		document.documentElement.appendChild(sheetData);
+	}
+	let row = directChildrenByLocalName(sheetData, "row").find(
+		(candidate) => Number(candidate.getAttribute("r")) === rowIndex,
+	);
+	if (!row) {
+		row = document.createElementNS(namespace, "row");
+		row.setAttribute("r", String(rowIndex));
+		insertByNumericAttribute(sheetData, row, "r", rowIndex);
+	}
+	const cell = document.createElementNS(namespace, "c");
+	cell.setAttribute("r", reference.toUpperCase());
+	const nextCell = directChildrenByLocalName(row, "c").find((candidate) => {
+		const candidateColumn = columnNumber(candidate.getAttribute("r") ?? "");
+		return candidateColumn !== null && candidateColumn > columnIndex;
+	});
+	row.insertBefore(cell, nextCell ?? null);
+	return cell;
+}
+
+function setCellToInlineString(cell: Element, text: string): void {
+	if (childByLocalName(cell, "f"))
+		throw new Error(
+			`Cannot write translation into formula cell ${cell.getAttribute("r") ?? ""}.`,
+		);
+	for (const child of Array.from(cell.childNodes)) {
+		if (
+			child.nodeType === 1 &&
+			["v", "is"].includes((child as Element).localName)
+		)
+			cell.removeChild(child);
+	}
+	cell.setAttribute("t", "inlineStr");
+	const namespace = cell.namespaceURI;
+	const inline = cell.ownerDocument.createElementNS(namespace, "is");
+	const textNode = cell.ownerDocument.createElementNS(namespace, "t");
+	setPreservedText(textNode, text);
+	inline.appendChild(textNode);
+	const extension = directChildrenByLocalName(cell, "extLst")[0];
+	cell.insertBefore(inline, extension ?? null);
+}
+
+function cellCurrentText(
+	cell: Element,
+	sharedItems: readonly Element[],
+): string {
+	const type = cell.getAttribute("t") ?? "";
+	if (type === "s") {
+		const itemIndex = Number(childByLocalName(cell, "v")?.textContent);
+		const item = Number.isInteger(itemIndex)
+			? sharedItems[itemIndex]
+			: undefined;
+		return item
+			? textElements(item)
+					.map((node) => node.textContent ?? "")
+					.join("")
+			: "";
+	}
+	if (type === "inlineStr") {
+		const inline = childByLocalName(cell, "is") ?? cell;
+		return textElements(inline)
+			.map((node) => node.textContent ?? "")
+			.join("");
+	}
+	return childByLocalName(cell, "v")?.textContent ?? "";
+}
+
+export function applyTranslationsToWorkbookCells(
+	parts: Record<string, string | Blob>,
+	translations: readonly XlsxCellTranslation[],
+): Record<string, string | Blob> {
+	const updated = { ...parts };
+	const sheetDocuments = new Map<string, Document>();
+	const changedSheets = new Set<string>();
+	const sharedXml = parts["xl/sharedStrings.xml"];
+	const sharedDocument =
+		typeof sharedXml === "string" ? safeParseXml(sharedXml) : undefined;
+	const sharedItems = sharedDocument
+		? elementsByLocalName(sharedDocument, "si")
+		: [];
+	let sharedChanged = false;
+
+	for (const translation of translations) {
+		const sheetXml = parts[translation.sheetPath];
+		if (typeof sheetXml !== "string")
+			throw new Error(`Missing XLSX worksheet part ${translation.sheetPath}.`);
+		let document = sheetDocuments.get(translation.sheetPath);
+		if (!document) {
+			document = safeParseXml(sheetXml);
+			sheetDocuments.set(translation.sheetPath, document);
+		}
+		const cell = findOrCreateCell(document, translation.cellReference);
+		if (childByLocalName(cell, "f"))
+			throw new Error(
+				`Cannot write translation into formula cell ${translation.cellReference}.`,
+			);
+		if (cellCurrentText(cell, sharedItems) === translation.text) continue;
+		const type = cell.getAttribute("t") ?? "";
+		if (type === "s" && sharedDocument) {
+			const originalIndex = Number(childByLocalName(cell, "v")?.textContent);
+			const original = Number.isInteger(originalIndex)
+				? sharedItems[originalIndex]
+				: undefined;
+			const valueNode = childByLocalName(cell, "v");
+			if (original && valueNode) {
+				const clone = original.cloneNode(true) as Element;
+				if (!replaceWholeText(textElements(clone), translation.text)) {
+					const namespace = clone.namespaceURI;
+					const textNode = clone.ownerDocument.createElementNS(namespace, "t");
+					setPreservedText(textNode, translation.text);
+					clone.appendChild(textNode);
+				}
+				const newIndex = sharedItems.length;
+				sharedDocument.documentElement.appendChild(clone);
+				sharedItems.push(clone);
+				valueNode.textContent = String(newIndex);
+				sharedChanged = true;
+				changedSheets.add(translation.sheetPath);
+				continue;
+			}
+		}
+		if (type === "inlineStr") {
+			const inline = childByLocalName(cell, "is") ?? cell;
+			if (replaceWholeText(textElements(inline), translation.text)) {
+				changedSheets.add(translation.sheetPath);
+				continue;
+			}
+		}
+		if (type === "str") {
+			const valueNode = childByLocalName(cell, "v");
+			if (valueNode) {
+				setPreservedText(valueNode, translation.text);
+				changedSheets.add(translation.sheetPath);
+				continue;
+			}
+		}
+		setCellToInlineString(cell, translation.text);
+		changedSheets.add(translation.sheetPath);
+	}
+
+	if (sharedChanged && sharedDocument) {
+		const root = sharedDocument.documentElement;
+		if (root.hasAttribute("uniqueCount"))
+			root.setAttribute("uniqueCount", String(sharedItems.length));
+		updated["xl/sharedStrings.xml"] = serializeSpreadsheetXml(sharedDocument);
+	}
+	for (const path of changedSheets) {
+		const document = sheetDocuments.get(path);
+		if (document) updated[path] = serializeSpreadsheetXml(document);
+	}
+	return updated;
 }
 
 export function applyTranslationsToSharedStringsXml(

@@ -81,8 +81,8 @@ they are not routed to the ZIP-based OOXML importers.
       renders dynamically and normalizes before import. Current formats support
       TXT segmentation modes, JSON wildcard paths and primitive-value policy,
       DOCX story, revision, drawing, and paragraph controls, XLSX
-      worksheet/column/row/hidden-sheet/content filters, and HTML text and
-      attribute selection.
+      worksheet/column/row/hidden-sheet/content filters plus key-value and
+      multilingual-column modes, and HTML text and attribute selection.
       Options persist in IndexedDB and Open TLC XLIFF
       saves, are backfilled for older projects, and are reused by exporters.
       Unit, selective-import, persistence, interchange, and filtered round-trip
@@ -328,13 +328,13 @@ Complete these in order after FF-000 through FF-009.
       passes `xmllint` well-formedness and a headless LibreOffice reopen/PDF
       export. Full ISO/IEC 29500 schema validation and semantic translation of
       field results, charts, or SmartArt remain explicit future hardening work.
-- [ ] **FF-106 — XLSX family (`.xlsx`, `.xlsm`, `.xltx`, `.xltm`).**
+- [x] **FF-106 — XLSX family (`.xlsx`, `.xlsm`, `.xltx`, `.xltm`).**
       Harden shared and inline strings across every worksheet; preserve formulas,
       numbers, dates, rich-text runs, comments, hyperlinks, hidden sheets,
       tables, charts, drawings, styles, and workbook relationships. Add column,
       row, sheet, key/value, and multilingual-column import modes. Never replace
       formulas with their cached display strings.
-      Progress 2026-08-17 (package-safety milestone): one content-sniffed adapter
+      Completed 2026-08-17: one content-sniffed adapter
       now accepts all four SpreadsheetML package types, retains their extension
       and MIME on export, and preserves VBA as opaque bytes without evaluating
       it. Worksheets follow workbook relationship order instead of filename
@@ -343,15 +343,27 @@ Complete these in order after FF-000 through FF-009.
       including cached results. Selected shared strings are cloned and only the
       selected cell references are repointed, so filtered cells that reuse the
       same shared-string item cannot be translated accidentally. Rich runs,
-      leading/trailing and non-breaking spaces, inline/plain strings, numeric and
-      boolean opt-in values, hyperlinks, styles, comments, tables, drawings,
+      leading/trailing and non-breaking spaces, inline/plain strings, protected
+      phonetic guides, numeric and boolean opt-in values, hyperlinks, styles,
+      comments, tables, drawings,
       charts, relationships, unknown parts, and identity bytes have focused
-      round-trip coverage. Malformed workbook/worksheet XML is rejected, and a
-      translated three-sheet repository fixture reopens and exports to PDF in
-      headless LibreOffice. The task remains unchecked until key/value and
-      multilingual-column modes, comment translation policy/context, broader
-      real-world formula/date/table corpora, and the full completion gates are
-      implemented.
+      round-trip coverage. All-text, key-value, and multilingual-column modes
+      now map units by worksheet row: key cells become stable context, source
+      and existing target cells remain distinct, formula targets are excluded,
+      blank target cells are created in column order, and only the addressed
+      target cell is changed. Existing target-column values survive project
+      creation and untranslated key-value cells cannot be blanked accidentally.
+      Legacy cell comments are attached as non-translatable notes while comment
+      parts, threaded comments, and drawing/VML data remain untouched. Malformed
+      workbook/worksheet/relationship XML and ambiguous column configurations
+      are rejected. Focused fixtures cover shared and inline strings, rich runs,
+      missing and reused targets, formulas and cached results, dates/styles,
+      tables, comments, macros, and filtered hidden content. A generated
+      1,000-row bilingual sheet stays below the five-second baseline, a dedicated
+      Chromium import/edit/export/re-import flow passes, and a translated real
+      three-sheet repository fixture reopens and exports to PDF in headless
+      LibreOffice. Full ISO/IEC 29500 schema validation and semantic import of
+      modern threaded comments remain explicit future hardening work.
 - [ ] **FF-107 — PPTX family (`.pptx`, later `.pptm`, `.potx`, `.potm`, `.ppsx`).**
       Add slides in relationship order, grouped shapes, tables, charts, SmartArt
       text where safely addressable, masters/layouts, notes, comments, alt text,

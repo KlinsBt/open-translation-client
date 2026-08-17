@@ -126,8 +126,12 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 	documentModel?: NeutralDocument,
 	skeleton?: DocumentSkeleton,
 	filterOptions?: FormatOptionValues,
+	initialTargetSegments?: readonly string[],
 ) {
-	const targetSegments = new Array(stringArray.length).fill("");
+	const targetSegments =
+		initialTargetSegments?.length === stringArray.length
+			? [...initialTargetSegments]
+			: new Array<string>(stringArray.length).fill("");
 	const checkedSegments = new Array(stringArray.length).fill(false);
 	let data: UserData = {
 		schemaVersion: PROJECT_SCHEMA_VERSION,

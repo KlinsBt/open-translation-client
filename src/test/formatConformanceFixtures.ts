@@ -214,10 +214,16 @@ const xlsxFixture: FormatConformanceFixture = {
 	extractionSnapshot: {
 		segments: [CONFORMANCE_UNICODE_SOURCE],
 		filterOptions: {
+			importMode: "all-text",
 			worksheetPaths: "",
 			columns: "",
 			rows: "",
 			includeHiddenSheets: true,
+			keyColumn: "A",
+			sourceColumn: "B",
+			targetColumn: "C",
+			headerRows: 1,
+			includeCellComments: true,
 			includeSharedStrings: true,
 			includeCellValues: false,
 		},

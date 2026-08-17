@@ -63,6 +63,7 @@ export interface SourceLocation {
 	part?: string;
 	path?: Array<string | number>;
 	line?: number;
+	row?: number;
 	column?: number;
 	page?: number;
 	paragraph?: number;

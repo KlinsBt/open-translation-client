@@ -90,4 +90,37 @@ describe("new-project neutral model persistence", () => {
 			},
 		);
 	});
+
+	it("persists existing bilingual targets supplied by a column-based importer", async () => {
+		const imported = createNeutralDocument({
+			format: "xlsx",
+			sourceSegments: ["Hello"],
+			targetSegments: ["Hallo"],
+			sourceLocations: [
+				{ part: "xl/worksheets/sheet1.xml", sheet: "Translations", cell: "B2" },
+			],
+		});
+		await saveNewTranslationToUserDataFromArrayOfStrings(
+			[],
+			"Workbook",
+			"en",
+			"de",
+			"789",
+			["Hello"],
+			"xlsx",
+			{},
+			undefined,
+			imported,
+			undefined,
+			{ importMode: "multilingual-columns" },
+			["Hallo"],
+		);
+
+		const saved = mocks.update.mock.calls[0][0];
+		expect(saved.translationData.seg2).toEqual(["Hallo"]);
+		expect(saved.translationData.documentModel.units[0].target).toMatchObject({
+			fragments: [{ kind: "text", text: "Hallo" }],
+			language: "de",
+		});
+	});
 });

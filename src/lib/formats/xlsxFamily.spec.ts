@@ -56,7 +56,7 @@ function projectFromImport(result: Awaited<ReturnType<typeof importXlsxFile>>) {
 		type: "xlsx",
 		typeRef: result.typeRef!,
 		seg1: result.segments,
-		seg2: [...result.segments],
+		seg2: [...(result.targetSegments ?? result.segments)],
 		checked: result.segments.map(() => false),
 		documentModel: result.document,
 		skeleton: result.skeleton,
@@ -138,6 +138,236 @@ describe("XLSX workbook extraction", () => {
 		expect(items[1].textContent).toBe("  Hallo Welt.\u00a0 ");
 		expect(items[1].getElementsByTagName("b")).toHaveLength(1);
 		expect(output["xl/sharedStrings.xml"]).not.toContain("&nbsp;");
+	});
+
+	it("keeps phonetic guides out of translatable shared-string text", () => {
+		const parts = {
+			"xl/workbook.xml": workbookXml,
+			"xl/_rels/workbook.xml.rels": workbookRelationships,
+			"xl/sharedStrings.xml": `<sst xmlns="${S}"><si><t>東京</t><rPh sb="0" eb="2"><t>とうきょう</t></rPh></si></sst>`,
+			"xl/worksheets/sheet10.xml": `<worksheet xmlns="${S}"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c></row></sheetData></worksheet>`,
+			"xl/worksheets/sheet2.xml": `<worksheet xmlns="${S}"><sheetData/></worksheet>`,
+		};
+		expect(segmentWorkbookStrings(parts, []).allSegments).toEqual(["東京"]);
+		const output = applyTranslationsToWorkbook(parts, ["Tokyo"], []);
+		const shared = output["xl/sharedStrings.xml"] as string;
+		expect(shared).toContain("<t>Tokyo</t>");
+		expect(shared).toContain('<rPh sb="0" eb="2"><t>とうきょう</t></rPh>');
+	});
+});
+
+async function bilingualSpreadsheet() {
+	const comments = `<comments xmlns="${S}"><authors><author>Localization lead</author></authors><commentList><comment ref="B2" authorId="0"><text><t>Shown on the home page.</t></text></comment></commentList></comments>`;
+	const table = `<table xmlns="${S}" id="1" name="Translations" displayName="Translations" ref="A1:E4"/>`;
+	const styles = `<styleSheet xmlns="${S}"><cellXfs count="2"><xf/><xf numFmtId="14"/></cellXfs></styleSheet>`;
+	return {
+		comments,
+		table,
+		styles,
+		source: await spreadsheetFile({
+			"[Content_Types].xml": `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>`,
+			"xl/workbook.xml": `<workbook xmlns="${S}" xmlns:r="${R}"><sheets><sheet name="Translations" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+			"xl/_rels/workbook.xml.rels": `<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+			"xl/sharedStrings.xml": `<sst xmlns="${S}" count="12" uniqueCount="10"><si><t>Key</t></si><si><t>English</t></si><si><t>German</t></si><si><t>welcome.title</t></si><si><r><rPr><b/></rPr><t>Hello</t></r></si><si><t>Hallo</t></si><si><t>farewell</t></si><si><t>Formula source</t></si><si><t>formula.row</t></si><si><t>Not editable</t></si></sst>`,
+			"xl/worksheets/sheet1.xml": `<worksheet xmlns="${S}"><sheetData>
+			<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c></row>
+			<row r="2"><c r="A2" t="s"><v>3</v></c><c r="B2" t="s" s="2"><v>4</v></c><c r="C2" t="s"><v>5</v></c><c r="D2" t="s"><v>5</v></c><c r="E2" s="1"><v>45567</v></c></row>
+			<row r="3"><c r="A3" t="s"><v>6</v></c><c r="B3" t="inlineStr"><is><t>Goodbye</t></is></c><c r="D3" t="inlineStr"><is><t>Untouched</t></is></c></row>
+			<row r="4"><c r="A4" t="s"><v>8</v></c><c r="B4" t="s"><v>7</v></c><c r="C4" t="str"><f>UPPER(B4)</f><v>NOT EDITABLE</v></c></row>
+			</sheetData></worksheet>`,
+			"xl/worksheets/_rels/sheet1.xml.rels": `<Relationships xmlns="${PR}"><Relationship Id="comment1" Type="${R}/comments" Target="../comments1.xml"/><Relationship Id="table1" Type="${R}/table" Target="../tables/table1.xml"/></Relationships>`,
+			"xl/comments1.xml": comments,
+			"xl/tables/table1.xml": table,
+			"xl/styles.xml": styles,
+		}),
+	};
+}
+
+describe("XLSX row-oriented import modes", () => {
+	it("attaches cell comments as notes without importing comment text", async () => {
+		const fixture = await bilingualSpreadsheet();
+		const imported = await importXlsxFile(fixture.source.file);
+		if (imported.kind !== "segments") throw new Error("Expected segments");
+		const helloIndex = imported.segments.indexOf("Hello");
+		expect(helloIndex).toBeGreaterThanOrEqual(0);
+		expect(imported.segments).not.toContain("Shown on the home page.");
+		expect(imported.document.units[helloIndex].notes).toEqual([
+			{
+				category: "xlsx-cell-comment",
+				text: "Localization lead: Shown on the home page.",
+				appliesTo: "unit",
+			},
+		]);
+	});
+
+	it("pairs multilingual columns, imports comments as notes, and writes only target cells", async () => {
+		const fixture = await bilingualSpreadsheet();
+		const options = {
+			importMode: "multilingual-columns",
+			worksheetPaths: "Translations",
+			keyColumn: "A",
+			sourceColumn: "B",
+			targetColumn: "C",
+			headerRows: 1,
+		};
+		const imported = await importXlsxFile(fixture.source.file, options);
+		expect(imported).toMatchObject({
+			kind: "segments",
+			segments: ["Hello", "Goodbye"],
+			targetSegments: ["Hallo", ""],
+		});
+		if (imported.kind !== "segments") throw new Error("Expected segments");
+		expect(imported.document.units[0]).toMatchObject({
+			id: "xlsx:xl/worksheets/sheet1.xml:2",
+			contexts: expect.arrayContaining([
+				{ type: "xlsx-key", value: "welcome.title" },
+				{ type: "xlsx-sheet", value: "Translations" },
+			]),
+			notes: [
+				{
+					category: "xlsx-cell-comment",
+					text: "Localization lead: Shown on the home page.",
+					appliesTo: "unit",
+				},
+			],
+			sourceLocation: {
+				part: "xl/worksheets/sheet1.xml",
+				sheet: "Translations",
+				cell: "B2",
+				row: 2,
+				column: 2,
+			},
+		});
+		expect(
+			imported.skeleton.replacements.map((replacement) => ({
+				cell:
+					replacement.kind === "xlsx-text"
+						? replacement.cellReference
+						: undefined,
+				original:
+					replacement.kind === "xlsx-text"
+						? replacement.originalText
+						: undefined,
+			})),
+		).toEqual([
+			{ cell: "C2", original: "Hallo" },
+			{ cell: "C3", original: "" },
+		]);
+
+		const identity = await buildXlsxTranslationPackage(
+			projectFromImport(imported),
+		);
+		expect(new Uint8Array(await identity.arrayBuffer())).toEqual(
+			fixture.source.bytes,
+		);
+		const project = projectFromImport(imported);
+		project.translationData.seg2 = ["Guten Tag", "Auf Wiedersehen"];
+		const output = await JSZip.loadAsync(
+			await (await buildXlsxTranslationPackage(project)).arrayBuffer(),
+		);
+		const sheet = await output
+			.file("xl/worksheets/sheet1.xml")!
+			.async("string");
+		expect(sheet).toMatch(/<c r="C2" t="s"><v>10<\/v>/);
+		expect(sheet).toContain(
+			'<c r="C3" t="inlineStr"><is><t>Auf Wiedersehen</t></is></c><c r="D3"',
+		);
+		expect(sheet).toContain("<f>UPPER(B4)</f><v>NOT EDITABLE</v>");
+		expect(sheet).toContain('<c r="D2" t="s"><v>5</v>');
+		expect(sheet).toContain('<c r="E2" s="1"><v>45567</v>');
+		expect(await output.file("xl/comments1.xml")!.async("string")).toBe(
+			fixture.comments,
+		);
+		expect(await output.file("xl/tables/table1.xml")!.async("string")).toBe(
+			fixture.table,
+		);
+		expect(await output.file("xl/styles.xml")!.async("string")).toBe(
+			fixture.styles,
+		);
+		const reimported = await importXlsxFile(
+			new File(
+				[await output.generateAsync({ type: "uint8array" })],
+				"again.xlsx",
+			),
+			options,
+		);
+		expect(reimported).toMatchObject({
+			segments: ["Hello", "Goodbye"],
+			targetSegments: ["Guten Tag", "Auf Wiedersehen"],
+		});
+	});
+
+	it("uses keys as context and preserves untranslated values in key-value mode", async () => {
+		const fixture = await bilingualSpreadsheet();
+		const imported = await importXlsxFile(fixture.source.file, {
+			importMode: "key-value",
+			keyColumn: "A",
+			sourceColumn: "B",
+			headerRows: 1,
+		});
+		expect(imported).toMatchObject({
+			segments: ["Hello", "Goodbye", "Formula source"],
+			targetSegments: ["", "", ""],
+		});
+		const identity = await buildXlsxTranslationPackage(
+			projectFromImport(imported),
+		);
+		expect(new Uint8Array(await identity.arrayBuffer())).toEqual(
+			fixture.source.bytes,
+		);
+		const project = projectFromImport(imported);
+		project.translationData.seg2 = ["Hello translated", "", ""];
+		const output = await JSZip.loadAsync(
+			await (await buildXlsxTranslationPackage(project)).arrayBuffer(),
+		);
+		const sheet = await output
+			.file("xl/worksheets/sheet1.xml")!
+			.async("string");
+		expect(sheet).toMatch(/<c r="B2" t="s" s="2"><v>10<\/v>/);
+		expect(sheet).toContain(
+			'<c r="B3" t="inlineStr"><is><t>Goodbye</t></is></c>',
+		);
+		expect(sheet).toContain('<c r="B4" t="s"><v>7</v>');
+	});
+
+	it("rejects ambiguous paired-column configurations", async () => {
+		const fixture = await bilingualSpreadsheet();
+		await expect(
+			importXlsxFile(fixture.source.file, {
+				importMode: "multilingual-columns",
+				sourceColumn: "B",
+				targetColumn: "B",
+			}),
+		).rejects.toThrow("Source and target columns must be different");
+	});
+
+	it("keeps a generated 1,000-row multilingual import within its baseline", async () => {
+		const rows = Array.from(
+			{ length: 1_000 },
+			(_, index) =>
+				`<row r="${index + 2}"><c r="A${index + 2}" t="inlineStr"><is><t>key.${index}</t></is></c><c r="B${index + 2}" t="inlineStr"><is><t>Source ${index}</t></is></c><c r="C${index + 2}" t="inlineStr"><is><t>Target ${index}</t></is></c></row>`,
+		).join("");
+		const source = await spreadsheetFile({
+			"xl/workbook.xml": `<workbook xmlns="${S}" xmlns:r="${R}"><sheets><sheet name="Strings" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+			"xl/_rels/workbook.xml.rels": `<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+			"xl/worksheets/sheet1.xml": `<worksheet xmlns="${S}"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Key</t></is></c><c r="B1" t="inlineStr"><is><t>Source</t></is></c><c r="C1" t="inlineStr"><is><t>Target</t></is></c></row>${rows}</sheetData></worksheet>`,
+		});
+		const started = performance.now();
+		const imported = await importXlsxFile(source.file, {
+			importMode: "multilingual-columns",
+			keyColumn: "A",
+			sourceColumn: "B",
+			targetColumn: "C",
+			headerRows: 1,
+		});
+		const elapsed = performance.now() - started;
+		expect(imported).toMatchObject({
+			segments: expect.arrayContaining(["Source 0", "Source 999"]),
+			targetSegments: expect.arrayContaining(["Target 0", "Target 999"]),
+		});
+		if (imported.kind !== "segments") throw new Error("Expected segments");
+		expect(imported.segments).toHaveLength(1_000);
+		expect(elapsed).toBeLessThan(5_000);
 	});
 });
 

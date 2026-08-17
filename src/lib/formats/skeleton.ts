@@ -69,6 +69,8 @@ export interface XlsxTextReplacement extends ReplacementBase {
 	part: string;
 	storage: "shared-string" | "inline-string" | "cell-value";
 	localIndex: number;
+	cellReference?: string;
+	originalText?: string;
 }
 
 export type SkeletonReplacement =
