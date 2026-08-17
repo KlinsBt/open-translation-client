@@ -8,6 +8,7 @@ import { generatePoTranslation } from "$lib/functions/outputGeneration/outputGen
 import { generateXmlTranslation } from "$lib/functions/outputGeneration/outputGenerationXml";
 import { generateAndroidResourcesTranslation } from "$lib/functions/outputGeneration/outputGenerationAndroid";
 import { generateAppleLocalizationTranslation } from "$lib/functions/outputGeneration/outputGenerationApple";
+import { generatePropertiesTranslation } from "$lib/functions/outputGeneration/outputGenerationProperties";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -45,6 +46,10 @@ import {
 	importAppleLocalizationFile,
 	validateAppleLocalizationFile,
 } from "./appleLocalization";
+import {
+	importPropertiesFile,
+	validatePropertiesFile,
+} from "./propertiesFamily";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -183,6 +188,20 @@ const adapters = [
 		validate: validateAppleLocalizationFile,
 		importFile: importAppleLocalizationFile,
 		exportFile: generateAppleLocalizationTranslation,
+	},
+	{
+		id: "properties",
+		label: "Java/Mozilla properties",
+		extensions: ["properties"],
+		mimeTypes: ["text/x-java-properties"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.properties,
+		sniff: async (file, context) =>
+			file.name.toLowerCase().endsWith(".properties") &&
+			(await validatePropertiesFile(file, context)).valid,
+		validate: validatePropertiesFile,
+		importFile: importPropertiesFile,
+		exportFile: generatePropertiesTranslation,
 	},
 	{
 		id: "xml",

@@ -133,6 +133,14 @@ export interface AppleValueReplacement extends ReplacementBase {
 	insertLocalizationsProperty?: boolean;
 }
 
+export interface PropertiesValueReplacement extends ReplacementBase {
+	kind: "properties-value";
+	key: string;
+	line: number;
+	originalValue: string;
+	fragments: Array<{ start: number; end: number; originalValue: string }>;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -200,6 +208,7 @@ export type SkeletonReplacement =
 	| PoStringReplacement
 	| AndroidValueReplacement
 	| AppleValueReplacement
+	| PropertiesValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -302,6 +311,7 @@ export async function createTextSkeleton(
 		| "po"
 		| "android"
 		| "apple"
+		| "properties"
 		| "xml"
 		| "html",
 	content: string,
@@ -686,6 +696,22 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				typeof replacement.originalValue !== "string")
 		) {
 			issues.push("Apple value replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "properties-value" &&
+			(!replacement.key ||
+				!Number.isInteger(replacement.line) ||
+				replacement.line < 1 ||
+				typeof replacement.originalValue !== "string" ||
+				!replacement.fragments.length ||
+				replacement.fragments.some(
+					(fragment) =>
+						fragment.start < 0 ||
+						fragment.end < fragment.start ||
+						typeof fragment.originalValue !== "string",
+				))
+		) {
+			issues.push("Properties value replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&

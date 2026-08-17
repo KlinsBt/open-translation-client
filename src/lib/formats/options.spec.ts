@@ -62,6 +62,9 @@ describe("format import options", () => {
 			targetLanguage: "",
 			includeStale: false,
 		});
+		expect(
+			normalizeImportOptions("properties", { includeEmpty: "true" }),
+		).toEqual({ sourceEncoding: "auto", includeEmpty: true });
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

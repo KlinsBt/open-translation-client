@@ -346,6 +346,53 @@ const appleFixture: FormatConformanceFixture = {
 		),
 };
 
+const propertiesFixture: FormatConformanceFixture = {
+	id: "properties",
+	fileName: "messages.properties",
+	mimeType: "text/x-java-properties",
+	createValidFile: async () =>
+		textFile(
+			`# Home title\nwelcome=${CONFORMANCE_UNICODE_SOURCE}\nlocked.keep=unchanged\n`,
+			"messages.properties",
+			"text/x-java-properties",
+		),
+	createMalformedFile: async () =>
+		textFile("broken=\\u12G4", "broken.properties", "text/x-java-properties"),
+	expectMalformedImportFailure: true,
+	importOptions: { includeEmpty: false },
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE, "unchanged"],
+		filterOptions: { sourceEncoding: "auto", includeEmpty: false },
+		skeleton: {
+			kind: "text",
+			replacementKinds: ["properties-value", "properties-value"],
+		},
+		units: [
+			{
+				id: "welcome",
+				part: "messages.properties",
+				path: ["welcome"],
+			},
+			{
+				id: "locked.keep",
+				part: "messages.properties",
+				path: ["locked.keep"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE, "unchanged"],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET, "unchanged"],
+	createPerformanceFile: async (units) =>
+		textFile(
+			Array.from(
+				{ length: units },
+				(_, index) => `message_${index}=Message ${index}`,
+			).join("\n"),
+			"performance.properties",
+			"text/x-java-properties",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -599,6 +646,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	poFixture,
 	androidFixture,
 	appleFixture,
+	propertiesFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

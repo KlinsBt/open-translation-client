@@ -293,6 +293,23 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: true,
 		},
 	],
+	properties: [
+		{
+			id: "sourceEncoding",
+			label: "Properties encoding",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "utf-8", "iso-8859-1", "windows-1252"],
+			description:
+				"Auto prefers valid UTF-8 and falls back to the traditional single-byte Java properties encoding.",
+		},
+		{
+			id: "includeEmpty",
+			label: "Include empty values",
+			type: "boolean",
+			defaultValue: false,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

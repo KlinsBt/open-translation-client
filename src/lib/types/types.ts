@@ -121,6 +121,14 @@ export interface AppleSegmentMeta {
 	separator?: string;
 }
 
+export interface PropertiesSegmentMeta {
+	key: string;
+	line: number;
+	originalValue: string;
+	fragments: Array<{ start: number; end: number; originalValue: string }>;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -169,6 +177,7 @@ export type SegmentMeta =
 	| PoSegmentMeta
 	| AndroidSegmentMeta
 	| AppleSegmentMeta
+	| PropertiesSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

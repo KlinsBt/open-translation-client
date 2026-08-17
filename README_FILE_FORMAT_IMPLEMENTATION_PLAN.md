@@ -624,10 +624,28 @@ Complete these in order after FF-000 through FF-009.
       input, all three profiles, comments/states, missing-language insertion,
       plurals, UTF-16, escaping, 1,000-entry performance, detection, and browser
       download coverage verifies the workflows.
-- [ ] **FF-207 — Java and Mozilla properties (`.properties`).** Preserve comments,
+- [x] **FF-207 — Java and Mozilla properties (`.properties`).** Preserve comments,
       separators, continuations, escapes, key order, encodings, duplicate keys,
       and MessageFormat/printf placeholders. Do not treat keys as translatable by
       default.
+      Completed 2026-08-17: a strict logical-record parser now maps Java/Mozilla
+      properties values onto their exact physical-line fragments. Keys—including
+      escaped separators—remain protected context, while `=`, `:`, and whitespace
+      separators, comments, indentation, CRLF/LF endings, order, blank lines,
+      duplicate definitions, and continuation backslashes remain untouched.
+      Common control, separator, backslash, and four-digit Java Unicode escapes
+      decode deterministically; malformed escapes and dangling continuations fail
+      with a profile-specific diagnostic. Valid UTF-8/UTF-16 is preserved, auto
+      mode falls back to the traditional ISO-8859-1-compatible byte stream, and
+      explicit UTF-8/Latin-1/Windows-1252 modes are available. Changed legacy
+      targets use portable `\\uXXXX` escapes when needed, while unchanged files
+      return their original bytes. Export distributes translated content over the
+      existing continuation fragments, reparses the result, rejects stale mapping
+      or structural edits, and enforces MessageFormat, printf, and other shared
+      placeholder QA. Empty values are optional. Unit, conformance, malformed
+      input, comments/separators, duplicate keys, escape/control behavior,
+      multiline CRLF, single-byte identity, placeholder regression, 1,000-entry
+      performance, detection, and browser download coverage verifies the workflow.
 - [ ] **FF-208 — .NET resources (`.resx`).** Translate string `<data>` values
       while preserving names, comments, type/mimetype metadata, aliases, headers,
       whitespace, and non-string serialized resources. Never deserialize or

@@ -6,6 +6,7 @@ export const FORMAT_IDS = [
 	"po",
 	"android",
 	"apple",
+	"properties",
 	"xml",
 	"docx",
 	"xlsx",
