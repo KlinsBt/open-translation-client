@@ -754,11 +754,27 @@ Complete these in order after FF-000 through FF-009.
       protected-span, inline HTML, table, Unicode/UTF-16, 1,000-line performance,
       detection, identity, translated re-import, and browser download coverage
       verifies both profiles.
-- [ ] **FF-213 — Subtitles (`.srt`, `.vtt`, then `.sbv`).** Preserve cue IDs,
+- [x] **FF-213 — Subtitles (`.srt`, `.vtt`, then `.sbv`).** Preserve cue IDs,
       timecodes, settings, comments/notes, inline cue markup, line breaks, and
       ordering. Add QA for start/end validity, overlap policy, characters per
       line, lines per cue, reading speed, and target expansion without silently
       retiming cues.
+      Completed 2026-08-18: one cue-aware adapter strictly parses SRT, WebVTT,
+      and YouTube SBV timing grammars, rejects invalid/reversed time ranges, and
+      retains cue order, arbitrary SRT/WebVTT IDs, exact timestamp spelling,
+      settings, multiline text, blank separators, CRLF/LF, encoding/BOM, and
+      identity bytes. WebVTT signatures/header metadata plus NOTE, STYLE, and
+      REGION blocks stay protected. Cue IDs, millisecond ranges, and settings are
+      exposed as neutral context; overlap/out-of-order diagnostics are retained,
+      with configurable warn/error/allow overlap handling. Export applies only
+      cue-text range edits, reparses the complete file, never changes timing, and
+      blocks stale mappings and structural split/join. Shared QA protects HTML
+      and WebVTT voice/language/class/timestamp cue markup and placeholders;
+      configurable checks block excessive characters per line, lines per cue,
+      characters per second, and target expansion. Unit, conformance, malformed
+      signatures/timings, overlap, multiline/markup/notes/settings, all three
+      profiles, Unicode/UTF-16, 1,000-cue performance, detection, identity,
+      translated re-import, and browser download coverage verifies the workflow.
 
 ## Phase 3 — Publishing and technical-authoring formats
 

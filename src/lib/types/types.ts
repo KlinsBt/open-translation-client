@@ -186,6 +186,20 @@ export interface MarkupSegmentMeta {
 	separator?: string;
 }
 
+export interface SubtitleSegmentMeta {
+	profile: "srt" | "vtt" | "sbv";
+	cueIndex: number;
+	cueId?: string;
+	startMs: number;
+	endMs: number;
+	settings?: string;
+	line: number;
+	start: number;
+	end: number;
+	originalValue: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -240,6 +254,7 @@ export type SegmentMeta =
 	| IniSegmentMeta
 	| PhpSegmentMeta
 	| MarkupSegmentMeta
+	| SubtitleSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

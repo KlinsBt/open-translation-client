@@ -40,6 +40,16 @@ function escapeXml(value: string): string {
 	});
 }
 
+function srtTime(totalSeconds: number): string {
+	const hours = String(Math.floor(totalSeconds / 3_600)).padStart(2, "0");
+	const minutes = String(Math.floor((totalSeconds % 3_600) / 60)).padStart(
+		2,
+		"0",
+	);
+	const seconds = String(totalSeconds % 60).padStart(2, "0");
+	return `${hours}:${minutes}:${seconds},000`;
+}
+
 const textFixture: FormatConformanceFixture = {
 	id: "text",
 	fileName: "unicode.txt",
@@ -620,6 +630,55 @@ const markupFixture: FormatConformanceFixture = {
 		),
 };
 
+const subtitlesFixture: FormatConformanceFixture = {
+	id: "subtitles",
+	fileName: "captions.srt",
+	mimeType: "application/x-subrip",
+	createValidFile: async () =>
+		textFile(
+			`welcome\n00:00:00,000 --> 00:00:05,000\n${CONFORMANCE_UNICODE_SOURCE}\n`,
+			"captions.srt",
+			"application/x-subrip",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			"1\n00:00:05,000 --> 00:00:04,000\nBackwards",
+			"bad.srt",
+			"application/x-subrip",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			profile: "srt",
+			overlapPolicy: "warn",
+			maxCharactersPerLine: 42,
+			maxLinesPerCue: 2,
+			maxReadingSpeed: 20,
+			maxExpansionPercent: 50,
+		},
+		skeleton: { kind: "text", replacementKinds: ["subtitle-cue"] },
+		units: [
+			{
+				id: "welcome",
+				part: "captions.srt",
+				path: ["srt", "welcome"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			Array.from({ length: units }, (_, index) => {
+				const start = index * 10;
+				return `${index + 1}\n${srtTime(start)} --> ${srtTime(start + 5)}\nMessage ${index}`;
+			}).join("\n\n"),
+			"performance.srt",
+			"application/x-subrip",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -879,6 +938,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	iniFixture,
 	phpFixture,
 	markupFixture,
+	subtitlesFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

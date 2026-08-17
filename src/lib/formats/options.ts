@@ -411,6 +411,46 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"HTML tags remain protected; text between inline tags is exposed. Raw script, style, pre, and comment blocks remain protected.",
 		},
 	],
+	subtitles: [
+		{
+			id: "profile",
+			label: "Subtitle profile",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "srt", "vtt", "sbv"],
+		},
+		{
+			id: "overlapPolicy",
+			label: "Overlapping cues",
+			type: "select",
+			defaultValue: "warn",
+			choices: ["warn", "error", "allow"],
+		},
+		{
+			id: "maxCharactersPerLine",
+			label: "Maximum characters per line",
+			type: "number",
+			defaultValue: 42,
+		},
+		{
+			id: "maxLinesPerCue",
+			label: "Maximum lines per cue",
+			type: "number",
+			defaultValue: 2,
+		},
+		{
+			id: "maxReadingSpeed",
+			label: "Maximum characters per second",
+			type: "number",
+			defaultValue: 20,
+		},
+		{
+			id: "maxExpansionPercent",
+			label: "Maximum target expansion (%)",
+			type: "number",
+			defaultValue: 50,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

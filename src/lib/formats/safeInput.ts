@@ -28,6 +28,7 @@ export type SafeInputErrorCode =
 	| "INI_SELECTION_REQUIRED"
 	| "PHP_LOCALIZATION_INVALID"
 	| "MARKUP_INVALID"
+	| "SUBTITLE_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

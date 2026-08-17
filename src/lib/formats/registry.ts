@@ -14,6 +14,7 @@ import { generateQtTsTranslation } from "$lib/functions/outputGeneration/outputG
 import { generateIniTranslation } from "$lib/functions/outputGeneration/outputGenerationIni";
 import { generatePhpTranslation } from "$lib/functions/outputGeneration/outputGenerationPhp";
 import { generateLightweightMarkupTranslation } from "$lib/functions/outputGeneration/outputGenerationMarkup";
+import { generateSubtitleTranslation } from "$lib/functions/outputGeneration/outputGenerationSubtitles";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -66,6 +67,7 @@ import {
 	importLightweightMarkupFile,
 	validateLightweightMarkupFile,
 } from "./lightweightMarkup";
+import { importSubtitleFile, validateSubtitleFile } from "./subtitles";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -296,6 +298,21 @@ const adapters = [
 		validate: validateLightweightMarkupFile,
 		importFile: importLightweightMarkupFile,
 		exportFile: generateLightweightMarkupTranslation,
+	},
+	{
+		id: "subtitles",
+		label: "SRT/WebVTT/SBV subtitles",
+		extensions: ["srt", "vtt", "sbv"],
+		mimeTypes: ["application/x-subrip", "text/vtt", "text/plain"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.subtitles,
+		sniff: async (file, context) =>
+			["srt", "vtt", "sbv"].includes(
+				file.name.toLowerCase().split(".").at(-1) ?? "",
+			) && (await validateSubtitleFile(file, context)).valid,
+		validate: validateSubtitleFile,
+		importFile: importSubtitleFile,
+		exportFile: generateSubtitleTranslation,
 	},
 	{
 		id: "xml",

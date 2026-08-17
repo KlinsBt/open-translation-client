@@ -198,6 +198,20 @@ export interface MarkupTextReplacement extends ReplacementBase {
 	originalValue: string;
 }
 
+export interface SubtitleCueReplacement extends ReplacementBase {
+	kind: "subtitle-cue";
+	profile: "srt" | "vtt" | "sbv";
+	cueIndex: number;
+	cueId?: string;
+	startMs: number;
+	endMs: number;
+	settings?: string;
+	line: number;
+	start: number;
+	end: number;
+	originalValue: string;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -271,6 +285,7 @@ export type SkeletonReplacement =
 	| IniValueReplacement
 	| PhpValueReplacement
 	| MarkupTextReplacement
+	| SubtitleCueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -379,6 +394,7 @@ export async function createTextSkeleton(
 		| "ini"
 		| "php"
 		| "markup"
+		| "subtitles"
 		| "xml"
 		| "html",
 	content: string,
@@ -832,6 +848,21 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				typeof replacement.originalValue !== "string")
 		) {
 			issues.push("Markup text replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "subtitle-cue" &&
+			(!["srt", "vtt", "sbv"].includes(replacement.profile) ||
+				!Number.isInteger(replacement.cueIndex) ||
+				replacement.cueIndex < 0 ||
+				replacement.startMs < 0 ||
+				replacement.endMs <= replacement.startMs ||
+				!Number.isInteger(replacement.line) ||
+				replacement.line < 1 ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string")
+		) {
+			issues.push("Subtitle cue replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&

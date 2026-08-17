@@ -57,6 +57,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	ini: { allowTagReorder: false, allowInlineCodeReorder: false },
 	php: { allowTagReorder: false, allowInlineCodeReorder: false },
 	markup: { allowTagReorder: false, allowInlineCodeReorder: false },
+	subtitles: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },
@@ -154,6 +155,7 @@ export function runProjectExportQuality(
 			policy,
 			issues,
 			data.type === "android" && unit?.metadata?.formatted === false,
+			data.type === "subtitles",
 		);
 		if (data.type === "json" && model?.metadata?.profile === "chrome")
 			compareChromePlaceholders(source, target, index, unit?.id, issues);
@@ -244,9 +246,10 @@ function compareProtectedText(
 	policy: FormatQaPolicy,
 	issues: ExportQaIssue[],
 	ignorePrintf = false,
+	webVttTags = false,
 ): void {
-	const sourceScan = scanProtectedTokens(source, ignorePrintf);
-	const targetScan = scanProtectedTokens(target, ignorePrintf);
+	const sourceScan = scanProtectedTokens(source, ignorePrintf, webVttTags);
+	const targetScan = scanProtectedTokens(target, ignorePrintf, webVttTags);
 	for (const malformed of sourceScan.malformedPlaceholders)
 		pushIssue(
 			issues,
@@ -555,12 +558,16 @@ function validateInlineNesting(
 		);
 }
 
-function scanProtectedTokens(text: string, ignorePrintf = false): TokenScan {
+function scanProtectedTokens(
+	text: string,
+	ignorePrintf = false,
+	webVttTags = false,
+): TokenScan {
 	const placeholders: ProtectedToken[] = [];
 	const malformedPlaceholders: string[] = [];
 	if (!ignorePrintf) scanPrintf(text, placeholders, malformedPlaceholders);
 	scanBracedPlaceholders(text, placeholders, malformedPlaceholders);
-	const { tags, malformed } = scanTags(text);
+	const { tags, malformed } = scanTags(text, webVttTags);
 	return {
 		placeholders: placeholders.sort(
 			(first, second) => first.index - second.index,
@@ -695,7 +702,10 @@ function scanBracedPlaceholders(
 	}
 }
 
-function scanTags(text: string): {
+function scanTags(
+	text: string,
+	webVttTags = false,
+): {
 	tags: ProtectedToken[];
 	malformed: string[];
 } {
@@ -717,10 +727,35 @@ function scanTags(text: string): {
 			continue;
 		}
 		const raw = text.slice(index, end + 1);
+		if (webVttTags) {
+			if (/^<(?:\d{2}:)?\d{2}:\d{2}\.\d{3}>$/.test(raw)) {
+				tags.push({
+					key: `tag:standalone:timestamp:${raw}`,
+					raw,
+					index,
+					orderSensitive: true,
+				});
+				index = end;
+				continue;
+			}
+			const annotation = raw.match(/^<(v|lang)(?:\s+([^>]+))?>$/);
+			if (annotation) {
+				tags.push({
+					key: `tag:standalone:${annotation[1]}:${annotation[2] ?? ""}`,
+					raw,
+					index,
+					orderSensitive: true,
+				});
+				index = end;
+				continue;
+			}
+		}
 		const match = raw.match(/^<\s*(\/)?\s*([A-Za-z_][\w.:-]*)([^>]*)>$/);
 		if (!match) continue;
 		const closing = Boolean(match[1]);
-		const name = match[2].toLowerCase();
+		const originalName = match[2].toLowerCase();
+		const name =
+			webVttTags && originalName.startsWith("c.") ? "c" : originalName;
 		const tail = match[3];
 		const standalone =
 			!closing && (/\/\s*>$/.test(raw) || HTML_VOID_TAGS.has(name));
@@ -733,7 +768,7 @@ function scanTags(text: string): {
 						.find(Boolean)
 				: undefined;
 		tags.push({
-			key: `tag:${boundary}:${name}${xliffId ? `:${xliffId}` : ""}`,
+			key: `tag:${boundary}:${name}${webVttTags && originalName !== name ? `:${originalName.slice(2)}` : ""}${xliffId ? `:${xliffId}` : ""}`,
 			raw,
 			index,
 			orderSensitive: true,

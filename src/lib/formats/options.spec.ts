@@ -91,6 +91,16 @@ describe("format import options", () => {
 			profile: "auto",
 			includeHtmlText: true,
 		});
+		expect(
+			normalizeImportOptions("subtitles", { overlapPolicy: "invalid" }),
+		).toEqual({
+			profile: "auto",
+			overlapPolicy: "warn",
+			maxCharactersPerLine: 42,
+			maxLinesPerCue: 2,
+			maxReadingSpeed: 20,
+			maxExpansionPercent: 50,
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

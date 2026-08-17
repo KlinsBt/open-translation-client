@@ -12,6 +12,7 @@ export const FORMAT_IDS = [
 	"ini",
 	"php",
 	"markup",
+	"subtitles",
 	"xml",
 	"docx",
 	"xlsx",
