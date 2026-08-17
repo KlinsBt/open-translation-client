@@ -510,10 +510,27 @@ Complete these in order after FF-000 through FF-009.
       persistence, conformance, performance, malformed-input, UTF-16, duplicate-
       key, profile, placeholder-QA, mapping-corruption, and browser download tests
       cover the workflow.
-- [ ] **FF-202 — YAML 1.2 (`.yaml`, `.yml`).** Preserve comments, anchors,
+- [x] **FF-202 — YAML 1.2 (`.yaml`, `.yml`).** Preserve comments, anchors,
       aliases, tags, scalar styles, block chomping, document boundaries, key
       order, and non-string types through a concrete syntax tree. Default to
       values-only selection and reject unsafe/custom object construction.
+      Completed 2026-08-17: the YAML 1.2 adapter parses complete document streams
+      into source-ranged nodes without converting them to application objects.
+      Values-only extraction protects mapping keys and aliases, supports wildcard
+      paths and optional non-string scalars, records comments, tags, anchors,
+      document indices, and duplicate-key warnings, and keeps each scalar intact
+      by default. Exact range edits preserve directives, document markers, key
+      order, comments, anchors/aliases, opaque custom tags, flow/block layout,
+      UTF-8/UTF-16 encoding, byte-order marks, and untouched bytes. Single- and
+      double-quoted styles are retained; plain targets remain plain when their
+      YAML 1.2 type is stable and are safely quoted otherwise; literal/folded
+      blocks retain headers, indentation, and strip/clip/keep chomping semantics.
+      No tag constructors, alias resolution, or executable object loading is
+      used. Split/join is deliberately blocked to keep presentation ranges and
+      block semantics aligned. Unit, conformance, malformed-stream, multi-
+      document, duplicate-key, custom-tag, block-style, non-string, selector,
+      UTF-16, mapping-corruption, 1,000-value performance, and browser download
+      coverage verifies the workflow.
 - [ ] **FF-203 — GNU gettext (`.po`, `.pot`).** Support headers, contexts,
       singular and plural messages, every `msgstr[n]`, translator/extracted
       comments, references, flags, previous/obsolete entries, continued strings,

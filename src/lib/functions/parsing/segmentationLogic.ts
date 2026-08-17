@@ -33,6 +33,8 @@ const CSV_EDIT_ERROR =
 	"CSV/TSV segments cannot be split or joined because row and column alignment must be preserved.";
 const LOCJSON_EDIT_ERROR =
 	"LocJSON units cannot be split or joined because each ordered source/target array is one format-level unit.";
+const YAML_EDIT_ERROR =
+	"YAML scalars cannot be split or joined because scalar style, chomping, anchors, and syntax ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -90,6 +92,7 @@ function validateForStructuralEdit(
 	if (translation.type === "xlsx") return XLSX_EDIT_ERROR;
 	if (translation.type === "pptx") return PPTX_EDIT_ERROR;
 	if (translation.type === "csv") return CSV_EDIT_ERROR;
+	if (translation.type === "yaml") return YAML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&
 		translation.segmentsMeta?.some(

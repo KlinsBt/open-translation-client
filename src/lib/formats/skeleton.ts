@@ -64,6 +64,22 @@ export interface JsonValueReplacement extends ReplacementBase {
 	}>;
 }
 
+export interface YamlScalarReplacement extends ReplacementBase {
+	kind: "yaml-scalar";
+	documentIndex: number;
+	path: string[];
+	start: number;
+	end: number;
+	originalValue: string;
+	valueType: "string" | "number" | "boolean" | "null";
+	style:
+		| "PLAIN"
+		| "QUOTE_SINGLE"
+		| "QUOTE_DOUBLE"
+		| "BLOCK_LITERAL"
+		| "BLOCK_FOLDED";
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -127,6 +143,7 @@ export type SkeletonReplacement =
 	| TextRangeReplacement
 	| CsvFieldReplacement
 	| JsonValueReplacement
+	| YamlScalarReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
 	| DocxTextReplacement
@@ -220,7 +237,7 @@ function locateJoinedTextRanges(
 
 export async function createTextSkeleton(
 	file: File,
-	format: "text" | "csv" | "json" | "html",
+	format: "text" | "csv" | "json" | "yaml" | "html",
 	content: string,
 	replacements: SkeletonReplacement[],
 	source?: SkeletonSource,
@@ -499,7 +516,8 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 		if (
 			(replacement.kind === "text-range" ||
 				replacement.kind === "csv-field" ||
-				replacement.kind === "json-value") &&
+				replacement.kind === "json-value" ||
+				replacement.kind === "yaml-scalar") &&
 			(replacement.start < 0 || replacement.end < replacement.start)
 		) {
 			issues.push("Replacement text ranges are invalid.");
@@ -542,6 +560,26 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 			)
 		) {
 			issues.push("JSON string-array fragment mappings are invalid.");
+		}
+		if (
+			replacement.kind === "yaml-scalar" &&
+			(!Number.isInteger(replacement.documentIndex) ||
+				replacement.documentIndex < 0 ||
+				!Array.isArray(replacement.path) ||
+				replacement.path.some((part) => typeof part !== "string") ||
+				typeof replacement.originalValue !== "string" ||
+				!["string", "number", "boolean", "null"].includes(
+					replacement.valueType,
+				) ||
+				![
+					"PLAIN",
+					"QUOTE_SINGLE",
+					"QUOTE_DOUBLE",
+					"BLOCK_LITERAL",
+					"BLOCK_FOLDED",
+				].includes(replacement.style))
+		) {
+			issues.push("YAML scalar replacement metadata is invalid.");
 		}
 	}
 	return { valid: issues.length === 0, issues };

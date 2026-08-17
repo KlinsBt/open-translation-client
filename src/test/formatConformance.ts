@@ -13,6 +13,7 @@ import { buildDocxTranslationPackage } from "$lib/functions/outputGeneration/out
 import { buildXlsxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { buildPptxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import { buildCsvTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationCsv";
+import { buildYamlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationYaml";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -128,6 +129,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildCsvTranslationBlob(project);
 		case "json":
 			return buildJsonTranslationBlob(project);
+		case "yaml":
+			return buildYamlTranslationBlob(project);
 		case "html":
 			return new Blob([buildHtmlTranslation(project)], { type: "text/html" });
 		case "docx":

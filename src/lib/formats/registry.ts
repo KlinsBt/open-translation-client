@@ -3,6 +3,7 @@ import { createHtmlFromModifiedText } from "$lib/functions/outputGeneration/outp
 import { generateJsonTranslation } from "$lib/functions/outputGeneration/outputGenerationJson";
 import { generateTextTranslation } from "$lib/functions/outputGeneration/outputGenerationText";
 import { generateCsvTranslation } from "$lib/functions/outputGeneration/outputGenerationCsv";
+import { generateYamlTranslation } from "$lib/functions/outputGeneration/outputGenerationYaml";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -29,6 +30,7 @@ import { detectFileFormat, type FormatDetection } from "./detect";
 import { DOCX_FAMILY_EXTENSIONS, DOCX_FAMILY_MIME_TYPES } from "./docxPackage";
 import { XLSX_FAMILY_EXTENSIONS, XLSX_FAMILY_MIME_TYPES } from "./xlsxPackage";
 import { PPTX_FAMILY_EXTENSIONS, PPTX_FAMILY_MIME_TYPES } from "./pptxPackage";
+import { importYamlFile, validateYamlFile } from "./yamlFamily";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -86,6 +88,18 @@ const adapters = [
 		validate: validateJsonFile,
 		importFile: importJsonFile,
 		exportFile: generateJsonTranslation,
+	},
+	{
+		id: "yaml",
+		label: "YAML 1.2",
+		extensions: ["yaml", "yml"],
+		mimeTypes: ["application/yaml", "text/yaml", "application/x-yaml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.yaml,
+		sniff: async () => false,
+		validate: validateYamlFile,
+		importFile: importYamlFile,
+		exportFile: generateYamlTranslation,
 	},
 	{
 		id: "docx",

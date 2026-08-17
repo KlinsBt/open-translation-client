@@ -56,6 +56,22 @@ export interface JsonSegmentMeta {
 	separator?: string;
 }
 
+export interface YamlSegmentMeta {
+	documentIndex: number;
+	path: string[];
+	start: number;
+	end: number;
+	originalValue: string;
+	valueType: "string" | "number" | "boolean" | "null";
+	style:
+		| "PLAIN"
+		| "QUOTE_SINGLE"
+		| "QUOTE_DOUBLE"
+		| "BLOCK_LITERAL"
+		| "BLOCK_FOLDED";
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -100,6 +116,7 @@ export type SegmentMeta =
 	| PptxSegmentMeta
 	| CsvSegmentMeta
 	| JsonSegmentMeta
+	| YamlSegmentMeta
 	| HtmlSegmentMeta;
 
 export interface SegmentJoinBoundary {

@@ -85,10 +85,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -102,6 +102,9 @@ describe("format adapter registry", () => {
 		await expect(
 			detectFormat(textFile('{"units":[]}', "CATALOG.LOCJSON", "")),
 		).resolves.toMatchObject({ id: "json" });
+		await expect(
+			detectFormat(textFile("message: Hello", "MESSAGES.YAML", "")),
+		).resolves.toMatchObject({ id: "yaml" });
 		await expect(
 			detectFormat(textFile("plain", "NOTES.TXT", "")),
 		).resolves.toMatchObject({ id: "text" });

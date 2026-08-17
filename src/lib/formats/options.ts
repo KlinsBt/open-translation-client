@@ -193,6 +193,34 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"For generic JSON, attach a sibling primitive as translator context and exclude it from translation.",
 		},
 	],
+	yaml: [
+		{
+			id: "pathSelectors",
+			label: "YAML paths",
+			type: "text",
+			defaultValue: "",
+			placeholder: "e.g. messages.**, products.*.title",
+			description:
+				"Comma-separated value paths. * matches one key; ** matches any depth. Mapping keys and aliases are never translated.",
+		},
+		{
+			id: "includeNonStringScalars",
+			label: "Include non-string scalars",
+			type: "boolean",
+			defaultValue: false,
+			description:
+				"Also expose YAML numbers, booleans, and null values. Their original type is retained when the target remains valid for that type.",
+		},
+		{
+			id: "segmentationMode",
+			label: "Value segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+			description:
+				"Keep each scalar intact by default so block styles and application placeholders remain stable.",
+		},
+	],
 	docx: [
 		{
 			id: "paragraphs",

@@ -47,6 +47,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	text: { allowTagReorder: false, allowInlineCodeReorder: false },
 	csv: { allowTagReorder: false, allowInlineCodeReorder: false },
 	json: { allowTagReorder: false, allowInlineCodeReorder: false },
+	yaml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },
 	pptx: { allowTagReorder: true, allowInlineCodeReorder: true },

@@ -32,6 +32,16 @@ describe("format import options", () => {
 			unicodeNormalization: "preserve",
 		});
 		expect(
+			normalizeImportOptions("yaml", {
+				includeNonStringScalars: "true",
+				segmentationMode: "invalid",
+			}),
+		).toEqual({
+			pathSelectors: "",
+			includeNonStringScalars: true,
+			segmentationMode: "value",
+		});
+		expect(
 			normalizeImportOptions("xlsx", {
 				importMode: "invalid",
 				headerRows: "2",

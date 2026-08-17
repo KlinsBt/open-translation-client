@@ -173,6 +173,42 @@ const jsonFixture: FormatConformanceFixture = {
 	performanceOptions: { pathSelectors: "", includeNonStringValues: false },
 };
 
+const yamlFixture: FormatConformanceFixture = {
+	id: "yaml",
+	fileName: "unicode.yaml",
+	mimeType: "application/yaml",
+	createValidFile: async () =>
+		textFile(
+			`# translator context\nmessage: ${JSON.stringify(CONFORMANCE_UNICODE_SOURCE)}\nlocked: &same keep\nalias: *same\n`,
+			"unicode.yaml",
+			"application/yaml",
+		),
+	createMalformedFile: async () =>
+		textFile('message: "unterminated\n', "broken.yaml", "application/yaml"),
+	expectMalformedImportFailure: true,
+	importOptions: { pathSelectors: "message" },
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			pathSelectors: "message",
+			includeNonStringScalars: false,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["yaml-scalar"] },
+		units: [{ id: "unit-1", part: "unicode.yaml", path: ["0", "message"] }],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			Array.from(
+				{ length: units },
+				(_, index) => `message_${index}: Message ${index}`,
+			).join("\n"),
+			"performance.yaml",
+			"application/yaml",
+		),
+};
+
 const htmlFixture: FormatConformanceFixture = {
 	id: "html",
 	fileName: "unicode.html",
@@ -373,6 +409,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	textFixture,
 	csvFixture,
 	jsonFixture,
+	yamlFixture,
 	docxFixture,
 	xlsxFixture,
 	pptxFixture,
