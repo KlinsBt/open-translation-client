@@ -101,6 +101,20 @@ export const FORMAT_IMPORT_OPTIONS = {
 			description: "Column letters and ranges for inline and value cells.",
 		},
 		{
+			id: "rows",
+			label: "Rows",
+			type: "text",
+			defaultValue: "",
+			placeholder: "All, or e.g. 2-100, 105",
+			description: "Import all rows or a 1-based range list.",
+		},
+		{
+			id: "includeHiddenSheets",
+			label: "Include hidden sheets",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
 			id: "includeSharedStrings",
 			label: "Include shared strings",
 			type: "boolean",
@@ -108,9 +122,11 @@ export const FORMAT_IMPORT_OPTIONS = {
 		},
 		{
 			id: "includeCellValues",
-			label: "Include numeric and formula values",
+			label: "Include non-text values",
 			type: "boolean",
-			defaultValue: true,
+			defaultValue: false,
+			description:
+				"Include numeric and boolean cell values. Formula cells are always protected.",
 		},
 	],
 	html: [

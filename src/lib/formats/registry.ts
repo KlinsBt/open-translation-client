@@ -21,6 +21,7 @@ import { FORMAT_IMPORT_OPTIONS } from "./options";
 import { decodeTextBytes, type SafeInputContext } from "./safeInput";
 import { detectFileFormat, type FormatDetection } from "./detect";
 import { DOCX_FAMILY_EXTENSIONS, DOCX_FAMILY_MIME_TYPES } from "./docxPackage";
+import { XLSX_FAMILY_EXTENSIONS, XLSX_FAMILY_MIME_TYPES } from "./xlsxPackage";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -83,10 +84,8 @@ const adapters = [
 	{
 		id: "xlsx",
 		label: "XLSX",
-		extensions: ["xlsx"],
-		mimeTypes: [
-			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-		],
+		extensions: XLSX_FAMILY_EXTENSIONS,
+		mimeTypes: Object.values(XLSX_FAMILY_MIME_TYPES),
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.xlsx,
 		sniff: async (file, context) =>

@@ -11,17 +11,33 @@ import {
 	normalizeImportOptions,
 	parseColumns,
 	parseList,
+	parsePositiveRanges,
 } from "$lib/formats/options";
 import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
+import {
+	detectXlsxFamilyExtension,
+	XLSX_FAMILY_MIME_TYPES,
+	xlsxFamilyOutputName,
+} from "$lib/formats/xlsxPackage";
 
 export async function createXlsxFromModifiedXmlText(translation: UserData) {
 	assertProjectExportQuality(translation);
 	const updatedXlsx = await buildXlsxTranslationPackage(translation);
-
+	const skeleton = getPackageSkeleton(
+		translation.translationData.skeleton,
+		"xlsx",
+	);
+	const parts =
+		skeleton?.payload.parts ??
+		(translation.translationData.typeRef as Record<string, string | Blob>);
 	const link = document.createElement("a");
 	const url = URL.createObjectURL(updatedXlsx);
 	link.href = url;
-	link.download = `${translation.translationData.name}.xlsx`;
+	link.download = xlsxFamilyOutputName(
+		translation.translationData.name,
+		parts,
+		skeleton?.source.name,
+	);
 	document.body.appendChild(link);
 	link.click();
 	document.body.removeChild(link);
@@ -52,23 +68,7 @@ export async function buildXlsxTranslationPackage(
 	const translatedSegments =
 		skeletonReplacements?.length === data.seg2.length
 			? [...skeletonReplacements]
-					.sort((first, second) => {
-						if (
-							first.storage === "shared-string" &&
-							second.storage !== "shared-string"
-						)
-							return -1;
-						if (
-							second.storage === "shared-string" &&
-							first.storage !== "shared-string"
-						)
-							return 1;
-						if (first.part !== second.part)
-							return first.part.localeCompare(second.part);
-						if (first.storage !== second.storage)
-							return first.storage === "inline-string" ? -1 : 1;
-						return first.localIndex - second.localIndex;
-					})
+					.sort((first, second) => first.unitIndex - second.unitIndex)
 					.map((replacement) => data.seg2[replacement.unitIndex])
 			: data.seg2;
 
@@ -80,6 +80,8 @@ export async function buildXlsxTranslationPackage(
 		{
 			worksheetPaths: parseList(filterOptions.worksheetPaths),
 			columns: parseColumns(filterOptions.columns),
+			rows: parsePositiveRanges(filterOptions.rows),
+			includeHiddenSheets: filterOptions.includeHiddenSheets === true,
 			includeSharedStrings: filterOptions.includeSharedStrings === true,
 			includeCellValues: filterOptions.includeCellValues === true,
 		},
@@ -99,5 +101,12 @@ export async function buildXlsxTranslationPackage(
 			}
 		}
 	}
-	return zip.generateAsync({ type: "blob" });
+	const extension = detectXlsxFamilyExtension(
+		xmlContentMap,
+		skeleton?.source.name,
+	);
+	return zip.generateAsync({
+		type: "blob",
+		mimeType: XLSX_FAMILY_MIME_TYPES[extension],
+	});
 }

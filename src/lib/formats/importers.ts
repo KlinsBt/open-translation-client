@@ -33,7 +33,6 @@ import {
 } from "./options";
 import {
 	createSkeletonSource,
-	inspectSafeZipFile,
 	parseSafeJson,
 	readSafeTextFile,
 	readSafeZipPackage,
@@ -320,10 +319,43 @@ export async function validateXlsxFile(
 	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
 	try {
-		const archive = await inspectSafeZipFile(file, context);
-		return archive.entries.some((entry) => entry.path === "xl/workbook.xml")
-			? { valid: true }
-			: { valid: false, reason: "The XLSX package has no xl/workbook.xml." };
+		const { parts } = await readSafeZipPackage(file, context);
+		const workbookXml = parts["xl/workbook.xml"];
+		if (typeof workbookXml !== "string") {
+			return {
+				valid: false,
+				reason: "The XLSX package has no xl/workbook.xml.",
+			};
+		}
+		const workbook = safeParseXml(workbookXml, context);
+		if (workbook.documentElement.localName !== "workbook") {
+			return {
+				valid: false,
+				reason: "xl/workbook.xml has no SpreadsheetML workbook root.",
+			};
+		}
+		for (const [path, content] of Object.entries(parts)) {
+			if (typeof content !== "string") continue;
+			const expectedRoot =
+				path === "[Content_Types].xml"
+					? "Types"
+					: /(?:^|\/)_rels\/[^/]*\.rels$/i.test(path)
+						? "Relationships"
+						: /^xl\/worksheets\/[^/]+\.xml$/i.test(path)
+							? "worksheet"
+							: path === "xl/sharedStrings.xml"
+								? "sst"
+								: undefined;
+			if (!expectedRoot) continue;
+			const packageXml = safeParseXml(content, context);
+			if (packageXml.documentElement.localName !== expectedRoot) {
+				return {
+					valid: false,
+					reason: `${path} has an invalid package root element.`,
+				};
+			}
+		}
+		return { valid: true };
 	} catch (error) {
 		return invalidResult(error, "The file is not a readable XLSX package.");
 	}
@@ -344,6 +376,8 @@ export async function importXlsxFile(
 	const workbook = segmentWorkbookStrings(content, undefined, {
 		worksheetPaths: parseList(filterOptions.worksheetPaths),
 		columns: parseColumns(filterOptions.columns),
+		rows: parsePositiveRanges(filterOptions.rows),
+		includeHiddenSheets: filterOptions.includeHiddenSheets === true,
 		includeSharedStrings: filterOptions.includeSharedStrings === true,
 		includeCellValues: filterOptions.includeCellValues === true,
 	});
@@ -354,7 +388,10 @@ export async function importXlsxFile(
 		sourceLocations.push({
 			part: "xl/sharedStrings.xml",
 			segmentIndex: sourceLocations.length,
-			metadata: { sharedStringSegment: index },
+			metadata: {
+				sharedStringSegment: index,
+				sharedStringItem: workbook.shared.segments[index].itemIndex,
+			},
 		});
 		replacements.push({
 			kind: "xlsx-text",

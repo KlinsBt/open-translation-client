@@ -216,8 +216,10 @@ const xlsxFixture: FormatConformanceFixture = {
 		filterOptions: {
 			worksheetPaths: "",
 			columns: "",
+			rows: "",
+			includeHiddenSheets: true,
 			includeSharedStrings: true,
-			includeCellValues: true,
+			includeCellValues: false,
 		},
 		skeleton: { kind: "package", replacementKinds: ["xlsx-text"] },
 		units: [{ id: "unit-1", part: "xl/sharedStrings.xml", path: null }],

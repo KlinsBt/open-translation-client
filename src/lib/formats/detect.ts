@@ -78,7 +78,7 @@ export async function detectFileFormat(
 
 	if (hasZipSignature(prefix)) {
 		const inspection = await inspectSafeZipFile(file, context);
-		return detectZipPackage(inspection, extension, adapters, context);
+		return detectZipPackage(inspection, adapters, context);
 	}
 
 	if (hasOleSignature(prefix)) {
@@ -230,7 +230,6 @@ function projectMetadataDetection(
 
 async function detectZipPackage(
 	inspection: SafeArchiveInspection,
-	extension: string | undefined,
 	adapters: readonly FormatAdapter[],
 	context?: SafeInputContext,
 ): Promise<FormatDetection> {
@@ -240,24 +239,6 @@ async function detectZipPackage(
 		return supportedPackage(adapters, "docx", "word/document.xml");
 	}
 	if (paths.has("xl/workbook.xml")) {
-		if (
-			paths.has("xl/vbaProject.bin") ||
-			/macroEnabled\.main\+xml/i.test(packageDetails.contentTypes)
-		) {
-			return unsupported(
-				"XLSM",
-				"high",
-				["package", "signature"],
-				"A macro-enabled Excel OOXML package was detected; XLSM import is not enabled because macro preservation is not implemented.",
-			);
-		}
-		if (["xltx", "xltm"].includes(extension ?? ""))
-			return unsupported(
-				extension!.toUpperCase(),
-				"high",
-				["package", "extension"],
-				"An Excel template package was detected, but template round trips are not implemented.",
-			);
 		return supportedPackage(adapters, "xlsx", "xl/workbook.xml");
 	}
 	if (paths.has("ppt/presentation.xml")) {

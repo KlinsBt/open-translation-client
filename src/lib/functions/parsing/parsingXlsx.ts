@@ -14,6 +14,7 @@ export interface SharedStringFragment {
 export interface SharedStringSegment {
 	text: string;
 	separator: string;
+	itemIndex: number;
 	fragments: SharedStringFragment[];
 }
 
@@ -25,7 +26,10 @@ export interface SharedStringSegmentationResult {
 export interface ValueCellSegment {
 	text: string;
 	sheetPath: string;
+	sheetName: string;
 	cellReference: string;
+	row: number | null;
+	column: number | null;
 	node: Element;
 }
 
@@ -39,20 +43,43 @@ export interface InlineStringSegment {
 	text: string;
 	separator: string;
 	sheetPath: string;
+	sheetName: string;
 	cellReference: string;
+	row: number | null;
+	column: number | null;
 	fragments: InlineStringFragment[];
 }
 
 export interface XlsxFilterOptions {
 	worksheetPaths?: readonly string[];
 	columns?: ReadonlySet<number> | null;
+	rows?: ReadonlySet<number> | null;
+	includeHiddenSheets?: boolean;
 	includeSharedStrings?: boolean;
 	includeCellValues?: boolean;
 }
 
+export interface WorkbookSheetInfo {
+	name: string;
+	path: string;
+	state: string;
+	workbookIndex: number;
+}
+
+export interface SharedStringCellReference {
+	sheetPath: string;
+	sheetName: string;
+	cellReference: string;
+	itemIndex: number;
+	valueNode: Element;
+}
+
 export interface SheetSegmentation {
 	sheetPath: string;
+	sheetName: string;
+	state: string;
 	xmlDoc: Document;
+	sharedStringCells: SharedStringCellReference[];
 	inlineSegments: InlineStringSegment[];
 	valueSegments: ValueCellSegment[];
 }
@@ -60,6 +87,7 @@ export interface SheetSegmentation {
 export interface WorkbookSegmentation {
 	shared: SharedStringSegmentationResult;
 	sheets: SheetSegmentation[];
+	sheetCatalog: WorkbookSheetInfo[];
 	allSegments: string[];
 }
 
@@ -69,252 +97,364 @@ interface NodeRange {
 	end: number;
 }
 
+interface NodeEdit {
+	start: number;
+	end: number;
+	text: string;
+}
+
+function elementsByLocalName(
+	parent: Document | Element,
+	name: string,
+): Element[] {
+	const root =
+		parent.nodeType === 9
+			? (parent as Document).documentElement
+			: (parent as Element);
+	return [root, ...Array.from(root.getElementsByTagName("*"))].filter(
+		(element) => element.localName === name,
+	);
+}
+
+function childByLocalName(parent: Element, name: string): Element | undefined {
+	return Array.from(parent.childNodes).find(
+		(child): child is Element =>
+			child.nodeType === 1 && (child as Element).localName === name,
+	);
+}
+
+function textElements(parent: Element): Element[] {
+	return elementsByLocalName(parent, "t");
+}
+
 function buildNodeRanges(textNodes: Element[]): NodeRange[] {
 	const ranges: NodeRange[] = [];
 	let offset = 0;
-
 	for (const node of textNodes) {
-		const text = node.textContent || "";
-		ranges.push({
-			node,
-			start: offset,
-			end: offset + text.length,
-		});
+		const text = node.textContent ?? "";
+		ranges.push({ node, start: offset, end: offset + text.length });
 		offset += text.length;
 	}
-
 	return ranges;
+}
+
+function splitCellText(text: string, tokens: readonly string[]): SplitPiece[] {
+	if (tokens.length === 0)
+		return [{ text, start: 0, end: text.length, separator: "" }];
+	return splitTextWithPreferences(text, [...tokens]);
+}
+
+function fragmentsForPiece(
+	ranges: readonly NodeRange[],
+	piece: SplitPiece,
+): InlineStringFragment[] {
+	return ranges.flatMap((range) => {
+		const start = Math.max(range.start, piece.start);
+		const end = Math.min(range.end, piece.end);
+		return start < end
+			? [
+					{
+						node: range.node,
+						start: start - range.start,
+						end: end - range.start,
+					},
+				]
+			: [];
+	});
+}
+
+function columnNumber(reference: string): number | null {
+	const letters = reference.match(/^([A-Z]+)/i)?.[1];
+	if (!letters) return null;
+	return [...letters.toUpperCase()].reduce(
+		(total, character) => total * 26 + character.charCodeAt(0) - 64,
+		0,
+	);
+}
+
+function rowNumber(reference: string, cell: Element): number | null {
+	const fromReference = Number(reference.match(/(\d+)$/)?.[1]);
+	if (Number.isInteger(fromReference) && fromReference > 0)
+		return fromReference;
+	const row =
+		cell.parentElement?.localName === "row" ? cell.parentElement : null;
+	const fromRow = Number(row?.getAttribute("r"));
+	return Number.isInteger(fromRow) && fromRow > 0 ? fromRow : null;
+}
+
+function resolvePackageTarget(baseDirectory: string, target: string): string {
+	if (target.startsWith("/")) return target.slice(1);
+	const stack: string[] = [];
+	for (const part of `${baseDirectory}/${target}`.split("/")) {
+		if (!part || part === ".") continue;
+		if (part === "..") stack.pop();
+		else stack.push(part);
+	}
+	return stack.join("/");
+}
+
+export function getWorkbookSheetCatalog(
+	parts: Record<string, string | Blob>,
+): WorkbookSheetInfo[] {
+	const workbookXml = parts["xl/workbook.xml"];
+	const relationshipsXml = parts["xl/_rels/workbook.xml.rels"];
+	if (typeof workbookXml === "string") {
+		const workbook = safeParseXml(workbookXml);
+		const relationships =
+			typeof relationshipsXml === "string"
+				? safeParseXml(relationshipsXml)
+				: undefined;
+		const targets = new Map<string, string>();
+		if (relationships)
+			for (const relationship of elementsByLocalName(
+				relationships,
+				"Relationship",
+			)) {
+				const id = relationship.getAttribute("Id");
+				const target = relationship.getAttribute("Target");
+				if (id && target) targets.set(id, resolvePackageTarget("xl", target));
+			}
+		const catalog = elementsByLocalName(workbook, "sheet").flatMap(
+			(sheet, workbookIndex) => {
+				const relationshipId =
+					sheet.getAttribute("r:id") ??
+					sheet.getAttributeNS(
+						"http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+						"id",
+					) ??
+					"";
+				const path = targets.get(relationshipId);
+				if (!path || typeof parts[path] !== "string") return [];
+				return [
+					{
+						name: sheet.getAttribute("name") ?? `Sheet ${workbookIndex + 1}`,
+						path,
+						state: (sheet.getAttribute("state") ?? "visible").toLowerCase(),
+						workbookIndex,
+					},
+				];
+			},
+		);
+		if (catalog.length > 0) return catalog;
+	}
+	return Object.keys(parts)
+		.filter(
+			(path) =>
+				/^xl\/worksheets\/[^/]+\.xml$/i.test(path) &&
+				typeof parts[path] === "string",
+		)
+		.sort((first, second) =>
+			first.localeCompare(second, undefined, { numeric: true }),
+		)
+		.map((path, workbookIndex) => ({
+			name:
+				path
+					.split("/")
+					.at(-1)
+					?.replace(/\.xml$/i, "") ?? path,
+			path,
+			state: "visible",
+			workbookIndex,
+		}));
+}
+
+function sheetMatchesSelectors(
+	sheet: WorkbookSheetInfo,
+	selectors: readonly string[] | undefined,
+): boolean {
+	if (!selectors?.length) return true;
+	const fileName = sheet.path.split("/").at(-1)?.toLowerCase() ?? "";
+	const candidates = new Set([
+		sheet.name.toLowerCase(),
+		sheet.path.toLowerCase(),
+		fileName,
+		fileName.replace(/\.xml$/i, ""),
+	]);
+	return selectors.some((selector) => candidates.has(selector.toLowerCase()));
 }
 
 export function segmentSharedStringsXml(
 	sharedStringsXml: string,
 	tokensOverride?: string[],
+	selectedItemIndexes?: ReadonlySet<number>,
 ): SharedStringSegmentationResult {
 	const xmlDoc = safeParseXml(sharedStringsXml);
-	const siElements = Array.from(xmlDoc.getElementsByTagName("si"));
+	const siElements = elementsByLocalName(xmlDoc, "si");
 	const segments: SharedStringSegment[] = [];
 	const tokens = tokensOverride ?? getActiveTokens();
-
-	for (const si of siElements) {
-		const textNodes = Array.from(si.getElementsByTagName("t"));
-		if (textNodes.length === 0) continue;
-
-		const combinedText = textNodes
-			.map((node) => node.textContent || "")
-			.join("");
-
-		const ranges = buildNodeRanges(textNodes);
-		const pieces =
-			tokens.length > 0
-				? (splitTextWithPreferences(combinedText, tokens) as SplitPiece[])
-				: [
-						{
-							text: combinedText,
-							start: 0,
-							end: combinedText.length,
-							separator: "",
-						},
-					];
-
-		for (const piece of pieces) {
-			const fragments = ranges
-				.map((range) => {
-					const overlapStart = Math.max(range.start, piece.start);
-					const overlapEnd = Math.min(range.end, piece.end);
-					if (overlapStart < overlapEnd) {
-						return {
-							node: range.node,
-							start: overlapStart - range.start,
-							end: overlapEnd - range.start,
-						};
-					}
-					return null;
-				})
-				.filter(Boolean) as SharedStringFragment[];
-
+	for (const [itemIndex, si] of siElements.entries()) {
+		if (selectedItemIndexes && !selectedItemIndexes.has(itemIndex)) continue;
+		const nodes = textElements(si);
+		if (nodes.length === 0) continue;
+		const combinedText = nodes.map((node) => node.textContent ?? "").join("");
+		if (!combinedText) continue;
+		const ranges = buildNodeRanges(nodes);
+		for (const piece of splitCellText(combinedText, tokens)) {
+			const fragments = fragmentsForPiece(ranges, piece);
 			if (fragments.length === 0) continue;
-
 			segments.push({
 				text: piece.text,
 				separator: piece.separator,
+				itemIndex,
 				fragments,
 			});
 		}
 	}
-
 	return { xmlDoc, segments };
 }
 
-function segmentInlineStringsInSheet(
+function segmentSheet(
 	sheetXml: string,
-	sheetPath: string,
-	tokensOverride?: string[],
-	filterOptions: XlsxFilterOptions = {},
+	sheet: WorkbookSheetInfo,
+	tokensOverride: string[] | undefined,
+	filterOptions: XlsxFilterOptions,
 ): SheetSegmentation {
 	const xmlDoc = safeParseXml(sheetXml);
-	const cellElements = Array.from(xmlDoc.getElementsByTagName("c"));
+	const sharedStringCells: SharedStringCellReference[] = [];
 	const inlineSegments: InlineStringSegment[] = [];
 	const valueSegments: ValueCellSegment[] = [];
 	const tokens = tokensOverride ?? getActiveTokens();
-
-	for (const cell of cellElements) {
-		const type = cell.getAttribute("t");
+	for (const cell of elementsByLocalName(xmlDoc, "c")) {
 		const cellReference = cell.getAttribute("r") ?? "";
-		const columnMatch = cellReference.match(/^([a-z]+)/i);
-		const column = columnMatch
-			? [...columnMatch[1].toUpperCase()].reduce(
-					(total, character) => total * 26 + character.charCodeAt(0) - 64,
-					0,
-				)
-			: null;
+		const column = columnNumber(cellReference);
+		const row = rowNumber(cellReference, cell);
 		if (
 			filterOptions.columns &&
 			(column === null || !filterOptions.columns.has(column))
 		)
 			continue;
-
-		// inlineStr: <is><t>...</t></is>
+		if (filterOptions.rows && (row === null || !filterOptions.rows.has(row)))
+			continue;
+		// Formula values are cached calculation results, not source content.
+		if (childByLocalName(cell, "f")) continue;
+		const type = cell.getAttribute("t") ?? "";
+		if (type === "s") {
+			if (filterOptions.includeSharedStrings === false) continue;
+			const valueNode = childByLocalName(cell, "v");
+			const itemIndex = Number(valueNode?.textContent);
+			if (!valueNode || !Number.isInteger(itemIndex) || itemIndex < 0) continue;
+			sharedStringCells.push({
+				sheetPath: sheet.path,
+				sheetName: sheet.name,
+				cellReference,
+				itemIndex,
+				valueNode,
+			});
+			continue;
+		}
 		if (type === "inlineStr") {
-			const tNodes = Array.from(cell.getElementsByTagName("t"));
-			if (tNodes.length === 0) continue;
-			const combinedText = tNodes.map((t) => t.textContent || "").join("");
-			if (!combinedText) continue;
-
-			const ranges = buildNodeRanges(tNodes);
-			const pieces =
-				tokens.length > 0
-					? (splitTextWithPreferences(combinedText, tokens) as SplitPiece[])
-					: [
-							{
-								text: combinedText,
-								start: 0,
-								end: combinedText.length,
-								separator: "",
-							},
-						];
-
-			for (const piece of pieces) {
-				const fragments = ranges
-					.map((range) => {
-						const overlapStart = Math.max(range.start, piece.start);
-						const overlapEnd = Math.min(range.end, piece.end);
-						if (overlapStart < overlapEnd) {
-							return {
-								node: range.node,
-								start: overlapStart - range.start,
-								end: overlapEnd - range.start,
-							};
-						}
-						return null;
-					})
-					.filter(Boolean) as InlineStringFragment[];
-
+			const nodes = textElements(childByLocalName(cell, "is") ?? cell);
+			const text = nodes.map((node) => node.textContent ?? "").join("");
+			if (!text) continue;
+			const ranges = buildNodeRanges(nodes);
+			for (const piece of splitCellText(text, tokens)) {
+				const fragments = fragmentsForPiece(ranges, piece);
 				if (fragments.length === 0) continue;
-
 				inlineSegments.push({
 					text: piece.text,
 					separator: piece.separator,
-					sheetPath,
+					sheetPath: sheet.path,
+					sheetName: sheet.name,
 					cellReference,
+					row,
+					column,
 					fragments,
 				});
 			}
+			continue;
 		}
-
-		// Plain string cells: t="str" with <v>text</v>
 		if (type === "str") {
-			const vNode = cell.getElementsByTagName("v")[0];
-			if (!vNode) continue;
-			const text = vNode.textContent || "";
-			if (!text) continue;
-			const pieces =
-				tokens.length > 0
-					? (splitTextWithPreferences(text, tokens) as SplitPiece[])
-					: [
-							{
-								text,
-								start: 0,
-								end: text.length,
-								separator: "",
-							},
-						];
-			for (const piece of pieces) {
-				const fragments: InlineStringFragment[] = [
-					{
-						node: vNode,
-						start: Math.max(0, piece.start),
-						end: Math.min(text.length, piece.end),
-					},
-				];
+			const valueNode = childByLocalName(cell, "v");
+			const text = valueNode?.textContent ?? "";
+			if (!valueNode || !text) continue;
+			for (const piece of splitCellText(text, tokens)) {
 				inlineSegments.push({
 					text: piece.text,
 					separator: piece.separator,
-					sheetPath,
+					sheetPath: sheet.path,
+					sheetName: sheet.name,
 					cellReference,
-					fragments,
+					row,
+					column,
+					fragments: [
+						{
+							node: valueNode,
+							start: piece.start,
+							end: piece.end,
+						},
+					],
 				});
 			}
+			continue;
 		}
-
-		// Other cells with values (numeric, formula results, booleans, dates, etc.)
-		if (
-			filterOptions.includeCellValues !== false &&
-			type !== "s" &&
-			type !== "str" &&
-			type !== "inlineStr"
-		) {
-			const vNode = cell.getElementsByTagName("v")[0];
-			if (!vNode) continue;
-			const text = vNode.textContent || "";
-			if (!text) continue;
-			valueSegments.push({ text, sheetPath, cellReference, node: vNode });
-		}
+		if (filterOptions.includeCellValues === false) continue;
+		const valueNode = childByLocalName(cell, "v");
+		const text = valueNode?.textContent ?? "";
+		if (!valueNode || !text) continue;
+		valueSegments.push({
+			text,
+			sheetPath: sheet.path,
+			sheetName: sheet.name,
+			cellReference,
+			row,
+			column,
+			node: valueNode,
+		});
 	}
-
-	return { sheetPath, xmlDoc, inlineSegments, valueSegments };
+	return {
+		sheetPath: sheet.path,
+		sheetName: sheet.name,
+		state: sheet.state,
+		xmlDoc,
+		sharedStringCells,
+		inlineSegments,
+		valueSegments,
+	};
 }
 
 export function segmentWorkbookStrings(
-	xmlContentMap: Record<string, string | Blob>,
+	parts: Record<string, string | Blob>,
 	tokensOverride?: string[],
 	filterOptions: XlsxFilterOptions = {},
 ): WorkbookSegmentation {
-	const sharedStringsEntry = xmlContentMap["xl/sharedStrings.xml"];
-	const shared =
-		filterOptions.includeSharedStrings !== false &&
-		typeof sharedStringsEntry === "string"
-			? segmentSharedStringsXml(sharedStringsEntry, tokensOverride)
-			: {
-					xmlDoc: safeParseXml("<sst></sst>"),
-					segments: [],
-				};
-
-	const requestedSheets = filterOptions.worksheetPaths?.map((path) =>
-		path.startsWith("xl/worksheets/")
-			? path
-			: `xl/worksheets/${path.endsWith(".xml") ? path : `${path}.xml`}`,
+	const sheetCatalog = getWorkbookSheetCatalog(parts);
+	const selectedCatalog = sheetCatalog.filter(
+		(sheet) =>
+			sheetMatchesSelectors(sheet, filterOptions.worksheetPaths) &&
+			((filterOptions.includeHiddenSheets ?? true) ||
+				sheet.state === "visible"),
 	);
-	const sheetPaths = Object.keys(xmlContentMap)
-		.filter(
-			(path) =>
-				path.startsWith("xl/worksheets/sheet") &&
-				typeof xmlContentMap[path] === "string",
-		)
-		.filter(
-			(path) => !requestedSheets?.length || requestedSheets.includes(path),
-		)
-		.sort();
-
-	const sheets = sheetPaths.map((path) =>
-		segmentInlineStringsInSheet(
-			xmlContentMap[path] as string,
-			path,
+	const sheets = selectedCatalog.map((sheet) =>
+		segmentSheet(
+			parts[sheet.path] as string,
+			sheet,
 			tokensOverride,
 			filterOptions,
 		),
 	);
-
-	const allSegments: string[] = [
+	const selectedSharedIndexes = new Set(
+		sheets.flatMap((sheet) =>
+			sheet.sharedStringCells.map((reference) => reference.itemIndex),
+		),
+	);
+	const sharedStringsEntry = parts["xl/sharedStrings.xml"];
+	const hasWorkbookRelationships =
+		typeof parts["xl/_rels/workbook.xml.rels"] === "string";
+	const shared =
+		filterOptions.includeSharedStrings !== false &&
+		typeof sharedStringsEntry === "string"
+			? segmentSharedStringsXml(
+					sharedStringsEntry,
+					tokensOverride,
+					hasWorkbookRelationships || selectedSharedIndexes.size > 0
+						? selectedSharedIndexes
+						: undefined,
+				)
+			: {
+					xmlDoc: safeParseXml("<sst></sst>"),
+					segments: [],
+				};
+	const allSegments = [
 		...shared.segments.map(
 			(segment) => `${segment.text}${segment.separator ?? ""}`,
 		),
@@ -325,8 +465,67 @@ export function segmentWorkbookStrings(
 			...sheet.valueSegments.map((segment) => segment.text),
 		]),
 	];
+	return { shared, sheets, sheetCatalog, allSegments };
+}
 
-	return { shared, sheets, allSegments };
+function setPreservedText(node: Element, text: string): void {
+	node.textContent = text;
+	if (
+		/^\s|\s$/.test(text) &&
+		node.getAttribute("xml:space") !== "preserve" &&
+		node.getAttributeNS("http://www.w3.org/XML/1998/namespace", "space") !==
+			"preserve"
+	)
+		node.setAttributeNS(
+			"http://www.w3.org/XML/1998/namespace",
+			"xml:space",
+			"preserve",
+		);
+}
+
+function applySegmentEdits<
+	T extends { text: string; fragments: SharedStringFragment[] },
+>(segments: readonly T[], translations: readonly string[]): void {
+	const edits = new Map<Element, NodeEdit[]>();
+	for (const [segmentIndex, segment] of segments.entries()) {
+		const replacement = translations[segmentIndex] ?? segment.text;
+		const totalSpan =
+			segment.fragments.reduce(
+				(total, fragment) => total + fragment.end - fragment.start,
+				0,
+			) || 1;
+		let sourceConsumed = 0;
+		let replacementConsumed = 0;
+		for (const [fragmentIndex, fragment] of segment.fragments.entries()) {
+			sourceConsumed += fragment.end - fragment.start;
+			const replacementEnd =
+				fragmentIndex === segment.fragments.length - 1
+					? replacement.length
+					: Math.round((sourceConsumed / totalSpan) * replacement.length);
+			const values = edits.get(fragment.node) ?? [];
+			values.push({
+				start: fragment.start,
+				end: fragment.end,
+				text: replacement.slice(replacementConsumed, replacementEnd),
+			});
+			edits.set(fragment.node, values);
+			replacementConsumed = replacementEnd;
+		}
+	}
+	for (const [node, nodeEdits] of edits) {
+		let text = node.textContent ?? "";
+		for (const edit of [...nodeEdits].sort(
+			(first, second) => second.start - first.start,
+		))
+			text = `${text.slice(0, edit.start)}${edit.text}${text.slice(edit.end)}`;
+		setPreservedText(node, text);
+	}
+}
+
+function serializeSpreadsheetXml(document: Document): string {
+	return new XMLSerializer()
+		.serializeToString(document)
+		.replaceAll("&nbsp;", "&#160;");
 }
 
 export function applyTranslationsToSharedStringsXml(
@@ -334,185 +533,117 @@ export function applyTranslationsToSharedStringsXml(
 	translatedSegments: string[],
 	tokensOverride?: string[],
 ): string {
-	const { xmlDoc, segments } = segmentSharedStringsXml(
+	const parsed = segmentSharedStringsXml(
 		sharedStringsXml,
 		tokensOverride ?? getDefaultTokens(),
 	);
-	if (segments.length === 0) return sharedStringsXml;
-
-	const serializer = new XMLSerializer();
-	const nodePieces = new Map<Element, string[]>();
-
-	for (let i = 0; i < segments.length; i++) {
-		const segment = segments[i];
-		const translatedText = translatedSegments[i] ?? segment.text;
-		const replacement = translatedText;
-		const fragments = segment.fragments;
-		const totalSpan =
-			fragments.reduce(
-				(sum, fragment) => sum + (fragment.end - fragment.start),
-				0,
-			) || 1;
-
-		let consumed = 0;
-
-		fragments.forEach((fragment, index) => {
-			const fragmentLength = fragment.end - fragment.start;
-			const isLast = index === fragments.length - 1;
-			const takeLength = isLast
-				? replacement.length - consumed
-				: Math.round((fragmentLength / totalSpan) * replacement.length);
-			const nextConsumed = Math.max(consumed + takeLength, consumed);
-			const piece = replacement.slice(consumed, nextConsumed);
-			consumed = nextConsumed;
-
-			const existing = nodePieces.get(fragment.node) || [];
-			existing.push(piece);
-			nodePieces.set(fragment.node, existing);
-		});
-	}
-
-	nodePieces.forEach((pieces, node) => {
-		node.textContent = pieces.join("");
-	});
-
-	return serializer.serializeToString(xmlDoc);
+	if (parsed.segments.length === 0) return sharedStringsXml;
+	applySegmentEdits(parsed.segments, translatedSegments);
+	return serializeSpreadsheetXml(parsed.xmlDoc);
 }
 
-function applyTranslationsToInlineSegments(
-	sheet: SheetSegmentation,
-	translatedSegments: string[],
-	startIndex: number,
-): { updatedXml: string; nextIndex: number; xmlDoc: Document } {
-	const { xmlDoc, inlineSegments } = sheet;
-	if (inlineSegments.length === 0) {
-		return {
-			updatedXml: new XMLSerializer().serializeToString(xmlDoc),
-			nextIndex: startIndex,
-			xmlDoc,
-		};
-	}
-
-	const serializer = new XMLSerializer();
-	const nodePieces = new Map<Element, string[]>();
-	let cursor = startIndex;
-
-	for (let i = 0; i < inlineSegments.length; i++) {
-		const segment = inlineSegments[i];
-		const translatedText = translatedSegments[cursor] ?? segment.text;
-		const replacement = translatedText;
-		cursor++;
-
-		const fragments = segment.fragments;
-		const totalSpan =
-			fragments.reduce(
-				(sum, fragment) => sum + (fragment.end - fragment.start),
-				0,
-			) || 1;
-
-		let consumed = 0;
-
-		fragments.forEach((fragment, index) => {
-			const fragmentLength = fragment.end - fragment.start;
-			const isLast = index === fragments.length - 1;
-			const takeLength = isLast
-				? replacement.length - consumed
-				: Math.round((fragmentLength / totalSpan) * replacement.length);
-			const nextConsumed = Math.max(consumed + takeLength, consumed);
-			const piece = replacement.slice(consumed, nextConsumed);
-			consumed = nextConsumed;
-
-			const existing = nodePieces.get(fragment.node) || [];
-			existing.push(piece);
-			nodePieces.set(fragment.node, existing);
-		});
-	}
-
-	nodePieces.forEach((pieces, node) => {
-		node.textContent = pieces.join("");
-	});
-
-	return {
-		updatedXml: serializer.serializeToString(xmlDoc),
-		nextIndex: cursor,
-		xmlDoc,
-	};
-}
-
-function applyTranslationsToValueSegments(
-	sheet: SheetSegmentation,
-	translatedSegments: string[],
-	startIndex: number,
-): { updatedXml: string; nextIndex: number; xmlDoc: Document } {
-	const { xmlDoc, valueSegments } = sheet;
-	if (valueSegments.length === 0) {
-		return {
-			updatedXml: new XMLSerializer().serializeToString(xmlDoc),
-			nextIndex: startIndex,
-			xmlDoc,
-		};
-	}
-
-	let cursor = startIndex;
-	for (const segment of valueSegments) {
-		const translatedText = translatedSegments[cursor] ?? segment.text;
-		cursor++;
-		segment.node.textContent = translatedText;
-	}
-
-	return {
-		updatedXml: new XMLSerializer().serializeToString(xmlDoc),
-		nextIndex: cursor,
-		xmlDoc,
-	};
+function clonedItemSegments(
+	originalItem: Element,
+	clone: Element,
+	segments: readonly SharedStringSegment[],
+): SharedStringSegment[] {
+	const originals = textElements(originalItem);
+	const clones = textElements(clone);
+	return segments.map((segment) => ({
+		...segment,
+		fragments: segment.fragments.flatMap((fragment) => {
+			const index = originals.indexOf(fragment.node);
+			return index >= 0 && clones[index]
+				? [{ ...fragment, node: clones[index] }]
+				: [];
+		}),
+	}));
 }
 
 export function applyTranslationsToWorkbook(
-	xmlContentMap: Record<string, string | Blob>,
+	parts: Record<string, string | Blob>,
 	translatedSegments: string[],
 	tokensOverride?: string[],
 	filterOptions: XlsxFilterOptions = {},
 ): Record<string, string | Blob> {
-	const updatedMap: Record<string, string | Blob> = { ...xmlContentMap };
+	const updated: Record<string, string | Blob> = { ...parts };
 	const tokens = tokensOverride ?? getDefaultTokens();
-	const { shared, sheets } = segmentWorkbookStrings(
-		xmlContentMap,
-		tokens,
-		filterOptions,
-	);
-
-	// Shared strings
-	const sharedCount = shared.segments.length;
-	if (
-		sharedCount > 0 &&
-		typeof xmlContentMap["xl/sharedStrings.xml"] === "string"
-	) {
-		updatedMap["xl/sharedStrings.xml"] = applyTranslationsToSharedStringsXml(
-			xmlContentMap["xl/sharedStrings.xml"] as string,
-			translatedSegments.slice(0, sharedCount),
-			tokens,
+	const workbook = segmentWorkbookStrings(parts, tokens, filterOptions);
+	const sharedCount = workbook.shared.segments.length;
+	const sharedXml = parts["xl/sharedStrings.xml"];
+	if (sharedCount > 0 && typeof sharedXml === "string") {
+		const references = workbook.sheets.flatMap(
+			(sheet) => sheet.sharedStringCells,
 		);
+		if (references.length === 0) {
+			updated["xl/sharedStrings.xml"] = applyTranslationsToSharedStringsXml(
+				sharedXml,
+				translatedSegments.slice(0, sharedCount),
+				tokens,
+			);
+		} else {
+			const root = workbook.shared.xmlDoc.documentElement;
+			const items = elementsByLocalName(root, "si");
+			const segmentsByItem = new Map<
+				number,
+				Array<{ segment: SharedStringSegment; translation: string }>
+			>();
+			for (const [index, segment] of workbook.shared.segments.entries()) {
+				const values = segmentsByItem.get(segment.itemIndex) ?? [];
+				values.push({
+					segment,
+					translation: translatedSegments[index] ?? segment.text,
+				});
+				segmentsByItem.set(segment.itemIndex, values);
+			}
+			for (const [itemIndex, values] of segmentsByItem) {
+				const original = items[itemIndex];
+				if (!original) continue;
+				const clone = original.cloneNode(true) as Element;
+				const clonedSegments = clonedItemSegments(
+					original,
+					clone,
+					values.map((value) => value.segment),
+				);
+				applySegmentEdits(
+					clonedSegments,
+					values.map((value) => value.translation),
+				);
+				const newIndex = elementsByLocalName(root, "si").length;
+				root.appendChild(clone);
+				for (const reference of references)
+					if (reference.itemIndex === itemIndex)
+						reference.valueNode.textContent = String(newIndex);
+			}
+			if (root.hasAttribute("uniqueCount"))
+				root.setAttribute(
+					"uniqueCount",
+					String(elementsByLocalName(root, "si").length),
+				);
+			updated["xl/sharedStrings.xml"] = serializeSpreadsheetXml(
+				workbook.shared.xmlDoc,
+			);
+		}
 	}
 
-	// Inline/str cells
 	let cursor = sharedCount;
-	for (const sheet of sheets) {
-		const inlineResult = applyTranslationsToInlineSegments(
-			sheet,
-			translatedSegments,
+	for (const sheet of workbook.sheets) {
+		const inlineTranslations = translatedSegments.slice(
 			cursor,
+			cursor + sheet.inlineSegments.length,
 		);
-		cursor = inlineResult.nextIndex;
-
-		// Apply to value cells on the same xmlDoc
-		const valueResult = applyTranslationsToValueSegments(
-			{ ...sheet, xmlDoc: inlineResult.xmlDoc },
-			translatedSegments,
-			cursor,
-		);
-		cursor = valueResult.nextIndex;
-		updatedMap[sheet.sheetPath] = valueResult.updatedXml;
+		applySegmentEdits(sheet.inlineSegments, inlineTranslations);
+		cursor += sheet.inlineSegments.length;
+		for (const segment of sheet.valueSegments) {
+			segment.node.textContent = translatedSegments[cursor] ?? segment.text;
+			cursor++;
+		}
+		if (
+			sheet.sharedStringCells.length > 0 ||
+			sheet.inlineSegments.length > 0 ||
+			sheet.valueSegments.length > 0
+		)
+			updated[sheet.sheetPath] = serializeSpreadsheetXml(sheet.xmlDoc);
 	}
-
-	return updatedMap;
+	return updated;
 }

@@ -85,7 +85,7 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.json,.docx,.docm,.dotx,.dotm,.xlsx,.html,.htm",
+			".txt,.json,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.html,.htm",
 		);
 		expect(getSupportedFormatLabels()).toBe("TXT, JSON, DOCX, XLSX, HTML");
 	});
@@ -225,6 +225,28 @@ describe("format adapter registry", () => {
 			await expect(detectFormatWithConfidence(file)).resolves.toMatchObject({
 				formatId: "docx",
 				label: "DOCX",
+				supported: true,
+				confidence: "high",
+			});
+		},
+	);
+
+	it.each(["xlsm", "xltx", "xltm"])(
+		"detects Excel %s packages as the XLSX-family adapter",
+		async (extension) => {
+			const file = await zipFile(
+				{
+					"[Content_Types].xml": `<Types><Override ContentType="application/vnd.ms-excel.${extension.includes("m") ? "macroEnabled" : "template"}.main+xml"/></Types>`,
+					"xl/workbook.xml": "<workbook/>",
+					...(extension.includes("m")
+						? { "xl/vbaProject.bin": "opaque macro bytes" }
+						: {}),
+				},
+				`workbook.${extension}`,
+			);
+			await expect(detectFormatWithConfidence(file)).resolves.toMatchObject({
+				formatId: "xlsx",
+				label: "XLSX",
 				supported: true,
 				confidence: "high",
 			});

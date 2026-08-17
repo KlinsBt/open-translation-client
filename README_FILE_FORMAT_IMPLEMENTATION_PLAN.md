@@ -31,15 +31,14 @@ The sequence is:
 
 | Area               | Present in the repository                                    | Main gap before it is production-grade                                           |
 | ------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| Source documents   | TXT, JSON, DOCX/DOCM/DOTX/DOTM, XLSX, HTML                   | Each uses a separate path; preservation and coverage vary                        |
+| Source documents   | TXT, JSON, DOCX/DOCM/DOTX/DOTM, XLSX/XLSM/XLTX/XLTM, HTML    | Each uses a separate path; preservation and coverage vary                        |
 | Project exchange   | Open TLC JSON, XLIFF 1.2/2.x, protected vendor XLIFF imports | Origin-tool-verified vendor exports and typed module capabilities                |
 | Translation memory | TMX 1.4b Level 1/2 import, export, and policy-driven merge   | Broader vendor corpora and persistent indexing for very large memories           |
 | Terminology        | TBX import/export and merge, including `martif` handling     | Explicit dialect/version support, validation, references, and lossless metadata  |
 | Tests              | Parser, output, storage, segmentation, and consistency tests | Per-format conformance corpora, round trips, malformed inputs, and browser flows |
 
-The upload UI currently advertises legacy `.xls` in places even though the
-implementation reads ZIP-based XLSX. That is a false-positive format claim and
-must be removed until a real XLS converter exists.
+Legacy binary `.doc` and `.xls` files remain explicit conversion candidates;
+they are not routed to the ZIP-based OOXML importers.
 
 ## Architecture required before adding more extensions
 
@@ -82,7 +81,8 @@ must be removed until a real XLS converter exists.
       renders dynamically and normalizes before import. Current formats support
       TXT segmentation modes, JSON wildcard paths and primitive-value policy,
       DOCX story, revision, drawing, and paragraph controls, XLSX
-      worksheet/column/content filters, and HTML text and attribute selection.
+      worksheet/column/row/hidden-sheet/content filters, and HTML text and
+      attribute selection.
       Options persist in IndexedDB and Open TLC XLIFF
       saves, are backfilled for older projects, and are reused by exporters.
       Unit, selective-import, persistence, interchange, and filtered round-trip
@@ -130,8 +130,8 @@ must be removed until a real XLS converter exists.
       and a user-facing explanation. Exact final extensions are normalized
       case-insensitively, MIME parameters are stripped, and contradictory names
       or MIME values cannot override structural signatures. Safe ZIP inspection
-      distinguishes the supported DOCX/DOCM/DOTX/DOTM family from XLSX,
-      unsupported XLSM/Excel templates, PPTX/PPTM, ODT/ODS/ODP, EPUB, and
+      distinguishes the supported DOCX/DOCM/DOTX/DOTM and
+      XLSX/XLSM/XLTX/XLTM families from PPTX/PPTM, ODT/ODS/ODP, EPUB, and
       unknown ZIP containers by internal entries and declared media types.
       Legacy OLE `.doc`/`.xls`/`.ppt`, RTF, and generic XML
       are recognized but reported as unsupported instead of routed to an
@@ -328,12 +328,30 @@ Complete these in order after FF-000 through FF-009.
       passes `xmllint` well-formedness and a headless LibreOffice reopen/PDF
       export. Full ISO/IEC 29500 schema validation and semantic translation of
       field results, charts, or SmartArt remain explicit future hardening work.
-- [ ] **FF-106 — XLSX family (`.xlsx`, later `.xlsm`, `.xltx`, `.xltm`).**
+- [ ] **FF-106 — XLSX family (`.xlsx`, `.xlsm`, `.xltx`, `.xltm`).**
       Harden shared and inline strings across every worksheet; preserve formulas,
       numbers, dates, rich-text runs, comments, hyperlinks, hidden sheets,
       tables, charts, drawings, styles, and workbook relationships. Add column,
       row, sheet, key/value, and multilingual-column import modes. Never replace
       formulas with their cached display strings.
+      Progress 2026-08-17 (package-safety milestone): one content-sniffed adapter
+      now accepts all four SpreadsheetML package types, retains their extension
+      and MIME on export, and preserves VBA as opaque bytes without evaluating
+      it. Worksheets follow workbook relationship order instead of filename
+      order; sheet selectors accept workbook names; and row, column, and hidden-
+      sheet policies persist through export. Formula cells are always protected,
+      including cached results. Selected shared strings are cloned and only the
+      selected cell references are repointed, so filtered cells that reuse the
+      same shared-string item cannot be translated accidentally. Rich runs,
+      leading/trailing and non-breaking spaces, inline/plain strings, numeric and
+      boolean opt-in values, hyperlinks, styles, comments, tables, drawings,
+      charts, relationships, unknown parts, and identity bytes have focused
+      round-trip coverage. Malformed workbook/worksheet XML is rejected, and a
+      translated three-sheet repository fixture reopens and exports to PDF in
+      headless LibreOffice. The task remains unchecked until key/value and
+      multilingual-column modes, comment translation policy/context, broader
+      real-world formula/date/table corpora, and the full completion gates are
+      implemented.
 - [ ] **FF-107 — PPTX family (`.pptx`, later `.pptm`, `.potx`, `.potm`, `.ppsx`).**
       Add slides in relationship order, grouped shapes, tables, charts, SmartArt
       text where safely addressable, masters/layouts, notes, comments, alt text,
@@ -602,6 +620,9 @@ events and reconstruct the original format.
 - [LTAC-Global TBX-Basic DCA/DCT schemas](https://ltac-global.github.io/TBX-Basic_dialect/)
 - [W3C ITS 2.0](https://www.w3.org/TR/its20/)
 - [Microsoft Open XML package overview](https://learn.microsoft.com/en-us/office/open-xml/about-the-open-xml-sdk)
+- [Microsoft SpreadsheetML document structure](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/structure-of-a-spreadsheetml-document)
+- [Microsoft SpreadsheetML formula and cached-value guidance](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/working-with-formulas)
+- [Microsoft worksheet lookup through workbook relationships](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/how-to-get-a-column-heading-in-a-spreadsheet)
 - [Microsoft WordprocessingML document structure and story parts](https://learn.microsoft.com/en-us/office/open-xml/word/structure-of-a-wordprocessingml-document)
 - [Microsoft Word header and footer package relationships](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-remove-the-headers-and-footers-from-a-word-processing-document)
 - [Microsoft Word comments-part guidance](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-retrieve-comments-from-a-word-processing-document)
