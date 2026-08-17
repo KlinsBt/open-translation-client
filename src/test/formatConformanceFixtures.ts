@@ -532,6 +532,49 @@ const iniFixture: FormatConformanceFixture = {
 	performanceOptions: { profile: "generic", keySelectors: "messages.*" },
 };
 
+const phpFixture: FormatConformanceFixture = {
+	id: "php",
+	fileName: "messages.php",
+	mimeType: "application/x-httpd-php",
+	createValidFile: async () =>
+		textFile(
+			`<?php\nreturn [\n    // Home title\n    'welcome' => '${CONFORMANCE_UNICODE_SOURCE.replaceAll("'", "\\'")}',\n    'locked' => 'Keep',\n];\n`,
+			"messages.php",
+			"application/x-httpd-php",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			"<?php return ['welcome' => getenv('MESSAGE')];",
+			"bad.php",
+			"application/x-httpd-php",
+		),
+	expectMalformedImportFailure: true,
+	importOptions: { pathSelectors: "welcome" },
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { pathSelectors: "welcome", includeEmpty: false },
+		skeleton: { kind: "text", replacementKinds: ["php-value"] },
+		units: [
+			{
+				id: "welcome",
+				part: "messages.php",
+				path: ["welcome"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<?php return [${Array.from(
+				{ length: units },
+				(_, index) => `'message_${index}' => 'Message ${index}'`,
+			).join(",")}];`,
+			"performance.php",
+			"application/x-httpd-php",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -789,6 +832,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	resxFixture,
 	qtTsFixture,
 	iniFixture,
+	phpFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

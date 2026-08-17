@@ -26,6 +26,7 @@ export type SafeInputErrorCode =
 	| "QT_TS_INVALID"
 	| "INI_MALFORMED"
 	| "INI_SELECTION_REQUIRED"
+	| "PHP_LOCALIZATION_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

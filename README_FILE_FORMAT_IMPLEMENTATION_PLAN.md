@@ -714,10 +714,25 @@ Complete these in order after FF-000 through FF-009.
       insertion, duplicates/comments/escapes, UTF-16, malformed syntax,
       1,000-value performance, detection, and browser download coverage verifies
       the workflow.
-- [ ] **FF-211 — PHP localization arrays (`.php`).** Parse a deliberately limited
+- [x] **FF-211 — PHP localization arrays (`.php`).** Parse a deliberately limited
       static array grammar or a mature AST; never use `eval`, import, or execute.
       Preserve keys, comments, nesting, escapes, and placeholders, and reject
       dynamic expressions with a precise diagnostic.
+      Completed 2026-08-18: a purpose-built parser accepts only a PHP file that
+      returns nested short (`[]`) or long (`array()`) arrays with quoted/integer
+      keys and literal string leaves. It never evaluates, imports, or executes
+      PHP; variables, interpolation, calls, concatenation, constants, additional
+      statements, and non-string leaves fail with line/column diagnostics. Exact
+      value ranges retain nesting, comments, key spelling, array style, commas,
+      whitespace, line endings, quote style, encodings/BOM, duplicate entries,
+      and identity bytes. Dot-path selectors with `*`/`**`, empty-string policy,
+      protected path context, duplicate warnings, PHP single/double-quoted escape
+      decoding, safe dollar escaping, placeholder QA, reparsing after export,
+      stale-mapping rejection, and blocked split/join keep edits deterministic.
+      Unit, conformance, malformed/adversarial dynamic-code, nested-array,
+      selector, duplicate, escape, Unicode/UTF-16, 1,000-value performance,
+      detection, identity, translated re-import, and browser download coverage
+      verifies the workflow.
 - [ ] **FF-212 — Markdown and AsciiDoc (`.md`, `.markdown`, `.adoc`, `.asciidoc`).**
       Preserve front matter, code, URLs, references, directives, attributes,
       tables, embedded HTML, inline markup, hard line breaks, and protected spans.

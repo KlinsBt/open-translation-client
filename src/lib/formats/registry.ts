@@ -12,6 +12,7 @@ import { generatePropertiesTranslation } from "$lib/functions/outputGeneration/o
 import { generateResxTranslation } from "$lib/functions/outputGeneration/outputGenerationResx";
 import { generateQtTsTranslation } from "$lib/functions/outputGeneration/outputGenerationQtTs";
 import { generateIniTranslation } from "$lib/functions/outputGeneration/outputGenerationIni";
+import { generatePhpTranslation } from "$lib/functions/outputGeneration/outputGenerationPhp";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -56,6 +57,10 @@ import {
 import { importResxFile, validateResxFile } from "./resxFamily";
 import { importQtTsFile, validateQtTsFile } from "./qtTsFamily";
 import { importIniFile, validateIniFile } from "./iniFamily";
+import {
+	importPhpLocalizationFile,
+	validatePhpLocalizationFile,
+} from "./phpLocalization";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -257,6 +262,20 @@ const adapters = [
 		validate: validateIniFile,
 		importFile: importIniFile,
 		exportFile: generateIniTranslation,
+	},
+	{
+		id: "php",
+		label: "PHP localization arrays",
+		extensions: ["php"],
+		mimeTypes: ["application/x-httpd-php", "text/x-php"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.php,
+		sniff: async (file, context) =>
+			file.name.toLowerCase().endsWith(".php") &&
+			(await validatePhpLocalizationFile(file, context)).valid,
+		validate: validatePhpLocalizationFile,
+		importFile: importPhpLocalizationFile,
+		exportFile: generatePhpTranslation,
 	},
 	{
 		id: "xml",

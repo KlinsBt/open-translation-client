@@ -83,6 +83,10 @@ describe("format import options", () => {
 			targetLocale: "",
 			includeEmpty: true,
 		});
+		expect(normalizeImportOptions("php", { includeEmpty: "true" })).toEqual({
+			pathSelectors: "",
+			includeEmpty: true,
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

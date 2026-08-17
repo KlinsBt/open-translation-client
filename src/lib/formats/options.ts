@@ -377,6 +377,23 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: false,
 		},
 	],
+	php: [
+		{
+			id: "pathSelectors",
+			label: "Translatable array paths",
+			type: "text",
+			defaultValue: "",
+			placeholder: "All string leaves, or e.g. auth.*, validation.required",
+			description:
+				"Comma-separated dot paths; * and ** wildcards are supported. Keys are always protected.",
+		},
+		{
+			id: "includeEmpty",
+			label: "Include empty strings",
+			type: "boolean",
+			defaultValue: false,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

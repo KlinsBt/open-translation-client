@@ -167,6 +167,15 @@ export interface IniSegmentMeta {
 	separator?: string;
 }
 
+export interface PhpSegmentMeta {
+	path: string[];
+	start: number;
+	end: number;
+	originalValue: string;
+	quote: "'" | '"';
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -219,6 +228,7 @@ export type SegmentMeta =
 	| ResxSegmentMeta
 	| QtTsSegmentMeta
 	| IniSegmentMeta
+	| PhpSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

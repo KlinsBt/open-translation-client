@@ -179,6 +179,15 @@ export interface IniValueReplacement extends ReplacementBase {
 	insertionTextSuffix?: string;
 }
 
+export interface PhpValueReplacement extends ReplacementBase {
+	kind: "php-value";
+	path: string[];
+	start: number;
+	end: number;
+	originalValue: string;
+	quote: "'" | '"';
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -250,6 +259,7 @@ export type SkeletonReplacement =
 	| ResxValueReplacement
 	| QtTsValueReplacement
 	| IniValueReplacement
+	| PhpValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -356,6 +366,7 @@ export async function createTextSkeleton(
 		| "resx"
 		| "qt-ts"
 		| "ini"
+		| "php"
 		| "xml"
 		| "html",
 	content: string,
@@ -785,6 +796,17 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				typeof replacement.originalValue !== "string")
 		) {
 			issues.push("INI value replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "php-value" &&
+			(!Array.isArray(replacement.path) ||
+				replacement.path.length === 0 ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string" ||
+				!["'", '\"'].includes(replacement.quote))
+		) {
+			issues.push("PHP value replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&
