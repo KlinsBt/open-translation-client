@@ -38,6 +38,8 @@ import { buildWindowsRcTranslationBlob } from "$lib/functions/outputGeneration/o
 import { buildQmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQml";
 import { buildPdfBilingualReviewBlob } from "$lib/functions/outputGeneration/outputGenerationPdfReview";
 import { buildZipProjectTranslationPackage } from "$lib/formats/zipProject";
+import { buildRtfTranslationBlob } from "$lib/formats/rtf";
+import { buildLegacyOfficeTranslation } from "$lib/formats/legacyOffice";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -212,6 +214,10 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			throw new Error(
 				`${project.translationData.type} requires a dedicated conformance output.`,
 			);
+		case "rtf":
+			return buildRtfTranslationBlob(project);
+		case "legacy-office":
+			return (await buildLegacyOfficeTranslation(project)).blob;
 		case "cat-package":
 			throw new Error("Read-only CAT packages have no conformance output.");
 		case "zip-project":

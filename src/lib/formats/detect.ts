@@ -106,6 +106,15 @@ export async function detectFileFormat(
 	}
 
 	if (hasOleSignature(prefix)) {
+		const adapter = adapters.find(
+			(candidate) => candidate.id === "legacy-office",
+		);
+		if (
+			adapter &&
+			extension !== undefined &&
+			adapter.extensions.includes(extension)
+		)
+			return supportedContent(adapter, extension, mimeType);
 		const legacy = legacyOfficeLabel(extension);
 		return unsupported(
 			legacy ?? "OLE compound document",
@@ -197,6 +206,8 @@ export async function detectFileFormat(
 		);
 	}
 	if (textKind === "rtf") {
+		const adapter = adapters.find((candidate) => candidate.id === "rtf");
+		if (adapter) return supportedContent(adapter, extension, mimeType);
 		return unsupported(
 			"RTF",
 			extension === "rtf" ? "high" : "medium",
@@ -213,13 +224,18 @@ export async function detectFileFormat(
 		? adapters.find((adapter) => adapter.mimeTypes.includes(mimeType))
 		: undefined;
 	const unverifiedLocalMedia = [extensionMatch?.id, mimeMatch?.id].find(
-		(id) => id === "image-ocr" || id === "media-transcription",
+		(id) =>
+			id === "image-ocr" ||
+			id === "media-transcription" ||
+			id === "legacy-office",
 	);
 	if (unverifiedLocalMedia) {
 		return unsupported(
-			unverifiedLocalMedia === "image-ocr"
-				? "Unrecognized image"
-				: "Unrecognized media",
+			unverifiedLocalMedia === "legacy-office"
+				? "Unrecognized legacy Office file"
+				: unverifiedLocalMedia === "image-ocr"
+					? "Unrecognized image"
+					: "Unrecognized media",
 			"low",
 			metadataEvidence(
 				extension,
@@ -227,7 +243,7 @@ export async function detectFileFormat(
 				extensionMatch?.extensions ?? mimeMatch?.extensions ?? [],
 				extensionMatch?.mimeTypes ?? mimeMatch?.mimeTypes ?? [],
 			),
-			"The extension or MIME type claims a supported local format, but its binary signature does not match.",
+			"The extension or MIME type claims a supported local format, but its content signature does not match.",
 		);
 	}
 	if (extensionMatch && mimeMatch?.id === extensionMatch.id) {

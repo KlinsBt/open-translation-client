@@ -254,6 +254,22 @@ export interface TranscriptionSegmentMeta {
 	separator?: string;
 }
 
+export interface RtfSegmentMeta {
+	profile: "rtf-native";
+	paragraph: number;
+	fragments: Array<{ start: number; end: number }>;
+	separator?: string;
+}
+
+export interface LegacyOfficeSegmentMeta {
+	profile: "legacy-office-browser";
+	subtype: "doc" | "xls" | "ppt";
+	paragraph?: number;
+	sheet?: string;
+	cell?: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -314,6 +330,8 @@ export type SegmentMeta =
 	| PdfSegmentMeta
 	| OcrSegmentMeta
 	| TranscriptionSegmentMeta
+	| RtfSegmentMeta
+	| LegacyOfficeSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

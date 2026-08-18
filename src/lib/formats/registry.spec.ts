@@ -71,9 +71,12 @@ describe("format adapter registry", () => {
 					: {
 							import: true,
 							export: true,
-							roundTrip: !["pdf", "image-ocr", "media-transcription"].includes(
-								id,
-							),
+							roundTrip: ![
+								"pdf",
+								"image-ocr",
+								"media-transcription",
+								"legacy-office",
+							].includes(id),
 						},
 			);
 			expect(adapter.importOptions.length).toBeGreaterThan(0);
@@ -93,10 +96,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.doc,.xls,.ppt,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF source-only → bilingual HTML, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, Proprietary CAT packages (read-only), Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF source-only → bilingual HTML, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, Legacy Office DOC/XLS/PPT, Proprietary CAT packages (read-only), Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -315,13 +318,9 @@ describe("format adapter registry", () => {
 		).resolves.toBeUndefined();
 	});
 
-	it.each([
-		["doc", "Legacy Word (.doc)", "DOCX"],
-		["xls", "Legacy Excel (.xls)", "XLSX"],
-		["ppt", "Legacy PowerPoint (.ppt)", "PPTX"],
-	])(
-		"recognizes legacy Office .%s and provides a local conversion workflow",
-		async (extension, label, target) => {
+	it.each(["doc", "xls", "ppt"])(
+		"recognizes legacy Office .%s as browser-native source content",
+		async (extension) => {
 			const ole = new Uint8Array([
 				0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0,
 			]);
@@ -332,35 +331,26 @@ describe("format adapter registry", () => {
 					}),
 				),
 			).resolves.toMatchObject({
-				formatId: null,
-				label,
-				supported: false,
+				formatId: "legacy-office",
+				label: "Legacy Office DOC/XLS/PPT",
+				supported: true,
 				confidence: "high",
-				evidence: ["signature", "extension"],
-				workflow: {
-					kind: "convert-before-import",
-					primaryAction: `Convert locally to ${target}`,
-					targetFormats: [target],
-				},
+				evidence: ["content", "extension"],
 			});
 		},
 	);
 
-	it("recognizes RTF without advertising conversion-only extensions", async () => {
+	it("recognizes and advertises native RTF", async () => {
 		await expect(
 			detectFormatWithConfidence(
 				textFile("{\\rtf1\\ansi Legacy text}", "legacy.rtf", "text/rtf"),
 			),
 		).resolves.toMatchObject({
-			formatId: null,
+			formatId: "rtf",
 			label: "RTF",
-			supported: false,
-			workflow: {
-				kind: "convert-before-import",
-				primaryAction: "Convert locally to DOCX",
-			},
+			supported: true,
 		});
-		expect(getFormatAcceptValue()).not.toMatch(/\.(?:doc|xls|ppt|rtf)(?:,|$)/);
+		expect(getFormatAcceptValue()).toMatch(/\.rtf(?:,|$)/);
 	});
 
 	it("normalizes MIME parameters and extracts only exact final extensions", () => {
@@ -397,20 +387,22 @@ describe("format adapter registry", () => {
 		});
 	});
 
-	it("does not advertise or silently route legacy Office binaries", async () => {
+	it("routes signed legacy Office binaries but rejects extension-only spoofs", async () => {
 		const ole = new Uint8Array([
 			0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0,
 		]);
 		const legacy = new File([ole], "accounts.XLS", {
 			type: "application/vnd.ms-excel",
 		});
-		await expect(detectFormat(legacy)).resolves.toBeUndefined();
+		await expect(detectFormat(legacy)).resolves.toMatchObject({
+			id: "legacy-office",
+		});
 		await expect(detectFormatWithConfidence(legacy)).resolves.toMatchObject({
-			formatId: null,
-			label: "Legacy Excel (.xls)",
-			supported: false,
+			formatId: "legacy-office",
+			label: "Legacy Office DOC/XLS/PPT",
+			supported: true,
 			confidence: "high",
-			evidence: ["signature", "extension"],
+			evidence: ["content", "extension", "mime"],
 		});
 		await expect(
 			detectFormat(textFile("plain", "not-a-workbook.xls", "")),

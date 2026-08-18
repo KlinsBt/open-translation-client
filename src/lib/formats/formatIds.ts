@@ -27,6 +27,8 @@ export const FORMAT_IDS = [
 	"pdf",
 	"image-ocr",
 	"media-transcription",
+	"rtf",
+	"legacy-office",
 	"cat-package",
 	"zip-project",
 	"xml",

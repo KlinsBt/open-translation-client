@@ -75,6 +75,8 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 		allowTagReorder: false,
 		allowInlineCodeReorder: false,
 	},
+	rtf: { allowTagReorder: true, allowInlineCodeReorder: true },
+	"legacy-office": { allowTagReorder: false, allowInlineCodeReorder: false },
 	"cat-package": { allowTagReorder: false, allowInlineCodeReorder: false },
 	"zip-project": { allowTagReorder: false, allowInlineCodeReorder: false },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },

@@ -108,6 +108,14 @@ import {
 	TRANSCRIPTION_MIME_TYPES,
 	validateTranscriptionFile,
 } from "./localTranscription";
+import { generateRtfTranslation, importRtfFile, validateRtfFile } from "./rtf";
+import {
+	generateLegacyOfficeTranslation,
+	importLegacyOfficeFile,
+	LEGACY_OFFICE_EXTENSIONS,
+	LEGACY_OFFICE_MIME_TYPES,
+	validateLegacyOfficeFile,
+} from "./legacyOffice";
 import {
 	CAT_PACKAGE_EXTENSIONS,
 	CAT_PACKAGE_MIME_TYPES,
@@ -594,6 +602,32 @@ const adapters = [
 		validate: validateTranscriptionFile,
 		importFile: importTranscriptionFile,
 		exportFile: generateTranslatedWebVtt,
+	},
+	{
+		id: "rtf",
+		label: "RTF",
+		extensions: ["rtf"],
+		mimeTypes: ["application/rtf", "text/rtf"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.rtf,
+		sniff: async (file, context) =>
+			(await validateRtfFile(file, context)).valid,
+		validate: validateRtfFile,
+		importFile: importRtfFile,
+		exportFile: generateRtfTranslation,
+	},
+	{
+		id: "legacy-office",
+		label: "Legacy Office DOC/XLS/PPT",
+		extensions: LEGACY_OFFICE_EXTENSIONS,
+		mimeTypes: LEGACY_OFFICE_MIME_TYPES,
+		capabilities: SOURCE_ONLY_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["legacy-office"],
+		sniff: async (file, context) =>
+			(await validateLegacyOfficeFile(file, context)).valid,
+		validate: validateLegacyOfficeFile,
+		importFile: importLegacyOfficeFile,
+		exportFile: generateLegacyOfficeTranslation,
 	},
 	{
 		id: "cat-package",

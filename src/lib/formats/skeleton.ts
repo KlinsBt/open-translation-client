@@ -295,6 +295,12 @@ export type PptxTextReplacement = ReplacementBase &
 		  }
 	);
 
+export interface RtfParagraphReplacement extends ReplacementBase {
+	kind: "rtf-paragraph";
+	paragraph: number;
+	fragments: Array<{ start: number; end: number }>;
+}
+
 export type SkeletonReplacement =
 	| TextRangeReplacement
 	| CsvFieldReplacement
@@ -317,7 +323,8 @@ export type SkeletonReplacement =
 	| HtmlAttributeReplacement
 	| DocxTextReplacement
 	| XlsxTextReplacement
-	| PptxTextReplacement;
+	| PptxTextReplacement
+	| RtfParagraphReplacement;
 
 export interface DocumentSkeleton {
 	schemaVersion: typeof DOCUMENT_SKELETON_VERSION;
@@ -430,6 +437,7 @@ export async function createTextSkeleton(
 		| "mif"
 		| "windows-rc"
 		| "qml"
+		| "rtf"
 		| "xml"
 		| "html",
 	content: string,

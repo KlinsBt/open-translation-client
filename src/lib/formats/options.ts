@@ -911,6 +911,25 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: 30,
 		},
 	],
+	rtf: [
+		{
+			id: "includeHeadersFooters",
+			label: "Headers and footers",
+			type: "boolean",
+			defaultValue: true,
+			description: "Include visible text in header and footer groups.",
+		},
+	],
+	"legacy-office": [
+		{
+			id: "includeNumbers",
+			label: "Include numeric spreadsheet cells",
+			type: "boolean",
+			defaultValue: false,
+			description:
+				"Normally only text cells in legacy XLS workbooks are translated.",
+		},
+	],
 	"cat-package": [
 		{
 			id: "memberPaths",
