@@ -532,7 +532,8 @@
 	.universal-upload-container {
 		display: grid;
 		gap: 1rem;
-		width: min(100%, 760px);
+		box-sizing: border-box;
+		width: 100%;
 	}
 
 	.drop-zone {
