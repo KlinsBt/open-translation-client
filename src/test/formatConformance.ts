@@ -35,6 +35,7 @@ import { buildLatexTranslationBlob } from "$lib/functions/outputGeneration/outpu
 import { buildTtmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationTtml";
 import { buildMifTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationMif";
 import { buildWindowsRcTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
+import { buildQmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQml";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -194,6 +195,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildMifTranslationBlob(project);
 		case "windows-rc":
 			return buildWindowsRcTranslationBlob(project);
+		case "qml":
+			return buildQmlTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

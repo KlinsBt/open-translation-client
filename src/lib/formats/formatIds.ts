@@ -23,6 +23,7 @@ export const FORMAT_IDS = [
 	"ttml",
 	"mif",
 	"windows-rc",
+	"qml",
 	"xml",
 	"docx",
 	"xlsx",

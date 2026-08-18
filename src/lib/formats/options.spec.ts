@@ -190,6 +190,11 @@ describe("format import options", () => {
 			includePreprocessor: false,
 			segmentationMode: "value",
 		});
+		expect(normalizeImportOptions("qml")).toEqual({
+			functionSelectors:
+				"qsTr:1,qsTranslate:2,QT_TR_NOOP:1,QT_TRANSLATE_NOOP:2",
+			segmentationMode: "value",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

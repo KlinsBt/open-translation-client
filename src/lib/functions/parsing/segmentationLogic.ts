@@ -77,6 +77,8 @@ const MIF_EDIT_ERROR =
 	"MIF strings cannot be split or joined because tag nesting, catalogs, conditions, and source ranges must remain aligned.";
 const WINDOWS_RC_EDIT_ERROR =
 	"Windows RC strings cannot be split or joined because resource blocks, identifiers, and source ranges must remain aligned.";
+const QML_EDIT_ERROR =
+	"QML translation literals cannot be split or joined because function arguments, bindings, and source ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -155,6 +157,7 @@ function validateForStructuralEdit(
 	if (translation.type === "ttml") return TTML_EDIT_ERROR;
 	if (translation.type === "mif") return MIF_EDIT_ERROR;
 	if (translation.type === "windows-rc") return WINDOWS_RC_EDIT_ERROR;
+	if (translation.type === "qml") return QML_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

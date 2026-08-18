@@ -1222,6 +1222,53 @@ const windowsRcFixture: FormatConformanceFixture = {
 		),
 };
 
+const qmlFixture: FormatConformanceFixture = {
+	id: "qml",
+	fileName: "Main.qml",
+	mimeType: "text/x-qml",
+	createValidFile: async () =>
+		textFile(
+			`import QtQml\nQtObject {\n property string message: qsTr("${CONFORMANCE_UNICODE_SOURCE}")\n}\n`,
+			"Main.qml",
+			"text/x-qml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'import QtQml\nQtObject { property string message: qsTr("broken) }',
+			"Broken.qml",
+			"text/x-qml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			functionSelectors:
+				"qsTr:1,qsTranslate:2,QT_TR_NOOP:1,QT_TRANSLATE_NOOP:2",
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["text-range"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "Main.qml",
+				path: ["qsTr", "line[3]"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`import QtQml\nQtObject {\n${Array.from(
+				{ length: units },
+				(_, index) =>
+					` property string message${index}: qsTr("Message ${index}")`,
+			).join("\n")}\n}\n`,
+			"Performance.qml",
+			"text/x-qml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1492,6 +1539,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	ttmlFixture,
 	mifFixture,
 	windowsRcFixture,
+	qmlFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

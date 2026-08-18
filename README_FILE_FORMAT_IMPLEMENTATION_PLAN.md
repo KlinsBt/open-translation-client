@@ -973,7 +973,7 @@ Complete these in order after FF-000 through FF-009.
       `xmllint --nonet`. Official TTML/IMSC schema and profile-validator checks
       remain mandatory release-CI gates before profile-conformant output is
       advertised.
-- [ ] **FF-308 — MIF, Windows RC, and Qt/QML specialist resources.** Implement as
+- [x] **FF-308 — MIF, Windows RC, and Qt/QML specialist resources.** Implement as
       separate adapters in that order, with grammar-aware token preservation and
       real-tool reopen/compile tests. Do not use broad regex replacements for
       syntax-bearing files.
@@ -994,6 +994,17 @@ Complete these in order after FF-000 through FF-009.
       reparsing every result. Unit, conformance, filter, malformed-input,
       UTF-16, 1,000-entry, detection, re-import and browser coverage is included;
       an opt-in GNU windres compile gate is available for equipped environments.
+      Qt QML complete: a JavaScript/QML lexer validates strings, escapes,
+      comments, regex literals and balanced object/call syntax. It extracts only
+      direct non-interpolated literal arguments selected for `qsTr`,
+      `qsTranslate` and Qt NOOP functions, while preserving contexts,
+      disambiguation and translator comments. Translation IDs, dynamic bindings,
+      bare strings, regexes and interpolated templates remain protected. Export
+      retains quote style and source encoding, escapes template interpolation,
+      reparses output and blocks stale mappings and split/join. Unit,
+      conformance, selector, malformed-input, placeholder, UTF-16, 1,000-call,
+      detection, re-import, generated browser and installed `qmllint` coverage
+      verifies the workflow.
 
 ## Phase 4 — Explicitly constrained and conversion-based support
 

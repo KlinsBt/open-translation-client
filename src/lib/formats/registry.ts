@@ -25,6 +25,7 @@ import { generateLatexTranslation } from "$lib/functions/outputGeneration/output
 import { generateTtmlTranslation } from "$lib/functions/outputGeneration/outputGenerationTtml";
 import { generateMifTranslation } from "$lib/functions/outputGeneration/outputGenerationMif";
 import { generateWindowsRcTranslation } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
+import { generateQmlTranslation } from "$lib/functions/outputGeneration/outputGenerationQml";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -88,6 +89,7 @@ import { importLatexFile, validateLatexFile } from "./latex";
 import { importTtmlFile, validateTtmlFile } from "./ttml";
 import { importMifFile, validateMifFile } from "./mif";
 import { importWindowsRcFile, validateWindowsRcFile } from "./windowsRc";
+import { importQmlFile, validateQmlFile } from "./qml";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -494,6 +496,23 @@ const adapters = [
 		validate: validateWindowsRcFile,
 		importFile: importWindowsRcFile,
 		exportFile: generateWindowsRcTranslation,
+	},
+	{
+		id: "qml",
+		label: "Qt QML source",
+		extensions: ["qml"],
+		mimeTypes: ["text/x-qml", "application/x-qml", "text/plain"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.qml,
+		sniff: async (file, context) =>
+			(await sniffText(
+				file,
+				/^(?:(?:pragma|import)\s+[^\n]+\n\s*)*(?:[A-Z][\w.]*)\s*\{/,
+				context,
+			)) && (await validateQmlFile(file, context)).valid,
+		validate: validateQmlFile,
+		importFile: importQmlFile,
+		exportFile: generateQmlTranslation,
 	},
 	{
 		id: "xml",

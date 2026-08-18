@@ -39,6 +39,7 @@ export type SafeInputErrorCode =
 	| "TTML_INVALID"
 	| "MIF_INVALID"
 	| "WINDOWS_RC_INVALID"
+	| "QML_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

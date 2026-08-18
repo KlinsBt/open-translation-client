@@ -429,6 +429,7 @@ export async function createTextSkeleton(
 		| "ttml"
 		| "mif"
 		| "windows-rc"
+		| "qml"
 		| "xml"
 		| "html",
 	content: string,

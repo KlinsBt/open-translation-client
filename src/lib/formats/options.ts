@@ -825,6 +825,23 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["value", "preferences", "sentences"],
 		},
 	],
+	qml: [
+		{
+			id: "functionSelectors",
+			label: "Qt translation functions",
+			type: "text",
+			defaultValue: "qsTr:1,qsTranslate:2,QT_TR_NOOP:1,QT_TRANSLATE_NOOP:2",
+			description:
+				"List function:argument pairs. Only a direct, non-interpolated string literal at that one-based argument is editable; qsTrId IDs remain protected.",
+		},
+		{
+			id: "segmentationMode",
+			label: "Translation-literal segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",
