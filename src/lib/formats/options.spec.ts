@@ -127,6 +127,17 @@ describe("format import options", () => {
 			respectTranslateMetadata: true,
 			segmentationMode: "value",
 		});
+		expect(normalizeImportOptions("dita", { contentScope: "invalid" })).toEqual(
+			{
+				contentScope: "map",
+				includeNavigation: true,
+				includeMetadata: false,
+				includeCode: false,
+				attributeSelectors: "alt,title,navtitle",
+				respectTranslateMetadata: true,
+				segmentationMode: "value",
+			},
+		);
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

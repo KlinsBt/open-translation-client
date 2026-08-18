@@ -63,6 +63,8 @@ const EPUB_EDIT_ERROR =
 	"EPUB text runs cannot be split or joined because spine documents, navigation, inline markup, and package XML ranges must remain aligned.";
 const SVG_EDIT_ERROR =
 	"SVG text runs cannot be split or joined because text paths, accessibility attributes, and XML ranges must remain aligned.";
+const DITA_EDIT_ERROR =
+	"DITA text runs cannot be split or joined because topic, map, inline-element, and package XML ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -134,6 +136,7 @@ function validateForStructuralEdit(
 	if (translation.type === "odf") return ODF_EDIT_ERROR;
 	if (translation.type === "epub") return EPUB_EDIT_ERROR;
 	if (translation.type === "svg") return SVG_EDIT_ERROR;
+	if (translation.type === "dita") return DITA_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

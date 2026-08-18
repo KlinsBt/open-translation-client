@@ -18,6 +18,7 @@ import { generateSubtitleTranslation } from "$lib/functions/outputGeneration/out
 import { generateOdfTranslation } from "$lib/functions/outputGeneration/outputGenerationOdf";
 import { generateEpubTranslation } from "$lib/functions/outputGeneration/outputGenerationEpub";
 import { generateSvgTranslation } from "$lib/functions/outputGeneration/outputGenerationSvg";
+import { generateDitaTranslation } from "$lib/functions/outputGeneration/outputGenerationDita";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -74,6 +75,7 @@ import { importSubtitleFile, validateSubtitleFile } from "./subtitles";
 import { importOdfFile, ODF_MIME_TYPES, validateOdfFile } from "./odf";
 import { EPUB_MIME_TYPE, importEpubFile, validateEpubFile } from "./epub";
 import { importSvgFile, validateSvgFile } from "./svg";
+import { importDitaFile, validateDitaFile } from "./dita";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -358,6 +360,23 @@ const adapters = [
 		validate: validateSvgFile,
 		importFile: importSvgFile,
 		exportFile: generateSvgTranslation,
+	},
+	{
+		id: "dita",
+		label: "DITA/DITAMAP",
+		extensions: ["dita", "ditamap", "ditazip"],
+		mimeTypes: ["application/dita+xml", "application/xml", "text/xml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.dita,
+		sniff: async (file, context) =>
+			(await sniffText(
+				file,
+				/^(?:<\?xml[^?]*\?>\s*)?(?:<!DOCTYPE\s+(?:dita|topic|concept|task|reference|glossentry|glossgroup|map|bookmap|subjectScheme)\b[^>]*>\s*)?<(?:dita|topic|concept|task|reference|glossentry|glossgroup|map|bookmap|subjectScheme)(?:\s|>)/i,
+				context,
+			)) && (await validateDitaFile(file, context)).valid,
+		validate: validateDitaFile,
+		importFile: importDitaFile,
+		exportFile: generateDitaTranslation,
 	},
 	{
 		id: "xml",

@@ -850,10 +850,33 @@ Complete these in order after FF-000 through FF-009.
       ITS, accessibility, UTF-16, security, 1,000-node, detection, translated
       re-import, and browser coverage verifies the core workflow; the generated
       export also passed local `xmllint --nonet` validation.
-- [ ] **FF-303 — DITA and DITAMAP (`.dita`, `.ditamap`).** Add DITA-aware inline
+- [x] **FF-303 — DITA and DITAMAP (`.dita`, `.ditamap`).** Add DITA-aware inline
       elements, conrefs/keyrefs, topic IDs, maps, profiling attributes, translate
       controls, whitespace, and multi-file package handling. Preserve references
       and validate the complete map, not isolated topics only.
+      Completed 2026-08-18: the standalone DITA/DITAMAP and `.ditazip` bundle
+      adapter validates topic/map roots and specializations, unique IDs, one
+      unambiguous root map, safe normalized paths, every local bundle resource,
+      target fragments, conrefs/conrefends, and keyrefs/conkeyrefs across the
+      complete map graph. Fixed known OASIS DITA doctypes are positionally masked
+      without resolution; internal subsets, entities, unsafe paths, malformed XML,
+      ambiguous roots, and missing references fail closed. Source-ranged
+      extraction covers prose, DITA inline elements, navigation, configurable
+      attributes, optional metadata/code, inherited DITA/ITS translate controls,
+      and profiling context. Map-graph or all-document scope and value/preference/
+      sentence segmentation are supported. Export XML-escapes and reparses only
+      mapped ranges, rejoins sentence pieces without duplication, preserves
+      source encoding/BOM and identity bytes, retains package assets and
+      structural attributes, enforces placeholder QA, and blocks stale mappings
+      and split/join. Unit, conformance, specialization, map/key/conref/fragment,
+      asset, UTF-16, security, semantic re-import, 1,000-paragraph, detection, and
+      generated browser coverage verifies the core workflow, and generated XML
+      passed local `xmllint --nonet`. This run's browser runner requires a local
+      bind outside the sandbox and both approval reviews timed out, so that
+      registered case remains a downstream CI gate. An opt-in DITA-OT publish
+      test is included (`OPENTLC_RUN_DITA_OT=1`), but DITA-OT is not installed
+      here; release CI must execute both external gates before claiming
+      DITA-OT-validated output.
 - [ ] **FF-304 — DocBook (`.xml`, `.dbk`).** Add version-aware block/inline rules,
       IDs/xrefs, entities, code, index terms, metadata, and whitespace behavior;
       preserve extensions and validate against the declared schema.

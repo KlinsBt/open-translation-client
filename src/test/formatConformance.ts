@@ -28,6 +28,7 @@ import { buildSubtitleTranslationBlob } from "$lib/functions/outputGeneration/ou
 import { buildOdfTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationOdf";
 import { buildEpubTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationEpub";
 import { buildSvgTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationSvg";
+import { buildDitaTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationDita";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -173,6 +174,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildEpubTranslationPackage(project);
 		case "svg":
 			return buildSvgTranslationBlob(project);
+		case "dita":
+			return buildDitaTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

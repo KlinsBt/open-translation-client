@@ -871,6 +871,56 @@ const svgFixture: FormatConformanceFixture = {
 		),
 };
 
+const ditaFixture: FormatConformanceFixture = {
+	id: "dita",
+	fileName: "topic.dita",
+	mimeType: "application/dita+xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="UTF-8"?>\n<topic id="welcome"><title>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</title><body><p translate="no">Protected</p></body></topic>\n`,
+			"topic.dita",
+			"application/dita+xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<!DOCTYPE topic [<!ENTITY x SYSTEM "file:///etc/passwd">]><topic id="bad"><title>&x;</title></topic>',
+			"broken.dita",
+			"application/dita+xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			contentScope: "map",
+			includeNavigation: true,
+			includeMetadata: false,
+			includeCode: false,
+			attributeSelectors: "alt,title,navtitle",
+			respectTranslateMetadata: true,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["xml-value"] },
+		units: [
+			{
+				id: "topic.dita:topic[1]/title[1]/#text:0",
+				part: "topic.dita",
+				path: ["topic[1]", "title[1]", "#text"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<topic id="performance"><body>${Array.from(
+				{ length: units },
+				(_, index) => `<p id="p${index}">Message ${index}</p>`,
+			).join("")}</body></topic>`,
+			"performance.dita",
+			"application/dita+xml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1134,6 +1184,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	odfFixture,
 	epubFixture,
 	svgFixture,
+	ditaFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

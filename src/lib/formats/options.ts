@@ -562,6 +562,54 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["value", "preferences", "sentences"],
 		},
 	],
+	dita: [
+		{
+			id: "contentScope",
+			label: "Bundle content",
+			type: "select",
+			defaultValue: "map",
+			choices: ["map", "all"],
+			description:
+				"For .ditazip bundles, translate the root-map dependency graph or every DITA XML document.",
+		},
+		{
+			id: "includeNavigation",
+			label: "Include map navigation text",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeMetadata",
+			label: "Include topic/book metadata",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeCode",
+			label: "Include code and preformatted text",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "attributeSelectors",
+			label: "Translatable attributes",
+			type: "text",
+			defaultValue: "alt,title,navtitle",
+		},
+		{
+			id: "respectTranslateMetadata",
+			label: "Respect translate=no and ITS translate",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "segmentationMode",
+			label: "Text segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

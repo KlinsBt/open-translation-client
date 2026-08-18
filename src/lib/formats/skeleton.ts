@@ -409,6 +409,7 @@ export async function createTextSkeleton(
 		| "markup"
 		| "subtitles"
 		| "svg"
+		| "dita"
 		| "xml"
 		| "html",
 	content: string,
