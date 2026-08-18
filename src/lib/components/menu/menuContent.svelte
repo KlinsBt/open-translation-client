@@ -98,11 +98,21 @@
 <UniversalUpload bind:show={showNewProjectModal} />
 
 <div class="dashboard">
-	<div class="order-bar" style="margin: 0 0 20px 0;">
-		<button class:active={sortByName} onclick={toggleSortByName}>
+	<div class="order-bar sort-bar">
+		<button
+			class:active={sortByName}
+			aria-pressed={sortByName}
+			aria-label={`Sort projects by name${sortByName ? `, ${ascendingOrder ? "ascending" : "descending"}` : ""}`}
+			onclick={toggleSortByName}
+		>
 			Name {sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
 		</button>
-		<button class:active={!sortByName} onclick={toggleSortByDate}>
+		<button
+			class:active={!sortByName}
+			aria-pressed={!sortByName}
+			aria-label={`Sort projects by date${!sortByName ? `, ${ascendingOrder ? "ascending" : "descending"}` : ""}`}
+			onclick={toggleSortByDate}
+		>
 			Date {!sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
 		</button>
 	</div>
@@ -193,9 +203,35 @@
 		color: var(--color-theme-3);
 	}
 
-	.order-bar .active {
+	.sort-bar {
+		margin: 0 0 20px;
+	}
+
+	.sort-bar button {
+		padding: 0.35rem 0.2rem;
+		text-decoration-line: underline;
+		text-decoration-color: color-mix(
+			in srgb,
+			var(--color-theme-3) 38%,
+			transparent
+		);
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.48em;
+		transition:
+			color 0.2s ease,
+			text-decoration-color 0.2s ease,
+			text-decoration-thickness 0.2s ease;
+	}
+
+	.sort-bar button:hover,
+	.sort-bar button:focus-visible {
+		text-decoration-color: currentColor;
+	}
+
+	.sort-bar .active {
 		font-weight: bold;
-		border-bottom: 2px solid var(--color-theme-3);
+		text-decoration-color: currentColor;
+		text-decoration-thickness: 3px;
 	}
 
 	.project-cards {
