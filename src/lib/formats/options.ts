@@ -610,6 +610,45 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["value", "preferences", "sentences"],
 		},
 	],
+	docbook: [
+		{
+			id: "includeMetadata",
+			label: "Include document metadata",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeCode",
+			label: "Include code and literal blocks",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeIndexTerms",
+			label: "Include index terms",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "attributeSelectors",
+			label: "Translatable attributes",
+			type: "text",
+			defaultValue: "alt,title",
+		},
+		{
+			id: "respectTranslateMetadata",
+			label: "Respect translate=no and ITS translate",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "segmentationMode",
+			label: "Text segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

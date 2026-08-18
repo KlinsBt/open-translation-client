@@ -19,6 +19,7 @@ import { generateOdfTranslation } from "$lib/functions/outputGeneration/outputGe
 import { generateEpubTranslation } from "$lib/functions/outputGeneration/outputGenerationEpub";
 import { generateSvgTranslation } from "$lib/functions/outputGeneration/outputGenerationSvg";
 import { generateDitaTranslation } from "$lib/functions/outputGeneration/outputGenerationDita";
+import { generateDocBookTranslation } from "$lib/functions/outputGeneration/outputGenerationDocBook";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -76,6 +77,7 @@ import { importOdfFile, ODF_MIME_TYPES, validateOdfFile } from "./odf";
 import { EPUB_MIME_TYPE, importEpubFile, validateEpubFile } from "./epub";
 import { importSvgFile, validateSvgFile } from "./svg";
 import { importDitaFile, validateDitaFile } from "./dita";
+import { importDocBookFile, validateDocBookFile } from "./docbook";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -377,6 +379,23 @@ const adapters = [
 		validate: validateDitaFile,
 		importFile: importDitaFile,
 		exportFile: generateDitaTranslation,
+	},
+	{
+		id: "docbook",
+		label: "DocBook 4/5",
+		extensions: ["dbk", "xml"],
+		mimeTypes: ["application/docbook+xml", "application/xml", "text/xml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.docbook,
+		sniff: async (file, context) =>
+			(await sniffText(
+				file,
+				/^(?:<\?xml[^?]*\?>\s*)?(?:<!DOCTYPE\s+(?:set|book|part|article|chapter|appendix|preface|reference|refentry|section)\b[^>]*>\s*)?<(?:set|book|part|article|chapter|appendix|preface|reference|refentry|section)(?:\s|>)/i,
+				context,
+			)) && (await validateDocBookFile(file, context)).valid,
+		validate: validateDocBookFile,
+		importFile: importDocBookFile,
+		exportFile: generateDocBookTranslation,
 	},
 	{
 		id: "xml",

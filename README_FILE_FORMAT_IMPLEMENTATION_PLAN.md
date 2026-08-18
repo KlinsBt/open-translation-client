@@ -877,9 +877,29 @@ Complete these in order after FF-000 through FF-009.
       test is included (`OPENTLC_RUN_DITA_OT=1`), but DITA-OT is not installed
       here; release CI must execute both external gates before claiming
       DITA-OT-validated output.
-- [ ] **FF-304 — DocBook (`.xml`, `.dbk`).** Add version-aware block/inline rules,
+- [x] **FF-304 — DocBook (`.xml`, `.dbk`).** Add version-aware block/inline rules,
       IDs/xrefs, entities, code, index terms, metadata, and whitespace behavior;
       preserve extensions and validate against the declared schema.
+      Completed 2026-08-18: the DocBook 4/5 adapter distinguishes the no-namespace
+      4.x profile from the DocBook 5 namespace/version profile, validates supported
+      publication roots, namespace/version and declared schema consistency, unique
+      `id`/`xml:id` values, `linkend`/`endterm`/`startref`, and fragment xlinks.
+      Fixed OASIS DocBook 4 doctypes and a bounded common named-entity profile are
+      positionally masked without resolving external resources; internal subsets,
+      custom entities, unknown doctypes, malformed XML, duplicate IDs, unresolved
+      xrefs, and profile/schema conflicts fail closed. Source-ranged extraction
+      covers block and inline prose, configurable attributes, optional metadata,
+      literal/code content and index terms, DITA/ITS-style translate controls, and
+      role/condition/language/ID context while retaining whitespace and namespaced
+      extensions. Export escapes and reparses mapped values, rejoins sentence
+      pieces without duplication, preserves source encoding/BOM and identity bytes,
+      enforces placeholder QA, and blocks stale mappings and split/join. Unit,
+      conformance, DocBook 4/5, doctype/entity, xref/schema/extension, UTF-16,
+      security, 1,000-paragraph, detection, re-import, and generated browser
+      coverage verifies the workflow; generated DocBook 5 XML passed local
+      `xmllint --nonet`. Release CI must additionally validate representative
+      output against official DocBook 4 DTD and DocBook 5 RELAX NG/Schematron
+      grammars before origin-schema validation is advertised.
 - [ ] **FF-305 — Adobe IDML and ICML (`.idml`, `.icml`).** Preserve story order,
       paragraph/character styles, anchored objects, tables, notes, XML tags,
       cross-references, and package relationships. Use small legally shareable

@@ -138,6 +138,14 @@ describe("format import options", () => {
 				segmentationMode: "value",
 			},
 		);
+		expect(normalizeImportOptions("docbook", { includeCode: "true" })).toEqual({
+			includeMetadata: true,
+			includeCode: true,
+			includeIndexTerms: false,
+			attributeSelectors: "alt,title",
+			respectTranslateMetadata: true,
+			segmentationMode: "value",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

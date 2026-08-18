@@ -921,6 +921,55 @@ const ditaFixture: FormatConformanceFixture = {
 		),
 };
 
+const docBookFixture: FormatConformanceFixture = {
+	id: "docbook",
+	fileName: "manual.dbk",
+	mimeType: "application/docbook+xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="UTF-8"?>\n<article xmlns="http://docbook.org/ns/docbook" version="5.2" xml:id="manual"><title>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</title><para translate="no">Protected</para></article>\n`,
+			"manual.dbk",
+			"application/docbook+xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<!DOCTYPE book [<!ENTITY x SYSTEM "file:///etc/passwd">]><book><title>&x;</title></book>',
+			"broken.dbk",
+			"application/docbook+xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			includeMetadata: true,
+			includeCode: false,
+			includeIndexTerms: false,
+			attributeSelectors: "alt,title",
+			respectTranslateMetadata: true,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["xml-value"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "manual.dbk",
+				path: ["article[1]", "title[1]", "#text"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<article xmlns="http://docbook.org/ns/docbook" version="5.2" xml:id="performance">${Array.from(
+				{ length: units },
+				(_, index) => `<para xml:id="p${index}">Message ${index}</para>`,
+			).join("")}</article>`,
+			"performance.dbk",
+			"application/docbook+xml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1185,6 +1234,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	epubFixture,
 	svgFixture,
 	ditaFixture,
+	docBookFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

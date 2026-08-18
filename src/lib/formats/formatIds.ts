@@ -17,6 +17,7 @@ export const FORMAT_IDS = [
 	"epub",
 	"svg",
 	"dita",
+	"docbook",
 	"xml",
 	"docx",
 	"xlsx",
