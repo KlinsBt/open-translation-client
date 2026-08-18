@@ -1,5 +1,62 @@
 <script lang="ts">
 	import DataStructureCard from "$lib/components/about/dataStructureCard.svelte";
+	import { onMount } from "svelte";
+
+	const tableOfContents = [
+		{ id: "workflow", label: "How files are handled" },
+		{ id: "source-formats", label: "Source formats" },
+		{ id: "cat-interchange", label: "CAT interchange" },
+		{ id: "constrained-workflows", label: "Constrained workflows" },
+		{ id: "data-storage", label: "Local data storage" },
+		{ id: "project-files", label: "Project files" },
+		{ id: "contribute", label: "Contribute" },
+	];
+
+	let activeSection = tableOfContents[0].id;
+
+	onMount(() => {
+		const sections = tableOfContents
+			.map(({ id }) => document.getElementById(id))
+			.filter((section): section is HTMLElement => section !== null);
+		let animationFrame = 0;
+
+		const updateActiveSection = () => {
+			animationFrame = 0;
+			const readingLine = Math.min(240, window.innerHeight * 0.3);
+			let currentSection: string | undefined = sections[0]?.id;
+
+			for (const section of sections) {
+				if (section.getBoundingClientRect().top <= readingLine) {
+					currentSection = section.id;
+				} else {
+					break;
+				}
+			}
+
+			const hasReachedPageEnd =
+				window.scrollY + window.innerHeight >=
+				document.documentElement.scrollHeight - 2;
+			if (hasReachedPageEnd) currentSection = sections.at(-1)?.id;
+
+			if (currentSection) activeSection = currentSection;
+		};
+
+		const scheduleUpdate = () => {
+			if (!animationFrame) {
+				animationFrame = window.requestAnimationFrame(updateActiveSection);
+			}
+		};
+
+		updateActiveSection();
+		window.addEventListener("scroll", scheduleUpdate, { passive: true });
+		window.addEventListener("resize", scheduleUpdate);
+
+		return () => {
+			window.removeEventListener("scroll", scheduleUpdate);
+			window.removeEventListener("resize", scheduleUpdate);
+			if (animationFrame) window.cancelAnimationFrame(animationFrame);
+		};
+	});
 
 	const sourceFormatGroups = [
 		{
@@ -110,13 +167,15 @@
 	<div class="page-layout">
 		<nav class="table-of-contents" aria-label="About page contents">
 			<p>On this page</p>
-			<a href="#workflow">How files are handled</a>
-			<a href="#source-formats">Source formats</a>
-			<a href="#cat-interchange">CAT interchange</a>
-			<a href="#constrained-workflows">Constrained workflows</a>
-			<a href="#data-storage">Local data storage</a>
-			<a href="#project-files">Project files</a>
-			<a href="#contribute">Contribute</a>
+			{#each tableOfContents as item}
+				<a
+					href={`#${item.id}`}
+					class:active={activeSection === item.id}
+					aria-current={activeSection === item.id ? "location" : undefined}
+				>
+					{item.label}
+				</a>
+			{/each}
 		</nav>
 
 		<div class="main-content">
@@ -402,14 +461,31 @@
 
 	.table-of-contents a {
 		display: block;
+		width: fit-content;
 		padding: 0.38rem 0;
 		color: #46616a;
 		font-size: 0.87rem;
-		text-decoration: none;
+		text-decoration-line: underline;
+		text-decoration-color: #b1ccd2;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.28em;
+		transition:
+			color 0.2s ease,
+			text-decoration-color 0.2s ease,
+			text-decoration-thickness 0.2s ease;
 	}
 
-	.table-of-contents a:hover {
+	.table-of-contents a:hover,
+	.table-of-contents a:focus-visible {
 		color: #0b6983;
+		text-decoration-color: currentColor;
+	}
+
+	.table-of-contents a.active {
+		color: #0b6983;
+		font-weight: 750;
+		text-decoration-color: #1a829d;
+		text-decoration-thickness: 3px;
 	}
 
 	.main-content {
