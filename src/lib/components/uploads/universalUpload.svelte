@@ -118,6 +118,22 @@
 		importOptionValues = { ...importOptionValues, [id]: value };
 	}
 
+	function optionChoiceLabel(optionId: string, choice: string): string {
+		const labels: Record<string, Record<string, string>> = {
+			trackedChanges: {
+				current: "Final document (recommended)",
+				original: "Original document before edits",
+				all: "Both inserted and deleted text",
+			},
+		};
+		return (
+			labels[optionId]?.[choice] ??
+			choice
+				.replaceAll("-", " ")
+				.replace(/^./, (character) => character.toUpperCase())
+		);
+	}
+
 	async function handleFileSelect(event: Event) {
 		const inputElement = event.target as HTMLInputElement;
 		const file = inputElement.files ? inputElement.files[0] : null;
@@ -340,89 +356,127 @@
 					</div>
 				{:else if detectionComplete}
 					<div class="form-section">
-						<input
-							type="text"
-							placeholder="Project name (optional)"
-							bind:value={temporarySaveName}
-						/>
+						<label class="form-field" for="project-name">
+							<span>Project name</span>
+							<input
+								id="project-name"
+								type="text"
+								placeholder="Name this translation project"
+								bind:value={temporarySaveName}
+							/>
+						</label>
 
 						<div class="language-selection">
-							<select
-								onchange={(e) =>
-									check(1, (e.target as HTMLSelectElement).value)}
-								value={sourceLanguage}
-							>
-								<option disabled selected value="">Source Language ▼</option>
-								{#each LANGUAGES as lang}
-									<option value={lang.name + " (" + lang.code + ")"}
-										>{lang.name} ({lang.code})</option
+							<label class="form-field">
+								<span>Source language</span>
+								<select
+									onchange={(e) =>
+										check(1, (e.target as HTMLSelectElement).value)}
+									value={sourceLanguage}
+								>
+									<option disabled selected value=""
+										>Choose source language</option
 									>
-								{/each}
-							</select>
+									{#each LANGUAGES as lang}
+										<option value={lang.name + " (" + lang.code + ")"}
+											>{lang.name} ({lang.code})</option
+										>
+									{/each}
+								</select>
+							</label>
 
-							<select
-								onchange={(e) =>
-									check(2, (e.target as HTMLSelectElement).value)}
-								value={targetLanguage}
-							>
-								<option disabled selected value="">Target Language ▼</option>
-								{#each LANGUAGES as lang}
-									<option value={lang.name + " (" + lang.code + ")"}
-										>{lang.name} ({lang.code})</option
+							<label class="form-field">
+								<span>Target language</span>
+								<select
+									onchange={(e) =>
+										check(2, (e.target as HTMLSelectElement).value)}
+									value={targetLanguage}
+								>
+									<option disabled selected value=""
+										>Choose target language</option
 									>
-								{/each}
-							</select>
+									{#each LANGUAGES as lang}
+										<option value={lang.name + " (" + lang.code + ")"}
+											>{lang.name} ({lang.code})</option
+										>
+									{/each}
+								</select>
+							</label>
 						</div>
 
 						{#if getImportOptions().length > 0}
-							<fieldset class="filter-options">
-								<legend>Import options</legend>
-								{#each getImportOptions() as option}
-									<label class:boolean-option={option.type === "boolean"}>
-										<span>{option.label}</span>
-										{#if option.type === "boolean"}
-											<input
-												type="checkbox"
-												checked={Boolean(importOptionValues[option.id])}
-												onchange={(event) =>
-													setImportOption(
-														option.id,
-														(event.target as HTMLInputElement).checked,
-													)}
-											/>
-										{:else if option.type === "select"}
-											<select
-												value={String(importOptionValues[option.id] ?? "")}
-												onchange={(event) =>
-													setImportOption(
-														option.id,
-														(event.target as HTMLSelectElement).value,
-													)}
-											>
-												{#each option.choices ?? [] as choice}
-													<option value={choice}>{choice}</option>
-												{/each}
-											</select>
-										{:else}
-											<input
-												type={option.type}
-												placeholder={option.placeholder ?? ""}
-												value={importOptionValues[option.id] ?? ""}
-												oninput={(event) =>
-													setImportOption(
-														option.id,
-														option.type === "number"
-															? (event.target as HTMLInputElement).valueAsNumber
-															: (event.target as HTMLInputElement).value,
-													)}
-											/>
-										{/if}
-										{#if option.description}
-											<small>{option.description}</small>
-										{/if}
-									</label>
-								{/each}
-							</fieldset>
+							<details class="filter-options">
+								<summary>
+									<span>
+										<strong>Customize imported content</strong>
+										<small
+											>Optional — recommended defaults are already selected</small
+										>
+									</span>
+								</summary>
+								<div class="filter-options-grid">
+									{#each getImportOptions() as option}
+										<label class:boolean-option={option.type === "boolean"}>
+											<span class="option-label">
+												{option.label}
+												{#if option.description}
+													<button
+														type="button"
+														class="option-help"
+														aria-label={`${option.label}: ${option.description}`}
+														onclick={(event) => event.stopPropagation()}
+													>
+														<span aria-hidden="true">?</span>
+														<span class="option-tooltip" role="tooltip"
+															>{option.description}</span
+														>
+													</button>
+												{/if}
+											</span>
+											{#if option.type === "boolean"}
+												<input
+													type="checkbox"
+													checked={Boolean(importOptionValues[option.id])}
+													onchange={(event) =>
+														setImportOption(
+															option.id,
+															(event.target as HTMLInputElement).checked,
+														)}
+												/>
+											{:else if option.type === "select"}
+												<select
+													value={String(importOptionValues[option.id] ?? "")}
+													onchange={(event) =>
+														setImportOption(
+															option.id,
+															(event.target as HTMLSelectElement).value,
+														)}
+												>
+													{#each option.choices ?? [] as choice}
+														<option value={choice}
+															>{optionChoiceLabel(option.id, choice)}</option
+														>
+													{/each}
+												</select>
+											{:else}
+												<input
+													type={option.type}
+													placeholder={option.placeholder ?? ""}
+													value={importOptionValues[option.id] ?? ""}
+													oninput={(event) =>
+														setImportOption(
+															option.id,
+															option.type === "number"
+																? (event.target as HTMLInputElement)
+																		.valueAsNumber
+																: (event.target as HTMLInputElement).value,
+														)}
+												/>
+											{/if}
+										</label>
+									{/each}
+								</div>
+							</details>
 						{/if}
 
 						{#if isProcessing && importProgress}
@@ -463,7 +517,7 @@
 		title="Create new project"
 		description="Import a source file and configure its translation workflow."
 		content={uploadContent}
-		wide
+		large
 		onClose={closeModal}
 	/>
 </div>
@@ -472,7 +526,7 @@
 	.universal-upload-container {
 		display: grid;
 		gap: 1rem;
-		width: min(100%, 580px);
+		width: min(100%, 760px);
 	}
 
 	.drop-zone {
@@ -618,14 +672,24 @@
 	.form-section {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: 1rem;
+	}
+
+	.form-field {
+		display: grid;
+		gap: 0.38rem;
+		color: #285365;
+		font-size: 0.75rem;
+		font-weight: 750;
 	}
 
 	.form-section input {
-		padding: 10px 12px;
-		border: 1px solid var(--color-theme-4);
-		border-radius: 5px;
-		font-size: 1rem;
+		box-sizing: border-box;
+		width: 100%;
+		padding: 0.72rem 0.8rem;
+		border: 1px solid #b9d4da;
+		border-radius: 0.55rem;
+		font-size: 0.9rem;
 		font-family: var(--font-body);
 	}
 
@@ -636,33 +700,91 @@
 
 	.language-selection {
 		display: grid;
-		gap: 10px;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.8rem;
 	}
 
 	.filter-options {
-		display: grid;
-		gap: 10px;
 		margin: 0;
-		padding: 12px;
-		border: 1px solid var(--color-theme-4);
-		border-radius: 5px;
+		border: 1px solid #c8dde2;
+		border-radius: 0.7rem;
+		background: #f8fcfd;
+		overflow: visible;
 	}
 
-	.filter-options legend {
-		padding: 0 5px;
-		font-weight: 600;
-		color: var(--color-theme-4);
+	.filter-options summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.85rem 1rem;
+		color: #28586a;
+		cursor: pointer;
+		list-style: none;
+	}
+
+	.filter-options summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.filter-options summary::after {
+		content: "+";
+		display: grid;
+		flex: 0 0 1.6rem;
+		place-items: center;
+		width: 1.6rem;
+		height: 1.6rem;
+		border-radius: 50%;
+		background: #e3f2f5;
+		color: #247c94;
+		font-size: 1rem;
+		font-weight: 700;
+	}
+
+	.filter-options[open] summary::after {
+		content: "−";
+	}
+
+	.filter-options summary span {
+		display: grid;
+		gap: 0.15rem;
+	}
+
+	.filter-options summary strong {
+		font-size: 0.84rem;
+	}
+
+	.filter-options summary small {
+		color: #748991;
+		font-size: 0.7rem;
+		font-weight: 500;
+	}
+
+	.filter-options-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.85rem;
+		padding: 1rem;
+		border-top: 1px solid #d9e8eb;
+		background: white;
 	}
 
 	.filter-options label {
 		display: grid;
-		gap: 5px;
+		align-content: start;
+		gap: 0.4rem;
 		color: var(--color-theme-5);
+		font-size: 0.78rem;
 	}
 
 	.filter-options .boolean-option {
 		grid-template-columns: 1fr auto;
 		align-items: center;
+		min-height: 2.8rem;
+		border: 1px solid #d7e5e8;
+		border-radius: 0.55rem;
+		padding: 0.55rem 0.7rem;
+		background: #f9fcfd;
 	}
 
 	.filter-options .boolean-option input {
@@ -670,9 +792,56 @@
 		height: 18px;
 	}
 
-	.filter-options small {
-		grid-column: 1 / -1;
-		line-height: 1.3;
+	.option-label {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-weight: 700;
+	}
+
+	.option-help {
+		position: relative;
+		display: inline-grid;
+		place-items: center;
+		width: 1rem;
+		height: 1rem;
+		border: 1px solid #9fc4cc;
+		border-radius: 50%;
+		color: #39798b;
+		font-size: 0.62rem;
+		font-weight: 850;
+		cursor: help;
+	}
+
+	.option-help:focus-visible {
+		outline: 2px solid #50a9be;
+		outline-offset: 2px;
+	}
+
+	.option-tooltip {
+		position: absolute;
+		left: 50%;
+		bottom: calc(100% + 0.55rem);
+		z-index: 20;
+		width: min(250px, 60vw);
+		border-radius: 0.55rem;
+		padding: 0.6rem 0.7rem;
+		background: #143f50;
+		box-shadow: 0 8px 22px rgba(20, 63, 80, 0.2);
+		color: white;
+		font-size: 0.68rem;
+		font-weight: 500;
+		line-height: 1.4;
+		opacity: 0;
+		pointer-events: none;
+		transform: translate(-50%, 0.3rem);
+		transition: 0.16s ease;
+	}
+
+	.option-help:hover .option-tooltip,
+	.option-help:focus .option-tooltip {
+		opacity: 1;
+		transform: translate(-50%, 0);
 	}
 
 	.import-progress {
@@ -698,11 +867,11 @@
 
 	select {
 		width: 100%;
-		padding: 10px 12px;
-		border-radius: 5px;
-		border: 1px solid var(--color-theme-4);
+		padding: 0.72rem 0.8rem;
+		border-radius: 0.55rem;
+		border: 1px solid #b9d4da;
 		color: var(--color-theme-5);
-		font-size: 1rem;
+		font-size: 0.9rem;
 		background: white;
 		cursor: pointer;
 		transition: border-color 0.3s;
@@ -717,6 +886,17 @@
 		padding: 10px 0px;
 		background-color: var(--color-theme-8);
 		color: var(--color-theme-5);
+	}
+
+	@media (max-width: 620px) {
+		.language-selection,
+		.filter-options-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.file-details {
+			align-items: flex-start;
+		}
 	}
 
 	.btn {

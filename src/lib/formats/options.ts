@@ -1024,30 +1024,40 @@ export const FORMAT_IMPORT_OPTIONS = {
 			label: "Headers and footers",
 			type: "boolean",
 			defaultValue: true,
+			description:
+				"Include repeated text from page headers and footers in the translation project.",
 		},
 		{
 			id: "includeNotes",
 			label: "Footnotes and endnotes",
 			type: "boolean",
 			defaultValue: true,
+			description:
+				"Include footnote and endnote text in addition to the main document content.",
 		},
 		{
 			id: "includeComments",
 			label: "Comments",
 			type: "boolean",
 			defaultValue: true,
+			description:
+				"Include reviewer comments as translatable content. Turn this off when comments are internal guidance only.",
 		},
 		{
 			id: "includeTextBoxes",
 			label: "Text boxes",
 			type: "boolean",
 			defaultValue: true,
+			description:
+				"Include text placed in Word text boxes, callouts, and similar positioned containers.",
 		},
 		{
 			id: "includeDrawingText",
 			label: "Drawing text",
 			type: "boolean",
 			defaultValue: true,
+			description:
+				"Include text embedded in drawing objects and diagram shapes when Word stores it separately.",
 		},
 	],
 	xlsx: [
