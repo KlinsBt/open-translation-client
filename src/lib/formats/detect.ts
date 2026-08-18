@@ -274,12 +274,7 @@ async function detectZipPackage(
 		packageDetails.mimetype === "application/epub+zip" ||
 		paths.has("META-INF/container.xml")
 	) {
-		return unsupported(
-			"EPUB",
-			"high",
-			["package", "signature"],
-			"An EPUB package was detected, but EPUB import is not implemented yet.",
-		);
+		return supportedPackage(adapters, "epub", "the EPUB container declaration");
 	}
 	return unsupported(
 		"ZIP archive",

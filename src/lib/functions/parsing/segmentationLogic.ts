@@ -59,6 +59,8 @@ const SUBTITLE_EDIT_ERROR =
 	"Subtitle cues cannot be split or joined because cue IDs, timings, settings, and text ranges must remain aligned.";
 const ODF_EDIT_ERROR =
 	"OpenDocument text runs cannot be split or joined because package parts, styles, and XML ranges must remain aligned.";
+const EPUB_EDIT_ERROR =
+	"EPUB text runs cannot be split or joined because spine documents, navigation, inline markup, and package XML ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -128,6 +130,7 @@ function validateForStructuralEdit(
 	if (translation.type === "markup") return MARKUP_EDIT_ERROR;
 	if (translation.type === "subtitles") return SUBTITLE_EDIT_ERROR;
 	if (translation.type === "odf") return ODF_EDIT_ERROR;
+	if (translation.type === "epub") return EPUB_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

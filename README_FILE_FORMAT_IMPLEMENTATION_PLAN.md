@@ -802,11 +802,35 @@ Complete these in order after FF-000 through FF-009.
       included (`OPENTLC_RUN_LIBREOFFICE=1`); its managed-sandbox approval timed
       out twice in this run, so downstream release CI must execute that external
       gate and an ODF schema validator before advertising origin-tool validation.
-- [ ] **FF-301 — EPUB 2/3 (`.epub`).** Read the container, package manifest,
+- [x] **FF-301 — EPUB 2/3 (`.epub`).** Read the container, package manifest,
       spine, navigation, XHTML/SVG content, metadata, and media overlays; reuse
       HTML/XML filters and preserve CSS, fonts, media, scripts, accessibility,
       and the required uncompressed/first `mimetype` entry. Validate exported
       books with EPUBCheck.
+      Completed 2026-08-18: the EPUB 2/3 adapter validates the stored first
+      `application/epub+zip` mimetype, single safe container rootfile, OPF version,
+      publication identifier, unique manifest IDs, resolved in-package hrefs,
+      spine references, EPUB 3 nav or EPUB 2 NCX, media-overlay references, and
+      all selected XML content. Fixed standard HTML/XHTML 1.1 and NCX doctypes are
+      masked without resolving them; entities, custom declarations, escaping
+      paths, unsupported content encryption, and signatures fail closed.
+      Source-ranged extraction covers spine-only or all manifest XHTML, nav/NCX
+      labels, selected OPF metadata, SVG text/title/description, and alt/title/
+      ARIA attributes. Scripts and linked resources are masked during validation
+      and never executed. CSS, fonts, images, audio/video, JavaScript, SMIL media
+      overlays, accessibility extensions, and unknown assets remain exact package
+      bytes. Export edits and reparses only mapped XML ranges, preserves identity
+      bytes, restores the mandatory mimetype ZIP layout, enforces placeholder/tag
+      QA, and blocks stale mappings and split/join. Unit, conformance, EPUB 2/3,
+      navigation/metadata/scope/SVG/accessibility, fixed-doctype, encryption/
+      entity/signature/container, semantic package diff, 1,000-paragraph,
+      detection and translated re-import coverage verifies the core workflow. A
+      generated browser import/edit/download/re-import case is registered; its
+      runner could not bind inside the sandbox and two escalation reviews timed
+      out in this run, so it remains a downstream release gate. An opt-in
+      `OPENTLC_RUN_EPUBCHECK=1` test is also included; EPUBCheck is not installed
+      in this environment, so release CI must execute both gates before
+      origin-validator support is advertised.
 - [ ] **FF-302 — SVG (`.svg`).** Translate text, selected accessibility
       attributes, titles/descriptions, and text-path content while preserving
       namespaces, transforms, styling, geometry, and scripts as inert bytes.

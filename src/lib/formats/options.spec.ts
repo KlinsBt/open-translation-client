@@ -108,6 +108,15 @@ describe("format import options", () => {
 			includeHeadersFooters: true,
 			includeAccessibilityText: true,
 		});
+		expect(normalizeImportOptions("epub", { contentScope: "invalid" })).toEqual(
+			{
+				contentScope: "spine",
+				includeNavigation: true,
+				includeMetadata: true,
+				includeSvgText: true,
+				includeAccessibilityText: true,
+			},
+		);
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

@@ -43,6 +43,30 @@ async function odfPackageFile(
 	);
 }
 
+async function epubPackageFile(content: string): Promise<File> {
+	const zip = new JSZip();
+	zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+	zip.file(
+		"META-INF/container.xml",
+		'<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+	);
+	zip.file(
+		"EPUB/package.opf",
+		'<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="id"><metadata><dc:identifier id="id">urn:test</dc:identifier><dc:language>en</dc:language><dc:title>Protected metadata</dc:title></metadata><manifest><item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine><itemref idref="chapter"/></spine></package>',
+	);
+	zip.file("EPUB/chapter.xhtml", content);
+	zip.file(
+		"EPUB/nav.xhtml",
+		'<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><body><nav><a href="chapter.xhtml">Protected nav</a></nav></body></html>',
+	);
+	zip.file("EPUB/style.css", "body{color:black}");
+	return new File(
+		[await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" })],
+		"book.epub",
+		{ type: "application/epub+zip" },
+	);
+}
+
 function invalidUtf8(name: string, type: string): File {
 	return new File([new Uint8Array([0xc3, 0x28])], name, { type });
 }
@@ -745,6 +769,59 @@ const odfFixture: FormatConformanceFixture = {
 	expectedPackageChanges: ["content.xml"],
 };
 
+const epubFixture: FormatConformanceFixture = {
+	id: "epub",
+	fileName: "book.epub",
+	mimeType: "application/epub+zip",
+	importOptions: {
+		includeMetadata: false,
+		includeNavigation: false,
+		includeSvgText: false,
+	},
+	createValidFile: async () =>
+		epubPackageFile(
+			`<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Protected</title></head><body><p>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</p></body></html>`,
+		),
+	createMalformedFile: async () =>
+		epubPackageFile(
+			'<!DOCTYPE html [<!ENTITY x SYSTEM "file:///etc/passwd">]><html xmlns="http://www.w3.org/1999/xhtml"><body><p>&x;</p></body></html>',
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			contentScope: "spine",
+			includeNavigation: false,
+			includeMetadata: false,
+			includeSvgText: false,
+			includeAccessibilityText: true,
+		},
+		skeleton: { kind: "package", replacementKinds: ["package-xml-value"] },
+		units: [
+			{
+				id: "EPUB/chapter.xhtml:html[1]/body[1]/p[1]/#text:0",
+				part: "EPUB/chapter.xhtml",
+				path: ["html[1]", "body[1]", "p[1]", "#text"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		epubPackageFile(
+			`<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><body>${Array.from(
+				{ length: units },
+				(_, index) => `<p>Message ${index}</p>`,
+			).join("")}</body></html>`,
+		),
+	performanceOptions: {
+		includeMetadata: false,
+		includeNavigation: false,
+		includeSvgText: false,
+	},
+	expectedPackageChanges: ["EPUB/chapter.xhtml"],
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1006,6 +1083,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	markupFixture,
 	subtitlesFixture,
 	odfFixture,
+	epubFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

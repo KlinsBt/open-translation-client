@@ -486,6 +486,41 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: true,
 		},
 	],
+	epub: [
+		{
+			id: "contentScope",
+			label: "Content documents",
+			type: "select",
+			defaultValue: "spine",
+			choices: ["spine", "all"],
+			description:
+				"Translate reading-order documents, or every XHTML content document declared in the manifest.",
+		},
+		{
+			id: "includeNavigation",
+			label: "Include navigation labels",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeMetadata",
+			label: "Include publication metadata",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeSvgText",
+			label: "Include SVG text/title/description",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeAccessibilityText",
+			label: "Include alt/title/ARIA labels",
+			type: "boolean",
+			defaultValue: true,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

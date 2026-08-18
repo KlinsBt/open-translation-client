@@ -86,10 +86,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -349,7 +349,7 @@ describe("format adapter registry", () => {
 		},
 	);
 
-	it("distinguishes supported PPTX/OpenDocument from EPUB and generic ZIP packages", async () => {
+	it("distinguishes supported PPTX/OpenDocument/EPUB from generic ZIP packages", async () => {
 		const pptx = await zipFile(
 			{ "ppt/presentation.xml": "<presentation/>" },
 			"slides.pptx",
@@ -372,27 +372,27 @@ describe("format adapter registry", () => {
 			label: "OpenDocument ODT/ODS/ODP",
 			supported: true,
 		});
-		const cases = [
-			[
-				await zipFile(
-					{
-						mimetype: "application/epub+zip",
-						"META-INF/container.xml": "<container/>",
-					},
-					"book.epub",
-				),
-				"EPUB",
-			],
-			[await zipFile({ "other.txt": "data" }, "archive.zip"), "ZIP archive"],
-		] as const;
-
-		for (const [file, label] of cases) {
-			await expect(detectFormatWithConfidence(file)).resolves.toMatchObject({
-				formatId: null,
-				label,
-				supported: false,
-			});
-		}
+		const epub = await zipFile(
+			{
+				mimetype: "application/epub+zip",
+				"META-INF/container.xml": "<container/>",
+			},
+			"book.epub",
+		);
+		await expect(detectFormatWithConfidence(epub)).resolves.toMatchObject({
+			formatId: "epub",
+			label: "EPUB 2/3",
+			supported: true,
+		});
+		await expect(
+			detectFormatWithConfidence(
+				await zipFile({ "other.txt": "data" }, "archive.zip"),
+			),
+		).resolves.toMatchObject({
+			formatId: null,
+			label: "ZIP archive",
+			supported: false,
+		});
 	});
 
 	it("recognizes generic XML MIME types without treating them as HTML", async () => {

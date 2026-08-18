@@ -16,6 +16,7 @@ import { generatePhpTranslation } from "$lib/functions/outputGeneration/outputGe
 import { generateLightweightMarkupTranslation } from "$lib/functions/outputGeneration/outputGenerationMarkup";
 import { generateSubtitleTranslation } from "$lib/functions/outputGeneration/outputGenerationSubtitles";
 import { generateOdfTranslation } from "$lib/functions/outputGeneration/outputGenerationOdf";
+import { generateEpubTranslation } from "$lib/functions/outputGeneration/outputGenerationEpub";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -70,6 +71,7 @@ import {
 } from "./lightweightMarkup";
 import { importSubtitleFile, validateSubtitleFile } from "./subtitles";
 import { importOdfFile, ODF_MIME_TYPES, validateOdfFile } from "./odf";
+import { EPUB_MIME_TYPE, importEpubFile, validateEpubFile } from "./epub";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -328,6 +330,19 @@ const adapters = [
 		validate: validateOdfFile,
 		importFile: importOdfFile,
 		exportFile: generateOdfTranslation,
+	},
+	{
+		id: "epub",
+		label: "EPUB 2/3",
+		extensions: ["epub"],
+		mimeTypes: [EPUB_MIME_TYPE],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.epub,
+		sniff: async (file, context) =>
+			(await validateEpubFile(file, context)).valid,
+		validate: validateEpubFile,
+		importFile: importEpubFile,
+		exportFile: generateEpubTranslation,
 	},
 	{
 		id: "xml",

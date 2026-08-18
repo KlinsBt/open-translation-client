@@ -59,6 +59,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	markup: { allowTagReorder: false, allowInlineCodeReorder: false },
 	subtitles: { allowTagReorder: true, allowInlineCodeReorder: true },
 	odf: { allowTagReorder: true, allowInlineCodeReorder: true },
+	epub: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },

@@ -14,6 +14,7 @@ export const FORMAT_IDS = [
 	"markup",
 	"subtitles",
 	"odf",
+	"epub",
 	"xml",
 	"docx",
 	"xlsx",

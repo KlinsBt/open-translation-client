@@ -37,11 +37,6 @@ export async function buildOdfTranslationPackage(
 	const skeleton = getPackageSkeleton(data.skeleton, "odf");
 	if (!skeleton)
 		throw new Error("ODF export requires its original package skeleton.");
-	if (
-		skeleton.source.originalFile &&
-		skeletonHasIdentityTargets(data.seg1, data.seg2)
-	)
-		return skeleton.source.originalFile;
 	const replacements = skeleton.replacements.filter(
 		(replacement): replacement is PackageXmlValueReplacement =>
 			replacement.kind === "package-xml-value",
@@ -58,6 +53,11 @@ export async function buildOdfTranslationPackage(
 		throw new Error(
 			`ODF export cannot continue because ${replacements.length} mappings do not align uniquely with ${data.seg2.length} targets.`,
 		);
+	if (
+		skeleton.source.originalFile &&
+		skeletonHasIdentityTargets(data.seg1, data.seg2)
+	)
+		return skeleton.source.originalFile;
 	const parts: Record<string, string | Blob> = { ...skeleton.payload.parts };
 	const byPart = new Map<string, PackageXmlValueReplacement[]>();
 	for (const replacement of replacements) {
