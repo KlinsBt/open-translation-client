@@ -737,122 +737,145 @@
 {/if}
 
 <div class="toolbar">
-	<button class="toolbar-button back" onclick={() => toggleMenu()}>
-		<RightArrow />
-		Back
-	</button>
-	<button class="toolbar-button export" onclick={() => toggleTmTbModal()}>
-		Manage TM/TB
-		<TmTb />
-	</button>
-	<button class="toolbar-button save" onclick={() => toggleSaveFileModal()}>
-		Export Save File
-		<SaveFile marginBottom="0px" />
-	</button>
-	<button
-		class="toolbar-button export"
-		onclick={handleTranslationFileExport}
-		disabled={!translationExportAvailable}
-		title={translationExportAvailable
-			? "Export the translated source format"
-			: "This source format is import-only; use Open TLC JSON or standard XLIFF"}
-	>
-		{translationExportAvailable
-			? "Export Translation File"
-			: "Source Format Is Read-only"}
-		<Export marginBottom="2px" />
-	</button>
-	<button class="toolbar-help" aria-label="Keyboard shortcuts" tabindex="0">
-		<span>i</span>
-		<div class="shortcut-popover">
-			<p>
-				<strong>Ctrl/Cmd + ↓ / ↑:</strong>
-				<br />
-				<span>Select next/previous segment</span>
-			</p>
-			<p>
-				<strong>Ctrl/Cmd + L:</strong>
-				<br />
-				<span>Lock/Unlock current segment</span>
-			</p>
-			<p>
-				<strong>Ctrl/Cmd + F:</strong>
-				<br />
-				<span>Fill current segment (if empty)</span>
-			</p>
-			<p>
-				<strong>Ctrl/Cmd + M:</strong>
-				<br />
-				<span>Open TM/TB manager</span>
-			</p>
-			<p>
-				<strong>Ctrl/Cmd + E:</strong>
-				<br />
-				<span>Split current segment</span>
-			</p>
-			<p>
-				<strong>Ctrl/Cmd + J:</strong>
-				<br />
-				<span>Join selected segments or current + next</span>
-			</p>
+	<div class="toolbar-inner">
+		<div class="toolbar-project">
+			<button
+				class="toolbar-back"
+				onclick={() => toggleMenu()}
+				aria-label="Back to projects"
+			>
+				<RightArrow />
+			</button>
+			<div class="toolbar-project-copy">
+				<span class="toolbar-eyebrow">Translation workspace</span>
+				<strong>{$singleUserData.translationData.name}</strong>
+			</div>
 		</div>
-	</button>
+		<div class="toolbar-actions">
+			<button class="toolbar-button resource" onclick={() => toggleTmTbModal()}>
+				<TmTb />
+				Resources
+			</button>
+			<button
+				class="toolbar-button secondary"
+				onclick={() => toggleSaveFileModal()}
+			>
+				<SaveFile marginBottom="0px" />
+				Save project
+			</button>
+			<button
+				class="toolbar-button primary"
+				onclick={handleTranslationFileExport}
+				disabled={!translationExportAvailable}
+				title={translationExportAvailable
+					? "Export the translated source format"
+					: "This source format is import-only; use Open TLC JSON or standard XLIFF"}
+			>
+				<Export marginBottom="2px" />
+				{translationExportAvailable
+					? "Export translation"
+					: "Import-only format"}
+			</button>
+			<button class="toolbar-help" aria-label="Keyboard shortcuts" tabindex="0">
+				<span>?</span>
+				<div class="shortcut-popover">
+					<p>
+						<strong>Ctrl/Cmd + ↓ / ↑:</strong>
+						<br />
+						<span>Select next/previous segment</span>
+					</p>
+					<p>
+						<strong>Ctrl/Cmd + L:</strong>
+						<br />
+						<span>Lock/Unlock current segment</span>
+					</p>
+					<p>
+						<strong>Ctrl/Cmd + F:</strong>
+						<br />
+						<span>Fill current segment (if empty)</span>
+					</p>
+					<p>
+						<strong>Ctrl/Cmd + M:</strong>
+						<br />
+						<span>Open TM/TB manager</span>
+					</p>
+					<p>
+						<strong>Ctrl/Cmd + E:</strong>
+						<br />
+						<span>Split current segment</span>
+					</p>
+					<p>
+						<strong>Ctrl/Cmd + J:</strong>
+						<br />
+						<span>Join selected segments or current + next</span>
+					</p>
+				</div>
+			</button>
+		</div>
+	</div>
 </div>
 
 <div class="words-container">
 	<div class="words-left">
+		<span class="language-label">Source language</span>
 		<h1>
 			{$singleUserData.translationData.sourceLang !== undefined &&
 			$singleUserData.translationData.sourceLang !== ""
 				? $singleUserData.translationData.sourceLang
 				: "Undefined"}
 		</h1>
-		<p>Words: <span>{$seg1WordCount}</span></p>
+		<p><span>{$seg1WordCount}</span> words</p>
 	</div>
 
 	<div class="middle-container">
 		<div class="top-stats">
-			<p>
-				Segments: <span>{$singleUserData.translationData.seg1.length}</span>
-			</p>
-			<p>Progress: <span>{percentage}%</span></p>
+			<div class="progress-copy">
+				<p><span>{percentage}%</span> complete</p>
+				<p>{$singleUserData.translationData.seg1.length} segments</p>
+			</div>
+			<div class="progress-track" aria-label={`${percentage}% complete`}>
+				<span style={`width: ${percentage}%`}></span>
+			</div>
 		</div>
 		<div class="segment-actions">
-			<button onclick={() => lockAllUnlockedSegments()}>
-				Lock All Segments
+			<button class="bulk-action" onclick={() => lockAllUnlockedSegments()}>
 				<DocLock />
+				Lock all
 			</button>
 			<button
+				class="bulk-action"
 				onclick={splitCurrentSegment}
 				title="Split current segment at source caret (Ctrl/Cmd+E)"
 				disabled={!pendingSplitOffsets.has(
 					$selectedSegmentId ?? lastSelectedSegmentId ?? 0,
 				)}
 			>
-				Split Segment
+				Split selected
 			</button>
-			<button onclick={() => fillAllEmptySegments()}>
-				Fill All Segments
+			<button class="bulk-action" onclick={() => fillAllEmptySegments()}>
 				<AutoFill />
+				Fill empty
 			</button>
 			<button
+				class="bulk-action"
 				onclick={combineWithNextSegment}
 				title="Join selected segments or current + next (Ctrl/Cmd+J)"
 				disabled={$singleUserData.translationData.seg1.length < 2}
 			>
-				Join Segments
+				Join selected
 			</button>
 		</div>
 	</div>
 
 	<div class="words-right">
+		<span class="language-label">Target language</span>
 		<h1>
 			{$singleUserData.translationData.targetLang !== undefined &&
 			$singleUserData.translationData.targetLang !== ""
 				? $singleUserData.translationData.targetLang
 				: "Undefined"}
 		</h1>
-		<p>Words: <span>{$seg2WordCount}</span></p>
+		<p><span>{$seg2WordCount}</span> words</p>
 	</div>
 </div>
 
@@ -990,49 +1013,117 @@
 	}
 
 	.toolbar {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		background-color: var(--color-theme-5);
-		padding: 10px 0;
+		background: #123f5f;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+		padding: 0.7rem 1.5rem;
 		width: 100%;
-		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+		box-sizing: border-box;
+		box-shadow: 0 4px 18px rgba(14, 52, 72, 0.16);
 		position: sticky;
 		top: 0;
 		z-index: 70;
 	}
 
-	.toolbar-button {
+	.toolbar-inner {
 		display: flex;
-		justify-content: center;
 		align-items: center;
-		gap: 0px 8px;
-		background-color: var(--color-theme-4);
+		justify-content: space-between;
+		gap: 1rem;
+		width: min(100%, 1440px);
+		margin: 0 auto;
+	}
+
+	.toolbar-project,
+	.toolbar-actions,
+	.toolbar-button,
+	.toolbar-back {
+		display: flex;
+		align-items: center;
+	}
+
+	.toolbar-project {
+		gap: 0.75rem;
+		min-width: 0;
+	}
+
+	.toolbar-project-copy {
+		display: grid;
+		min-width: 0;
 		color: white;
-		border: none;
-		border-radius: 5px;
-		padding: 10px 20px;
-		margin-right: 15px;
-		font-weight: bold;
+	}
+
+	.toolbar-project-copy strong {
+		overflow: hidden;
+		max-width: 320px;
+		font-size: 0.96rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.toolbar-eyebrow {
+		color: #93cbd9;
+		font-size: 0.62rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	.toolbar-actions {
+		justify-content: flex-end;
+		gap: 0.55rem;
+	}
+
+	.toolbar-back,
+	.toolbar-button,
+	.toolbar-help {
+		min-height: 2.45rem;
+		border-radius: 0.55rem;
+		font: inherit;
+		font-size: 0.78rem;
+		font-weight: 750;
 		cursor: pointer;
-		transition: all 0.3s ease;
-		font-size: 1rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		transition: 0.18s ease;
 	}
 
-	.toolbar-button.export {
-		background-color: dodgerblue;
+	.toolbar-back {
+		justify-content: center;
+		width: 2.45rem;
+		border: 1px solid rgba(255, 255, 255, 0.22);
+		background: rgba(255, 255, 255, 0.08);
+		color: white;
 	}
 
-	.toolbar-button:hover {
-		/* background-color: var(--color-theme-3); */
-		filter: brightness(1.1);
-		box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+	.toolbar-button {
+		justify-content: center;
+		gap: 0.45rem;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		padding: 0.55rem 0.85rem;
+		background: rgba(255, 255, 255, 0.1);
+		color: white;
 	}
 
-	.toolbar-button:active {
-		transform: scale(0.98);
-		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+	.toolbar-button.resource {
+		border-color: rgba(137, 210, 222, 0.35);
+		background: rgba(73, 165, 184, 0.16);
+	}
+
+	.toolbar-button.primary {
+		border-color: #40a7c3;
+		background: #2c91af;
+		box-shadow: 0 5px 14px rgba(0, 0, 0, 0.13);
+	}
+
+	.toolbar-button:hover:not(:disabled),
+	.toolbar-back:hover,
+	.toolbar-help:hover {
+		transform: translateY(-1px);
+		border-color: rgba(255, 255, 255, 0.45);
+		filter: brightness(1.08);
+	}
+
+	.toolbar-button:disabled {
+		cursor: not-allowed;
+		opacity: 0.48;
 	}
 
 	.toolbar-help {
@@ -1040,38 +1131,18 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: var(--color-theme-4);
-		color: white;
-		border: 2px solid white;
-		border-radius: 50%;
-		width: 32px;
-		height: 32px;
+		width: 2.45rem;
+		border: 1px solid rgba(255, 255, 255, 0.25);
+		background: rgba(255, 255, 255, 0.08);
+		color: #d9f1f5;
 		padding: 0;
-		margin-right: 15px;
-		font-weight: bold;
-		font-size: 1.1rem;
-		font-style: italic;
 		cursor: help;
-		transition: all 0.3s ease;
-		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 		flex-shrink: 0;
 	}
 
 	.toolbar-help span {
 		user-select: none;
 		line-height: 1;
-	}
-
-	.toolbar-help:hover {
-		background-color: var(--color-theme-3);
-		transform: scale(1.1);
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-		z-index: 100;
-	}
-
-	.toolbar-help:active {
-		transform: scale(1.05);
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 	}
 
 	.toolbar-help .shortcut-popover {
@@ -1081,9 +1152,9 @@
 		min-width: 200px;
 		background: white;
 		color: var(--color-theme-6);
-		border: 2px solid var(--color-theme-4);
-		border-radius: 5px;
-		padding: 10px;
+		border: 1px solid #c7dde2;
+		border-radius: 0.75rem;
+		padding: 0.85rem;
 		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 		opacity: 0;
 		visibility: hidden;
@@ -1102,7 +1173,7 @@
 		height: 0;
 		border-left: 8px solid transparent;
 		border-right: 8px solid transparent;
-		border-bottom: 8px solid var(--color-theme-4);
+		border-bottom: 8px solid #c7dde2;
 	}
 
 	.toolbar-help:hover .shortcut-popover,
@@ -1170,247 +1241,213 @@
 	}
 
 	.words-container {
-		display: flex;
-		justify-content: center;
+		display: grid;
+		grid-template-columns: minmax(180px, 1fr) minmax(420px, 1.6fr) minmax(
+				180px,
+				1fr
+			);
 		align-items: center;
-		background-color: #ecf6f8;
-		padding: 0px;
+		gap: 2rem;
+		background: rgba(240, 250, 252, 0.96);
+		border-bottom: 1px solid #cce2e7;
+		padding: 1rem max(1.5rem, calc((100vw - 1440px) / 2));
+		box-sizing: border-box;
 		width: 100%;
-		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 14px rgba(19, 70, 88, 0.06);
 		position: sticky;
-		top: 58px;
-		z-index: 2;
+		top: 62px;
+		z-index: 50;
 	}
 
-	.words-container > .middle-container {
-		margin: 10px 25%;
-		display: grid;
-		justify-items: center;
-		align-items: center;
+	.words-left,
+	.words-right {
+		min-width: 0;
 	}
 
-	.words-container > .middle-container > .top-stats {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-around;
-		align-items: center;
-		width: 100%;
+	.words-right {
+		text-align: right;
 	}
 
-	.words-container > .middle-container > .top-stats > p {
-		margin: 0px;
-	}
-
-	.words-container > .middle-container > .top-stats > p > span {
-		font-weight: bold;
-		color: var(--color-theme-3);
-	}
-
-	.segment-actions {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 10px;
-		margin: 0px 0px 5px 0px;
-	}
-
-	.middle-container > .top-stats {
-		margin: 0px 0px 5px 0px;
-	}
-
-	.middle-container > div > button {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		background-color: var(--color-theme-4);
-		color: var(--color-theme-7);
-		border: none;
-		border-radius: 5px;
-		padding: 5px;
-		margin: 0px;
-		font-weight: bold;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		font-size: 0.8rem;
-		gap: 0px 10px;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
-
-	.middle-container > div > button:nth-child(1) {
-		padding: 5px 10px;
-	}
-
-	.middle-container > div > button:hover {
-		background-color: var(--color-theme-3);
-		filter: brightness(1.1);
-		box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-	}
-
-	.middle-container > div > button:active {
-		filter: brightness(0.95);
-		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
-	}
-
-	.middle-container > div > button:disabled {
-		background-color: #ccc;
-		color: #666;
-		cursor: not-allowed;
-		opacity: 0.6;
-	}
-
-	.middle-container > div > button:disabled:hover {
-		filter: none;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
-
-	.words-left > h1,
-	.words-right > h1 {
-		font-size: 1.3rem;
-		margin: 10px 0px 0px 0px;
+	.language-label {
+		color: #6c858e;
+		font-size: 0.62rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
 		text-transform: uppercase;
 	}
 
-	.words-left > h1 {
-		color: var(--color-theme-4);
+	.words-left h1,
+	.words-right h1 {
+		margin: 0.12rem 0 0;
+		overflow: hidden;
+		color: #17495b;
+		font-size: 1rem;
+		font-weight: 750;
+		text-overflow: ellipsis;
+		text-transform: none;
+		white-space: nowrap;
 	}
 
-	.words-right > h1 {
-		color: var(--color-theme-4);
+	.words-left p,
+	.words-right p {
+		margin: 0.15rem 0 0;
+		color: #789099;
+		font-size: 0.72rem;
 	}
 
-	.words-left > p,
-	.words-right > p {
-		margin: 0px 0px 5px 0px;
+	.words-left p span,
+	.words-right p span {
+		color: #2b8ea9;
+		font-weight: 800;
 	}
 
-	.words-right > p > span,
-	.words-left > p > span {
-		font-weight: bold;
-		color: var(--color-theme-3);
+	.middle-container {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.top-stats {
+		display: grid;
+		gap: 0.4rem;
+	}
+
+	.progress-copy {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.progress-copy p {
+		margin: 0;
+		color: #6c858e;
+		font-size: 0.7rem;
+		font-weight: 700;
+	}
+
+	.progress-copy span {
+		color: #218aa6;
+	}
+
+	.progress-track {
+		height: 0.35rem;
+		overflow: hidden;
+		border-radius: 999px;
+		background: #d8e8ec;
+	}
+
+	.progress-track span {
+		display: block;
+		height: 100%;
+		border-radius: inherit;
+		background: #2fa0bb;
+		transition: width 0.25s ease;
+	}
+
+	.segment-actions {
+		display: flex;
+		justify-content: center;
+		gap: 0.4rem;
+	}
+
+	.bulk-action {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.3rem;
+		min-height: 2rem;
+		border: 1px solid #b9d4da;
+		border-radius: 0.45rem;
+		padding: 0.4rem 0.6rem;
+		background: white;
+		color: #28657a;
+		font: inherit;
+		font-size: 0.68rem;
+		font-weight: 750;
+		cursor: pointer;
+		transition: 0.18s ease;
+	}
+
+	.bulk-action:hover:not(:disabled) {
+		border-color: #6facba;
+		background: #f7fcfd;
+		transform: translateY(-1px);
+	}
+
+	.bulk-action:disabled {
+		background: #edf3f4;
+		color: #9babad;
+		cursor: not-allowed;
+		opacity: 0.7;
 	}
 
 	.segments-container {
 		display: grid;
 		grid-template-columns: 1fr;
-		padding: 20px 25px;
-		/* max-height: 700px; */
+		gap: 0.65rem;
+		padding: 1rem max(1.5rem, calc((100vw - 1440px) / 2));
+		box-sizing: border-box;
 		overflow-y: auto;
-		min-width: 95%;
-		/* min-width: 97%; */
+		width: 100%;
+		background: #eaf6f8;
 	}
 
-	@media (max-width: 1228px) {
-		.words-container {
-			justify-content: space-evenly;
+	@media (max-width: 980px) {
+		.toolbar-inner {
+			align-items: flex-start;
 		}
 
-		.words-container > .middle-container {
-			margin: 0%;
-		}
-	}
-
-	@media (max-width: 990px) {
-		.segments-container {
-			min-width: 90%;
-		}
-	}
-
-	@media (max-width: 515px) {
-		.segments-container {
-			min-width: auto;
-		}
-	}
-
-	@media (max-width: 690px) {
-		.toolbar {
-			display: flex;
+		.toolbar-actions {
 			flex-wrap: wrap;
-			justify-content: center;
-			align-items: center;
-			padding: 15px 0;
-			gap: 15px 0px;
 		}
 
-		.words-container > .middle-container > .top-stats {
+		.words-container {
+			grid-template-columns: 1fr 1.5fr 1fr;
+			gap: 1rem;
+		}
+
+		.segment-actions {
 			display: grid;
-			justify-items: center;
-			align-items: center;
-			grid-template-columns: auto;
-			padding: 0px;
-			margin: 0px;
-			gap: 0px;
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
+	@media (max-width: 720px) {
+		.toolbar {
+			padding: 0.65rem 0.75rem;
 		}
 
-		.words-container > .middle-container > .segment-actions {
+		.toolbar-inner,
+		.toolbar-actions {
+			width: 100%;
+		}
+
+		.toolbar-inner {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.toolbar-actions {
 			display: grid;
-			justify-items: center;
-			align-items: center;
-			grid-template-columns: auto;
-			padding: 0px;
-			margin: 10px 0px;
-			gap: 10px 0px;
-		}
-	}
-
-	@media (max-width: 545px) {
-		.words-left > h1,
-		.words-right > h1 {
-			font-size: 1rem;
+			grid-template-columns: repeat(3, 1fr) auto;
 		}
 
-		.words-left > p,
-		.words-right > p {
-			text-align: center;
+		.toolbar-project-copy strong {
+			max-width: calc(100vw - 5rem);
 		}
-	}
 
-	@media (min-width: 800px) and (max-width: 1500px) {
+		.words-container {
+			position: static;
+			grid-template-columns: 1fr 1fr;
+			padding: 0.85rem 0.75rem;
+		}
+
+		.middle-container {
+			grid-column: 1 / -1;
+			grid-row: 2;
+		}
+
 		.segments-container {
-			gap: 15px 0px;
-		}
-	}
-
-	@media (min-width: 750px) and (max-width: 1100px) {
-		.segments-container {
-			gap: 20px 0px;
-		}
-	}
-
-	@media (min-width: 400px) and (max-width: 750px) {
-		.segments-container {
-			gap: 20px 0px;
-		}
-	}
-
-	@media (max-width: 400px) {
-		.segments-container {
-			gap: 30px 0px;
-		}
-
-		.words-left > h1,
-		.words-right > h1 {
-			font-size: 0.8rem;
-		}
-
-		.words-container > .middle-container > .top-stats {
-			font-size: 0.7rem;
-		}
-
-		.words-container > .middle-container > .top-stats > p {
-			font-size: 0.8rem;
-		}
-
-		.words-container > .middle-container > .top-stats > p > span {
-			font-size: 0.7rem;
-		}
-
-		.words-left > p,
-		.words-right > p {
-			text-align: center;
-			font-size: 0.7rem;
-		}
-
-		.words-container > .middle-container > .segment-actions > button {
-			font-size: 0.6rem;
+			padding: 0.75rem;
 		}
 	}
 </style>
