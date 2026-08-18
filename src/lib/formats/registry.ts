@@ -99,6 +99,11 @@ import {
 	rejectCatPackageExport,
 	validateCatPackageFile,
 } from "./catPackage";
+import {
+	generateZipProjectTranslation,
+	importZipProjectFile,
+	validateZipProjectFile,
+} from "./zipProject";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -560,6 +565,21 @@ const adapters = [
 		validate: validateCatPackageFile,
 		importFile: importCatPackageFile,
 		exportFile: rejectCatPackageExport,
+	},
+	{
+		id: "zip-project",
+		label: "Manifest-driven ZIP projects",
+		extensions: ["zip"],
+		mimeTypes: ["application/zip"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["zip-project"],
+		sniff: async (file, context) =>
+			(await validateZipProjectFile(file, context, getFormatAdapter)).valid,
+		validate: (file, context) =>
+			validateZipProjectFile(file, context, getFormatAdapter),
+		importFile: (file, options, context) =>
+			importZipProjectFile(file, options, context, getFormatAdapter),
+		exportFile: generateZipProjectTranslation,
 	},
 	{
 		id: "xml",

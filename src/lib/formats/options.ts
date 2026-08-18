@@ -888,6 +888,17 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Retain the bilingual targets and workflow state already stored in package XLIFF members.",
 		},
 	],
+	"zip-project": [
+		{
+			id: "failurePolicy",
+			label: "Member failures",
+			type: "select",
+			defaultValue: "reject-batch",
+			choices: ["reject-batch", "skip-optional"],
+			description:
+				"Reject any failing member, or skip only members explicitly marked required:false while retaining a report.",
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

@@ -71,6 +71,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	qml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	pdf: { allowTagReorder: false, allowInlineCodeReorder: false },
 	"cat-package": { allowTagReorder: false, allowInlineCodeReorder: false },
+	"zip-project": { allowTagReorder: false, allowInlineCodeReorder: false },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },

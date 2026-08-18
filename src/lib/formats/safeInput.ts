@@ -46,6 +46,8 @@ export type SafeInputErrorCode =
 	| "PDF_LIMIT_EXCEEDED"
 	| "CAT_PACKAGE_INVALID"
 	| "CAT_PACKAGE_NO_TRANSLATABLE_MEMBERS"
+	| "ZIP_PROJECT_INVALID"
+	| "ZIP_PROJECT_MEMBER_FAILED"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

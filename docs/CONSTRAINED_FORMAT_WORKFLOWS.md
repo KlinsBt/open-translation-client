@@ -101,3 +101,43 @@ standard XLIFF and complete package reconstruction in RWS Trados Studio,
 WorldServer, or memoQ. Proprietary output must remain disabled until generated
 fixtures have been reopened and round-tripped in the exact owning tool versions
 and a licensing review confirms implementation is permitted.
+
+## Manifest-driven ZIP batches
+
+An ordinary `.zip` is never guessed into a translation project. A supported
+batch has exactly one `opentlc-project.json` file at its root. Version 1 uses
+this shape:
+
+```json
+{
+	"schemaVersion": 1,
+	"kind": "open-tlc-format-batch",
+	"members": [
+		{
+			"path": "locales/messages.json",
+			"format": "json",
+			"mimeType": "application/json",
+			"required": true,
+			"options": { "pathSelectors": "messages.**" }
+		}
+	]
+}
+```
+
+Paths and registered round-trip format IDs are exact; Open TLC does not infer a
+different adapter from a member extension. Paths must exist, be unique and
+relative, and may not target the manifest itself. PDF, proprietary CAT packages,
+and nested `zip-project` manifests are excluded because they cannot provide a
+same-format child round trip. A batch is limited to 100 declared members and 25
+one-level ZIP-based document members. Each child and the outer archive retain
+the shared size, entry, expansion-ratio, collision, encryption, ZIP64 and
+traversal defenses.
+
+The default `reject-batch` policy processes every declaration and returns a
+path/format/status report if any fails. `skip-optional` may skip only a failing
+member explicitly marked `"required": false`; its report remains in project
+metadata. Successful members keep independent filter options and skeletons.
+Export returns the exact original ZIP when no target changed; otherwise it
+rebuilds only changed declared members with their own adapter and preserves the
+manifest and all undeclared entries byte-for-byte. Cross-member split/join is
+rejected at export because it would invalidate deterministic member ownership.

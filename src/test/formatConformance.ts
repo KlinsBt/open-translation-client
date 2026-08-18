@@ -37,6 +37,7 @@ import { buildMifTranslationBlob } from "$lib/functions/outputGeneration/outputG
 import { buildWindowsRcTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
 import { buildQmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQml";
 import { buildPdfBilingualReviewBlob } from "$lib/functions/outputGeneration/outputGenerationPdfReview";
+import { buildZipProjectTranslationPackage } from "$lib/formats/zipProject";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -208,6 +209,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildPdfBilingualReviewBlob(project);
 		case "cat-package":
 			throw new Error("Read-only CAT packages have no conformance output.");
+		case "zip-project":
+			return buildZipProjectTranslationPackage(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

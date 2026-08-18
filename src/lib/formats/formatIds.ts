@@ -26,6 +26,7 @@ export const FORMAT_IDS = [
 	"qml",
 	"pdf",
 	"cat-package",
+	"zip-project",
 	"xml",
 	"docx",
 	"xlsx",

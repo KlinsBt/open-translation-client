@@ -1078,10 +1078,28 @@ Complete these in order after FF-000 through FF-009.
       path reject proprietary output with an actionable JSON/standard-XLIFF
       handoff message. Package writing remains gated on licensing confirmation
       and reopening/round-tripping generated fixtures in each owning CAT tool.
-- [ ] **FF-404 — Generic ZIP projects.** Add only as a manifest-driven batch
+- [x] **FF-404 — Generic ZIP projects.** Add only as a manifest-driven batch
       container over already supported adapters. Preserve paths and bytes,
       prevent traversal/collisions, cap recursion and expansion, and report each
       member's result instead of guessing silently.
+      Completed 2026-08-18 with a strict version-1 root
+      `opentlc-project.json` contract. Each of at most 100 members declares an
+      exact safe path, registered same-format adapter, MIME hint, primitive
+      import options and required/optional policy; extensions are never guessed.
+      Recursive manifest batches and constrained PDF/CAT members are rejected,
+      nested document packages are capped at 25, and both archive layers use the
+      shared traversal, collision, encryption, entry, size and expansion-ratio
+      defenses. Imports process every declaration and retain structured
+      path/format/status/unit/error reports; the default rejects all failures,
+      while `skip-optional` skips only explicit `required:false` members.
+      Independent child models, options and skeletons persist in the batch; all
+      undeclared entries remain byte-preserved. Identity export returns the exact
+      original ZIP, translated export invokes each changed member's native
+      round-trip builder and semantic diff tests prove the manifest/opaque bytes
+      remain unchanged. Cross-member structural edits fail actionably rather
+      than corrupting ownership. Minimal, multi-format, Unicode/RTL, malformed,
+      missing/duplicate/unsafe/recursive manifest, optional failure, bomb,
+      cancellation, 250-unit, re-import and real-browser tests cover the adapter.
 
 ## Definition of done for every format task
 

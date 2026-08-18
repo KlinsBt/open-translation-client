@@ -18,6 +18,10 @@ import {
 	type XliffVendorProfileId,
 } from "./xliffProfiles";
 import { catPackageWorkflow, detectCatPackageProfile } from "./catPackage";
+import {
+	inspectZipProjectManifest,
+	ZIP_PROJECT_MANIFEST_PATH,
+} from "./zipProject";
 
 export type DetectionConfidence = "high" | "medium" | "low";
 
@@ -354,23 +358,62 @@ async function detectZipPackage(
 			adapter,
 		};
 	}
+	if (paths.has(ZIP_PROJECT_MANIFEST_PATH)) {
+		const manifest = inspectZipProjectManifest(
+			packageDetails.openTlcManifest,
+			paths,
+		);
+		if (manifest.valid) {
+			const adapter = adapters.find(
+				(candidate) => candidate.id === "zip-project",
+			);
+			if (!adapter)
+				throw new Error("No adapter is registered for manifest ZIP projects.");
+			return {
+				formatId: adapter.id,
+				label: adapter.label,
+				supported: true,
+				confidence: "high",
+				evidence: ["package", "signature", "content"],
+				reason: `The safe ZIP contains a valid ${ZIP_PROJECT_MANIFEST_PATH}; every member format is declared explicitly.`,
+				adapter,
+			};
+		}
+		return unsupported(
+			"Invalid manifest ZIP project",
+			"high",
+			["package", "signature", "content"],
+			manifest.reason,
+			manifestRequiredWorkflow(),
+		);
+	}
 	return unsupported(
 		"ZIP archive",
 		"medium",
 		["signature", "package"],
-		"The ZIP container is valid, but it does not contain a supported DOCX, XLSX, or PPTX package structure.",
+		`The ZIP container is valid, but it is neither a recognized document/CAT package nor a manifest-driven batch with ${ZIP_PROJECT_MANIFEST_PATH}.`,
+		manifestRequiredWorkflow(),
 	);
 }
 
 async function readSmallPackageDetails(
 	inspection: SafeArchiveInspection,
 	context?: SafeInputContext,
-): Promise<{ mimetype: string; contentTypes: string }> {
-	const wanted = new Set(["mimetype", "[Content_Types].xml"]);
+): Promise<{
+	mimetype: string;
+	contentTypes: string;
+	openTlcManifest: string;
+}> {
+	const wanted = new Set([
+		"mimetype",
+		"[Content_Types].xml",
+		ZIP_PROJECT_MANIFEST_PATH,
+	]);
 	const readable = inspection.entries.filter(
 		(entry) => wanted.has(entry.path) && entry.uncompressedSize <= 1024 * 1024,
 	);
-	if (readable.length === 0) return { mimetype: "", contentTypes: "" };
+	if (readable.length === 0)
+		return { mimetype: "", contentTypes: "", openTlcManifest: "" };
 	throwIfAborted(context?.signal);
 	const zip = await JSZip.loadAsync(inspection.bytes);
 	const values = new Map<string, string>();
@@ -381,6 +424,22 @@ async function readSmallPackageDetails(
 	return {
 		mimetype: values.get("mimetype")?.trim() ?? "",
 		contentTypes: values.get("[Content_Types].xml") ?? "",
+		openTlcManifest: values.get(ZIP_PROJECT_MANIFEST_PATH) ?? "",
+	};
+}
+
+function manifestRequiredWorkflow(): ConstrainedFormatWorkflow {
+	return {
+		kind: "manifest-required",
+		primaryAction: `Add a valid ${ZIP_PROJECT_MANIFEST_PATH}`,
+		steps: [
+			"Create a new ZIP; do not modify a proprietary application package in place.",
+			`Add ${ZIP_PROJECT_MANIFEST_PATH} at the archive root with schemaVersion 1, kind open-tlc-format-batch, and an explicit members array.`,
+			"For each member declare its exact safe path, registered round-trip format ID, optional MIME type/import options, and whether it is required.",
+			"Keep nested manifest ZIPs, source-only/read-only formats, duplicate paths, and undeclared format guessing out of the batch.",
+		],
+		fidelityWarning:
+			"Open TLC processes only declared members. Undeclared entries are byte-preserved, and a declared member is never reclassified silently from its extension.",
 	};
 }
 

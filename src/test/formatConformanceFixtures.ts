@@ -1384,6 +1384,68 @@ const catPackageFixture: FormatConformanceFixture = {
 		),
 };
 
+async function zipProjectFixtureFile(
+	content: string,
+	segmentationMode: "document" | "lines" = "document",
+	name = "fixture.zip",
+): Promise<File> {
+	return zipFile(
+		{
+			"opentlc-project.json": JSON.stringify({
+				schemaVersion: 1,
+				kind: "open-tlc-format-batch",
+				members: [
+					{
+						path: "source.txt",
+						format: "text",
+						mimeType: "text/plain",
+						options: { segmentationMode },
+					},
+				],
+			}),
+			"source.txt": content,
+			"assets/keep.bin": encoder.encode("opaque batch data"),
+		},
+		name,
+		"application/zip",
+	);
+}
+
+const zipProjectFixture: FormatConformanceFixture = {
+	id: "zip-project",
+	fileName: "fixture.zip",
+	mimeType: "application/zip",
+	createValidFile: async () =>
+		zipProjectFixtureFile(CONFORMANCE_UNICODE_SOURCE),
+	createMalformedFile: async () =>
+		zipFile(
+			{
+				"opentlc-project.json": '{"schemaVersion":1,"members":[]}',
+				"source.txt": "Text",
+			},
+			"broken.zip",
+			"application/zip",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { failurePolicy: "reject-batch" },
+		skeleton: { kind: "package", replacementKinds: [] },
+		units: [{ id: "member-1:unit-1", part: "source.txt", path: null }],
+	},
+	identityTargetSegments: [""],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		zipProjectFixtureFile(
+			Array.from({ length: units }, (_, index) => `Message ${index}`).join(
+				"\n",
+			),
+			"lines",
+			"performance.zip",
+		),
+	expectedPackageChanges: ["source.txt"],
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1657,6 +1719,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	qmlFixture,
 	pdfFixture,
 	catPackageFixture,
+	zipProjectFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,
