@@ -182,19 +182,22 @@
 </script>
 
 {#snippet deletionConfirmation()}
-	<div class="deletion-confirmation-container">
-		<p class="deletion-confirmation">
-			Are you sure you want to delete this term?
+	<div class="modal-confirmation">
+		<span class="modal-confirmation-icon">!</span>
+		<h3>Delete this term?</h3>
+		<p>
+			The selected term and its metadata will be removed from this term base.
 		</p>
-		<button
-			class="btn delete"
-			onclick={() => deleteEntry(selectedTbId, selectedTbTargetId)}
-		>
-			Delete
-		</button>
-		<button class="btn update" onclick={() => (showModal = false)}>
-			Cancel
-		</button>
+		<div class="modal-actions inline">
+			<button class="modal-button secondary" onclick={() => (showModal = false)}
+				>Keep term</button
+			>
+			<button
+				class="modal-button danger"
+				onclick={() => deleteEntry(selectedTbId, selectedTbTargetId)}
+				>Delete term</button
+			>
+		</div>
 	</div>
 {/snippet}
 
@@ -202,12 +205,15 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 {#if showModal}
 	<div
-		role="dialog"
-		tabindex="-1"
+		role="presentation"
 		class="modal-element-global"
 		onclick={() => (showModal = false)}
 	>
-		<Modal title="Confirm" content={deletionConfirmation} />
+		<Modal
+			title="Delete term"
+			content={deletionConfirmation}
+			onClose={() => (showModal = false)}
+		/>
 	</div>
 {/if}
 
@@ -398,16 +404,6 @@
 </div>
 
 <style>
-	.deletion-confirmation {
-		font-size: 1.2rem;
-		font-weight: 600;
-		margin: 0px 0px 10px 0px;
-		color: var(--color-theme-4);
-		color: #c02b2b;
-		text-align: center;
-		max-width: 280px;
-	}
-
 	.btn {
 		display: flex;
 		align-items: center;
@@ -698,19 +694,6 @@
 		border: 1px solid var(--color-theme-5);
 		width: 95%;
 		justify-self: center;
-	}
-
-	/* Ensure confirmation modal fills viewport when embedded */
-	.modal-element-global {
-		position: fixed;
-		inset: 0;
-		width: 100vw;
-		height: 100vh;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		background: rgba(0, 0, 0, 0.5);
-		z-index: 3000;
 	}
 
 	.seperator:last-child {

@@ -29,6 +29,7 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
+	import Modal from "$lib/components/modal.svelte";
 
 	let {
 		show = $bindable(),
@@ -448,46 +449,20 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-	role="dialog"
-	tabindex="-1"
+	role="presentation"
 	class="modal-element-global {show ? '' : 'close-modal-global'}"
 	onclick={closeModal}
 >
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-content" onclick={(e) => e.stopPropagation()}>
-		<h2>Create New Project</h2>
-		{@render uploadContent()}
-	</div>
+	<Modal
+		title="Create new project"
+		description="Import a source file and configure its translation workflow."
+		content={uploadContent}
+		wide
+		onClose={closeModal}
+	/>
 </div>
 
 <style>
-	.modal-content {
-		display: grid;
-		justify-items: center;
-		box-sizing: border-box;
-		width: min(100%, 680px);
-		max-height: calc(100vh - 2rem);
-		border: 1px solid rgba(119, 164, 176, 0.3);
-		border-radius: 1rem;
-		padding: 1.65rem;
-		background: var(--color-theme-7);
-		overflow-y: auto;
-		pointer-events: auto;
-		position: relative;
-		box-shadow: 0 24px 70px rgba(4, 28, 40, 0.28);
-	}
-
-	h2 {
-		text-align: center;
-		font-size: clamp(1.35rem, 4vw, 1.75rem);
-		line-height: 1.2;
-		margin: 0 0 1.25rem;
-		color: #194858;
-		font-weight: 750;
-		letter-spacing: -0.025em;
-	}
-
 	.universal-upload-container {
 		display: grid;
 		gap: 1rem;

@@ -143,7 +143,7 @@
 
 {#snippet parsingSettings()}
 	<div class="options-container">
-		<div class="srx-import-section">
+		<div class="srx-import-section modal-section-card">
 			<p class="helper-text">
 				Import an SRX 2.0 workflow asset and choose the BCP 47 source-language
 				code its maps should evaluate.
@@ -155,7 +155,7 @@
 					placeholder="Source language code (e.g. en-US)"
 					bind:value={srxLanguageCode}
 				/>
-				<label class="btn option srx-file-button">
+				<label class="modal-button secondary compact srx-file-button">
 					Import SRX
 					<input
 						type="file"
@@ -166,12 +166,15 @@
 			</div>
 		</div>
 
-		<div class="parsing-form">
-			<input
-				type="text"
-				placeholder="Preset name (optional)"
-				bind:value={newParsingLabel}
-			/>
+		<div class="parsing-form modal-section-card">
+			<label class="modal-field">
+				<span>Preset name</span>
+				<input
+					type="text"
+					placeholder="Preset name (optional)"
+					bind:value={newParsingLabel}
+				/>
+			</label>
 
 			<div class="token-input-section">
 				<p class="helper-text">
@@ -186,7 +189,7 @@
 						onkeypress={handleKeyPress}
 					/>
 					<button
-						class="btn-add-token"
+						class="modal-button secondary compact btn-add-token"
 						onclick={handleAddToken}
 						type="button"
 						disabled={!currentTokenInput.trim()}
@@ -218,14 +221,14 @@
 
 			<div class="form-actions">
 				<button
-					class="btn save"
+					class="modal-button primary"
 					onclick={handleAddParsingPreference}
 					disabled={tokens.length === 0}
 				>
 					{editingId ? "Save changes" : "Add Preset"}
 				</button>
 				{#if editingId}
-					<button class="btn update" onclick={handleCancelEdit}>
+					<button class="modal-button quiet" onclick={handleCancelEdit}>
 						Cancel
 					</button>
 				{/if}
@@ -260,14 +263,14 @@
 						</div>
 						<div class="actions">
 							<button
-								class="btn option"
+								class="modal-button secondary compact"
 								disabled={pref.active}
 								onclick={() => handleActivateParsingPreference(pref.id)}
 							>
 								Activate
 							</button>
 							<button
-								class="btn delete"
+								class="modal-button danger compact"
 								disabled={pref.id === "default"}
 								onclick={() => handleDeleteParsingPreference(pref.id)}
 							>
@@ -275,14 +278,14 @@
 							</button>
 							{#if pref.kind === "srx"}
 								<button
-									class="btn option"
+									class="modal-button secondary compact"
 									onclick={() => handleSrxExport(pref)}
 								>
 									Export
 								</button>
 							{:else}
 								<button
-									class="btn option"
+									class="modal-button secondary compact"
 									disabled={pref.id === "default"}
 									onclick={() => handleEditParsingPreference(pref)}
 								>
@@ -300,12 +303,17 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-	role="dialog"
-	tabindex="-1"
+	role="presentation"
 	class="modal-element-global {show ? '' : 'close-modal-global'}"
 	onclick={() => (show = false)}
 >
-	<Modal title="Parsing Preferences" content={parsingSettings} />
+	<Modal
+		title="Parsing preferences"
+		description="Manage segmentation tokens and reusable SRX 2.0 profiles."
+		content={parsingSettings}
+		large
+		onClose={() => (show = false)}
+	/>
 </div>
 
 <style>
@@ -317,9 +325,8 @@
 		gap: 20px;
 		padding: 0px;
 		/* min-width: 380px; */
-		max-width: 500px;
-		max-height: 70vh;
-		overflow: hidden;
+		max-height: min(72vh, 720px);
+		overflow: auto;
 	}
 
 	.parsing-form {
@@ -333,8 +340,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		padding-bottom: 14px;
-		border-bottom: 1px solid var(--color-theme-8);
+		padding: 1rem;
 	}
 
 	.srx-file-button {
@@ -343,6 +349,9 @@
 		justify-content: center;
 		white-space: nowrap;
 		cursor: pointer;
+		width: auto;
+		min-width: 8.5rem;
+		flex: 0 0 auto;
 	}
 
 	.srx-file-button input[type="file"] {
@@ -353,14 +362,14 @@
 		min-width: 0;
 		padding: 10px 12px;
 		border: 1px solid var(--color-theme-4);
-		border-radius: 5px;
+		border-radius: 0.55rem;
 		font: inherit;
 	}
 
 	.parsing-form input {
 		padding: 10px 12px;
 		border: 1px solid var(--color-theme-4);
-		border-radius: 5px;
+		border-radius: 0.55rem;
 		font-size: 1rem;
 		font-family: var(--font-body);
 	}
@@ -398,20 +407,12 @@
 		align-items: stretch;
 	}
 
-	.token-input-wrapper input {
+	.token-input-wrapper > input:not([type="file"]) {
 		flex: 1;
+		min-width: 10rem;
 	}
 
 	.btn-add-token {
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		border-radius: 5px;
-		padding: 10px 16px;
-		font-size: 0.95rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: filter 0.2s linear;
 		white-space: nowrap;
 	}
 
@@ -472,31 +473,7 @@
 	.form-actions {
 		display: flex;
 		gap: 8px;
-		flex-direction: column;
-	}
-
-	.form-actions .btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: none;
-		font-size: 1.1rem;
-		font-weight: 600;
-		border-radius: 5px;
-		padding: 12px;
-		cursor: pointer;
-		width: 100%;
-		transition: filter 0.2s linear;
-		color: white;
-	}
-
-	.form-actions .btn:hover:not(:disabled) {
-		filter: brightness(1.1);
-	}
-
-	.form-actions .btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
+		flex-direction: row;
 	}
 
 	.parsing-list {
@@ -504,7 +481,7 @@
 		flex-direction: column;
 		gap: 12px;
 		overflow-y: auto;
-		max-height: calc(70vh - 280px);
+		max-height: 290px;
 		min-height: 150px;
 		padding-right: 8px;
 	}
@@ -531,8 +508,8 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		border: 2px solid var(--color-theme-1);
-		border-radius: 5px;
+		border: 1px solid #d6e5e8;
+		border-radius: 0.7rem;
 		padding: 12px 14px;
 		gap: 14px;
 		background: white;
@@ -575,24 +552,27 @@
 	}
 
 	.parsing-item .actions {
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 6px;
-		min-width: 100px;
+		min-width: min(100%, 300px);
 	}
 
-	.parsing-item .actions .btn {
-		border: none;
-		border-radius: 5px;
-		padding: 8px 12px;
-		font-size: 0.9rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: filter 0.2s linear;
-		color: white;
-	}
+	@media (max-width: 680px) {
+		.token-input-wrapper,
+		.form-actions,
+		.parsing-item {
+			align-items: stretch;
+			flex-direction: column;
+		}
 
-	.parsing-item .actions .btn:hover:not(:disabled) {
-		filter: brightness(1.1);
+		.parsing-item .actions {
+			grid-template-columns: 1fr;
+			min-width: 100%;
+		}
+
+		.srx-file-button {
+			width: 100%;
+		}
 	}
 </style>

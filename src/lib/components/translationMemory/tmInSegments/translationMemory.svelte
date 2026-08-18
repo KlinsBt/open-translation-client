@@ -42,20 +42,22 @@
 </script>
 
 {#snippet confirmationMenu()}
-	<div class="options-container">
-		<div class="buttons-container">
-			<p class="deletion-confirmation">
-				The text segment will be replaced with the selected text.
-			</p>
-			<button class="btn save" onclick={() => fillTargetText(tempTargetText)}>
-				Confirm
-			</button>
+	<div class="modal-confirmation">
+		<span class="modal-confirmation-icon neutral">TM</span>
+		<h3>Replace the current target text?</h3>
+		<p>
+			The selected translation-memory match will overwrite the target segment.
+		</p>
+		<div class="modal-actions inline">
 			<button
-				class="btn update"
+				class="modal-button secondary"
 				onclick={() => (showConfirmationModal = false)}
+				>Keep current text</button
 			>
-				Cancel
-			</button>
+			<button
+				class="modal-button primary"
+				onclick={() => fillTargetText(tempTargetText)}>Use TM match</button
+			>
 		</div>
 	</div>
 {/snippet}
@@ -63,18 +65,21 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-	role="dialog"
-	tabindex="-1"
+	role="presentation"
 	class="modal-element-global {showConfirmationModal
 		? ''
 		: 'close-modal-global'}"
 	onclick={() => (showConfirmationModal = false)}
 >
-	<Modal title="TM/TB Setup" content={confirmationMenu} />
+	<Modal
+		title="Replace target segment"
+		content={confirmationMenu}
+		onClose={() => (showConfirmationModal = false)}
+	/>
 </div>
 
 <div class="translation-memory-container">
-	<h1>Treanslation Memory</h1>
+	<h1>Translation Memory</h1>
 	<div class="header">
 		<p class="header-id">ID</p>
 		<p class="header-source">Source</p>
@@ -113,61 +118,6 @@
 </div>
 
 <style>
-	.modal-element-global {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-	}
-
-	.options-container {
-		display: flex;
-		justify-content: center;
-		align-items: start;
-		flex-wrap: wrap;
-		padding: 0px;
-	}
-
-	.deletion-confirmation {
-		font-size: 1.2rem;
-		font-weight: 600;
-		margin: 0px 0px 10px 0px;
-		color: var(--color-theme-4);
-		color: #c02b2b;
-		text-align: center;
-		max-width: 280px;
-	}
-
-	.buttons-container {
-		display: grid;
-		justify-items: center;
-		width: 100%;
-		gap: 10px 0px;
-	}
-
-	.buttons-container > .btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 5px 0px;
-		cursor: pointer;
-		width: 100%;
-		min-width: 250px;
-		transition: filter 0.2s linear;
-		position: relative;
-	}
-
-	.buttons-container > .btn:hover {
-		filter: brightness(1.1);
-	}
-
 	.translation-memory-container {
 		display: flex;
 		flex-direction: column;

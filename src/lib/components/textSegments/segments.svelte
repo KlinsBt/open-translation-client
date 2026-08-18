@@ -432,6 +432,16 @@
 		showTmTbModal = true;
 	}
 
+	function closeTmAddModal() {
+		showTmAddModal = false;
+		editTm.set(false);
+	}
+
+	function closeTbAddModal() {
+		showTbAddModal = false;
+		editTb.set(false);
+	}
+
 	async function toggleMenu() {
 		openMenu.set(!$openMenu);
 	}
@@ -472,41 +482,49 @@
 <svelte:window on:keydown={handleKeydown} />
 
 {#snippet exportMenu()}
-	<div class="buttons-container">
-		<button
-			style="width: 100%; margin: 0px"
-			class="toolbar-button"
-			onclick={handleJsonSaveFileDownload}
-		>
-			Export as JSON
+	<div class="modal-stack">
+		<button class="modal-action-card" onclick={handleJsonSaveFileDownload}>
+			<span class="modal-action-icon">JSON</span>
+			<span class="modal-action-text"
+				><strong>Open TLC JSON</strong><small
+					>Best for complete project backups and continued editing.</small
+				></span
+			>
+			<span class="modal-action-arrow">→</span>
 		</button>
-		<button
-			style="width: 100%; margin: 0px"
-			class="toolbar-button"
-			onclick={handleXliff1_2SaveFileDownload}
-		>
-			Export as XLIFF 1.2
+		<button class="modal-action-card" onclick={handleXliff1_2SaveFileDownload}>
+			<span class="modal-action-icon">1.2</span>
+			<span class="modal-action-text"
+				><strong>XLIFF 1.2</strong><small
+					>Broad compatibility with established CAT workflows.</small
+				></span
+			>
+			<span class="modal-action-arrow">→</span>
 		</button>
-		<button
-			style="width: 100%; margin: 0px"
-			class="toolbar-button"
-			onclick={handleXliff2_0SaveFileDownload}
-		>
-			Export as XLIFF 2.0
+		<button class="modal-action-card" onclick={handleXliff2_0SaveFileDownload}>
+			<span class="modal-action-icon">2.0</span>
+			<span class="modal-action-text"
+				><strong>XLIFF 2.0</strong><small
+					>Modern standards-based bilingual interchange.</small
+				></span
+			>
+			<span class="modal-action-arrow">→</span>
 		</button>
-		<button
-			style="width: 100%; margin: 0px"
-			class="toolbar-button"
-			onclick={handleXliff2_1SaveFileDownload}
-		>
-			Export as XLIFF 2.1
+		<button class="modal-action-card" onclick={handleXliff2_1SaveFileDownload}>
+			<span class="modal-action-icon">2.1</span>
+			<span class="modal-action-text"
+				><strong>XLIFF 2.1</strong><small
+					>Latest supported XLIFF project interchange.</small
+				></span
+			>
+			<span class="modal-action-arrow">→</span>
 		</button>
 	</div>
 {/snippet}
 
 {#snippet tmTbMenu()}
 	<div class="manage-tm-tb-container">
-		<div class="manage-tm-container">
+		<div class="manage-tm-container modal-section-card">
 			<div class="checkable">
 				<p class="header">Translation Memory</p>
 				<input
@@ -543,33 +561,33 @@
 					{/each}
 				</select>
 			</div>
-			<button
-				class="toolbar-button save"
-				style="width: 100%; margin-top: 10px;"
-				onclick={() => {
-					editTm.set(false);
-					showTmTbModal = false;
-					showTmAddModal = true;
-				}}
-			>
-				+ Add TM
-			</button>
-			<button
-				class="toolbar-button export"
-				style="width: 100%; margin-top: 6px;"
-				disabled={tmSelected === null}
-				onclick={() => {
-					if (tmSelected === null) return;
-					editTm.set(true);
-					showTmTbModal = false;
-					showTmAddModal = true;
-				}}
-			>
-				Edit TM
-			</button>
+			<div class="modal-actions inline">
+				<button
+					class="modal-button secondary"
+					onclick={() => {
+						editTm.set(false);
+						showTmTbModal = false;
+						showTmAddModal = true;
+					}}
+				>
+					+ Add TM
+				</button>
+				<button
+					class="modal-button primary"
+					disabled={tmSelected === null}
+					onclick={() => {
+						if (tmSelected === null) return;
+						editTm.set(true);
+						showTmTbModal = false;
+						showTmAddModal = true;
+					}}
+				>
+					Edit TM
+				</button>
+			</div>
 		</div>
 
-		<div class="manage-tb-container">
+		<div class="manage-tb-container modal-section-card">
 			<div class="checkable">
 				<p class="header">Term Base</p>
 				<input
@@ -606,30 +624,30 @@
 					{/each}
 				</select>
 			</div>
-			<button
-				class="toolbar-button save"
-				style="width: 100%; margin-top: 10px;"
-				onclick={() => {
-					editTb.set(false);
-					showTmTbModal = false;
-					showTbAddModal = true;
-				}}
-			>
-				+ Add TB
-			</button>
-			<button
-				class="toolbar-button export"
-				style="width: 100%; margin-top: 6px;"
-				disabled={tbSelected === null}
-				onclick={() => {
-					if (tbSelected === null) return;
-					editTb.set(true);
-					showTmTbModal = false;
-					showTbAddModal = true;
-				}}
-			>
-				Edit TB
-			</button>
+			<div class="modal-actions inline">
+				<button
+					class="modal-button secondary"
+					onclick={() => {
+						editTb.set(false);
+						showTmTbModal = false;
+						showTbAddModal = true;
+					}}
+				>
+					+ Add TB
+				</button>
+				<button
+					class="modal-button primary"
+					disabled={tbSelected === null}
+					onclick={() => {
+						if (tbSelected === null) return;
+						editTb.set(true);
+						showTmTbModal = false;
+						showTbAddModal = true;
+					}}
+				>
+					Edit TB
+				</button>
+			</div>
 		</div>
 	</div>
 {/snippet}
@@ -658,51 +676,63 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
-		role="dialog"
-		tabindex="-1"
+		role="presentation"
 		class="modal-element-global {showTmTbModal ? '' : 'close-modal-global'}"
 		onclick={() => (showTmTbModal = false)}
 	>
-		<Modal title="TM/TB Setup" content={tmTbMenu} />
+		<Modal
+			title="Language resources"
+			description="Choose the translation memory and term base used by this project."
+			content={tmTbMenu}
+			large
+			onClose={() => (showTmTbModal = false)}
+		/>
 	</div>
 {:else if showSaveFileModal}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
-		role="dialog"
-		tabindex="-1"
+		role="presentation"
 		class="modal-element-global {showSaveFileModal ? '' : 'close-modal-global'}"
 		onclick={() => (showSaveFileModal = false)}
 	>
-		<Modal title="Export Save File" content={exportMenu} />
+		<Modal
+			title="Export project"
+			description="Choose a portable bilingual project format."
+			content={exportMenu}
+			wide
+			onClose={() => (showSaveFileModal = false)}
+		/>
 	</div>
 {:else if showTmAddModal}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
-		role="dialog"
-		tabindex="-1"
+		role="presentation"
 		class="modal-element-global {showTmAddModal ? '' : 'close-modal-global'}"
-		onclick={() => {
-			showTmAddModal = false;
-			editTm.set(false);
-		}}
+		onclick={closeTmAddModal}
 	>
-		<Modal title="Add Translation Memory" content={tmAddMenu} />
+		<Modal
+			title={$editTm ? "Edit translation memory" : "Add translation memory"}
+			content={tmAddMenu}
+			large
+			onClose={closeTmAddModal}
+		/>
 	</div>
 {:else if showTbAddModal}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
-		role="dialog"
-		tabindex="-1"
+		role="presentation"
 		class="modal-element-global {showTbAddModal ? '' : 'close-modal-global'}"
-		onclick={() => {
-			showTbAddModal = false;
-			editTb.set(false);
-		}}
+		onclick={closeTbAddModal}
 	>
-		<Modal title="Add Term Base" content={tbAddMenu} />
+		<Modal
+			title={$editTb ? "Edit term base" : "Add term base"}
+			content={tbAddMenu}
+			large
+			onClose={closeTbAddModal}
+		/>
 	</div>
 {/if}
 
@@ -895,13 +925,11 @@
 
 <style>
 	.manage-tm-tb-container {
-		display: flex;
-		flex-direction: column;
-		gap: 40px 0px;
-		padding: 25px 0px;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
 		border-radius: 8px;
 		width: 100%;
-		max-width: 400px;
 		margin: 0 auto;
 	}
 
@@ -950,16 +978,15 @@
 		width: 100%;
 		padding: 10px;
 		border: 1px solid #ccc;
-		border-radius: 5px;
+		border-radius: 0.55rem;
 		background-color: white;
 		font-size: 1rem;
 	}
 
-	.buttons-container {
-		display: grid;
-		justify-items: center;
-		width: 100%;
-		gap: 10px 0px;
+	@media (max-width: 680px) {
+		.manage-tm-tb-container {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.toolbar {

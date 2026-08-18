@@ -97,12 +97,17 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-	role="dialog"
-	tabindex="-1"
+	role="presentation"
 	class="modal-element-global {showUploadModal ? '' : 'close-modal-global'}"
 	onclick={() => (showUploadModal = false)}
 >
-	<Modal title="Import project" content={upload} wide />
+	<Modal
+		title="Import project"
+		description="Restore a portable Open TLC project from this device."
+		content={upload}
+		wide
+		onClose={() => (showUploadModal = false)}
+	/>
 </div>
 
 <ParsingPreferencesModal bind:show={showParsingModal} bind:parsingPreferences />

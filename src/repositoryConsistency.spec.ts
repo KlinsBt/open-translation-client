@@ -57,4 +57,43 @@ describe("repository consistency", () => {
 			expect(adapter.exportFile).toBeTypeOf("function");
 		}
 	});
+
+	it("keeps application modals on the shared accessible dialog system", () => {
+		const componentFiles = sourceFiles().filter((file) =>
+			file.endsWith(".svelte"),
+		);
+		const modalHosts = componentFiles
+			.map((file) => ({
+				file,
+				source: readFileSync(resolve(root, file), "utf8"),
+			}))
+			.filter(({ source }) => /<Modal\b/.test(source));
+
+		expect(modalHosts.length).toBeGreaterThan(0);
+		for (const { file, source } of modalHosts) {
+			const modalTags = source.match(/<Modal\b[\s\S]*?\/>/g) ?? [];
+			expect(
+				modalTags,
+				`${file} should render each Modal as a complete tag`,
+			).not.toHaveLength(0);
+			for (const tag of modalTags) {
+				expect(tag, `${file} modals must expose a close action`).toContain(
+					"onClose=",
+				);
+			}
+
+			expect(
+				source,
+				`${file} must not override the shared full-screen modal backdrop`,
+			).not.toMatch(/\.modal-element-global\s*\{/);
+		}
+
+		const sharedModal = readFileSync(
+			resolve(root, "src/lib/components/modal.svelte"),
+			"utf8",
+		);
+		expect(sharedModal).toContain('role="dialog"');
+		expect(sharedModal).toContain('aria-modal="true"');
+		expect(sharedModal).toContain("aria-label={title}");
+	});
 });

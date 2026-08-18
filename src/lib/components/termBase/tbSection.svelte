@@ -41,7 +41,6 @@
 	let newFileName: string = $state("");
 	let selectedFileName: string = $state("");
 	let tbSelected: TbData = $state({} as TbData);
-	let tbToMerge: TbData | null = $state(null);
 
 	onMount(async () => {
 		try {
@@ -185,6 +184,20 @@
 	function getTermCount(tb: TbData) {
 		return tb.entries.reduce((count, entry) => count + entry.terms.length, 0);
 	}
+
+	function closeTbModal() {
+		showTbxModal.set(false);
+		showTbUploadModal = false;
+		showSelectModal = false;
+		showDeletionConfirmationModal = false;
+		mergeTbModal = false;
+		renameFileWindow = false;
+	}
+
+	function openTbRename() {
+		newFileName = selectedFileName;
+		renameFileWindow = true;
+	}
 </script>
 
 <!-- ######################################################################################################### -->
@@ -209,77 +222,89 @@
 		>
 			<TbxMergeUpload />
 		</div>
-		{#if tbToMerge !== undefined && tbToMerge !== null}
-			<div class="deletion-confirmation-container">
-				<p class="deletion-confirmation">
-					Are you sure you want to merge <span
-						style="color: var(--color-theme-4);">{selectedFileName}?</span
-					>
-				</p>
-				<button class="btn delete" onclick={() => handleTbDeletion()}>
-					Delete
-				</button>
-				<button
-					class="btn update"
-					onclick={() => ((mergeTbModal = false), (showSelectModal = true))}
-				>
-					Cancel
-				</button>
-			</div>
-		{/if}
 	</div>
 {/snippet}
 
 {#snippet selectMenu()}
-	<div class="deletion-confirmation-container">
+	<div class="modal-stack">
 		{#if !renameFileWindow}
-			<button class="btn save" onclick={() => selectTbToEdit($tbIdSelected)}>
-				Edit
-			</button>
-			<button class="btn option" onclick={() => (renameFileWindow = true)}>
-				Rename
-			</button>
-			<button
-				class="btn option"
-				onclick={() => handleTbMergeModal($tbIdSelected)}
-			>
-				Merge TBX
-			</button>
-			<button class="btn update" onclick={() => showTbxModal.set(false)}>
-				Cancel
-			</button>
+			<div class="modal-actions">
+				<button
+					class="modal-action-card"
+					onclick={() => selectTbToEdit($tbIdSelected)}
+				>
+					<span class="modal-action-icon" aria-hidden="true">TB</span>
+					<span class="modal-action-text"
+						><strong>Open term-base editor</strong><small
+							>Review and edit terminology entries</small
+						></span
+					>
+					<span class="modal-action-arrow" aria-hidden="true">→</span>
+				</button>
+				<button class="modal-action-card" onclick={openTbRename}>
+					<span class="modal-action-icon" aria-hidden="true">Aa</span>
+					<span class="modal-action-text"
+						><strong>Rename term base</strong><small
+							>Change its library display name</small
+						></span
+					>
+					<span class="modal-action-arrow" aria-hidden="true">→</span>
+				</button>
+				<button
+					class="modal-action-card"
+					onclick={() => handleTbMergeModal($tbIdSelected)}
+				>
+					<span class="modal-action-icon" aria-hidden="true">+</span>
+					<span class="modal-action-text"
+						><strong>Merge another TBX</strong><small
+							>Create a combined terminology collection</small
+						></span
+					>
+					<span class="modal-action-arrow" aria-hidden="true">→</span>
+				</button>
+			</div>
 		{:else}
-			<div style="display: grid; justify-content: center;">
-				<input
-					class="rename"
-					type="text"
-					bind:value={newFileName}
-					placeholder="New TB Name"
-				/>
-				<button class="btn" onclick={() => updateFileName(newFileName)}>
-					Confirm New TB Name
-				</button>
-				<button class="btn update" onclick={() => (renameFileWindow = false)}>
-					Cancel
-				</button>
+			<div class="modal-form">
+				<label class="modal-field">
+					<span>Term-base name</span>
+					<input
+						type="text"
+						bind:value={newFileName}
+						placeholder="Term-base name"
+					/>
+				</label>
+				<div class="modal-actions inline">
+					<button
+						class="modal-button secondary"
+						onclick={() => (renameFileWindow = false)}>Back</button
+					>
+					<button
+						class="modal-button primary"
+						disabled={!newFileName.trim()}
+						onclick={() => updateFileName(newFileName)}>Save name</button
+					>
+				</div>
 			</div>
 		{/if}
 	</div>
 {/snippet}
 
 {#snippet deletionConfirmation()}
-	<div class="deletion-confirmation-container">
-		<p class="deletion-confirmation">
-			Are you sure you want to delete <span style="color: var(--color-theme-4);"
-				>{selectedFileName}?</span
-			>
+	<div class="modal-confirmation">
+		<span class="modal-confirmation-icon" aria-hidden="true">!</span>
+		<h3>Delete this term base?</h3>
+		<p>
+			<strong>{selectedFileName}</strong> and all of its terminology entries will
+			be removed from this browser.
 		</p>
-		<button class="btn delete" onclick={() => handleTbDeletion()}>
-			Delete
-		</button>
-		<button class="btn update" onclick={() => showTbxModal.set(false)}>
-			Cancel
-		</button>
+		<div class="modal-actions inline">
+			<button class="modal-button secondary" onclick={closeTbModal}
+				>Keep term base</button
+			>
+			<button class="modal-button danger" onclick={handleTbDeletion}
+				>Delete term base</button
+			>
+		</div>
 	</div>
 {/snippet}
 <!-- ######################################################################################################### -->
@@ -291,22 +316,43 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-	role="dialog"
-	tabindex="-1"
+	role="presentation"
 	class="modal-element-global {$showTbxModal ? '' : 'close-modal-global'}"
-	onclick={() => showTbxModal.set(false)}
+	onclick={closeTbModal}
 >
 	{#if showTbUploadModal}
-		<Modal title="Import term base" content={tbUpload} wide />
+		<Modal
+			title="Import term base"
+			description="Add a TBX file or create an empty terminology collection."
+			content={tbUpload}
+			wide
+			onClose={closeTbModal}
+		/>
 	{/if}
 	{#if showDeletionConfirmationModal}
-		<Modal title="Confirm" content={deletionConfirmation} />
+		<Modal
+			title="Delete term base"
+			description={selectedFileName}
+			content={deletionConfirmation}
+			onClose={closeTbModal}
+		/>
 	{/if}
 	{#if mergeTbModal}
-		<Modal title="Merge term bases" content={tbMergeUpload} wide />
+		<Modal
+			title="Merge term bases"
+			description={selectedFileName}
+			content={tbMergeUpload}
+			wide
+			onClose={closeTbModal}
+		/>
 	{/if}
 	{#if showSelectModal}
-		<Modal title={selectedFileName} content={selectMenu} />
+		<Modal
+			title={renameFileWindow ? "Rename term base" : "Term base"}
+			description={selectedFileName}
+			content={selectMenu}
+			onClose={closeTbModal}
+		/>
 	{/if}
 </div>
 
@@ -439,44 +485,3 @@
 		<TbEditing />
 	</div>
 {/if}
-
-<style>
-	.deletion-confirmation {
-		font-size: 1.2rem;
-		font-weight: 600;
-		margin: 0px 0px 10px 0px;
-		color: var(--color-theme-4);
-		color: #c02b2b;
-		text-align: center;
-		max-width: 280px;
-	}
-
-	.btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 5px 0px;
-		cursor: pointer;
-		width: 100%;
-		min-width: 250px;
-		transition: filter 0.2s linear;
-		position: relative;
-	}
-
-	.btn:hover {
-		filter: brightness(1.1);
-	}
-
-	.rename {
-		padding: 10px;
-		margin: 5px 0px;
-		border: 1px solid var(--color-theme-4);
-		border-radius: 5px;
-	}
-</style>

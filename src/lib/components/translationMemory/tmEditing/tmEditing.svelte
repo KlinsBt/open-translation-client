@@ -148,33 +148,41 @@
 </script>
 
 {#snippet deletionConfirmationTu()}
-	<div class="deletion-confirmation-container">
-		<p class="deletion-confirmation">
-			Are you sure you want to delete this entire Translation Unit?
+	<div class="modal-confirmation">
+		<span class="modal-confirmation-icon">!</span>
+		<h3>Delete this translation unit?</h3>
+		<p>
+			The source and every target-language segment in this unit will be removed.
 		</p>
-		<button class="btn delete" onclick={() => deleteTu(selectedTmId)}>
-			Delete
-		</button>
-		<button class="btn update" onclick={() => (showModal = false)}>
-			Cancel
-		</button>
+		<div class="modal-actions inline">
+			<button class="modal-button secondary" onclick={() => (showModal = false)}
+				>Keep unit</button
+			>
+			<button class="modal-button danger" onclick={() => deleteTu(selectedTmId)}
+				>Delete unit</button
+			>
+		</div>
 	</div>
 {/snippet}
 
 {#snippet deletionConfirmationSegment()}
-	<div class="deletion-confirmation-container">
-		<p class="deletion-confirmation">
-			Are you sure you want to delete this segment?
+	<div class="modal-confirmation">
+		<span class="modal-confirmation-icon">!</span>
+		<h3>Delete this target segment?</h3>
+		<p>
+			This removes only the selected target-language segment from the
+			translation unit.
 		</p>
-		<button
-			class="btn delete"
-			onclick={() => deleteSegment(selectedTmId, selectedTmTargetId)}
-		>
-			Delete
-		</button>
-		<button class="btn update" onclick={() => (showModal = false)}>
-			Cancel
-		</button>
+		<div class="modal-actions inline">
+			<button class="modal-button secondary" onclick={() => (showModal = false)}
+				>Keep segment</button
+			>
+			<button
+				class="modal-button danger"
+				onclick={() => deleteSegment(selectedTmId, selectedTmTargetId)}
+				>Delete segment</button
+			>
+		</div>
 	</div>
 {/snippet}
 
@@ -182,16 +190,23 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 {#if showModal}
 	<div
-		role="dialog"
-		tabindex="-1"
+		role="presentation"
 		class="modal-element-global"
 		onclick={() => (showModal = false)}
 	>
 		{#if showTuDeletionModal}
-			<Modal title="Confirm" content={deletionConfirmationTu} />
+			<Modal
+				title="Delete translation unit"
+				content={deletionConfirmationTu}
+				onClose={() => (showModal = false)}
+			/>
 		{/if}
 		{#if showSegmentDeletionModal}
-			<Modal title="Confirm" content={deletionConfirmationSegment} />
+			<Modal
+				title="Delete target segment"
+				content={deletionConfirmationSegment}
+				onClose={() => (showModal = false)}
+			/>
 		{/if}
 	</div>
 {/if}
@@ -357,16 +372,6 @@
 </div>
 
 <style>
-	.deletion-confirmation {
-		font-size: 1.2rem;
-		font-weight: 600;
-		margin: 0px 0px 10px 0px;
-		color: var(--color-theme-4);
-		color: #c02b2b;
-		text-align: center;
-		max-width: 280px;
-	}
-
 	.btn {
 		display: flex;
 		align-items: center;
@@ -531,19 +536,6 @@
 
 	.edit-btn:hover {
 		filter: brightness(1.1);
-	}
-
-	/* Ensure confirmation modal fills viewport when embedded */
-	.modal-element-global {
-		position: fixed;
-		inset: 0;
-		width: 100vw;
-		height: 100vh;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		background: rgba(0, 0, 0, 0.5);
-		z-index: 3000;
 	}
 
 	.add-btn {

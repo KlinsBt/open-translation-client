@@ -44,7 +44,6 @@
 	let newFileName: string = $state("");
 	let selectedFileName: string = $state("");
 	let tmSelected: TmData = $state({} as TmData);
-	let tmToMerge: TmData | null = $state(null);
 
 	onMount(async () => {
 		try {
@@ -183,6 +182,20 @@
 	function getSourceLanguage(tm: TmData) {
 		return tm.terms[0]?.source.lang ?? "—";
 	}
+
+	function closeTmModal() {
+		showTmxModal.set(false);
+		showTmUploadModal = false;
+		showSelectModal = false;
+		showDeletionConfirmationModal = false;
+		mergeTmModal = false;
+		renameFileWindow = false;
+	}
+
+	function openTmRename() {
+		newFileName = selectedFileName;
+		renameFileWindow = true;
+	}
 </script>
 
 <!-- ######################################################################################################### -->
@@ -207,77 +220,89 @@
 		>
 			<TmxMergeUpload />
 		</div>
-		{#if tmToMerge !== undefined && tmToMerge !== null}
-			<div class="deletion-confirmation-container">
-				<p class="deletion-confirmation">
-					Are you sure you want to merge <span
-						style="color: var(--color-theme-4);">{selectedFileName}?</span
-					>
-				</p>
-				<button class="btn delete" onclick={() => handleTmDeletion()}>
-					Delete
-				</button>
-				<button
-					class="btn update"
-					onclick={() => ((mergeTmModal = false), (showSelectModal = true))}
-				>
-					Cancel
-				</button>
-			</div>
-		{/if}
 	</div>
 {/snippet}
 
 {#snippet selectMenu()}
-	<div class="deletion-confirmation-container">
+	<div class="modal-stack">
 		{#if !renameFileWindow}
-			<button class="btn save" onclick={() => selectTmToEdit($tmIdSelected)}>
-				Edit
-			</button>
-			<button class="btn option" onclick={() => (renameFileWindow = true)}>
-				Rename
-			</button>
-			<button
-				class="btn option"
-				onclick={() => handleTmMergeModal($tmIdSelected)}
-			>
-				Merge TMX
-			</button>
-			<button class="btn update" onclick={() => showTmxModal.set(false)}>
-				Cancel
-			</button>
+			<div class="modal-actions">
+				<button
+					class="modal-action-card"
+					onclick={() => selectTmToEdit($tmIdSelected)}
+				>
+					<span class="modal-action-icon" aria-hidden="true">TM</span>
+					<span class="modal-action-text"
+						><strong>Open memory editor</strong><small
+							>Review and edit translation units</small
+						></span
+					>
+					<span class="modal-action-arrow" aria-hidden="true">→</span>
+				</button>
+				<button class="modal-action-card" onclick={openTmRename}>
+					<span class="modal-action-icon" aria-hidden="true">Aa</span>
+					<span class="modal-action-text"
+						><strong>Rename memory</strong><small
+							>Change its library display name</small
+						></span
+					>
+					<span class="modal-action-arrow" aria-hidden="true">→</span>
+				</button>
+				<button
+					class="modal-action-card"
+					onclick={() => handleTmMergeModal($tmIdSelected)}
+				>
+					<span class="modal-action-icon" aria-hidden="true">+</span>
+					<span class="modal-action-text"
+						><strong>Merge another TMX</strong><small
+							>Create a combined translation memory</small
+						></span
+					>
+					<span class="modal-action-arrow" aria-hidden="true">→</span>
+				</button>
+			</div>
 		{:else}
-			<div style="display: grid; justify-content: center;">
-				<input
-					class="rename"
-					type="text"
-					bind:value={newFileName}
-					placeholder="New TM Name"
-				/>
-				<button class="btn" onclick={() => updateFileName(newFileName)}>
-					Confirm New TM Name
-				</button>
-				<button class="btn update" onclick={() => (renameFileWindow = false)}>
-					Cancel
-				</button>
+			<div class="modal-form">
+				<label class="modal-field">
+					<span>Translation-memory name</span>
+					<input
+						type="text"
+						bind:value={newFileName}
+						placeholder="Memory name"
+					/>
+				</label>
+				<div class="modal-actions inline">
+					<button
+						class="modal-button secondary"
+						onclick={() => (renameFileWindow = false)}>Back</button
+					>
+					<button
+						class="modal-button primary"
+						disabled={!newFileName.trim()}
+						onclick={() => updateFileName(newFileName)}>Save name</button
+					>
+				</div>
 			</div>
 		{/if}
 	</div>
 {/snippet}
 
 {#snippet deletionConfirmation()}
-	<div class="deletion-confirmation-container">
-		<p class="deletion-confirmation">
-			Are you sure you want to delete <span style="color: var(--color-theme-4);"
-				>{selectedFileName}?</span
-			>
+	<div class="modal-confirmation">
+		<span class="modal-confirmation-icon" aria-hidden="true">!</span>
+		<h3>Delete this translation memory?</h3>
+		<p>
+			<strong>{selectedFileName}</strong> and all of its translation units will be
+			removed from this browser.
 		</p>
-		<button class="btn delete" onclick={() => handleTmDeletion()}>
-			Delete
-		</button>
-		<button class="btn update" onclick={() => showTmxModal.set(false)}>
-			Cancel
-		</button>
+		<div class="modal-actions inline">
+			<button class="modal-button secondary" onclick={closeTmModal}
+				>Keep memory</button
+			>
+			<button class="modal-button danger" onclick={handleTmDeletion}
+				>Delete memory</button
+			>
+		</div>
 	</div>
 {/snippet}
 <!-- ######################################################################################################### -->
@@ -289,22 +314,45 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-	role="dialog"
-	tabindex="-1"
+	role="presentation"
 	class="modal-element-global {$showTmxModal ? '' : 'close-modal-global'}"
-	onclick={() => showTmxModal.set(false)}
+	onclick={closeTmModal}
 >
 	{#if showTmUploadModal}
-		<Modal title="Import translation memory" content={tmUpload} wide />
+		<Modal
+			title="Import translation memory"
+			description="Add a TMX file or create an empty reusable memory."
+			content={tmUpload}
+			wide
+			onClose={closeTmModal}
+		/>
 	{/if}
 	{#if showDeletionConfirmationModal}
-		<Modal title="Confirm" content={deletionConfirmation} />
+		<Modal
+			title="Delete translation memory"
+			description={selectedFileName}
+			content={deletionConfirmation}
+			onClose={closeTmModal}
+		/>
 	{/if}
 	{#if mergeTmModal}
-		<Modal title="Merge translation memories" content={tmMergeUpload} wide />
+		<Modal
+			title="Merge translation memories"
+			description={selectedFileName}
+			content={tmMergeUpload}
+			wide
+			onClose={closeTmModal}
+		/>
 	{/if}
 	{#if showSelectModal}
-		<Modal title={selectedFileName} content={selectMenu} />
+		<Modal
+			title={renameFileWindow
+				? "Rename translation memory"
+				: "Translation memory"}
+			description={selectedFileName}
+			content={selectMenu}
+			onClose={closeTmModal}
+		/>
 	{/if}
 </div>
 
@@ -439,44 +487,3 @@
 		<TmEditing />
 	</div>
 {/if}
-
-<style>
-	.deletion-confirmation {
-		font-size: 1.2rem;
-		font-weight: 600;
-		margin: 0px 0px 10px 0px;
-		color: var(--color-theme-4);
-		color: #c02b2b;
-		text-align: center;
-		max-width: 280px;
-	}
-
-	.btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 5px 0px;
-		cursor: pointer;
-		width: 100%;
-		min-width: 250px;
-		transition: filter 0.2s linear;
-		position: relative;
-	}
-
-	.btn:hover {
-		filter: brightness(1.1);
-	}
-
-	.rename {
-		padding: 10px;
-		margin: 5px 0px;
-		border: 1px solid var(--color-theme-4);
-		border-radius: 5px;
-	}
-</style>
