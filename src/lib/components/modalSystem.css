@@ -158,26 +158,30 @@
 }
 
 .modal-action-card.primary {
-	border-color: #72bed0;
-	background: #eaf8fb;
-	color: #174f60;
-	box-shadow: 0 6px 16px rgba(39, 142, 168, 0.1);
+	border-color: #2c96b3;
+	background: #329fc0;
+	color: white;
+	box-shadow: 0 7px 18px rgba(32, 124, 151, 0.18);
 }
 
 .modal-action-card.primary:hover,
 .modal-action-card.primary:focus-visible {
-	border-color: #3ca3bc;
-	background: #ddf3f7;
-	box-shadow: 0 9px 22px rgba(39, 142, 168, 0.18);
+	border-color: #268eae;
+	background: #268eae;
+	box-shadow: 0 9px 22px rgba(32, 124, 151, 0.24);
 }
 
 .modal-action-card.primary .modal-action-icon {
-	background: #329fc0;
+	background: rgba(255, 255, 255, 0.16);
 	color: white;
 }
 
+.modal-action-card.primary .modal-action-text small {
+	color: rgba(255, 255, 255, 0.78);
+}
+
 .modal-action-card.primary .modal-action-arrow {
-	color: #237f98;
+	color: rgba(255, 255, 255, 0.85);
 }
 
 .modal-action-card.danger {
