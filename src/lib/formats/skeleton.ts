@@ -212,6 +212,18 @@ export interface SubtitleCueReplacement extends ReplacementBase {
 	originalValue: string;
 }
 
+export interface PackageXmlValueReplacement extends ReplacementBase {
+	kind: "package-xml-value";
+	profile: string;
+	part: string;
+	path: string[];
+	location: "text" | "cdata" | "attribute";
+	attribute?: string;
+	start: number;
+	end: number;
+	originalValue: string;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -286,6 +298,7 @@ export type SkeletonReplacement =
 	| PhpValueReplacement
 	| MarkupTextReplacement
 	| SubtitleCueReplacement
+	| PackageXmlValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -427,7 +440,7 @@ export async function createPlainTextSkeleton(
 
 export async function createPackageSkeleton(
 	file: File,
-	format: "docx" | "xlsx" | "pptx",
+	format: FormatId,
 	parts: Record<string, string | Blob>,
 	replacements: SkeletonReplacement[],
 	source?: SkeletonSource,
@@ -607,7 +620,7 @@ export function getTextSkeletonContent(
 
 export function getPackageSkeleton(
 	skeleton: DocumentSkeleton | undefined,
-	format: "docx" | "xlsx" | "pptx",
+	format: FormatId,
 ): (DocumentSkeleton & { payload: PackageSkeletonPayload }) | undefined {
 	return skeleton?.format === format && skeleton.payload.kind === "package"
 		? (skeleton as DocumentSkeleton & { payload: PackageSkeletonPayload })
@@ -863,6 +876,18 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				typeof replacement.originalValue !== "string")
 		) {
 			issues.push("Subtitle cue replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "package-xml-value" &&
+			(!replacement.profile ||
+				!replacement.part ||
+				!Array.isArray(replacement.path) ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string" ||
+				(replacement.location === "attribute" && !replacement.attribute))
+		) {
+			issues.push("Package XML value replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "xml-value" &&

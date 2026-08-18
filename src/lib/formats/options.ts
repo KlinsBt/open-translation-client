@@ -451,6 +451,41 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: 50,
 		},
 	],
+	odf: [
+		{
+			id: "trackedChanges",
+			label: "Tracked changes",
+			type: "select",
+			defaultValue: "final",
+			choices: ["final", "original", "all"],
+			description:
+				"Choose final text, original text, or both insertion/deletion branches. Change metadata remains protected.",
+		},
+		{
+			id: "includeNotes",
+			label: "Include presentation notes",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeComments",
+			label: "Include annotations/comments",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeHeadersFooters",
+			label: "Include headers and footers",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeAccessibilityText",
+			label: "Include drawing titles/descriptions",
+			type: "boolean",
+			defaultValue: true,
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

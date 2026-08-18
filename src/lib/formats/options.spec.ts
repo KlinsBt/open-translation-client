@@ -101,6 +101,13 @@ describe("format import options", () => {
 			maxReadingSpeed: 20,
 			maxExpansionPercent: 50,
 		});
+		expect(normalizeImportOptions("odf", { includeNotes: "false" })).toEqual({
+			trackedChanges: "final",
+			includeNotes: false,
+			includeComments: false,
+			includeHeadersFooters: true,
+			includeAccessibilityText: true,
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

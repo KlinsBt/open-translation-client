@@ -25,6 +25,7 @@ import { buildIniTranslationBlob } from "$lib/functions/outputGeneration/outputG
 import { buildPhpTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationPhp";
 import { buildLightweightMarkupTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationMarkup";
 import { buildSubtitleTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationSubtitles";
+import { buildOdfTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationOdf";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -164,6 +165,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildLightweightMarkupTranslationBlob(project);
 		case "subtitles":
 			return buildSubtitleTranslationBlob(project);
+		case "odf":
+			return buildOdfTranslationPackage(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

@@ -29,6 +29,7 @@ export type SafeInputErrorCode =
 	| "PHP_LOCALIZATION_INVALID"
 	| "MARKUP_INVALID"
 	| "SUBTITLE_INVALID"
+	| "ODF_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {
@@ -565,7 +566,11 @@ function validateArchivePath(path: string, existing: Set<string>): string {
 }
 
 function isTextPackagePart(path: string): boolean {
-	return path === "[Content_Types].xml" || /\.(?:xml|rels|txt)$/i.test(path);
+	return (
+		path === "[Content_Types].xml" ||
+		path === "mimetype" ||
+		/\.(?:xml|rels|txt|opf|ncx|xhtml|html|svg|css)$/i.test(path)
+	);
 }
 
 function formatBytes(bytes: number): string {

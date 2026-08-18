@@ -24,6 +24,25 @@ async function zipFile(
 	});
 }
 
+async function odfPackageFile(
+	content: string,
+	name = "document.odt",
+): Promise<File> {
+	const mimeType = "application/vnd.oasis.opendocument.text";
+	const zip = new JSZip();
+	zip.file("mimetype", mimeType, { compression: "STORE" });
+	zip.file("content.xml", content);
+	zip.file(
+		"META-INF/manifest.xml",
+		`<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3"><manifest:file-entry manifest:full-path="/" manifest:media-type="${mimeType}"/><manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/></manifest:manifest>`,
+	);
+	return new File(
+		[await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" })],
+		name,
+		{ type: mimeType },
+	);
+}
+
 function invalidUtf8(name: string, type: string): File {
 	return new File([new Uint8Array([0xc3, 0x28])], name, { type });
 }
@@ -679,6 +698,53 @@ const subtitlesFixture: FormatConformanceFixture = {
 		),
 };
 
+const odfFixture: FormatConformanceFixture = {
+	id: "odf",
+	fileName: "document.odt",
+	mimeType: "application/vnd.oasis.opendocument.text",
+	createValidFile: async () =>
+		odfPackageFile(
+			`<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" office:version="1.3"><office:body><office:text><text:p>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</text:p></office:text></office:body></office:document-content>`,
+		),
+	createMalformedFile: async () =>
+		odfPackageFile("<office:document-content>broken"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			trackedChanges: "final",
+			includeNotes: true,
+			includeComments: false,
+			includeHeadersFooters: true,
+			includeAccessibilityText: true,
+		},
+		skeleton: { kind: "package", replacementKinds: ["package-xml-value"] },
+		units: [
+			{
+				id: "content.xml:office:document-content[1]/office:body[1]/office:text[1]/text:p[1]/#text:0",
+				part: "content.xml",
+				path: [
+					"office:document-content[1]",
+					"office:body[1]",
+					"office:text[1]",
+					"text:p[1]",
+					"#text",
+				],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		odfPackageFile(
+			`<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" office:version="1.3"><office:body><office:text>${Array.from(
+				{ length: units },
+				(_, index) => `<text:p>Message ${index}</text:p>`,
+			).join("")}</office:text></office:body></office:document-content>`,
+		),
+	expectedPackageChanges: ["content.xml"],
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -939,6 +1005,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	phpFixture,
 	markupFixture,
 	subtitlesFixture,
+	odfFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

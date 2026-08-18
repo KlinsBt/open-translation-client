@@ -16,6 +16,7 @@ import {
 	getFileExtension,
 	normalizeMimeType,
 } from "./detect";
+import { validateOdfFile } from "./odf";
 
 const storage = new Map<string, string>();
 
@@ -85,10 +86,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -133,6 +134,18 @@ describe("format adapter registry", () => {
 				textFile("1\n00:00:00,000 --> 00:00:05,000\nHello", "CAPTIONS.SRT", ""),
 			),
 		).resolves.toMatchObject({ id: "subtitles" });
+		const odf = await zipFile(
+			{
+				mimetype: "application/vnd.oasis.opendocument.text",
+				"content.xml":
+					'<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"><office:body><office:text><p>Hello</p></office:text></office:body></office:document-content>',
+				"META-INF/manifest.xml":
+					'<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/></manifest:manifest>',
+			},
+			"DOCUMENT.ODT",
+		);
+		expect(await validateOdfFile(odf)).toEqual({ valid: true });
+		await expect(detectFormat(odf)).resolves.toMatchObject({ id: "odf" });
 		await expect(
 			detectFormat(
 				textFile(
@@ -336,7 +349,7 @@ describe("format adapter registry", () => {
 		},
 	);
 
-	it("distinguishes supported PPTX from OpenDocument, EPUB, and generic ZIP packages", async () => {
+	it("distinguishes supported PPTX/OpenDocument from EPUB and generic ZIP packages", async () => {
 		const pptx = await zipFile(
 			{ "ppt/presentation.xml": "<presentation/>" },
 			"slides.pptx",
@@ -346,18 +359,20 @@ describe("format adapter registry", () => {
 			label: "PPTX",
 			supported: true,
 		});
+		const odf = await zipFile(
+			{
+				mimetype: "application/vnd.oasis.opendocument.text",
+				"META-INF/manifest.xml": "<manifest/>",
+				"content.xml": "<document/>",
+			},
+			"document.odt",
+		);
+		await expect(detectFormatWithConfidence(odf)).resolves.toMatchObject({
+			formatId: "odf",
+			label: "OpenDocument ODT/ODS/ODP",
+			supported: true,
+		});
 		const cases = [
-			[
-				await zipFile(
-					{
-						mimetype: "application/vnd.oasis.opendocument.text",
-						"META-INF/manifest.xml": "<manifest/>",
-						"content.xml": "<document/>",
-					},
-					"document.odt",
-				),
-				"ODT",
-			],
 			[
 				await zipFile(
 					{

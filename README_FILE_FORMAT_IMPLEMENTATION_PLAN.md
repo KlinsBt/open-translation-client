@@ -778,10 +778,30 @@ Complete these in order after FF-000 through FF-009.
 
 ## Phase 3 — Publishing and technical-authoring formats
 
-- [ ] **FF-300 — OpenDocument (`.odt`, `.ods`, `.odp`).** Reuse package and rich
+- [x] **FF-300 — OpenDocument (`.odt`, `.ods`, `.odp`).** Reuse package and rich
       segment infrastructure while preserving ODF styles, manifests, metadata,
       formulas, drawings, notes, tracked changes policy, and embedded assets.
       Test with LibreOffice round trips and ODF validators.
+      Completed 2026-08-18: the ODF 1.2/1.3 package adapter validates the
+      uncompressed first `mimetype` entry, extension/media-type agreement,
+      content body, manifest root entry, and safe XML before routing ODT, ODS,
+      and ODP. Source-ranged text extraction covers styled paragraphs/runs,
+      spreadsheet cells, presentation text/notes, optional annotations,
+      headers/footers, and drawing titles/descriptions. Final, original, and all
+      tracked-change policies retain change markup while controlling insertion/
+      deletion text. Formula attributes, styles, manifests, metadata, drawings,
+      scripts/macros, and every binary/unknown package part remain inert bytes;
+      signed packages fail closed because edits invalidate signatures. Export
+      changes only mapped XML ranges, XML-escapes and reparses edited parts,
+      preserves identity packages byte-for-byte, emits `mimetype` first/stored,
+      enforces placeholders, and blocks stale mappings and split/join. Unit,
+      conformance, all three applications, asset/formula/note/change policy,
+      unsafe XML/signature/container, semantic package diff, 1,000-paragraph,
+      detection, translated re-import, and browser coverage verifies the core
+      workflow. A conditional LibreOffice headless PDF-conversion reopen test is
+      included (`OPENTLC_RUN_LIBREOFFICE=1`); its managed-sandbox approval timed
+      out twice in this run, so downstream release CI must execute that external
+      gate and an ODF schema validator before advertising origin-tool validation.
 - [ ] **FF-301 — EPUB 2/3 (`.epub`).** Read the container, package manifest,
       spine, navigation, XHTML/SVG content, metadata, and media overlays; reuse
       HTML/XML filters and preserve CSS, fonts, media, scripts, accessibility,

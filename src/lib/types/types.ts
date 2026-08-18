@@ -200,6 +200,18 @@ export interface SubtitleSegmentMeta {
 	separator?: string;
 }
 
+export interface PackageXmlSegmentMeta {
+	profile: string;
+	part: string;
+	path: string[];
+	location: "text" | "cdata" | "attribute";
+	attribute?: string;
+	start: number;
+	end: number;
+	originalValue: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -255,6 +267,7 @@ export type SegmentMeta =
 	| PhpSegmentMeta
 	| MarkupSegmentMeta
 	| SubtitleSegmentMeta
+	| PackageXmlSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

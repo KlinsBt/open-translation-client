@@ -15,6 +15,7 @@ import { generateIniTranslation } from "$lib/functions/outputGeneration/outputGe
 import { generatePhpTranslation } from "$lib/functions/outputGeneration/outputGenerationPhp";
 import { generateLightweightMarkupTranslation } from "$lib/functions/outputGeneration/outputGenerationMarkup";
 import { generateSubtitleTranslation } from "$lib/functions/outputGeneration/outputGenerationSubtitles";
+import { generateOdfTranslation } from "$lib/functions/outputGeneration/outputGenerationOdf";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -68,6 +69,7 @@ import {
 	validateLightweightMarkupFile,
 } from "./lightweightMarkup";
 import { importSubtitleFile, validateSubtitleFile } from "./subtitles";
+import { importOdfFile, ODF_MIME_TYPES, validateOdfFile } from "./odf";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -313,6 +315,19 @@ const adapters = [
 		validate: validateSubtitleFile,
 		importFile: importSubtitleFile,
 		exportFile: generateSubtitleTranslation,
+	},
+	{
+		id: "odf",
+		label: "OpenDocument ODT/ODS/ODP",
+		extensions: ["odt", "ods", "odp"],
+		mimeTypes: Object.values(ODF_MIME_TYPES),
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.odf,
+		sniff: async (file, context) =>
+			(await validateOdfFile(file, context)).valid,
+		validate: validateOdfFile,
+		importFile: importOdfFile,
+		exportFile: generateOdfTranslation,
 	},
 	{
 		id: "xml",

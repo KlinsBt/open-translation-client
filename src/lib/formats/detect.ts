@@ -268,12 +268,7 @@ async function detectZipPackage(
 
 	const odf = odfLabel(packageDetails.mimetype);
 	if (odf) {
-		return unsupported(
-			odf,
-			"high",
-			["package", "signature"],
-			`The package declares the ${odf} OpenDocument media type, which is recognized but not implemented yet.`,
-		);
+		return supportedPackage(adapters, "odf", `the ${odf} mimetype declaration`);
 	}
 	if (
 		packageDetails.mimetype === "application/epub+zip" ||
