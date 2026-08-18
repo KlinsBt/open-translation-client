@@ -1029,8 +1029,9 @@ Complete these in order after FF-000 through FF-009.
       cancelled, oversized, over-page-limit and text-expansion cases fail with
       typed errors. Embedded scripts, actions, forms, links and attachments are
       never executed or requested. The adapter is labelled source-only with
-      `roundTrip: false`; export produces a real, newly typeset translated PDF
-      grouped and paginated by source-page mapping. Synthetic
+      `roundTrip: false`; export renders the retained original pages and replaces
+      translated text in the recorded source bounding boxes, preserving page
+      dimensions, graphics, geometry, and untranslated regions. Synthetic
       Unicode/RTL/non-BMP, mixed OCR, bbox, filtering, malformed, cancellation,
       2,001-page limit, 250-line performance, detection, shared conformance and
       real-browser coverage is included, and the reference PDF passes installed

@@ -43,12 +43,13 @@ selected pages. Each unit records its source page and PDF user-space bounding
 box. Pages with raster images but no text are reported as requiring OCR; they
 are never silently treated as blank or sent to a service.
 
-PDF projects have `roundTrip: false`. Export creates a real, standalone PDF with
-the translated segments grouped and paginated according to their source-page
-mapping. The output is a newly typeset delivery document, so it does not mutate
-the source PDF or copy active content, forms, annotations, signatures, scripts,
-actions, attachments, or links. Passworded files must be decrypted locally
-first.
+PDF projects have `roundTrip: false`. Export renders each retained original page,
+replaces translated text inside its recorded source bounding box, and writes the
+result with the original page dimensions. Untranslated regions, graphics, and
+page geometry remain visually intact. The exported pages are flattened, so the
+source PDF is never modified and active forms, annotations, signatures, scripts,
+actions, attachments, and links are not carried into the result. Passworded
+files must be decrypted locally first.
 
 ## OCR images and audio/video transcription
 

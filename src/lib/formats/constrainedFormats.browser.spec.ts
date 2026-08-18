@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { buildTranslatedPdf } from "$lib/functions/outputGeneration/outputGenerationPdf";
+import { makeUserData } from "../../test/fixtures";
+import { createSyntheticPdf } from "../../test/pdfFixtures";
+import { importPdfFile } from "./pdf";
 import { detectFormatWithConfidence, getFormatAcceptValue } from "./registry";
 
 describe("browser local and constrained format routing", () => {
@@ -53,4 +57,44 @@ describe("browser local and constrained format routing", () => {
 			);
 		},
 	);
+
+	it("exports translated PDF pages over the retained source layout", async () => {
+		const source = createSyntheticPdf(
+			[{ lines: ["Original heading", "Original body"] }, { imageOnly: true }],
+			"layout-source.pdf",
+		);
+		const imported = await importPdfFile(source, { ocrPolicy: "skip" });
+		if (imported.kind !== "segments") throw new Error("Expected PDF segments");
+		const project = makeUserData({
+			type: "pdf",
+			name: source.name,
+			sourceLang: "English (en)",
+			targetLang: "German (de)",
+			seg1: imported.segments,
+			seg2: ["Übersetzte Überschrift", "Übersetzter Inhalt"],
+			checked: imported.segments.map(() => true),
+			typeRef: imported.typeRef ?? {},
+			segmentsMeta: imported.segmentsMeta,
+			documentModel: imported.document,
+			skeleton: imported.skeleton,
+			filterOptions: imported.filterOptions,
+		});
+
+		const exported = await buildTranslatedPdf(project);
+		expect(exported.type).toBe("application/pdf");
+		const bytes = new Uint8Array(await exported.arrayBuffer());
+		expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
+
+		const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+		const loadingTask = pdfjs.getDocument({ data: bytes });
+		const document = await loadingTask.promise;
+		expect(document.numPages).toBe(2);
+		expect((await document.getPage(1)).getViewport({ scale: 1 })).toMatchObject(
+			{ width: 612, height: 792 },
+		);
+		expect((await document.getPage(2)).getViewport({ scale: 1 })).toMatchObject(
+			{ width: 612, height: 792 },
+		);
+		await loadingTask.destroy();
+	}, 20_000);
 });

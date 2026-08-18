@@ -387,6 +387,7 @@ export async function importPdfFile(
 		skeleton: await createPackageSkeleton(file, "pdf", {}, [], {
 			name: file.name,
 			mimeType: file.type || "application/pdf",
+			originalFile: file.slice(0, file.size, file.type || "application/pdf"),
 		}),
 		filterOptions,
 		typeRef: {

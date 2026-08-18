@@ -5,10 +5,10 @@ interface JpegPage {
 	bytes: Uint8Array;
 	width: number;
 	height: number;
+	pdfWidth?: number;
+	pdfHeight?: number;
 }
 
-const PAGE_WIDTH = 1240;
-const PAGE_HEIGHT = 1754;
 const PDF_WIDTH = 595.28;
 const PDF_HEIGHT = 841.89;
 
@@ -38,11 +38,13 @@ export function buildJpegPdf(pages: readonly JpegPage[]): Blob {
 	);
 
 	for (const [index, page] of pages.entries()) {
+		const pdfWidth = page.pdfWidth ?? PDF_WIDTH;
+		const pdfHeight = page.pdfHeight ?? PDF_HEIGHT;
 		const pageObject = 3 + index * 3;
 		const imageObject = pageObject + 1;
 		const contentObject = pageObject + 2;
 		objects[pageObject] = ascii(
-			`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDF_WIDTH} ${PDF_HEIGHT}] /Resources << /XObject << /Im0 ${imageObject} 0 R >> >> /Contents ${contentObject} 0 R >>`,
+			`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pdfWidth} ${pdfHeight}] /Resources << /XObject << /Im0 ${imageObject} 0 R >> >> /Contents ${contentObject} 0 R >>`,
 		);
 		objects[imageObject] = concatBytes([
 			ascii(
@@ -51,7 +53,7 @@ export function buildJpegPdf(pages: readonly JpegPage[]): Blob {
 			page.bytes,
 			ascii("\nendstream"),
 		]);
-		const commands = `q\n${PDF_WIDTH} 0 0 ${PDF_HEIGHT} 0 0 cm\n/Im0 Do\nQ`;
+		const commands = `q\n${pdfWidth} 0 0 ${pdfHeight} 0 0 cm\n/Im0 Do\nQ`;
 		objects[contentObject] = ascii(
 			`<< /Length ${commands.length} >>\nstream\n${commands}\nendstream`,
 		);
@@ -97,50 +99,63 @@ function isPdfMeta(value: unknown): value is PdfSegmentMeta {
 	);
 }
 
-function wrapText(
+function canvasJpeg(canvas: HTMLCanvasElement): Uint8Array {
+	const encoded = canvas.toDataURL("image/jpeg", 0.94).split(",")[1];
+	const binary = atob(encoded);
+	return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+function backgroundColor(
+	context: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+): string {
+	const points = [
+		[x - 2, y - 2],
+		[x + width + 2, y - 2],
+		[x - 2, y + height + 2],
+		[x + width + 2, y + height + 2],
+	];
+	const samples: number[][] = [];
+	for (const [sampleX, sampleY] of points) {
+		const safeX = Math.max(0, Math.min(context.canvas.width - 1, sampleX));
+		const safeY = Math.max(0, Math.min(context.canvas.height - 1, sampleY));
+		try {
+			samples.push(Array.from(context.getImageData(safeX, safeY, 1, 1).data));
+		} catch {
+			return "rgb(255, 255, 255)";
+		}
+	}
+	const channel = (index: number) =>
+		Math.round(
+			samples.reduce((total, sample) => total + sample[index], 0) /
+				samples.length,
+		);
+	return `rgb(${channel(0)}, ${channel(1)}, ${channel(2)})`;
+}
+
+function fitFontSize(
 	context: CanvasRenderingContext2D,
 	text: string,
 	maxWidth: number,
-): string[] {
-	const paragraphs = text.split(/\r?\n/);
-	const lines: string[] = [];
-	for (const paragraph of paragraphs) {
-		if (!paragraph) {
-			lines.push("");
-			continue;
-		}
-		let line = "";
-		for (const word of paragraph.split(/\s+/)) {
-			const candidate = line ? `${line} ${word}` : word;
-			if (context.measureText(candidate).width <= maxWidth) {
-				line = candidate;
-				continue;
-			}
-			if (line) lines.push(line);
-			if (context.measureText(word).width <= maxWidth) {
-				line = word;
-				continue;
-			}
-			let fragment = "";
-			for (const character of word) {
-				if (context.measureText(fragment + character).width > maxWidth) {
-					lines.push(fragment);
-					fragment = character;
-				} else {
-					fragment += character;
-				}
-			}
-			line = fragment;
-		}
-		if (line) lines.push(line);
+	preferredSize: number,
+): number {
+	let size = Math.max(8, preferredSize);
+	while (size > 8) {
+		context.font = `${size}px Arial, sans-serif`;
+		if (context.measureText(text).width <= maxWidth) break;
+		size -= 0.5;
 	}
-	return lines;
+	return size;
 }
 
-function canvasJpeg(canvas: HTMLCanvasElement): Uint8Array {
-	const encoded = canvas.toDataURL("image/jpeg", 0.9).split(",")[1];
-	const binary = atob(encoded);
-	return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+function targetIsRtl(language: string): boolean {
+	const code = language.match(/\(([^)]+)\)\s*$/)?.[1] ?? language;
+	return ["ar", "dv", "fa", "he", "ps", "ur", "yi"].includes(
+		code.toLowerCase().split(/[-_]/)[0],
+	);
 }
 
 export async function buildTranslatedPdf(project: UserData): Promise<Blob> {
@@ -158,88 +173,113 @@ export async function buildTranslatedPdf(project: UserData): Promise<Blob> {
 		);
 	}
 
-	const measureCanvas = document.createElement("canvas");
-	const measureContext = measureCanvas.getContext("2d");
-	if (!measureContext) throw new Error("This browser cannot render PDF pages.");
-	measureContext.font = "30px Arial, sans-serif";
-	const items = (data.segmentsMeta as PdfSegmentMeta[]).map(
-		(metadata, index) => ({
-			page: metadata.page,
-			segment: data.seg2[index]?.trim() || data.seg1[index] || "",
-			index,
-		}),
-	);
-	const renderedPages: JpegPage[] = [];
-	let sourcePage = 0;
-	let canvas!: HTMLCanvasElement;
-	let context!: CanvasRenderingContext2D;
-	let y = 0;
-
-	function startPage(continuation = false) {
-		canvas = document.createElement("canvas");
-		canvas.width = PAGE_WIDTH;
-		canvas.height = PAGE_HEIGHT;
-		const nextContext = canvas.getContext("2d");
-		if (!nextContext) throw new Error("This browser cannot render PDF pages.");
-		context = nextContext;
-		context.fillStyle = "#ffffff";
-		context.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
-		context.fillStyle = "#173f50";
-		context.font = "700 26px Arial, sans-serif";
-		context.fillText(data.name || "Translated PDF", 80, 72);
-		context.fillStyle = "#6d838b";
-		context.font = "20px Arial, sans-serif";
-		context.fillText(
-			`Translated page ${sourcePage}${continuation ? " — continued" : ""}`,
-			80,
-			106,
+	const originalFile = data.skeleton?.source.originalFile;
+	if (!(originalFile instanceof Blob)) {
+		throw new Error(
+			"The original PDF is missing from this project. Reimport it once to enable layout-preserving PDF export.",
 		);
-		context.fillStyle = "#d8e8ec";
-		context.fillRect(80, 128, PAGE_WIDTH - 160, 2);
-		y = 178;
 	}
+	const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+	if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+		pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+			"pdfjs-dist/legacy/build/pdf.worker.mjs",
+			import.meta.url,
+		).toString();
+	}
+	const loadingTask = pdfjs.getDocument({
+		data: new Uint8Array(await originalFile.arrayBuffer()),
+		useSystemFonts: true,
+		useWorkerFetch: false,
+		useWasm: false,
+	});
+	const originalDocument = await loadingTask.promise;
+	const metadata = data.segmentsMeta as PdfSegmentMeta[];
+	const renderedPages: JpegPage[] = [];
+	const rtl = targetIsRtl(data.targetLang);
+	try {
+		for (
+			let pageNumber = 1;
+			pageNumber <= originalDocument.numPages;
+			pageNumber += 1
+		) {
+			const page = await originalDocument.getPage(pageNumber);
+			const pdfViewport = page.getViewport({ scale: 1 });
+			const viewport = page.getViewport({ scale: 1.75 });
+			const canvas = document.createElement("canvas");
+			canvas.width = Math.ceil(viewport.width);
+			canvas.height = Math.ceil(viewport.height);
+			const context = canvas.getContext("2d");
+			if (!context) throw new Error("This browser cannot render PDF pages.");
+			await page.render({
+				canvas,
+				canvasContext: context,
+				viewport,
+				background: "rgb(255, 255, 255)",
+			}).promise;
 
-	function finishPage() {
-		renderedPages.push({
-			bytes: canvasJpeg(canvas),
-			width: canvas.width,
-			height: canvas.height,
-		});
-	}
+			for (const [index, entry] of metadata.entries()) {
+				if (entry.page !== pageNumber) continue;
+				const translation = data.seg2[index]?.trim() ?? "";
+				if (!translation || translation === data.seg1[index]) continue;
+				const [x, y, width, height] = entry.bbox;
+				const topLeft = viewport.convertToViewportPoint(x, y + height);
+				const bottomRight = viewport.convertToViewportPoint(x + width, y);
+				const rectangle = [
+					topLeft[0],
+					topLeft[1],
+					bottomRight[0],
+					bottomRight[1],
+				];
+				const left = Math.min(rectangle[0], rectangle[2]);
+				const top = Math.min(rectangle[1], rectangle[3]);
+				const boxWidth = Math.max(2, Math.abs(rectangle[2] - rectangle[0]));
+				const boxHeight = Math.max(2, Math.abs(rectangle[3] - rectangle[1]));
+				const padding = Math.max(2, viewport.scale);
+				context.fillStyle = backgroundColor(
+					context,
+					left,
+					top,
+					boxWidth,
+					boxHeight,
+				);
+				context.fillRect(
+					left - padding,
+					top - padding,
+					boxWidth + padding * 2,
+					boxHeight + padding * 2,
+				);
+				const fontSize = fitFontSize(
+					context,
+					translation,
+					boxWidth,
+					boxHeight * 0.92,
+				);
+				context.font = `${fontSize}px Arial, sans-serif`;
+				context.fillStyle = "#111111";
+				context.textBaseline = "middle";
+				context.direction = rtl ? "rtl" : "ltr";
+				context.textAlign = rtl ? "right" : "left";
+				context.fillText(
+					translation,
+					rtl ? left + boxWidth : left,
+					top + boxHeight / 2,
+					boxWidth,
+				);
+			}
 
-	for (const item of items) {
-		if (!renderedPages.length && !sourcePage) {
-			sourcePage = item.page;
-			startPage();
-		} else if (item.page !== sourcePage) {
-			finishPage();
-			sourcePage = item.page;
-			startPage();
+			renderedPages.push({
+				bytes: canvasJpeg(canvas),
+				width: canvas.width,
+				height: canvas.height,
+				pdfWidth: pdfViewport.width,
+				pdfHeight: pdfViewport.height,
+			});
+			page.cleanup();
 		}
-		context.font = "30px Arial, sans-serif";
-		const lines = wrapText(context, item.segment, PAGE_WIDTH - 190);
-		const blockHeight = Math.max(58, lines.length * 42 + 34);
-		if (y + blockHeight > PAGE_HEIGHT - 95) {
-			finishPage();
-			startPage(true);
-		}
-		context.fillStyle = "#2b829a";
-		context.font = "700 18px Arial, sans-serif";
-		context.fillText(String(item.index + 1).padStart(2, "0"), 80, y + 8);
-		context.fillStyle = "#243f49";
-		context.font = "30px Arial, sans-serif";
-		for (const line of lines.length ? lines : [""]) {
-			context.fillText(line, 145, y + 8);
-			y += 42;
-		}
-		y += 28;
+		return buildJpegPdf(renderedPages);
+	} finally {
+		await loadingTask.destroy();
 	}
-	if (!items.length) {
-		sourcePage = 1;
-		startPage();
-	}
-	finishPage();
-	return buildJpegPdf(renderedPages);
 }
 
 export async function generateTranslatedPdf(project: UserData): Promise<void> {

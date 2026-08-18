@@ -89,6 +89,11 @@ describe("PDF source-only workflow", () => {
 			ocrRequiredPages: [],
 			exportPolicy: "derived-translated-pdf",
 		});
+		expect(result.skeleton.source.originalFile).toBeInstanceOf(Blob);
+		const retainedBytes = new Uint8Array(
+			await result.skeleton.source.originalFile!.arrayBuffer(),
+		);
+		expect(new TextDecoder().decode(retainedBytes.slice(0, 5))).toBe("%PDF-");
 	});
 
 	it("distinguishes image-only OCR pages and applies the selected policy", async () => {

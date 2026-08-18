@@ -13,8 +13,20 @@ const ONE_PIXEL_JPEG = Uint8Array.from(
 describe("translated PDF output", () => {
 	it("builds a real multi-page PDF that can be reopened", async () => {
 		const blob = buildJpegPdf([
-			{ bytes: ONE_PIXEL_JPEG, width: 1, height: 1 },
-			{ bytes: ONE_PIXEL_JPEG, width: 1, height: 1 },
+			{
+				bytes: ONE_PIXEL_JPEG,
+				width: 1,
+				height: 1,
+				pdfWidth: 612,
+				pdfHeight: 792,
+			},
+			{
+				bytes: ONE_PIXEL_JPEG,
+				width: 1,
+				height: 1,
+				pdfWidth: 792,
+				pdfHeight: 612,
+			},
 		]);
 		expect(blob.type).toBe("application/pdf");
 		const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -22,6 +34,16 @@ describe("translated PDF output", () => {
 		const loadingTask = getDocument({ data: bytes });
 		const document = await loadingTask.promise;
 		expect(document.numPages).toBe(2);
+		const firstPage = await document.getPage(1);
+		const secondPage = await document.getPage(2);
+		expect(firstPage.getViewport({ scale: 1 })).toMatchObject({
+			width: 612,
+			height: 792,
+		});
+		expect(secondPage.getViewport({ scale: 1 })).toMatchObject({
+			width: 792,
+			height: 612,
+		});
 		await loadingTask.destroy();
 	});
 });
