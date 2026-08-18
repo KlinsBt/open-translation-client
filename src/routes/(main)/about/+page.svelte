@@ -1,240 +1,676 @@
-<script>
+<script lang="ts">
 	import DataStructureCard from "$lib/components/about/dataStructureCard.svelte";
+
+	const sourceFormatGroups = [
+		{
+			title: "Office, web and text",
+			formats: [
+				"DOCX, DOCM, DOTX and DOTM",
+				"XLSX, XLSM, XLTX and XLTM",
+				"PPTX, PPTM, POTX, POTM, PPSX and PPSM",
+				"ODT, ODS and ODP",
+				"HTML and XHTML",
+				"TXT, CSV and TSV",
+			],
+		},
+		{
+			title: "Structured localization",
+			formats: [
+				"JSON, ARB, i18next, Chrome and locJSON",
+				"YAML 1.2",
+				"GNU gettext PO and POT",
+				"XML with ITS 2.0",
+				"Android strings.xml",
+				"Apple .strings, .stringsdict and .xcstrings",
+				"Java and Mozilla .properties",
+				".NET RESX",
+			],
+		},
+		{
+			title: "Application resources",
+			formats: [
+				"Qt Linguist TS and QML",
+				"INI, .desktop and .lang",
+				"Limited PHP localization arrays",
+				"Windows RC resources",
+				"MIF interchange files",
+				"Markdown and AsciiDoc",
+				"SRT, WebVTT and SBV subtitles",
+			],
+		},
+		{
+			title: "Publishing and technical authoring",
+			formats: [
+				"EPUB 2 and 3",
+				"SVG",
+				"DITA and DITAMAP",
+				"DocBook",
+				"Adobe IDML and ICML",
+				"TeX and LaTeX",
+				"TTML and DFXP timed text",
+			],
+		},
+	];
+
+	const workflowSteps = [
+		{
+			number: "01",
+			title: "Detect and validate",
+			text: "Open TLC checks content as well as the filename, applies archive and XML limits, and selects a dedicated format adapter.",
+		},
+		{
+			number: "02",
+			title: "Extract and translate",
+			text: "The adapter exposes translatable content as segments while protecting inline codes, placeholders and structural metadata.",
+		},
+		{
+			number: "03",
+			title: "Verify and export",
+			text: "Format-specific checks run before the translated document or portable project file is generated.",
+		},
+	];
 </script>
 
 <svelte:head>
-	<title>About Open TLC</title>
-	<meta name="description" content="About Open TLC" />
+	<title>About and format support — Open TLC</title>
+	<meta
+		name="description"
+		content="Learn how Open TLC handles source files, CAT exchange formats, local project storage and constrained translation workflows."
+	/>
 </svelte:head>
 
-<section>
-	<h1>All About Open TLC</h1>
-
-	<nav class="table-of-contents">
-		<h2>Contents</h2>
-		<ol>
-			<li><a href="#about-tool">About This Tool</a></li>
-			<li><a href="#data-storage">Data Storage</a></li>
-			<li><a href="#save-file-formats">Save File Formats</a></li>
-			<li><a href="#open-source-contribution">Open Source Contribution</a></li>
-		</ol>
-	</nav>
-
-	<div class="main-content">
-		<div id="about-tool" class="text-column">
-			<h2>About This Tool</h2>
+<main class="about-page">
+	<header class="about-hero">
+		<div>
+			<p class="eyebrow">About Open TLC</p>
+			<h1>An open translation workspace with format rules built in</h1>
 			<p>
-				Open Translation Client (Open TLC) is an open source CAT-Tool that was
-				initially developed as a master thesis project at the Anhalt University
-				of Applied Sciences, Germany. The goal of this project was to create a
-				web-based translation tool that is easy to use for anyone, professional
-				translators, teachers or students. The tool is designed to be
-				user-friendly and intuitive. It has all the necessary features that are
-				needed for a translation project such as support of multiple file
-				formats, support of XLIFF 1.2 and 2.0 save files, various parsing
-				algorithms for different file formats for segmentation etc.
-			</p>
-			<p>
-				Open TLC is a web-based application, which means that it can be used on
-				any device that has a web browser and an internet connection. The tool
-				is designed to be responsive and work on any device, whether it is a
-				desktop computer, a tablet or a smartphone.
+				Open Translation Client is a browser-based, open source CAT tool for
+				professional translators, learners and teams. It began as a master's
+				thesis project at Anhalt University of Applied Sciences in Germany and
+				has grown into a local-first editor with more than 30 registered format
+				workflows.
 			</p>
 		</div>
+	</header>
 
-		<div id="data-storage" class="text-column">
-			<h2>Data Storage</h2>
-			<p>
-				All the data that is created and stored in Open TLC is saved inside your
-				browser's very own database called IndexedDB. This means that all the
-				translation projects that you create are stored locally on your device
-				and are not sent to any server, giving you full control and authority
-				over your data. You can also export your translation projects to various
-				file formats for sharing or backup purposes.
-			</p>
-			<p>
-				Each browser has its own IndexedDB database, which means that the data
-				is stored separately for each browser that you use. So if you want to
-				access your translation projects on another device, you will need to
-				export the projects and import them into the other device.
-			</p>
-			<h3>Backups and Database Persistence</h3>
-			<p>
-				It is recommended to export your translation projects regularly to keep
-				backups of your data. The IndexedDB database is persistent and will keep
-				your data even if you close the browser or restart your device. However,
-				there is always a risk of data loss due to cache clearing, browser
-				updates, device failures or other unforeseen circumstances. Therefore,
-				it is always a good practice to keep backups of your data by exporting
-				the project save files to your local device.
-			</p>
-		</div>
+	<div class="page-layout">
+		<nav class="table-of-contents" aria-label="About page contents">
+			<p>On this page</p>
+			<a href="#workflow">How files are handled</a>
+			<a href="#source-formats">Source formats</a>
+			<a href="#cat-interchange">CAT interchange</a>
+			<a href="#constrained-workflows">Constrained workflows</a>
+			<a href="#data-storage">Local data storage</a>
+			<a href="#project-files">Project files</a>
+			<a href="#contribute">Contribute</a>
+		</nav>
 
-		<div id="save-file-formats" class="text-column">
-			<h2>Save File Formats</h2>
-			<p>
-				Open TLC supports the following file formats for saving and exporting
-				translation project files:
-			</p>
-			<ul>
-				<li>JSON (Open TLC format)</li>
-				<li>XLIFF Version: 1.2</li>
-				<li>XLIFF Version: >=2.0</li>
-			</ul>
-			<h3>JSON Format</h3>
-			<p>
-				The JSON format is a self-defined data structure by the Open TLC Team,
-				which is used to store the translation project data. This format is
-				designed to be more human-readable and easy to understand. It supports
-				all the necessary information one would find in an XLIFF file and that
-				is necessary for a translation project.
-			</p>
-			<h3>XLIFF Formats</h3>
-			<p>
-				XLIFF formats are industry standard file formats that are widely used in
-				the translation industry. Open TLC supports XLIFF 1.2, 2.0, and 2.1
-				formats for saving and exporting translation projects. These files can
-				be imported into other CAT-Tools that support XLIFF formats.
-			</p>
+		<div class="main-content">
+			<section id="workflow" class="content-block">
+				<p class="section-label">Format-aware by design</p>
+				<h2>How files move through Open TLC</h2>
+				<p class="lead">
+					A DOCX document, a PO catalog and an EPUB publication do not have the
+					same structure. Open TLC routes each supported file through an adapter
+					with its own extraction, validation and export behavior.
+				</p>
+				<div class="workflow-grid">
+					{#each workflowSteps as step}
+						<article>
+							<span>{step.number}</span>
+							<h3>{step.title}</h3>
+							<p>{step.text}</p>
+						</article>
+					{/each}
+				</div>
+				<div class="note">
+					<strong>Translation safeguards:</strong> Inline codes and placeholders
+					remain protected, split and join operations retain their segment lineage,
+					and structured imports can offer format-specific extraction options.
+				</div>
+			</section>
 
-			<h3>Save File Data Structure</h3>
-			<p>
-				Every project in Open TLC is stored in a specific data structure that
-				contains all the necessary information for a translation project. This
-				data structure is designed to be easy to understand and work with. Below
-				is a visual example of that data structure:
-			</p>
-			<DataStructureCard />
-		</div>
+			<section id="source-formats" class="content-block">
+				<p class="section-label">Source document support</p>
+				<h2>Formats you can bring into the editor</h2>
+				<p class="lead">
+					The groups below cover native round-trip adapters and deliberately
+					limited parsers. Exact behavior depends on the selected format and is
+					validated before export.
+				</p>
+				<div class="format-grid">
+					{#each sourceFormatGroups as group}
+						<article class="format-card">
+							<h3>{group.title}</h3>
+							<ul>
+								{#each group.formats as format}
+									<li>{format}</li>
+								{/each}
+							</ul>
+						</article>
+					{/each}
+				</div>
+				<div class="note warning">
+					<strong>PowerPoint validation:</strong> PPTX-family packages have automated
+					round-trip coverage, but final native Microsoft PowerPoint interoperability
+					validation is still tracked as an external manual check.
+				</div>
+			</section>
 
-		<div id="open-source-contribution" class="text-column">
-			<h2>Open Source Contribution</h2>
-			<p>
-				Open TLC is an open source project and we welcome contributions from
-				anyone. If you are a developer and would like to contribute to the
-				project, you can find the source code on our GitHub repository. You can
-				also report issues, suggest new features or improvements, or help us
-				with translations.
-			</p>
-			<!-- <p>
-				We believe that open source is the way forward and that by working
-				together as a community, we can create better tools for everyone. If you
-				are interested in contributing to Open TLC, please visit our GitHub
-				repository and read the contribution guidelines.
-			</p> -->
+			<section id="cat-interchange" class="content-block split-block">
+				<div>
+					<p class="section-label">Industry exchange</p>
+					<h2>CAT projects, memories and terminology</h2>
+					<p>
+						Open TLC imports and exports standard XLIFF 1.2, 2.0 and 2.1
+						projects. Vendor-specific XLIFF profiles are accepted through
+						conservative import profiles; unsupported private extensions are not
+						presented as portable output.
+					</p>
+				</div>
+				<ul class="capability-list">
+					<li>
+						<strong>TMX 1.4b</strong><span>Translation-memory exchange</span>
+					</li>
+					<li>
+						<strong>TBX Core / Min</strong><span>Terminology exchange</span>
+					</li>
+					<li>
+						<strong>SRX 2.0</strong><span>Segmentation-rule exchange</span>
+					</li>
+					<li>
+						<strong>XLIFF 1.2–2.1</strong><span>Bilingual project exchange</span
+						>
+					</li>
+				</ul>
+			</section>
+
+			<section id="constrained-workflows" class="content-block">
+				<p class="section-label">Support boundaries</p>
+				<h2>Some files need a safer, narrower workflow</h2>
+				<p class="lead">
+					The interface labels these capabilities instead of implying that every
+					file can make a lossless browser-only round trip.
+				</p>
+				<div class="constraint-list">
+					<article>
+						<strong>PDF is source-only</strong>
+						<p>
+							Text is extracted for translation and exported as accessible
+							bilingual HTML. Open TLC does not claim to recreate the original
+							PDF layout.
+						</p>
+					</article>
+					<article>
+						<strong>CAT packages are protected imports</strong>
+						<p>
+							SDL, Trados, WorldServer and memoQ-style packages are inspected
+							safely; repackaging proprietary containers is intentionally not
+							offered.
+						</p>
+					</article>
+					<article>
+						<strong>Legacy Office requires conversion</strong>
+						<p>
+							DOC, XLS, PPT and RTF should first be converted to a supported
+							modern format. Unsupported files are not uploaded to a conversion
+							service.
+						</p>
+					</article>
+					<article>
+						<strong>Archive projects require a manifest</strong>
+						<p>
+							Generic ZIP import is available only for packages with a validated
+							<code>opentlc-project.json</code> manifest and safe member paths.
+						</p>
+					</article>
+					<article>
+						<strong>OCR and transcription are opt-in capabilities</strong>
+						<p>
+							Image OCR and audio/video transcription remain disabled unless an
+							explicit consent-based provider is configured.
+						</p>
+					</article>
+				</div>
+			</section>
+
+			<section id="data-storage" class="content-block split-block">
+				<div>
+					<p class="section-label">Privacy and ownership</p>
+					<h2>Projects live in your browser</h2>
+					<p>
+						Open TLC stores project data in IndexedDB on the current device and
+						browser profile. The application does not send project content to an
+						Open TLC storage server.
+					</p>
+				</div>
+				<div class="storage-card">
+					<h3>Keep regular backups</h3>
+					<p>
+						Browser data can still be lost through site-data clearing, profile
+						changes, device failure or browser maintenance. Export project files
+						regularly and store them somewhere you control.
+					</p>
+					<p>
+						To move a project to another browser or device, export it on the
+						first device and import that file on the second.
+					</p>
+				</div>
+			</section>
+
+			<section id="project-files" class="content-block">
+				<p class="section-label">Portable project saves</p>
+				<h2>Open TLC JSON and XLIFF</h2>
+				<p class="lead">
+					The versioned Open TLC JSON format keeps application-specific project
+					state in a readable structure. Standard XLIFF 1.2, 2.0 and 2.1 exports
+					provide interoperable bilingual project files for compatible CAT
+					tools.
+				</p>
+				<p>
+					Project-save formats are separate from translated source-document
+					exports: an XLIFF save preserves a bilingual project, while a DOCX,
+					PO, EPUB or other source export rebuilds that source format.
+				</p>
+				<details>
+					<summary>View the Open TLC project data structure</summary>
+					<div class="data-card-wrapper"><DataStructureCard /></div>
+				</details>
+			</section>
+
+			<section id="contribute" class="content-block contribution-card">
+				<div>
+					<p class="section-label">Open source contribution</p>
+					<h2>Real files make format support better</h2>
+					<p>
+						Developers, translators and technical writers can contribute code,
+						sanitized fixtures, interoperability results, documentation and
+						issue reports.
+					</p>
+				</div>
+				<a
+					href="https://github.com/KlinsBt/open-translation-client"
+					target="_blank"
+					rel="noreferrer">Visit the GitHub project →</a
+				>
+			</section>
 		</div>
 	</div>
-</section>
-
-<!-- <pre>
-			{
-				"translationData": {
-				  "name": "Example Project Name",
-				  "sourceLang": "English (en)",
-				  "targetLang": "Georgian (ka)",
-				  "creationDate": "1730553025090",
-				  "seg1": ["Segment 1", "Segment 2"],
-				  "seg2": ["Translated Segment 1", ""],
-				  "checked": [true, false],
-				  "type": "text",
-				  "typeRef": {}
-				}
-			}
-		</pre> -->
+</main>
 
 <style>
-	section {
-		display: flex;
-		flex-direction: column;
+	:global(html) {
+		scroll-behavior: smooth;
+	}
 
-		padding: 5%;
+	.about-page {
+		color: #19333d;
+	}
+
+	.about-hero {
+		padding: 7.5rem max(1.5rem, calc((100% - 1120px) / 2)) 5rem;
+		background: radial-gradient(
+				circle at 85% 20%,
+				rgba(108, 198, 210, 0.23),
+				transparent 32%
+			),
+			#103d50;
+		color: white;
+	}
+
+	.about-hero > div {
+		max-width: 870px;
+	}
+
+	.eyebrow,
+	.section-label {
+		margin: 0 0 0.85rem;
+		color: #bfeafa;
+		font-size: 0.76rem;
+		font-weight: 800;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+	}
+
+	.about-hero h1 {
+		margin: 0;
+		font-size: clamp(2.55rem, 6vw, 4.8rem);
+		letter-spacing: -0.05em;
+		line-height: 1.02;
+	}
+
+	.about-hero p:last-child {
+		max-width: 780px;
+		margin: 1.6rem 0 0;
+		color: #d6e9ed;
+		font-size: 1.12rem;
+		line-height: 1.72;
+	}
+
+	.page-layout {
+		display: grid;
+		grid-template-columns: 210px minmax(0, 1fr);
+		gap: 4rem;
+		width: min(1120px, calc(100% - 3rem));
+		margin: 0 auto;
+		padding: 4.5rem 0 6rem;
 	}
 
 	.table-of-contents {
-		/* position: sticky; */
-		/* top: 10px; */
-		margin-bottom: 20px;
-		padding: 1rem;
-		background-color: var(--color-theme-5);
-		border-radius: 8px;
+		position: sticky;
+		top: 1.5rem;
+		align-self: start;
+		padding-left: 1rem;
+		border-left: 2px solid #cbdfe3;
 	}
 
-	.table-of-contents > h2 {
-		font-size: 1.4rem;
-		margin-bottom: 0.5rem;
-		color: white;
+	.table-of-contents p {
+		margin: 0 0 0.8rem;
+		color: #73858b;
+		font-size: 0.75rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
 	}
 
-	.table-of-contents ol {
-		color: #b2e4ff;
-	}
-
-	.table-of-contents ol > li > a {
-		text-decoration: none;
-		color: var(--color-theme-4);
-		color: white;
-		font-size: 1rem;
-		margin-bottom: 0.5rem;
+	.table-of-contents a {
 		display: block;
+		padding: 0.38rem 0;
+		color: #46616a;
+		font-size: 0.87rem;
+		text-decoration: none;
 	}
 
-	.table-of-contents ol li a:hover {
-		/* filter: brightness(1.2); */
-		color: #b2e4ff;
+	.table-of-contents a:hover {
+		color: #0b6983;
 	}
 
 	.main-content {
-		max-width: 1500px;
-		margin-top: 20px;
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
+		min-width: 0;
 	}
 
-	.text-column {
-		margin-bottom: 1rem;
+	.content-block {
+		scroll-margin-top: 2rem;
+		padding: 0 0 5rem;
 	}
 
-	/* Headings and Text */
-	h1 {
-		font-size: 2rem;
-		margin-bottom: 1rem;
+	.content-block + .content-block {
+		padding-top: 5rem;
+		border-top: 1px solid #d5e5e8;
+	}
+
+	.section-label {
+		color: #19708a;
 	}
 
 	h2 {
-		font-size: 1.5rem;
-		margin-bottom: 0.5rem;
+		max-width: 760px;
+		margin: 0;
+		color: #153f4e;
+		font-size: clamp(1.9rem, 4vw, 3rem);
+		letter-spacing: -0.035em;
+		line-height: 1.1;
 	}
 
 	h3 {
-		font-size: 1.2rem;
-		margin-bottom: 0.5rem;
-		font-weight: 500;
+		color: #234b59;
 	}
 
-	p {
-		font-size: 1rem;
-		margin: 0.5rem 0;
+	p,
+	li {
+		line-height: 1.7;
+	}
+
+	.lead {
+		max-width: 780px;
+		color: #5d747c;
+		font-size: 1.04rem;
+	}
+
+	.workflow-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1rem;
+		margin-top: 2rem;
+	}
+
+	.workflow-grid article {
+		padding: 1.4rem;
+		border: 1px solid #d6e7ea;
+		border-radius: 0.85rem;
+		background: rgba(255, 255, 255, 0.7);
+	}
+
+	.workflow-grid span {
+		color: #1b7892;
+		font-size: 0.75rem;
+		font-weight: 800;
+	}
+
+	.workflow-grid h3 {
+		margin: 0.55rem 0 0;
+		font-size: 1.02rem;
+	}
+
+	.workflow-grid p,
+	.constraint-list p {
+		margin: 0.6rem 0 0;
+		color: #61777e;
+		font-size: 0.9rem;
+	}
+
+	.note {
+		margin-top: 1.5rem;
+		padding: 1rem 1.2rem;
+		border-left: 4px solid #3492a8;
+		border-radius: 0 0.5rem 0.5rem 0;
+		background: #eaf7f8;
+		color: #315762;
 		line-height: 1.6;
 	}
 
-	/* pre {
-		background-color: var(--color-theme-7);
-		padding: 0.5rem;
-		border-radius: 5px;
-		overflow-x: auto;
-		font-size: 0.9rem;
-		line-height: 1.4;
-	} */
+	.note.warning {
+		border-left-color: #d49627;
+		background: #fff7e8;
+	}
 
-	@media (min-width: 768px) {
-		.table-of-contents {
-			min-width: 200px;
-			flex-shrink: 0;
+	.format-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1rem;
+		margin-top: 2rem;
+	}
+
+	.format-card {
+		padding: 1.5rem;
+		border: 1px solid #d7e6e9;
+		border-radius: 0.85rem;
+		background: rgba(255, 255, 255, 0.7);
+	}
+
+	.format-card h3 {
+		margin: 0;
+		font-size: 1.03rem;
+	}
+
+	.format-card ul {
+		margin: 1rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.format-card li {
+		padding: 0.4rem 0;
+		border-top: 1px solid #e0ecee;
+		color: #5a7078;
+		font-size: 0.88rem;
+	}
+
+	.split-block {
+		display: grid;
+		grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+		gap: 3rem;
+		align-items: start;
+	}
+
+	.split-block > div:not(.storage-card) > p:last-child {
+		color: #5d747c;
+	}
+
+	.capability-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.capability-list li {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.8rem 0;
+		border-bottom: 1px solid #d9e7e9;
+	}
+
+	.capability-list span {
+		color: #687d84;
+		font-size: 0.85rem;
+		text-align: right;
+	}
+
+	.constraint-list {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1rem;
+		margin-top: 2rem;
+	}
+
+	.constraint-list article {
+		padding: 1.25rem;
+		border-left: 3px solid #5c9dac;
+		background: #f4fafb;
+	}
+
+	.constraint-list strong {
+		color: #214b59;
+	}
+
+	.storage-card {
+		padding: 1.5rem;
+		border-radius: 0.85rem;
+		background: #153f4e;
+		color: white;
+	}
+
+	.storage-card h3 {
+		margin-top: 0;
+		color: white;
+	}
+
+	.storage-card p {
+		color: #d3e7ea;
+		font-size: 0.9rem;
+	}
+
+	details {
+		margin-top: 1.5rem;
+		border: 1px solid #d3e4e7;
+		border-radius: 0.65rem;
+		background: rgba(255, 255, 255, 0.6);
+	}
+
+	summary {
+		padding: 1rem 1.2rem;
+		color: #196a80;
+		font-weight: 750;
+		cursor: pointer;
+	}
+
+	.data-card-wrapper {
+		padding: 0 1rem 1rem;
+	}
+
+	.contribution-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		padding: 2.2rem;
+		border: 0;
+		border-radius: 1rem;
+		background: #e1f1f3;
+	}
+
+	.content-block + .contribution-card {
+		padding: 2.2rem;
+		border-top: 0;
+	}
+
+	.contribution-card p:not(.section-label) {
+		max-width: 650px;
+		color: #557078;
+	}
+
+	.contribution-card a {
+		flex-shrink: 0;
+		color: #146a82;
+		font-weight: 800;
+		text-decoration: none;
+	}
+
+	.contribution-card a:hover {
+		text-decoration: underline;
+		text-underline-offset: 0.25em;
+	}
+
+	@media (max-width: 900px) {
+		.page-layout {
+			grid-template-columns: 1fr;
+			gap: 2.5rem;
 		}
 
-		.main-content {
-			flex: 1;
+		.table-of-contents {
+			position: static;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.25rem 1rem;
+			padding: 1rem;
+			border: 1px solid #d4e5e8;
+			border-radius: 0.75rem;
+		}
+
+		.table-of-contents p {
+			width: 100%;
+		}
+
+		.workflow-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 680px) {
+		.about-hero {
+			padding-top: 6rem;
+			padding-bottom: 4rem;
+		}
+
+		.format-grid,
+		.split-block,
+		.constraint-list {
+			grid-template-columns: 1fr;
+		}
+
+		.content-block + .content-block {
+			padding-top: 3.5rem;
+		}
+
+		.content-block {
+			padding-bottom: 3.5rem;
+		}
+
+		.contribution-card {
+			align-items: flex-start;
+			flex-direction: column;
 		}
 	}
 </style>
