@@ -8,7 +8,7 @@
 		},
 		{
 			title: "CAT interoperability",
-			text: "Exchange projects with XLIFF 1.2, 2.0 and 2.1, reuse translation memories through TMX, manage terminology with TBX, and apply SRX rules.",
+			text: "Exchange XLIFF projects, TMX memories and TBX terminology, and import, edit and rebuild Trados, WorldServer and memoQ return packages.",
 		},
 		{
 			title: "Translation-focused QA",
@@ -31,7 +31,13 @@
 	const formatGroups = [
 		{
 			title: "Office and web",
-			formats: ["DOCX", "XLSX", "PPTX", "ODT / ODS / ODP", "HTML / XHTML"],
+			formats: [
+				"DOCX / XLSX / PPTX",
+				"Legacy DOC / XLS / PPT",
+				"RTF",
+				"ODT / ODS / ODP",
+				"HTML / XHTML",
+			],
 		},
 		{
 			title: "Software localization",
@@ -68,6 +74,17 @@
 				"TMX / TBX",
 			],
 		},
+		{
+			title: "Local extraction and packages",
+			formats: [
+				"PNG / JPEG / TIFF OCR",
+				"Audio and video transcription",
+				"Trados return packages",
+				"WorldServer packages",
+				"memoQ return packages",
+				"Manifest ZIP projects",
+			],
+		},
 	];
 </script>
 
@@ -75,7 +92,7 @@
 	<title>Open TLC — Open source browser-based CAT tool</title>
 	<meta
 		name="description"
-		content="Translate more than 30 office, web, software-localization and publishing formats with a local-first open source CAT tool."
+		content="Translate more than 35 office, web, software-localization, media and publishing formats with a local-first open source CAT tool."
 	/>
 </svelte:head>
 
@@ -87,7 +104,7 @@
 			<h1>Translation work belongs in your hands.</h1>
 			<p class="hero-copy">
 				Open TLC is a computer-assisted translation tool for translators,
-				students and teams. Work with more than 30 format workflows, protect
+				students and teams. Work with more than 35 format workflows, protect
 				inline content, and keep projects on your own device.
 			</p>
 			<div class="hero-actions">
@@ -100,7 +117,7 @@
 	</section>
 
 	<section class="status-strip" aria-label="Open TLC highlights">
-		<div><strong>30+</strong><span>format workflows</span></div>
+		<div><strong>35+</strong><span>format workflows</span></div>
 		<div><strong>1.2–2.1</strong><span>XLIFF project exchange</span></div>
 		<div><strong>TMX + TBX</strong><span>memory and terminology</span></div>
 		<div><strong>Local</strong><span>IndexedDB project storage</span></div>
@@ -133,9 +150,9 @@
 				<p class="eyebrow">Broad format coverage</p>
 				<h2>From documents to localization resources</h2>
 				<p>
-					Use native round trips where the format permits them, plus carefully
-					labelled source-only and protected-import workflows for constrained
-					formats.
+					Use native round trips where the format permits them, return-package
+					workflows for CAT handoffs, and clearly labelled derived output where
+					a source format cannot be recreated faithfully.
 				</p>
 			</div>
 
@@ -162,10 +179,11 @@
 			<p class="eyebrow dark">Clear boundaries</p>
 			<h2>Honest support is safer support</h2>
 			<p>
-				Some formats cannot safely promise a full browser-only round trip. PDF
-				is source-only, CAT packages are protected imports, and legacy Office
-				files require conversion before upload. OCR and media transcription
-				remain disabled unless a suitable consent-based provider is configured.
+				PDF remains source-only. RTF and XLS round-trip locally; legacy DOC and
+				PPT are imported in the browser and exported to DOCX and HTML. CAT
+				packages are rebuilt as return packages. Image OCR and media
+				transcription run on-device—the app downloads model assets, never the
+				source file to a processing service.
 			</p>
 			<a class="text-link" href="/about#constrained-workflows"
 				>Read the support policy →</a

@@ -9,6 +9,8 @@
 				"XLSX, XLSM, XLTX and XLTM",
 				"PPTX, PPTM, POTX, POTM, PPSX and PPSM",
 				"ODT, ODS and ODP",
+				"RTF native round trips",
+				"Legacy DOC to DOCX, XLS to XLS, and PPT to HTML",
 				"HTML and XHTML",
 				"TXT, CSV and TSV",
 			],
@@ -50,6 +52,17 @@
 				"TTML and DFXP timed text",
 			],
 		},
+		{
+			title: "Local media and CAT containers",
+			formats: [
+				"PNG, JPEG and TIFF on-device OCR",
+				"WAV, MP3, M4A, Ogg and FLAC transcription",
+				"MP4, MOV and WebM transcription",
+				"Trados SDLPPX and SDLRPX return packages",
+				"WorldServer WSXZ packages",
+				"memoQ MQOUT, MQBACK and MQXLZ packages",
+			],
+		},
 	];
 
 	const workflowSteps = [
@@ -88,7 +101,7 @@
 				Open Translation Client is a browser-based, open source CAT tool for
 				professional translators, learners and teams. It began as a master's
 				thesis project at Anhalt University of Applied Sciences in Germany and
-				has grown into a local-first editor with more than 30 registered format
+				has grown into a local-first editor with more than 35 registered format
 				workflows.
 			</p>
 		</div>
@@ -164,9 +177,9 @@
 					<h2>CAT projects, memories and terminology</h2>
 					<p>
 						Open TLC imports and exports standard XLIFF 1.2, 2.0 and 2.1
-						projects. Vendor-specific XLIFF profiles are accepted through
-						conservative import profiles; unsupported private extensions are not
-						presented as portable output.
+						projects. It also retains the structure of supported Trados,
+						WorldServer and memoQ containers and writes translated return
+						packages.
 					</p>
 				</div>
 				<ul class="capability-list">
@@ -181,6 +194,11 @@
 					</li>
 					<li>
 						<strong>XLIFF 1.2–2.1</strong><span>Bilingual project exchange</span
+						>
+					</li>
+					<li>
+						<strong>CAT return packages</strong><span
+							>Trados, WorldServer and memoQ handoff</span
 						>
 					</li>
 				</ul>
@@ -203,19 +221,22 @@
 						</p>
 					</article>
 					<article>
-						<strong>CAT packages are protected imports</strong>
+						<strong>CAT packages support return-package export</strong>
 						<p>
-							SDL, Trados, WorldServer and memoQ-style packages are inspected
-							safely; repackaging proprietary containers is intentionally not
-							offered.
+							Trados, WorldServer and memoQ-style packages are inspected safely,
+							their bilingual members are updated, and every other package entry
+							is retained when the return container is rebuilt.
 						</p>
 					</article>
 					<article>
-						<strong>Legacy Office requires conversion</strong>
+						<strong
+							>Legacy Office runs locally with format-specific output</strong
+						>
 						<p>
-							DOC, XLS, PPT and RTF should first be converted to a supported
-							modern format. Unsupported files are not uploaded to a conversion
-							service.
+							DOC, XLS, PPT and RTF are imported in the browser. RTF and XLS
+							keep their formats; DOC exports to DOCX and PPT exports to HTML
+							because no LibreOffice server or remote conversion service is
+							used.
 						</p>
 					</article>
 					<article>
@@ -226,10 +247,12 @@
 						</p>
 					</article>
 					<article>
-						<strong>OCR and transcription are opt-in capabilities</strong>
+						<strong>OCR and transcription run on-device</strong>
 						<p>
-							Image OCR and audio/video transcription remain disabled unless an
-							explicit consent-based provider is configured.
+							Images are read with local OCR and audio/video is transcribed with
+							a local Whisper model. Model files may be downloaded and cached by
+							the browser, but source media is not uploaded and no provider
+							consent is needed.
 						</p>
 					</article>
 				</div>

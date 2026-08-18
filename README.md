@@ -23,7 +23,7 @@ Open TLC stores all translation projects locally using your browser's own Indexe
 </p>
 
 <p>
-Open TLC supports JSON, XLIFF 1.2, and XLIFF 2.0 formats, making it compatible with other CAT-Tools and industry standards. It provides a clear and intuitive structure for translation projects, including details like source and target languages, creation date, and translation segments. It also supports Translation Memories and TMX files aswell as Terminology databases and TBX files.
+Open TLC supports more than 35 office, web, localization, publishing, subtitle and media workflows. This includes XLIFF 1.2–2.1, TMX, TBX, modern and legacy Office files, local image OCR, local audio/video transcription, and Trados, WorldServer and memoQ return packages. Source files and projects stay in the browser; OCR and transcription may download model assets but do not upload the user's media.
 </p>
 
 <p> 

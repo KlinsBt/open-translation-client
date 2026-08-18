@@ -25,7 +25,7 @@ The sequence is:
 3. Harden common Office and web formats already present in Open TLC.
 4. Add common software-localization and subtitle formats.
 5. Add publishing, technical-authoring, and specialist formats.
-6. Treat lossy, legacy, or proprietary formats as explicit conversion paths.
+6. Give lossy, legacy, media, and proprietary formats explicit local workflows.
 
 ## Current baseline (not yet the completion matrix)
 
@@ -37,8 +37,8 @@ The sequence is:
 | Terminology        | TBX import/export and merge, including `martif` handling                                 | Explicit dialect/version support, validation, references, and lossless metadata  |
 | Tests              | Parser, output, storage, segmentation, and consistency tests                             | Per-format conformance corpora, round trips, malformed inputs, and browser flows |
 
-Legacy binary `.doc` and `.xls` files remain explicit conversion candidates;
-they are not routed to the ZIP-based OOXML importers.
+Legacy binary `.doc`, `.xls`, and `.ppt` files use a dedicated on-device OLE
+adapter; they are never routed to the ZIP-based OOXML importers.
 
 ## Architecture required before adding more extensions
 
@@ -1008,21 +1008,17 @@ Complete these in order after FF-000 through FF-009.
 
 ## Phase 4 — Explicitly constrained and conversion-based support
 
-- [x] **FF-400 — Legacy Office (`.doc`, `.xls`, `.ppt`, `.rtf`).** Do not parse
-      old binary formats in the browser. Offer a documented conversion workflow
-      to DOCX/XLSX/PPTX, or an optional isolated conversion service with clear
-      privacy and fidelity warnings. Only advertise an extension when that
-      converter is actually available.
-      Completed 2026-08-18: OLE signature-first detection identifies legacy
-      Word, Excel and PowerPoint without routing bytes to modern Office parsers;
-      RTF is likewise recognized as conversion-only. The upload UI presents a
-      four-step local Save As/reopen workflow targeting DOCX, XLSX or PPTX plus
-      explicit confidentiality and conversion-fidelity warnings. No remote
-      endpoint is contacted and `.doc`, `.xls`, `.ppt`, and `.rtf` remain absent
-      from advertised upload types. Unit and real-browser tests cover signatures,
-      labels, targets, warnings and picker exclusion; the operational and future
-      isolated-service requirements are documented in
-      `docs/CONSTRAINED_FORMAT_WORKFLOWS.md`.
+- [x] **FF-400 — Legacy Office (`.doc`, `.xls`, `.ppt`, `.rtf`).** Provide the
+      strongest browser-only implementation possible without a LibreOffice
+      instance or conversion service, and label unavoidable output changes.
+      Completed 2026-08-18: signature-first OLE detection routes DOC, XLS and PPT
+      to a dedicated local adapter. XLS text cells round-trip to binary XLS; DOC
+      paragraph runs export to DOCX; PPT text runs export to translated HTML.
+      RTF has a native skeleton-based round trip that preserves control syntax
+      around edited paragraphs and handles escaped and Unicode text. Original
+      files remain in IndexedDB and are never uploaded. Tests reject extension
+      spoofs, exercise paragraph-run mutation, use a real binary XLS fixture,
+      reopen generated XLS/RTF output, and verify advertised picker support.
 - [x] **FF-401 — PDF (`.pdf`) as source-only extraction.** Clearly label PDF as
       lossy, distinguish born-digital text from OCR, retain page/bounding-box
       context, and export translation to a new accessible document or bilingual
@@ -1043,28 +1039,20 @@ Complete these in order after FF-000 through FF-009.
       `pdfinfo` independently. PDF extraction remains inherently lossy, including
       reading order, shaping, accessibility tags and layout.
 - [x] **FF-402 — OCR image input (`.png`, `.jpg`, `.tiff`) and media transcription.**
-      Keep this outside core format adapters until a local or consent-based
-      service architecture, privacy model, language detection, timestamp/layout
-      model, confidence UI, and reproducible tests exist.
-      Completed 2026-08-18 as an explicitly disabled, enforceable integration
-      boundary: signature-first recognition identifies PNG, JPEG, TIFF and
-      common audio/video containers and presents OCR/transcription-specific
-      privacy and fidelity guidance without advertising their extensions or
-      uploading bytes. A typed provider contract distinguishes local and remote
-      processing, pins model versions and size limits, requires HTTPS privacy
-      and retention disclosures plus consent bound to the exact file for remote
-      work, and validates language/unit confidence, OCR page boxes, and
-      transcript timestamps. Deterministic contract and real-browser tests cover
-      signatures, spoofed extensions, provider/consent/result rejection and
-      picker exclusion. No extraction adapter or provider is enabled until it
-      also supplies the required consent/confidence UI and reproducible model
-      fixtures.
+      Run extraction locally, retain spatial/timestamp context, and never send
+      source files to a processing provider.
+      Completed 2026-08-18: PNG, JPEG and TIFF use local Tesseract OCR with
+      paragraph/line grouping, bounding boxes and confidence. WAV, MP3, M4A,
+      Ogg, FLAC, MP4, MOV and WebM decode to mono audio in the browser and use a
+      local Whisper pipeline, producing timestamped translation units and WebVTT
+      output. Model assets are downloaded and browser-cached, while source bytes
+      stay on-device in the project skeleton/IndexedDB. Signature-first routing
+      rejects renamed binaries. Tests cover provider-independent local engines,
+      confidence/context mapping, retained originals and derived exports.
 - [x] **FF-403 — Proprietary CAT packages (`.sdlppx`, `.sdlrpx`, `.wsxz`, memoQ
-      packages).** Start read-only and fixture-led. Preserve all unknown package
-      entries, defend against archive traversal/bombs, document unsupported
-      workflow metadata, and add export only after round-trip testing in the
-      owning CAT tool and confirmation that licensing permits implementation.
-      Completed 2026-08-18 as protected import-only support for Trados
+      packages).** Preserve unknown entries, defend against hostile archives,
+      update bilingual members, and create compatible return containers.
+      Completed 2026-08-18 with import/edit/return support for Trados
       `.sdlppx`/`.sdlrpx`, WorldServer `.wsxz`, and memoQ
       `.mqout`/`.mqback`/`.mqxlz`. Detection requires a valid safe ZIP plus
       matching internal XLIFF/vendor markers; extension alone never suffices.
@@ -1074,10 +1062,11 @@ Complete these in order after FF-000 through FF-009.
       skeleton. Shared archive defenses reject traversal, collisions,
       encryption, bombs, excessive expansion and malformed XML; cancellation,
       Unicode/RTL, multi-member and 250-unit fixtures cover the importer. The
-      source export control is disabled and both the adapter and central export
-      path reject proprietary output with an actionable JSON/standard-XLIFF
-      handoff message. Package writing remains gated on licensing confirmation
-      and reopening/round-tripping generated fixtures in each owning CAT tool.
+      writer rebuilds only selected XLIFF-family members, keeps locked units
+      unchanged, and copies all opaque entries. SDLPPX becomes SDLRPX and MQOUT
+      becomes MQBACK; existing return/archive extensions are retained. Automated
+      tests reopen Trados, WorldServer, and memoQ-style output, verify translated
+      targets, and byte-check preserved binary resources.
 - [x] **FF-404 — Generic ZIP projects.** Add only as a manifest-driven batch
       container over already supported adapters. Preserve paths and bytes,
       prevent traversal/collisions, cap recursion and expansion, and report each

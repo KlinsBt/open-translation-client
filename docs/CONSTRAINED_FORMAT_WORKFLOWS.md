@@ -1,43 +1,39 @@
 # Constrained file-format workflows
 
-Open TLC distinguishes native, round-trip-capable formats from conversion,
-source-only, consent-based, and read-only workflows. A recognized extension is
-not advertised in the upload picker until the corresponding workflow is
-actually available.
+Open TLC distinguishes native round trips, derived output, local extraction,
+return packages, and manifest-driven archive workflows. A recognized extension
+is advertised only when its implementation and validator are available.
 
 ## Legacy Office and RTF
 
 Binary Word (`.doc`), Excel (`.xls`), and PowerPoint (`.ppt`) use OLE Compound
-File storage. RTF (`.rtf`) is a legacy rich-text interchange syntax. Open TLC
-recognizes their signatures but deliberately does not parse them in the browser.
+File storage. Open TLC validates that signature and parses them locally with a
+dedicated browser library. RTF (`.rtf`) uses a native text skeleton.
 
-Use a trusted, patched local copy of Microsoft Office or LibreOffice:
+- RTF imports and exports RTF while preserving control syntax outside translated
+  fragments.
+- XLS imports selected text cells and writes a translated binary XLS workbook.
+- DOC imports paragraph runs and writes DOCX, the strongest document output the
+  browser implementation provides without LibreOffice.
+- PPT imports text runs and writes translated HTML because a dependable legacy
+  PPT writer is unavailable in the browser.
 
-1. Work on a copy and keep the original authoritative file.
-2. Save `.doc`/`.rtf` as DOCX, `.xls` as XLSX, or `.ppt` as PPTX. Renaming the
-   extension is not conversion.
-3. Reopen the result locally and inspect layout, tracked changes, fields,
-   formulas, charts, macros, links, fonts, animations, and embedded objects.
-4. Upload the converted file. Open TLC preserves supported modern-package parts,
-   but cannot repair losses introduced by conversion.
-
-No remote conversion endpoint is configured or contacted. Public converter
-websites should not receive confidential files. A future isolated converter must
-be opt-in, disclose retention and subprocess isolation, enforce time/size limits,
-scan outputs, and return provenance plus conversion warnings before these legacy
-extensions can be added to the picker.
+The original is retained locally in IndexedDB. No conversion endpoint receives
+the source file. Embedded objects, macros, advanced fields, animations, charts,
+and vendor-only layout details may exceed the browser parser and should still be
+reviewed after export.
 
 ## Capability labels
 
 - **Native round trip:** import and export the same format with declared fidelity.
 - **Source only:** extract source context and export a new review/accessibility
   artifact; never claim layout-identical reconstruction.
-- **Conversion required:** no project is created until the user supplies a safe,
-  supported converted copy.
-- **External service required:** disabled until an explicit service, consent,
-  privacy policy, and reproducible test profile are configured.
-- **Read-only package:** inspect supported members without writing the vendor
-  container back.
+- **Derived output:** local import is available, but export deliberately uses a
+  different format whose capabilities are stated in the UI.
+- **Local extraction:** source bytes remain on-device while browser code/models
+  produce translatable units.
+- **Return package:** update bilingual members and preserve the surrounding CAT
+  container.
 
 ## PDF source-only extraction
 
@@ -56,36 +52,24 @@ files must be decrypted locally first.
 
 ## OCR images and audio/video transcription
 
-PNG, JPEG, and TIFF images require OCR; WAV, MP3, Ogg, FLAC, MP4, MOV, and WebM
-media require transcription. Open TLC recognizes representative container
-signatures so a renamed executable or arbitrary binary cannot be routed by its
-extension alone. These extensions remain absent from the upload picker because
-no audited extraction provider is configured.
+PNG, JPEG, and TIFF use Tesseract in the browser. OCR units retain confidence
+and bounding boxes and can be grouped by paragraph or line. WAV, MP3, M4A, Ogg,
+FLAC, MP4, MOV, and WebM are decoded locally and transcribed with a browser-run
+Whisper model; units retain ordered timestamps and export as WebVTT.
 
-The provider boundary is deliberately separate from format adapters. A local
-provider must declare a pinned model version, modalities, and file-size limit,
-must not declare an endpoint, and must not send bytes off-device. A remote
-provider must additionally use HTTPS, disclose its privacy and retention
-policies, acknowledge that bytes leave the device, and require consent bound to
-the exact provider, file name, file size, policy, and retention statement.
-
-Results are accepted only when they identify the provider and pinned model,
-report detected-language confidence, and retain review context. OCR units need
-one-based pages and finite bounding boxes; transcript units need ordered
-millisecond timestamps. Every unit needs confidence in the inclusive 0–1 range.
-Low-confidence text must remain reviewable rather than being silently promoted
-to authoritative source text. Until an implementation supplies this contract,
-its consent UI, confidence review UI, and reproducible pinned-model fixtures,
-Open TLC performs no upload and creates no project from image or media input.
+The browser may download and cache OCR language data and transcription model
+assets. The image, audio, or video itself is not sent to a provider. Because no
+source upload occurs, there is no remote-processing consent gate. Original
+files remain in the local project skeleton, and spoofed extensions are rejected
+when their binary signature does not match.
 
 ## Proprietary CAT packages
 
 Trados Studio project/return packages (`.sdlppx`, `.sdlrpx`), WorldServer
 packages (`.wsxz`), and memoQ handoff/archive packages (`.mqout`, `.mqback`,
 `.mqxlz`) are ZIP containers whose manifests, workflow state, checksums, and
-binary databases belong to their originating CAT tools. Open TLC therefore
-supports a protected, read-only workflow rather than guessing how to rebuild
-them.
+binary databases belong to their originating CAT tools. Open TLC updates only
+the bilingual XLIFF-family members and preserves the rest of the container.
 
 Detection requires both a safe ZIP structure and matching internal bilingual
 members/markers. Import uses the shared archive limits: traversal, duplicate
@@ -96,11 +80,11 @@ as source context, existing targets may be included or deliberately omitted,
 and every unknown package entry remains byte-preserved in the stored skeleton.
 Nested archives and non-XLIFF databases are never opened or executed.
 
-The source-format export action is disabled. Users can save Open TLC JSON or
-standard XLIFF and complete package reconstruction in RWS Trados Studio,
-WorldServer, or memoQ. Proprietary output must remain disabled until generated
-fixtures have been reopened and round-tripped in the exact owning tool versions
-and a licensing review confirms implementation is permitted.
+Return export rebuilds selected bilingual members, preserves locked units and
+copies every other entry unchanged. SDLPPX work packages export as SDLRPX return
+packages, MQOUT handoffs export as MQBACK, and SDLRPX, WSXZ, MQBACK, and MQXLZ
+retain their extensions. Generated packages are reopened by the automated suite
+to verify target text and preserved resources.
 
 ## Manifest-driven ZIP batches
 
