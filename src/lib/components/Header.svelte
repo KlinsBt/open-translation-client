@@ -27,6 +27,18 @@
 				<li aria-current={$page.url.pathname === "/about" ? "page" : undefined}>
 					<a href="/about">About</a>
 				</li>
+				<li class="deepl-action">
+					<a
+						class="deepl-link"
+						href="https://support.deepl.com/hc/en-us/articles/4407516019218-Get-started-DeepL-browser-extensions"
+						target="_blank"
+						rel="noreferrer"
+						aria-label="Get the DeepL browser plugin (opens in a new tab)"
+					>
+						<span class="deepl-label-full">DeepL plugin</span>
+						<span class="deepl-label-short">DeepL</span>
+					</a>
+				</li>
 			</ul>
 		</nav>
 
@@ -141,5 +153,64 @@
 
 	a:hover {
 		color: var(--color-theme-2);
+	}
+
+	.deepl-action {
+		display: flex;
+		align-items: center;
+		height: auto;
+		margin-left: 0.35rem;
+	}
+
+	nav > ul > li > a.deepl-link {
+		height: auto;
+		min-height: 2.2rem;
+		padding: 0.1rem 0.8rem;
+		border: 1px solid color-mix(in srgb, var(--color-theme-7) 55%, transparent);
+		border-radius: 0.45rem;
+		background: color-mix(in srgb, var(--color-theme-7) 10%, transparent);
+		letter-spacing: 0.06em;
+		transition:
+			background-color 0.2s linear,
+			border-color 0.2s linear,
+			color 0.2s linear;
+	}
+
+	nav > ul > li > a.deepl-link:hover {
+		border-color: var(--color-theme-7);
+		background: color-mix(in srgb, var(--color-theme-7) 18%, transparent);
+	}
+
+	.deepl-label-short {
+		display: none;
+	}
+
+	@media (max-width: 520px) {
+		ul {
+			padding-right: 0.4rem;
+		}
+
+		nav > ul > li > a {
+			padding-inline: 0.35rem;
+			font-size: 0.7rem;
+			letter-spacing: 0.06em;
+		}
+
+		.deepl-action {
+			margin-left: 0.15rem;
+		}
+
+		nav > ul > li > a.deepl-link {
+			min-height: 2rem;
+			padding-inline: 0.55rem;
+		}
+
+		.deepl-label-full {
+			display: none;
+		}
+
+		.deepl-label-short {
+			display: inline;
+		}
 	}
 </style>
