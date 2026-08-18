@@ -18,6 +18,10 @@
 		selectedSegmentId,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { functionCreateExportFile } from "$lib/functions/outputGeneration/handleTranslationExport";
+	import {
+		downloadConvertedTranslation,
+		type ConvertedExportFormat,
+	} from "$lib/functions/outputGeneration/convertedExport";
 	import { getFormatAdapter } from "$lib/formats/registry";
 
 	import { generateJsonSaveFile } from "$lib/functions/saveFileGeneration/generateJsonSaveFile";
@@ -58,6 +62,43 @@
 	} from "$lib/functions/parsing/segmentationLogic";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
+	const CONVERTED_EXPORTS: ReadonlyArray<{
+		format: ConvertedExportFormat;
+		icon: string;
+		label: string;
+		description: string;
+	}> = [
+		{
+			format: "docx",
+			icon: "DOCX",
+			label: "Word document",
+			description: "Translated segments as an editable DOCX document.",
+		},
+		{
+			format: "rtf",
+			icon: "RTF",
+			label: "Rich Text Format",
+			description: "Portable formatted text for Word and compatible editors.",
+		},
+		{
+			format: "html",
+			icon: "HTML",
+			label: "Web page",
+			description: "UTF-8 HTML with one paragraph per translated segment.",
+		},
+		{
+			format: "txt",
+			icon: "TXT",
+			label: "Plain text",
+			description: "Target-language text without document formatting.",
+		},
+		{
+			format: "csv",
+			icon: "CSV",
+			label: "Bilingual CSV",
+			description: "Source, target, segment number, and confirmation status.",
+		},
+	];
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
 	let segmentsContainer: HTMLElement | null = $state(null);
 	let tmSelected: null | number = $derived(
@@ -146,6 +187,20 @@
 	async function exportTranslatedSourceAndClose() {
 		await handleTranslationFileExport();
 		showSaveFileModal = false;
+	}
+
+	async function exportConvertedFile(format: ConvertedExportFormat) {
+		try {
+			await downloadConvertedTranslation($singleUserData, format);
+			showSaveFileModal = false;
+			notifySuccess(`${format.toUpperCase()} file exported`);
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: `The ${format.toUpperCase()} file could not be exported.`,
+			);
+		}
 	}
 
 	function lockAllSegments() {
@@ -513,6 +568,29 @@
 				This source format is import-only. Choose a bilingual format below.
 			</div>
 		{/if}
+
+		<div class="export-group-heading export-group-heading--secondary">
+			<strong>Convert to another format</strong>
+			<span
+				>Create a new delivery document from the translated segment text.</span
+			>
+		</div>
+		<div class="converted-export-grid">
+			{#each CONVERTED_EXPORTS as exportOption}
+				<button
+					class="modal-action-card converted-export-card"
+					onclick={() => exportConvertedFile(exportOption.format)}
+				>
+					<span class="modal-action-icon">{exportOption.icon}</span>
+					<span class="modal-action-text"
+						><strong>{exportOption.label}</strong><small
+							>{exportOption.description}</small
+						></span
+					>
+					<span class="modal-action-arrow">→</span>
+				</button>
+			{/each}
+		</div>
 
 		<div class="export-group-heading export-group-heading--secondary">
 			<strong>Bilingual project formats</strong>
@@ -1032,6 +1110,22 @@
 		border-radius: 0.6rem;
 		padding: 0.75rem;
 		background: #f6fafb;
+	}
+
+	.converted-export-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.55rem;
+	}
+
+	.converted-export-card {
+		min-width: 0;
+	}
+
+	@media (max-width: 560px) {
+		.converted-export-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.manage-tm-tb-container {
