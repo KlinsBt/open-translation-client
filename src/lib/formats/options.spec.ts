@@ -146,6 +146,12 @@ describe("format import options", () => {
 			respectTranslateMetadata: true,
 			segmentationMode: "value",
 		});
+		expect(normalizeImportOptions("idml", { includeNotes: "false" })).toEqual({
+			includeNotes: false,
+			includeHiddenText: false,
+			includeAccessibilityText: true,
+			segmentationMode: "value",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

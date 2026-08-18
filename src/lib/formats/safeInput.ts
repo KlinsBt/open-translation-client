@@ -34,6 +34,7 @@ export type SafeInputErrorCode =
 	| "SVG_INVALID"
 	| "DITA_INVALID"
 	| "DOCBOOK_INVALID"
+	| "IDML_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {
@@ -573,7 +574,9 @@ function isTextPackagePart(path: string): boolean {
 	return (
 		path === "[Content_Types].xml" ||
 		path === "mimetype" ||
-		/\.(?:xml|rels|txt|opf|ncx|xhtml|html|svg|css|dita|ditamap)$/i.test(path)
+		/\.(?:xml|rels|txt|opf|ncx|xhtml|html|svg|css|dita|ditamap|icml)$/i.test(
+			path,
+		)
 	);
 }
 

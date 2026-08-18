@@ -18,6 +18,7 @@ export const FORMAT_IDS = [
 	"svg",
 	"dita",
 	"docbook",
+	"idml",
 	"xml",
 	"docx",
 	"xlsx",

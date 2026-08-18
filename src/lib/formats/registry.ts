@@ -20,6 +20,7 @@ import { generateEpubTranslation } from "$lib/functions/outputGeneration/outputG
 import { generateSvgTranslation } from "$lib/functions/outputGeneration/outputGenerationSvg";
 import { generateDitaTranslation } from "$lib/functions/outputGeneration/outputGenerationDita";
 import { generateDocBookTranslation } from "$lib/functions/outputGeneration/outputGenerationDocBook";
+import { generateInDesignTranslation } from "$lib/functions/outputGeneration/outputGenerationIdml";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -78,6 +79,7 @@ import { EPUB_MIME_TYPE, importEpubFile, validateEpubFile } from "./epub";
 import { importSvgFile, validateSvgFile } from "./svg";
 import { importDitaFile, validateDitaFile } from "./dita";
 import { importDocBookFile, validateDocBookFile } from "./docbook";
+import { importInDesignFile, validateInDesignFile } from "./idml";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -396,6 +398,29 @@ const adapters = [
 		validate: validateDocBookFile,
 		importFile: importDocBookFile,
 		exportFile: generateDocBookTranslation,
+	},
+	{
+		id: "idml",
+		label: "Adobe IDML/ICML",
+		extensions: ["idml", "icml"],
+		mimeTypes: [
+			"application/vnd.adobe.indesign-idml-package",
+			"application/vnd.adobe.incopy-icml",
+			"application/xml",
+		],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.idml,
+		sniff: async (file, context) =>
+			file.name.toLowerCase().endsWith(".idml")
+				? (await validateInDesignFile(file, context)).valid
+				: (await sniffText(
+						file,
+						/^(?:<\?xml[^?]*\?>\s*)?(?:<\?aid[^?]*\?>\s*)*<(?:Document|Story)(?:\s|>)/,
+						context,
+					)) && (await validateInDesignFile(file, context)).valid,
+		validate: validateInDesignFile,
+		importFile: importInDesignFile,
+		exportFile: generateInDesignTranslation,
 	},
 	{
 		id: "xml",

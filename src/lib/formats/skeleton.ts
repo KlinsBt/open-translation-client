@@ -411,6 +411,7 @@ export async function createTextSkeleton(
 		| "svg"
 		| "dita"
 		| "docbook"
+		| "idml"
 		| "xml"
 		| "html",
 	content: string,

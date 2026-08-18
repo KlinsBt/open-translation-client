@@ -970,6 +970,61 @@ const docBookFixture: FormatConformanceFixture = {
 		),
 };
 
+const idmlFixture: FormatConformanceFixture = {
+	id: "idml",
+	fileName: "story.icml",
+	mimeType: "application/vnd.adobe.incopy-icml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="UTF-8"?>\n<Document DOMVersion="18.0"><Story Self="welcome"><ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/Body"><CharacterStyleRange><Content>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</Content></CharacterStyleRange></ParagraphStyleRange></Story></Document>\n`,
+			"story.icml",
+			"application/vnd.adobe.incopy-icml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<!DOCTYPE Document [<!ENTITY x SYSTEM "file:///etc/passwd">]><Document><Story><Content>&x;</Content></Story></Document>',
+			"broken.icml",
+			"application/vnd.adobe.incopy-icml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			includeNotes: true,
+			includeHiddenText: false,
+			includeAccessibilityText: true,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["xml-value"] },
+		units: [
+			{
+				id: "story.icml:Document[1]/Story[1]/ParagraphStyleRange[1]/CharacterStyleRange[1]/Content[1]/#text:0",
+				part: "story.icml",
+				path: [
+					"Document[1]",
+					"Story[1]",
+					"ParagraphStyleRange[1]",
+					"CharacterStyleRange[1]",
+					"Content[1]",
+					"#text",
+				],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<Document><Story Self="performance">${Array.from(
+				{ length: units },
+				(_, index) =>
+					`<ParagraphStyleRange><Content>Message ${index}</Content></ParagraphStyleRange>`,
+			).join("")}</Story></Document>`,
+			"performance.icml",
+			"application/vnd.adobe.incopy-icml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1235,6 +1290,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	svgFixture,
 	ditaFixture,
 	docBookFixture,
+	idmlFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

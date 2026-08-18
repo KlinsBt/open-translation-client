@@ -900,11 +900,34 @@ Complete these in order after FF-000 through FF-009.
       `xmllint --nonet`. Release CI must additionally validate representative
       output against official DocBook 4 DTD and DocBook 5 RELAX NG/Schematron
       grammars before origin-schema validation is advertised.
-- [ ] **FF-305 — Adobe IDML and ICML (`.idml`, `.icml`).** Preserve story order,
+- [x] **FF-305 — Adobe IDML and ICML (`.idml`, `.icml`).** Preserve story order,
       paragraph/character styles, anchored objects, tables, notes, XML tags,
       cross-references, and package relationships. Use small legally shareable
       fixtures and require successful reopen/preflight in Adobe InDesign before
       declaring export support.
+      Completed 2026-08-18: the adapter handles standalone ICML XML and IDML ZIP
+      packages with the required first/stored Adobe mimetype, validates the
+      `designmap.xml` document, every declared local package relationship,
+      deterministic unique story paths and `Self` identifiers, referenced Story
+      roots, Content presence, XML safety, and unsigned-package policy. Story
+      extraction follows designmap order and source-ranged `Content` nodes while
+      retaining paragraph/character-style and markup-tag context; configurable
+      notes, conditional/hidden content, custom alt/actual text, and value/
+      preference/sentence segmentation are supported. Tables, anchored objects,
+      XML tags, hyperlink/cross-reference structures, spreads, styles, fonts,
+      graphics, and unknown/binary package parts remain exact inert content.
+      Export escapes and reparses only mapped Story ranges, rebuilds a compliant
+      IDML container, preserves source encoding/BOM and identity bytes, rejoins
+      sentence pieces without duplication, enforces placeholder QA, and blocks
+      stale mappings and split/join. Unit, conformance, story-order/relationship,
+      style/table/note/tag/accessibility, asset/signature/container, UTF-16,
+      security, 1,000-Content, detection, re-import, and generated browser coverage
+      verifies the workflow; ICML output passed local `xmllint --nonet`. This
+      run's browser server needed an out-of-sandbox local bind and both approval
+      reviews timed out, so the registered browser case remains a downstream CI
+      gate. Adobe InDesign is unavailable in this environment, so legally
+      shareable fixtures are generated in tests and real InDesign reopen/preflight
+      remains a mandatory release gate before origin-tool validation is advertised.
 - [ ] **FF-306 — TeX/LaTeX (`.tex`).** Protect commands, environments, math,
       labels, citations, references, verbatim/code, and comments while exposing
       prose and selected command arguments. Make macro rules configurable and

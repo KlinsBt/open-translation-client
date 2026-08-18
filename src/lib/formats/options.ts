@@ -649,6 +649,33 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["value", "preferences", "sentences"],
 		},
 	],
+	idml: [
+		{
+			id: "includeNotes",
+			label: "Include notes",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includeHiddenText",
+			label: "Include hidden/conditional text",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeAccessibilityText",
+			label: "Include custom alt/actual text",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "segmentationMode",
+			label: "Content segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",
