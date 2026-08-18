@@ -40,6 +40,11 @@ import { buildPdfBilingualReviewBlob } from "$lib/functions/outputGeneration/out
 import { buildZipProjectTranslationPackage } from "$lib/formats/zipProject";
 import { buildRtfTranslationBlob } from "$lib/formats/rtf";
 import { buildLegacyOfficeTranslation } from "$lib/formats/legacyOffice";
+import { buildCatReturnPackage } from "$lib/formats/catPackage";
+import {
+	buildOcrBilingualReview,
+	buildTranslatedWebVtt,
+} from "$lib/functions/outputGeneration/outputGenerationLocalMedia";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -70,10 +75,15 @@ export interface FormatConformanceFixture {
 	expectMalformedImportFailure: boolean;
 	extractionSnapshot: ExtractionSnapshot;
 	identityTargetSegments?: string[];
+	identityOutputMayEqualSource?: boolean;
 	translatedSegments: string[];
 	expectTranslatedTargetSegments?: boolean;
 	createPerformanceFile(units: number): Promise<File>;
 	performanceOptions?: Readonly<FormatOptionValues>;
+	importFile?: (
+		file: File,
+		options?: Readonly<FormatOptionValues>,
+	) => Promise<FormatImportResult>;
 	expectedPackageChanges?: string[];
 	unicodeExpectations?: string[];
 	derivedOutput?: {
@@ -210,16 +220,19 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 		case "pdf":
 			return buildPdfBilingualReviewBlob(project);
 		case "image-ocr":
+			return new Blob([buildOcrBilingualReview(project)], {
+				type: "text/html;charset=utf-8",
+			});
 		case "media-transcription":
-			throw new Error(
-				`${project.translationData.type} requires a dedicated conformance output.`,
-			);
+			return new Blob([buildTranslatedWebVtt(project)], {
+				type: "text/vtt;charset=utf-8",
+			});
 		case "rtf":
 			return buildRtfTranslationBlob(project);
 		case "legacy-office":
 			return (await buildLegacyOfficeTranslation(project)).blob;
 		case "cat-package":
-			throw new Error("Read-only CAT packages have no conformance output.");
+			return (await buildCatReturnPackage(project)).blob;
 		case "zip-project":
 			return buildZipProjectTranslationPackage(project);
 		case "xml":

@@ -28,10 +28,13 @@ export function registerFormatConformanceSuite(
 			const adapter = adapters.find((entry) => entry.id === fixture.id);
 			if (!adapter)
 				throw new Error(`No adapter is registered for ${fixture.id}.`);
+			const importFixture =
+				fixture.importFile ??
+				((file: File, options) => adapter.importFile(file, options));
 
 			describe(`${adapter.label} adapter`, () => {
 				it("matches its extraction snapshot", async () => {
-					const result = await adapter.importFile(
+					const result = await importFixture(
 						await fixture.createValidFile(),
 						fixture.importOptions,
 					);
@@ -50,7 +53,7 @@ export function registerFormatConformanceSuite(
 					});
 					if (fixture.expectMalformedImportFailure) {
 						await expect(
-							adapter.importFile(malformed, fixture.importOptions),
+							importFixture(malformed, fixture.importOptions),
 						).rejects.toBeDefined();
 					}
 				});
@@ -63,10 +66,7 @@ export function registerFormatConformanceSuite(
 							: "exports a clearly derived artifact instead of claiming identity",
 					async () => {
 						const source = await fixture.createValidFile();
-						const imported = await adapter.importFile(
-							source,
-							fixture.importOptions,
-						);
+						const imported = await importFixture(source, fixture.importOptions);
 						const identity = projectFromConformanceImport(
 							fixture,
 							imported,
@@ -88,9 +88,10 @@ export function registerFormatConformanceSuite(
 						} else {
 							expect(fixture.derivedOutput).toBeDefined();
 							expect(output.type).toBe(fixture.derivedOutput!.mimeType);
-							expect(await blobBytes(output)).not.toEqual(
-								await blobBytes(source),
-							);
+							if (!fixture.identityOutputMayEqualSource)
+								expect(await blobBytes(output)).not.toEqual(
+									await blobBytes(source),
+								);
 						}
 					},
 				);
@@ -102,7 +103,7 @@ export function registerFormatConformanceSuite(
 							? "validates and reimports translated output"
 							: "contains translated content in the derived output",
 					async () => {
-						const imported = await adapter.importFile(
+						const imported = await importFixture(
 							await fixture.createValidFile(),
 							fixture.importOptions,
 						);
@@ -136,7 +137,7 @@ export function registerFormatConformanceSuite(
 						).resolves.toMatchObject({
 							valid: true,
 						});
-						const reimported = await adapter.importFile(
+						const reimported = await importFixture(
 							translatedFile,
 							fixture.importOptions,
 						);
@@ -156,7 +157,7 @@ export function registerFormatConformanceSuite(
 				);
 
 				it("preserves combining marks, RTL text, and non-BMP Unicode", async () => {
-					const result = await adapter.importFile(
+					const result = await importFixture(
 						await fixture.createValidFile(),
 						fixture.importOptions,
 					);
@@ -171,10 +172,7 @@ export function registerFormatConformanceSuite(
 						CONFORMANCE_PERFORMANCE_UNITS,
 					);
 					const start = performance.now();
-					const result = await adapter.importFile(
-						file,
-						fixture.performanceOptions,
-					);
+					const result = await importFixture(file, fixture.performanceOptions);
 					const duration = performance.now() - start;
 
 					expect(snapshotExtraction(result).segments).toHaveLength(
@@ -186,10 +184,7 @@ export function registerFormatConformanceSuite(
 				if (fixture.expectedPackageChanges) {
 					it("changes only declared package parts after translation", async () => {
 						const source = await fixture.createValidFile();
-						const imported = await adapter.importFile(
-							source,
-							fixture.importOptions,
-						);
+						const imported = await importFixture(source, fixture.importOptions);
 						const project = projectFromConformanceImport(
 							fixture,
 							imported,

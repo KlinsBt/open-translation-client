@@ -1,5 +1,7 @@
+import JSZip from "jszip";
 import type { UserData } from "$lib/types/types";
 import {
+	contentToPlainText,
 	createTextContent,
 	type NeutralDocument,
 	type TranslationUnit,
@@ -12,13 +14,20 @@ import {
 	throwIfAborted,
 	type SafeInputContext,
 } from "./safeInput";
-import { createPackageSkeleton } from "./skeleton";
+import {
+	createPackageSkeleton,
+	type DocumentSkeleton,
+	type PackageSkeletonPayload,
+} from "./skeleton";
 import { importXliffProjectStreaming } from "./streamingImporters";
 import type {
 	FormatImportResult,
 	FormatOptionValues,
 	FormatValidationResult,
 } from "./types";
+import { buildXliff12 } from "./xliff12";
+import { buildXliff2, type Xliff2Version } from "./xliff2";
+import { assertProjectExportQuality } from "./qualityAssurance";
 
 export const CAT_PACKAGE_EXTENSIONS = [
 	"sdlppx",
@@ -44,8 +53,8 @@ export interface CatPackageProfile {
 	label: string;
 	vendor: string;
 	extensions: readonly string[];
-	exportPolicy: "import-only";
-	exportVerification: "not-tested-in-originating-tool";
+	exportPolicy: "return-package";
+	exportVerification: "assumed-compatible";
 }
 
 const CAT_PROFILES: readonly CatPackageProfile[] = [
@@ -54,36 +63,26 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		label: "Trados Studio project/return package",
 		vendor: "RWS Trados Studio",
 		extensions: ["sdlppx", "sdlrpx"],
-		exportPolicy: "import-only",
-		exportVerification: "not-tested-in-originating-tool",
+		exportPolicy: "return-package",
+		exportVerification: "assumed-compatible",
 	},
 	{
 		id: "worldserver",
 		label: "WorldServer project package",
 		vendor: "RWS WorldServer",
 		extensions: ["wsxz"],
-		exportPolicy: "import-only",
-		exportVerification: "not-tested-in-originating-tool",
+		exportPolicy: "return-package",
+		exportVerification: "assumed-compatible",
 	},
 	{
 		id: "memoq",
 		label: "memoQ handoff/archive package",
 		vendor: "memoQ",
 		extensions: ["mqout", "mqback", "mqxlz"],
-		exportPolicy: "import-only",
-		exportVerification: "not-tested-in-originating-tool",
+		exportPolicy: "return-package",
+		exportVerification: "assumed-compatible",
 	},
 ];
-
-export class CatPackageReadOnlyError extends Error {
-	readonly name = "CatPackageReadOnlyError";
-
-	constructor() {
-		super(
-			"Proprietary CAT packages are supported for protected import only. Export Open TLC JSON or standard XLIFF; package export remains disabled until origin-tool round trips and licensing are verified.",
-		);
-	}
-}
 
 function extensionOf(fileName: string): string {
 	return fileName.toLowerCase().split(".").at(-1) ?? "";
@@ -131,14 +130,14 @@ export function catPackageWorkflow(profile: CatPackageProfile): {
 	fidelityWarning: string;
 } {
 	return {
-		primaryAction: "Import supported bilingual members read-only",
+		primaryAction: "Import, translate, and write a return package",
 		steps: [
-			`Keep the original ${profile.label} as the authoritative package.`,
+			`Import the original ${profile.label}; it remains retained locally as the package skeleton.`,
 			"Open TLC safely inspects the ZIP and imports selected XLIFF-family members while retaining every package entry in the project skeleton.",
 			"Translate and review the imported units; locked vendor units remain protected where their XLIFF profile exposes that state.",
-			"Export Open TLC JSON or standard XLIFF for handoff. Rebuild the proprietary package only in its owning CAT tool.",
+			"Export the translated return package; all non-bilingual and unselected entries are copied unchanged.",
 		],
-		fidelityWarning: `Open TLC does not write ${profile.vendor} packages. Vendor workflow databases, checksums, manifests, task state, and unknown binary entries are retained only for inspection/project persistence.`,
+		fidelityWarning: `The writer preserves ${profile.vendor} package entries and rebuilds translated XLIFF-family members. Vendor-specific workflow data outside those members is retained unchanged.`,
 	};
 }
 
@@ -284,7 +283,7 @@ export async function importCatPackageFile(
 				entryCount: paths.length,
 				unknownEntriesPreserved: paths.filter((path) => !members.includes(path))
 					.length,
-				exportPolicy: "import-only",
+				exportPolicy: "return-package",
 			},
 		},
 	};
@@ -306,7 +305,8 @@ export async function importCatPackageFile(
 			packageProfile: profile.id,
 			packageVendor: profile.vendor,
 			packageMembers: memberReports,
-			exportPolicy: "import-only",
+			exportPolicy: "return-package",
+			returnExtension: returnExtensionFor(file.name),
 			workflowWarnings: catPackageWorkflow(profile).steps,
 		},
 	};
@@ -331,8 +331,149 @@ export async function validateCatPackageFile(
 	}
 }
 
-export async function rejectCatPackageExport(
-	_translation: UserData,
+function returnExtensionFor(fileName: string): string {
+	const extension = extensionOf(fileName);
+	if (extension === "sdlppx") return "sdlrpx";
+	if (extension === "mqout") return "mqback";
+	return CAT_PACKAGE_EXTENSIONS.includes(
+		extension as (typeof CAT_PACKAGE_EXTENSIONS)[number],
+	)
+		? extension
+		: "zip";
+}
+
+function packageSkeleton(
+	project: UserData,
+): DocumentSkeleton & { payload: PackageSkeletonPayload } {
+	const skeleton = project.translationData.skeleton;
+	if (
+		!skeleton ||
+		skeleton.format !== "cat-package" ||
+		skeleton.payload.kind !== "package"
+	)
+		throw new Error(
+			"CAT package export requires its retained package skeleton.",
+		);
+	return skeleton as DocumentSkeleton & { payload: PackageSkeletonPayload };
+}
+
+function profileUnlockedDocument(project: UserData): UserData {
+	const document = project.translationData.documentModel;
+	if (!document) return project;
+	const { xliffProfile: _profile, ...metadata } = document.metadata ?? {};
+	return {
+		...project,
+		translationData: {
+			...project.translationData,
+			documentModel: { ...document, metadata },
+		},
+	};
+}
+
+function buildMemberXliff(project: UserData): string {
+	const metadata = project.translationData.documentModel?.metadata;
+	if (metadata?.xliff12) return buildXliff12(profileUnlockedDocument(project));
+	const xliff2 = metadata?.xliff2 as { version?: Xliff2Version } | undefined;
+	if (xliff2?.version)
+		return buildXliff2(profileUnlockedDocument(project), xliff2.version);
+	throw new Error("CAT package member has no supported XLIFF document model.");
+}
+
+function unitIsLocked(unit: TranslationUnit | undefined): boolean {
+	const profile = unit?.metadata?.xliffProfile as
+		| { locked?: boolean }
+		| undefined;
+	return profile?.locked === true || unit?.translatable === false;
+}
+
+export async function buildCatReturnPackage(project: UserData): Promise<{
+	blob: Blob;
+	extension: string;
+}> {
+	assertProjectExportQuality(project);
+	const skeleton = packageSkeleton(project);
+	const source = skeleton.source.originalFile;
+	const zip = source
+		? await JSZip.loadAsync(await source.arrayBuffer())
+		: new JSZip();
+	if (!source)
+		for (const [path, part] of Object.entries(skeleton.payload.parts))
+			zip.file(path, part);
+
+	const combined = project.translationData.documentModel;
+	if (!combined)
+		throw new Error(
+			"CAT package export requires its bilingual document model.",
+		);
+	const extensionFromTypeRef =
+		typeof project.translationData.typeRef === "object" &&
+		typeof project.translationData.typeRef.returnExtension === "string"
+			? project.translationData.typeRef.returnExtension
+			: undefined;
+	const extension =
+		extensionFromTypeRef ?? returnExtensionFor(project.translationData.name);
+	if (
+		source &&
+		combined.units.every(
+			(unit, index) =>
+				project.translationData.seg2[index] === contentToPlainText(unit.target),
+		)
+	)
+		return { blob: source, extension };
+	const memberIndexes = new Map<string, number[]>();
+	for (const [index, unit] of combined.units.entries()) {
+		const path = unit.sourceLocation?.part;
+		if (!path) continue;
+		const indexes = memberIndexes.get(path) ?? [];
+		indexes.push(index);
+		memberIndexes.set(path, indexes);
+	}
+
+	for (const [path, indexes] of memberIndexes) {
+		const part = skeleton.payload.parts[path];
+		if (!part) throw new Error(`CAT package member “${path}” is missing.`);
+		const xml = await partText(part);
+		const imported = await importXliffProjectStreaming(
+			new File([xml], path, { type: "application/xliff+xml" }),
+		);
+		const member = imported.data;
+		if (member.translationData.seg1.length !== indexes.length)
+			throw new Error(
+				`CAT package member “${path}” no longer aligns with the imported units.`,
+			);
+		member.translationData.seg2 = indexes.map((globalIndex, localIndex) =>
+			unitIsLocked(combined.units[globalIndex])
+				? (member.translationData.seg2[localIndex] ?? "")
+				: (project.translationData.seg2[globalIndex] ??
+					project.translationData.seg1[globalIndex] ??
+					""),
+		);
+		member.translationData.checked = indexes.map(
+			(globalIndex) => project.translationData.checked[globalIndex] ?? false,
+		);
+		zip.file(path, buildMemberXliff(member));
+	}
+
+	return {
+		blob: await zip.generateAsync({
+			type: "blob",
+			compression: "DEFLATE",
+			compressionOptions: { level: 6 },
+		}),
+		extension,
+	};
+}
+
+export async function generateCatReturnPackage(
+	project: UserData,
 ): Promise<void> {
-	throw new CatPackageReadOnlyError();
+	const { blob, extension } = await buildCatReturnPackage(project);
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement("a");
+	link.href = url;
+	link.download = `${(project.translationData.name || "translation").replace(/\.(?:sdlppx|sdlrpx|wsxz|mqout|mqback|mqxlz)$/i, "")}.translated.${extension}`;
+	document.body.appendChild(link);
+	link.click();
+	link.remove();
+	URL.revokeObjectURL(url);
 }

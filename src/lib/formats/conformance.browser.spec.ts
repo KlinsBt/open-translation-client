@@ -11,11 +11,14 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("browser adapter import/edit/export smoke tests", () => {
 	for (const fixture of FORMAT_CONFORMANCE_FIXTURES) {
-		it(`${fixture.id} browser import/edit/${fixture.id === "cat-package" ? "read-only" : "export"} flow`, async () => {
+		it(`${fixture.id} browser import/edit/export flow`, async () => {
 			const adapter = FORMAT_ADAPTERS.find((entry) => entry.id === fixture.id);
 			if (!adapter) throw new Error(`Missing ${fixture.id} adapter.`);
+			const importFixture =
+				fixture.importFile ??
+				((file: File, options) => adapter.importFile(file, options));
 			const source = await fixture.createValidFile();
-			const imported = await adapter.importFile(source, fixture.importOptions);
+			const imported = await importFixture(source, fixture.importOptions);
 			const project = projectFromConformanceImport(
 				fixture,
 				imported,
@@ -62,7 +65,7 @@ describe("browser adapter import/edit/export smoke tests", () => {
 					expect(text).toContain(marker);
 				return;
 			}
-			const reimported = await adapter.importFile(
+			const reimported = await importFixture(
 				outputFile(fixture, downloaded!),
 				fixture.importOptions,
 			);

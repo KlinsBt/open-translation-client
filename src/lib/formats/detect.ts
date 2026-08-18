@@ -49,6 +49,7 @@ export interface ConstrainedFormatWorkflow {
 		| "source-only"
 		| "external-service-required"
 		| "read-only-package"
+		| "return-package"
 		| "manifest-required";
 	primaryAction: string;
 	steps: readonly string[];
@@ -391,7 +392,7 @@ async function detectZipPackage(
 			evidence: ["package", "signature"],
 			reason: `The safe ZIP contains a recognized ${catProfile.vendor} package structure and supported bilingual members.`,
 			workflow: {
-				kind: "read-only-package",
+				kind: "return-package",
 				primaryAction: workflow.primaryAction,
 				steps: workflow.steps,
 				fidelityWarning: workflow.fidelityWarning,

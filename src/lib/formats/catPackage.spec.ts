@@ -2,11 +2,11 @@
 
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
+import type { UserData } from "$lib/types/types";
 import {
-	CatPackageReadOnlyError,
+	buildCatReturnPackage,
 	detectCatPackageProfile,
 	importCatPackageFile,
-	rejectCatPackageExport,
 	validateCatPackageFile,
 } from "./catPackage";
 import { SafeInputError } from "./safeInput";
@@ -24,6 +24,32 @@ function xliff(units: readonly [string, string][]): string {
 			.join("")}</body>
   </file>
 </xliff>`;
+}
+
+function projectFromImport(
+	result: Awaited<ReturnType<typeof importCatPackageFile>>,
+	targets: string[],
+	name = "project.sdlppx",
+): UserData {
+	if (result.kind !== "segments") throw new Error("Expected segments");
+	return {
+		translationData: {
+			name,
+			targetLang: "de",
+			sourceLang: "en",
+			creationDate: "0",
+			seg1: result.segments,
+			seg2: targets,
+			checked: result.segments.map(() => true),
+			type: "cat-package",
+			typeRef: result.typeRef ?? {},
+			documentModel: result.document,
+			skeleton: result.skeleton,
+			filterOptions: result.filterOptions,
+			tm: { id: null, name: null, active: false },
+			tb: { id: null, name: null, active: false },
+		},
+	};
 }
 
 async function catPackage(
@@ -47,11 +73,11 @@ async function catPackage(
 	);
 }
 
-describe("proprietary CAT package protected import", () => {
+describe("proprietary CAT package return workflow", () => {
 	it("detects fixture-led Trados, WorldServer, and memoQ structures", () => {
 		expect(
 			detectCatPackageProfile("work.sdlppx", ["target/a.sdlxliff"]),
-		)?.toMatchObject({ id: "trados", exportPolicy: "import-only" });
+		)?.toMatchObject({ id: "trados", exportPolicy: "return-package" });
 		expect(
 			detectCatPackageProfile("work.wszx", ["target/a.xlf"]),
 		).toBeUndefined();
@@ -118,26 +144,86 @@ describe("proprietary CAT package protected import", () => {
 		});
 	});
 
-	it("reports a high-confidence read-only workflow and blocks package export", async () => {
+	it("reports a high-confidence return workflow and enables package export", async () => {
 		const detection = await detectFormatWithConfidence(await catPackage());
 		expect(detection).toMatchObject({
 			formatId: "cat-package",
 			supported: true,
 			confidence: "high",
 			workflow: {
-				kind: "read-only-package",
-				primaryAction: "Import supported bilingual members read-only",
+				kind: "return-package",
+				primaryAction: "Import, translate, and write a return package",
 			},
 		});
 		expect(getFormatAdapter("cat-package").capabilities).toEqual({
 			import: true,
-			export: false,
-			roundTrip: false,
+			export: true,
+			roundTrip: true,
 		});
-		await expect(rejectCatPackageExport({} as never)).rejects.toBeInstanceOf(
-			CatPackageReadOnlyError,
-		);
 	});
+
+	it("writes a Trados return package, preserves opaque entries, and reopens its targets", async () => {
+		const source = await catPackage();
+		const imported = await importCatPackageFile(source);
+		const translated = ["Guten Tag", "Unicode geändert"];
+		const output = await buildCatReturnPackage(
+			projectFromImport(imported, translated),
+		);
+		expect(output.extension).toBe("sdlrpx");
+
+		const zip = await JSZip.loadAsync(await output.blob.arrayBuffer());
+		expect(
+			new Uint8Array(
+				await zip.file("resources/image.bin")!.async("uint8array"),
+			),
+		).toEqual(new Uint8Array([0, 255, 7, 4]));
+		const bilingual = await zip
+			.file("target/en-de/document.sdlxliff")!
+			.async("string");
+		expect(bilingual).toContain("Guten Tag");
+		expect(bilingual).toContain("Unicode geändert");
+
+		const reopened = await importCatPackageFile(
+			new File([output.blob], "translated.sdlrpx", {
+				type: "application/x-sdl-return-package",
+			}),
+		);
+		expect(reopened.kind).toBe("segments");
+		if (reopened.kind === "segments")
+			expect(reopened.targetSegments).toEqual(translated);
+	});
+
+	it.each([
+		["handoff.mqout", "translated.mqback", "mqback"],
+		["archive.mqxlz", "translated.mqxlz", "mqxlz"],
+		["world.wsxz", "translated.wsxz", "wsxz"],
+	] as const)(
+		"maps %s to a reusable %s return container",
+		async (sourceName, outputName, expected) => {
+			const member = sourceName.endsWith(".wsxz")
+				? "files/a.xlf"
+				: "Documents/a.mqxliff";
+			const source = await catPackage(sourceName, {
+				[member]: sourceName.endsWith(".wsxz")
+					? xliff([["Hello", "Hallo"]])
+					: xliff([["Hello", "Hallo"]])
+							.replace(' xmlns:sdl="http://sdl.com/FileTypes/SdlXliff/1.0"', "")
+							.replace(/<sdl:seg-defs>[\s\S]*?<\/sdl:seg-defs>/g, ""),
+				"resources/keep.bin": new Uint8Array([9, 8, 7]),
+			});
+			const imported = await importCatPackageFile(source);
+			const output = await buildCatReturnPackage(
+				projectFromImport(imported, ["Guten Tag"], sourceName),
+			);
+			expect(output.extension).toBe(expected);
+			const reopened = await importCatPackageFile(
+				new File([output.blob], outputName),
+			);
+			expect(reopened.kind).toBe("segments");
+			if (reopened.kind === "segments")
+				expect(reopened.targetSegments).toEqual(["Guten Tag"]);
+		},
+	);
 
 	it("rejects generic, malformed, empty, bomb-like, and cancelled packages", async () => {
 		await expect(

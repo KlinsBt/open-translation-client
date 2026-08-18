@@ -7,6 +7,7 @@ const chromiumPath =
 	(existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined);
 
 export default defineConfig({
+	cacheDir: ".svelte-kit/vite-browser-cache",
 	plugins: [sveltekit()],
 	test: {
 		include: ["src/**/*.browser.spec.ts"],

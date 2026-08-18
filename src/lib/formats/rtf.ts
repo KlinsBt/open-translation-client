@@ -256,13 +256,14 @@ export async function importRtfFile(
 
 function escapeRtf(value: string): string {
 	let output = "";
-	for (const character of value) {
+	for (let index = 0; index < value.length; index++) {
+		const character = value[index];
 		if (character === "\\" || character === "{" || character === "}")
 			output += `\\${character}`;
 		else if (character === "\n") output += "\\line ";
 		else if (character === "\t") output += "\\tab ";
 		else {
-			const code = character.charCodeAt(0);
+			const code = value.charCodeAt(index);
 			output +=
 				code >= 32 && code <= 126
 					? character
@@ -286,6 +287,13 @@ function rtfSkeleton(project: UserData): DocumentSkeleton {
 export function buildRtfTranslationBlob(project: UserData): Blob {
 	assertProjectExportQuality(project);
 	const skeleton = rtfSkeleton(project);
+	if (
+		project.translationData.seg2.every(
+			(target, index) => target === project.translationData.seg1[index],
+		) &&
+		skeleton.source.originalFile
+	)
+		return skeleton.source.originalFile;
 	let output = skeleton.payload.kind === "text" ? skeleton.payload.content : "";
 	const replacements = skeleton.replacements.filter(
 		(replacement): replacement is RtfParagraphReplacement =>

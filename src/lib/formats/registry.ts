@@ -119,8 +119,8 @@ import {
 import {
 	CAT_PACKAGE_EXTENSIONS,
 	CAT_PACKAGE_MIME_TYPES,
+	generateCatReturnPackage,
 	importCatPackageFile,
-	rejectCatPackageExport,
 	validateCatPackageFile,
 } from "./catPackage";
 import {
@@ -138,12 +138,6 @@ const READ_WRITE_CAPABILITIES = {
 const SOURCE_ONLY_CAPABILITIES = {
 	import: true,
 	export: true,
-	roundTrip: false,
-} as const;
-
-const READ_ONLY_CAPABILITIES = {
-	import: true,
-	export: false,
 	roundTrip: false,
 } as const;
 
@@ -631,16 +625,16 @@ const adapters = [
 	},
 	{
 		id: "cat-package",
-		label: "Proprietary CAT packages (read-only)",
+		label: "Trados/WorldServer/memoQ return packages",
 		extensions: CAT_PACKAGE_EXTENSIONS,
 		mimeTypes: CAT_PACKAGE_MIME_TYPES,
-		capabilities: READ_ONLY_CAPABILITIES,
+		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS["cat-package"],
 		sniff: async (file, context) =>
 			(await validateCatPackageFile(file, context)).valid,
 		validate: validateCatPackageFile,
 		importFile: importCatPackageFile,
-		exportFile: rejectCatPackageExport,
+		exportFile: generateCatReturnPackage,
 	},
 	{
 		id: "zip-project",

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { detectFormatWithConfidence, getFormatAcceptValue } from "./registry";
 
-describe("browser constrained-format guidance", () => {
-	it("keeps legacy Office input disabled while returning actionable local steps", async () => {
+describe("browser local and constrained format routing", () => {
+	it("advertises signed legacy Office input through the local adapter", async () => {
 		const ole = new Uint8Array([
 			0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0,
 		]);
@@ -13,15 +13,12 @@ describe("browser constrained-format guidance", () => {
 		);
 
 		expect(detection).toMatchObject({
-			supported: false,
-			workflow: { kind: "convert-before-import" },
+			formatId: "legacy-office",
+			supported: true,
+			confidence: "high",
 		});
-		expect(detection?.workflow?.steps).toHaveLength(4);
-		expect(detection?.workflow?.privacyWarning).toMatch(/does not upload/i);
-		expect(detection?.workflow?.fidelityWarning).toMatch(
-			/conversion can alter/i,
-		);
-		expect(getFormatAcceptValue().split(",")).not.toContain(".doc");
+		expect(detection?.workflow).toBeUndefined();
+		expect(getFormatAcceptValue().split(",")).toContain(".doc");
 	});
 
 	it.each([
@@ -40,22 +37,18 @@ describe("browser constrained-format guidance", () => {
 			"transcription",
 		],
 	])(
-		"keeps %s disabled and explains the consent-gated %s workflow",
+		"routes %s to on-device %s without a consent workflow",
 		async (name, type, signature, modality) => {
 			const detection = await detectFormatWithConfidence(
 				new File([signature], name, { type }),
 			);
 			expect(detection).toMatchObject({
-				supported: false,
-				workflow: { kind: "external-service-required" },
+				formatId: modality === "ocr" ? "image-ocr" : "media-transcription",
+				supported: true,
+				confidence: "high",
 			});
-			expect(detection?.workflow?.privacyWarning).toMatch(
-				/explicit per-file consent/i,
-			);
-			expect(detection?.workflow?.fidelityWarning).toMatch(
-				modality === "ocr" ? /reading order/i : /speakers/i,
-			);
-			expect(getFormatAcceptValue().split(",")).not.toContain(
+			expect(detection?.workflow).toBeUndefined();
+			expect(getFormatAcceptValue().split(",")).toContain(
 				`.${name.split(".").at(-1)}`,
 			);
 		},

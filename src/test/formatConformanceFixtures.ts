@@ -5,6 +5,9 @@ import {
 	CONFORMANCE_UNICODE_TARGET,
 } from "./formatConformance";
 import { createSyntheticPdf } from "./pdfFixtures";
+import { importOcrImageFile } from "$lib/formats/localOcr";
+import { importTranscriptionFile } from "$lib/formats/localTranscription";
+import * as XLSX from "xlsx";
 
 const encoder = new TextEncoder();
 
@@ -1322,6 +1325,195 @@ const pdfFixture: FormatConformanceFixture = {
 		),
 };
 
+function pngFixtureFile(name = "unicode.png"): File {
+	return new File(
+		[new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])],
+		name,
+		{ type: "image/png" },
+	);
+}
+
+function countFromFixtureName(name: string): number {
+	return Number(name.match(/performance-(\d+)/)?.[1] ?? 1);
+}
+
+const imageOcrFixture: FormatConformanceFixture = {
+	id: "image-ocr",
+	fileName: "unicode.png",
+	mimeType: "image/png",
+	createValidFile: async () => pngFixtureFile(),
+	createMalformedFile: async () =>
+		textFile("not a PNG", "broken.png", "image/png"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { ocrLanguage: "eng", grouping: "paragraphs" },
+		skeleton: { kind: "package", replacementKinds: [] },
+		units: [{ id: "unit-1", part: null, path: null }],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	derivedOutput: {
+		mimeType: "text/html;charset=utf-8",
+		downloadSuffix: ".ocr-review.html",
+		translatedMarkers: [CONFORMANCE_UNICODE_TARGET],
+	},
+	importFile: async (file, options) => {
+		const count = countFromFixtureName(file.name);
+		return importOcrImageFile(file, options, undefined, {
+			recognize: async () => ({
+				text: "",
+				confidence: 97,
+				blocks: [
+					{
+						paragraphs: Array.from({ length: count }, (_, index) => ({
+							text:
+								count === 1 ? CONFORMANCE_UNICODE_SOURCE : `Message ${index}`,
+							confidence: 97,
+							bbox: { x0: 0, y0: index * 10, x1: 100, y1: index * 10 + 8 },
+							is_ltr: true,
+							lines: [],
+						})),
+					},
+				],
+			}),
+		});
+	},
+	createPerformanceFile: async (units) =>
+		pngFixtureFile(`performance-${units}.png`),
+};
+
+function wavFixtureFile(name = "unicode.wav"): File {
+	return new File(
+		[
+			new Uint8Array([
+				0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x41, 0x56, 0x45, 1, 2,
+			]),
+		],
+		name,
+		{ type: "audio/wav" },
+	);
+}
+
+const mediaTranscriptionFixture: FormatConformanceFixture = {
+	id: "media-transcription",
+	fileName: "unicode.wav",
+	mimeType: "audio/wav",
+	createValidFile: async () => wavFixtureFile(),
+	createMalformedFile: async () =>
+		textFile("not audio", "broken.wav", "audio/wav"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			model: "onnx-community/whisper-tiny",
+			language: "",
+			chunkSeconds: 30,
+		},
+		skeleton: { kind: "package", replacementKinds: [] },
+		units: [{ id: "unit-1", part: null, path: null }],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	derivedOutput: {
+		mimeType: "text/vtt;charset=utf-8",
+		downloadSuffix: ".translated.vtt",
+		translatedMarkers: [CONFORMANCE_UNICODE_TARGET],
+	},
+	importFile: async (file, options) => {
+		const count = countFromFixtureName(file.name);
+		return importTranscriptionFile(
+			file,
+			options,
+			undefined,
+			{
+				transcribe: async () => ({
+					text: "",
+					chunks: Array.from({ length: count }, (_, index) => ({
+						text: count === 1 ? CONFORMANCE_UNICODE_SOURCE : `Message ${index}`,
+						timestamp: [index, index + 1] as [number, number],
+					})),
+				}),
+			},
+			new Float32Array([0]),
+		);
+	},
+	createPerformanceFile: async (units) =>
+		wavFixtureFile(`performance-${units}.wav`),
+};
+
+function rtfFixtureFile(content: string, name = "unicode.rtf"): File {
+	return textFile(
+		String.raw`{\rtf1\ansi ${content}\par}`,
+		name,
+		"application/rtf",
+	);
+}
+
+const rtfFixture: FormatConformanceFixture = {
+	id: "rtf",
+	fileName: "unicode.rtf",
+	mimeType: "application/rtf",
+	createValidFile: async () => rtfFixtureFile(CONFORMANCE_UNICODE_SOURCE),
+	createMalformedFile: async () =>
+		textFile("not RTF", "broken.rtf", "application/rtf"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { includeHeadersFooters: true },
+		skeleton: { kind: "text", replacementKinds: ["rtf-paragraph"] },
+		units: [{ id: "unit-1", part: null, path: null }],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			String.raw`{\rtf1\ansi ${Array.from({ length: units }, (_, index) => `Message ${index}\\par`).join(" ")}}`,
+			"performance.rtf",
+			"application/rtf",
+		),
+};
+
+async function legacyXlsFixtureFile(
+	values: readonly string[],
+	name = "unicode.xls",
+): Promise<File> {
+	const workbook = XLSX.utils.book_new();
+	XLSX.utils.book_append_sheet(
+		workbook,
+		XLSX.utils.aoa_to_sheet(values.map((value) => [value])),
+		"Messages",
+	);
+	const bytes = XLSX.write(workbook, { type: "array", bookType: "xls" });
+	return new File([bytes], name, { type: "application/vnd.ms-excel" });
+}
+
+const legacyOfficeFixture: FormatConformanceFixture = {
+	id: "legacy-office",
+	fileName: "unicode.xls",
+	mimeType: "application/vnd.ms-excel",
+	createValidFile: async () =>
+		legacyXlsFixtureFile([CONFORMANCE_UNICODE_SOURCE]),
+	createMalformedFile: async () =>
+		textFile("not an OLE workbook", "broken.xls", "application/vnd.ms-excel"),
+	expectMalformedImportFailure: true,
+	identityOutputMayEqualSource: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { includeNumbers: false },
+		skeleton: { kind: "package", replacementKinds: [] },
+		units: [{ id: "unit-1", part: null, path: null }],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	derivedOutput: {
+		mimeType: "application/vnd.ms-excel",
+		downloadSuffix: ".translated.xls",
+		translatedMarkers: [],
+	},
+	createPerformanceFile: async (units) =>
+		legacyXlsFixtureFile(
+			Array.from({ length: units }, (_, index) => `Message ${index}`),
+			"performance.xls",
+		),
+};
+
 async function catPackageFixtureFile(
 	sources: readonly string[],
 	name = "fixture.sdlppx",
@@ -1376,7 +1568,9 @@ const catPackageFixture: FormatConformanceFixture = {
 			},
 		],
 	},
+	identityTargetSegments: ["Target 0"],
 	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	expectTranslatedTargetSegments: true,
 	createPerformanceFile: async (units) =>
 		catPackageFixtureFile(
 			Array.from({ length: units }, (_, index) => `Message ${index}`),
@@ -1718,6 +1912,10 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	windowsRcFixture,
 	qmlFixture,
 	pdfFixture,
+	imageOcrFixture,
+	mediaTranscriptionFixture,
+	rtfFixture,
+	legacyOfficeFixture,
 	catPackageFixture,
 	zipProjectFixture,
 	xmlFixture,
