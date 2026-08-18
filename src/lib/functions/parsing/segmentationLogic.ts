@@ -61,6 +61,8 @@ const ODF_EDIT_ERROR =
 	"OpenDocument text runs cannot be split or joined because package parts, styles, and XML ranges must remain aligned.";
 const EPUB_EDIT_ERROR =
 	"EPUB text runs cannot be split or joined because spine documents, navigation, inline markup, and package XML ranges must remain aligned.";
+const SVG_EDIT_ERROR =
+	"SVG text runs cannot be split or joined because text paths, accessibility attributes, and XML ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -131,6 +133,7 @@ function validateForStructuralEdit(
 	if (translation.type === "subtitles") return SUBTITLE_EDIT_ERROR;
 	if (translation.type === "odf") return ODF_EDIT_ERROR;
 	if (translation.type === "epub") return EPUB_EDIT_ERROR;
+	if (translation.type === "svg") return SVG_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

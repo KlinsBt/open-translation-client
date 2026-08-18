@@ -17,6 +17,7 @@ import { generateLightweightMarkupTranslation } from "$lib/functions/outputGener
 import { generateSubtitleTranslation } from "$lib/functions/outputGeneration/outputGenerationSubtitles";
 import { generateOdfTranslation } from "$lib/functions/outputGeneration/outputGenerationOdf";
 import { generateEpubTranslation } from "$lib/functions/outputGeneration/outputGenerationEpub";
+import { generateSvgTranslation } from "$lib/functions/outputGeneration/outputGenerationSvg";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -72,6 +73,7 @@ import {
 import { importSubtitleFile, validateSubtitleFile } from "./subtitles";
 import { importOdfFile, ODF_MIME_TYPES, validateOdfFile } from "./odf";
 import { EPUB_MIME_TYPE, importEpubFile, validateEpubFile } from "./epub";
+import { importSvgFile, validateSvgFile } from "./svg";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -343,6 +345,19 @@ const adapters = [
 		validate: validateEpubFile,
 		importFile: importEpubFile,
 		exportFile: generateEpubTranslation,
+	},
+	{
+		id: "svg",
+		label: "SVG",
+		extensions: ["svg"],
+		mimeTypes: ["image/svg+xml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.svg,
+		sniff: async (file, context) =>
+			(await validateSvgFile(file, context)).valid,
+		validate: validateSvgFile,
+		importFile: importSvgFile,
+		exportFile: generateSvgTranslation,
 	},
 	{
 		id: "xml",

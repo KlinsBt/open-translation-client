@@ -822,6 +822,55 @@ const epubFixture: FormatConformanceFixture = {
 	expectedPackageChanges: ["EPUB/chapter.xhtml"],
 };
 
+const svgFixture: FormatConformanceFixture = {
+	id: "svg",
+	fileName: "diagram.svg",
+	mimeType: "image/svg+xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80"><path id="frame" d="M0 0h320v80H0z"/><text id="welcome" x="12" y="42">${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</text><script>preserve()</script></svg>\n`,
+			"diagram.svg",
+			"image/svg+xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg xmlns="http://www.w3.org/2000/svg"><text>&x;</text></svg>',
+			"broken.svg",
+			"image/svg+xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			elementSelectors: "text,tspan,textPath,title,desc",
+			attributeSelectors: "aria-label,aria-description,title",
+			includeHiddenText: false,
+			includeMetadata: false,
+			respectTranslateMetadata: true,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["xml-value"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "diagram.svg",
+				path: ["svg[1]", "text[1]", "#text"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<svg xmlns="http://www.w3.org/2000/svg">${Array.from(
+				{ length: units },
+				(_, index) => `<text x="0" y="${index}">Message ${index}</text>`,
+			).join("")}</svg>`,
+			"performance.svg",
+			"image/svg+xml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1084,6 +1133,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	subtitlesFixture,
 	odfFixture,
 	epubFixture,
+	svgFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

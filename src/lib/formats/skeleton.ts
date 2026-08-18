@@ -408,6 +408,7 @@ export async function createTextSkeleton(
 		| "php"
 		| "markup"
 		| "subtitles"
+		| "svg"
 		| "xml"
 		| "html",
 	content: string,

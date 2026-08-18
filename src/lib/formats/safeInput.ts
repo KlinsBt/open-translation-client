@@ -31,6 +31,7 @@ export type SafeInputErrorCode =
 	| "SUBTITLE_INVALID"
 	| "ODF_INVALID"
 	| "EPUB_INVALID"
+	| "SVG_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

@@ -521,6 +521,47 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: true,
 		},
 	],
+	svg: [
+		{
+			id: "elementSelectors",
+			label: "Translatable SVG elements",
+			type: "text",
+			defaultValue: "text,tspan,textPath,title,desc",
+			description:
+				"Comma-separated local element names. Script, style, and geometry remain protected regardless.",
+		},
+		{
+			id: "attributeSelectors",
+			label: "Accessibility attributes",
+			type: "text",
+			defaultValue: "aria-label,aria-description,title",
+		},
+		{
+			id: "includeHiddenText",
+			label: "Include hidden text",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeMetadata",
+			label: "Include metadata element text",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "respectTranslateMetadata",
+			label: "Respect translate=no and ITS translate",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "segmentationMode",
+			label: "Text segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

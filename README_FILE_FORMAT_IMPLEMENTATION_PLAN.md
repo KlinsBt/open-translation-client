@@ -831,10 +831,25 @@ Complete these in order after FF-000 through FF-009.
       `OPENTLC_RUN_EPUBCHECK=1` test is also included; EPUBCheck is not installed
       in this environment, so release CI must execute both gates before
       origin-validator support is advertised.
-- [ ] **FF-302 — SVG (`.svg`).** Translate text, selected accessibility
+- [x] **FF-302 — SVG (`.svg`).** Translate text, selected accessibility
       attributes, titles/descriptions, and text-path content while preserving
       namespaces, transforms, styling, geometry, and scripts as inert bytes.
       Provide XML profile controls because many SVG strings are not visible.
+      Completed 2026-08-18: the SVG 1.1/2 XML adapter validates the SVG root and
+      namespace, rejects malformed XML, doctypes, and entity declarations, and
+      masks scripts/styles during positional parsing so they are never executed.
+      Source-ranged extraction covers configurable text elements and attributes,
+      including `text`, `tspan`, `textPath`, `title`, `desc`, and ARIA labels;
+      inherited hidden and SVG/ITS translate metadata are honored by default.
+      Optional hidden/metadata inclusion and value/preference/sentence
+      segmentation provide the XML-profile controls. Export XML-escapes changed
+      ranges, reparses the result, preserves source encoding/BOM and identity
+      bytes, enforces placeholder QA, and blocks split/join and stale mappings.
+      Geometry, transforms, namespaces, styling, metadata, and scripts remain
+      exact inert source bytes. Unit, conformance, custom-selector, visibility,
+      ITS, accessibility, UTF-16, security, 1,000-node, detection, translated
+      re-import, and browser coverage verifies the core workflow; the generated
+      export also passed local `xmllint --nonet` validation.
 - [ ] **FF-303 — DITA and DITAMAP (`.dita`, `.ditamap`).** Add DITA-aware inline
       elements, conrefs/keyrefs, topic IDs, maps, profiling attributes, translate
       controls, whitespace, and multi-file package handling. Preserve references

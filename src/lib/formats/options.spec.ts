@@ -117,6 +117,16 @@ describe("format import options", () => {
 				includeAccessibilityText: true,
 			},
 		);
+		expect(
+			normalizeImportOptions("svg", { includeHiddenText: "true" }),
+		).toEqual({
+			elementSelectors: "text,tspan,textPath,title,desc",
+			attributeSelectors: "aria-label,aria-description,title",
+			includeHiddenText: true,
+			includeMetadata: false,
+			respectTranslateMetadata: true,
+			segmentationMode: "value",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",
