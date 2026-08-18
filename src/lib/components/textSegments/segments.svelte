@@ -754,7 +754,7 @@
 		<div class="toolbar-actions">
 			<button class="toolbar-button resource" onclick={() => toggleTmTbModal()}>
 				<TmTb />
-				Resources
+				TM &amp; Term Base
 			</button>
 			<button
 				class="toolbar-button secondary"
@@ -1029,7 +1029,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
-		width: min(100%, 1440px);
+		width: 100%;
 		margin: 0 auto;
 	}
 
@@ -1250,7 +1250,7 @@
 		gap: 2rem;
 		background: rgba(240, 250, 252, 0.96);
 		border-bottom: 1px solid #cce2e7;
-		padding: 1rem max(1.5rem, calc((100vw - 1440px) / 2));
+		padding: 1rem clamp(1.25rem, 2vw, 2.5rem);
 		box-sizing: border-box;
 		width: 100%;
 		box-shadow: 0 4px 14px rgba(19, 70, 88, 0.06);
@@ -1384,7 +1384,7 @@
 		display: grid;
 		grid-template-columns: 1fr;
 		gap: 0.65rem;
-		padding: 1rem max(1.5rem, calc((100vw - 1440px) / 2));
+		padding: 1rem clamp(1.25rem, 2vw, 2.5rem);
 		box-sizing: border-box;
 		overflow-y: auto;
 		width: 100%;
