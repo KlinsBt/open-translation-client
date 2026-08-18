@@ -295,6 +295,24 @@
 							>Detected: {formatDetection.label} · {confidenceLabel()}</strong
 						>
 						<span>{formatDetection.reason}</span>
+						{#if formatDetection.workflow}
+							<strong>{formatDetection.workflow.primaryAction}</strong>
+							<ol class="workflow-steps">
+								{#each formatDetection.workflow.steps as step}
+									<li>{step}</li>
+								{/each}
+							</ol>
+							{#if formatDetection.workflow.privacyWarning}
+								<span class="workflow-warning"
+									>Privacy: {formatDetection.workflow.privacyWarning}</span
+								>
+							{/if}
+							{#if formatDetection.workflow.fidelityWarning}
+								<span class="workflow-warning"
+									>Fidelity: {formatDetection.workflow.fidelityWarning}</span
+								>
+							{/if}
+						{/if}
 					</div>
 				{/if}
 
@@ -642,6 +660,19 @@
 	.detection-result.detection-unsupported {
 		background: #fff4e5;
 		color: #7a4100;
+	}
+
+	.workflow-steps {
+		margin: 4px 0;
+		padding-left: 1.25rem;
+	}
+
+	.workflow-steps li + li {
+		margin-top: 3px;
+	}
+
+	.workflow-warning {
+		font-weight: 600;
 	}
 
 	.form-section {

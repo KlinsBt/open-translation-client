@@ -1008,11 +1008,21 @@ Complete these in order after FF-000 through FF-009.
 
 ## Phase 4 — Explicitly constrained and conversion-based support
 
-- [ ] **FF-400 — Legacy Office (`.doc`, `.xls`, `.ppt`, `.rtf`).** Do not parse
+- [x] **FF-400 — Legacy Office (`.doc`, `.xls`, `.ppt`, `.rtf`).** Do not parse
       old binary formats in the browser. Offer a documented conversion workflow
       to DOCX/XLSX/PPTX, or an optional isolated conversion service with clear
       privacy and fidelity warnings. Only advertise an extension when that
       converter is actually available.
+      Completed 2026-08-18: OLE signature-first detection identifies legacy
+      Word, Excel and PowerPoint without routing bytes to modern Office parsers;
+      RTF is likewise recognized as conversion-only. The upload UI presents a
+      four-step local Save As/reopen workflow targeting DOCX, XLSX or PPTX plus
+      explicit confidentiality and conversion-fidelity warnings. No remote
+      endpoint is contacted and `.doc`, `.xls`, `.ppt`, and `.rtf` remain absent
+      from advertised upload types. Unit and real-browser tests cover signatures,
+      labels, targets, warnings and picker exclusion; the operational and future
+      isolated-service requirements are documented in
+      `docs/CONSTRAINED_FORMAT_WORKFLOWS.md`.
 - [ ] **FF-401 — PDF (`.pdf`) as source-only extraction.** Clearly label PDF as
       lossy, distinguish born-digital text from OCR, retain page/bounding-box
       context, and export translation to a new accessible document or bilingual

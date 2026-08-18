@@ -305,6 +305,54 @@ describe("format adapter registry", () => {
 		).resolves.toBeUndefined();
 	});
 
+	it.each([
+		["doc", "Legacy Word (.doc)", "DOCX"],
+		["xls", "Legacy Excel (.xls)", "XLSX"],
+		["ppt", "Legacy PowerPoint (.ppt)", "PPTX"],
+	])(
+		"recognizes legacy Office .%s and provides a local conversion workflow",
+		async (extension, label, target) => {
+			const ole = new Uint8Array([
+				0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0,
+			]);
+			await expect(
+				detectFormatWithConfidence(
+					new File([ole], `legacy.${extension}`, {
+						type: "application/octet-stream",
+					}),
+				),
+			).resolves.toMatchObject({
+				formatId: null,
+				label,
+				supported: false,
+				confidence: "high",
+				evidence: ["signature", "extension"],
+				workflow: {
+					kind: "convert-before-import",
+					primaryAction: `Convert locally to ${target}`,
+					targetFormats: [target],
+				},
+			});
+		},
+	);
+
+	it("recognizes RTF without advertising conversion-only extensions", async () => {
+		await expect(
+			detectFormatWithConfidence(
+				textFile("{\\rtf1\\ansi Legacy text}", "legacy.rtf", "text/rtf"),
+			),
+		).resolves.toMatchObject({
+			formatId: null,
+			label: "RTF",
+			supported: false,
+			workflow: {
+				kind: "convert-before-import",
+				primaryAction: "Convert locally to DOCX",
+			},
+		});
+		expect(getFormatAcceptValue()).not.toMatch(/\.(?:doc|xls|ppt|rtf)(?:,|$)/);
+	});
+
 	it("normalizes MIME parameters and extracts only exact final extensions", () => {
 		expect(normalizeMimeType(" Application/JSON; charset=utf-8 ")).toBe(
 			"application/json",

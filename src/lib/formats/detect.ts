@@ -30,7 +30,22 @@ export interface FormatDetection {
 	confidence: DetectionConfidence;
 	evidence: readonly DetectionEvidence[];
 	reason: string;
+	workflow?: ConstrainedFormatWorkflow;
 	adapter?: FormatAdapter;
+}
+
+export interface ConstrainedFormatWorkflow {
+	kind:
+		| "convert-before-import"
+		| "source-only"
+		| "external-service-required"
+		| "read-only-package"
+		| "manifest-required";
+	primaryAction: string;
+	steps: readonly string[];
+	targetFormats?: readonly string[];
+	privacyWarning?: string;
+	fidelityWarning?: string;
 }
 
 export interface ProjectFileDetection {
@@ -88,8 +103,9 @@ export async function detectFileFormat(
 			legacy ? "high" : "medium",
 			legacy ? ["signature", "extension"] : ["signature"],
 			legacy
-				? `${legacy} is a legacy binary Office format and is not imported directly.`
+				? `${legacy} is a legacy binary Office format. Convert it locally to the corresponding modern Open XML format before import.`
 				: "The binary compound-document signature is recognized, but its application format is ambiguous.",
+			legacy ? legacyOfficeWorkflow(extension) : undefined,
 		);
 	}
 
@@ -140,7 +156,8 @@ export async function detectFileFormat(
 			"RTF",
 			extension === "rtf" ? "high" : "medium",
 			extension === "rtf" ? ["signature", "extension"] : ["signature"],
-			"Rich Text Format is recognized but is not implemented yet.",
+			"Rich Text Format is recognized as a conversion-only legacy document. Convert it locally to DOCX before import.",
+			legacyOfficeWorkflow("rtf"),
 		);
 	}
 
@@ -385,6 +402,7 @@ function unsupported(
 	confidence: DetectionConfidence,
 	evidence: DetectionEvidence[],
 	reason: string,
+	workflow?: ConstrainedFormatWorkflow,
 ): FormatDetection {
 	return {
 		formatId: null,
@@ -393,6 +411,29 @@ function unsupported(
 		confidence,
 		evidence,
 		reason,
+		...(workflow ? { workflow } : {}),
+	};
+}
+
+function legacyOfficeWorkflow(
+	extension: string | undefined,
+): ConstrainedFormatWorkflow {
+	const target =
+		extension === "xls" ? "XLSX" : extension === "ppt" ? "PPTX" : "DOCX";
+	return {
+		kind: "convert-before-import",
+		primaryAction: `Convert locally to ${target}`,
+		targetFormats: [target],
+		steps: [
+			"Open a copy in a trusted, patched desktop office application.",
+			`Use Save As to create ${target}; do not merely rename the extension.`,
+			"Reopen the converted file and inspect layout, formulas, macros, links, fonts, and embedded objects.",
+			"Upload the converted copy to Open TLC and keep the original as the authoritative source.",
+		],
+		privacyWarning:
+			"Open TLC does not upload this file to a converter. Avoid public conversion websites for confidential documents.",
+		fidelityWarning:
+			"Conversion can alter pagination, formulas, animations, macros, tracked changes, fields, fonts, and embedded objects.",
 	};
 }
 
@@ -413,8 +454,8 @@ function sniffTextKind(
 ): "json" | "html" | "xml" | "rtf" | undefined {
 	const text = decodeTextPrefix(bytes)?.trimStart();
 	if (!text) return undefined;
-	if (/^(?:\{|\[)/.test(text)) return "json";
 	if (/^\{\\rtf(?:\d|\s)/i.test(text)) return "rtf";
+	if (/^(?:\{|\[)/.test(text)) return "json";
 	const withoutDeclaration = text.replace(/^<\?xml[^?]*\?>\s*/i, "");
 	if (
 		/^<(?:!doctype\s+html|html|head|body|a|article|aside|button|div|footer|form|h[1-6]|header|label|li|main|nav|ol|option|p|section|select|span|table|textarea|title|ul)(?:\s|>)/i.test(
