@@ -38,6 +38,7 @@ export type SafeInputErrorCode =
 	| "LATEX_INVALID"
 	| "TTML_INVALID"
 	| "MIF_INVALID"
+	| "WINDOWS_RC_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

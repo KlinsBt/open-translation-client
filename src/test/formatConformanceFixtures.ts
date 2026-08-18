@@ -1174,6 +1174,54 @@ const mifFixture: FormatConformanceFixture = {
 		),
 };
 
+const windowsRcFixture: FormatConformanceFixture = {
+	id: "windows-rc",
+	fileName: "resources.rc",
+	mimeType: "text/x-windows-rc",
+	createValidFile: async () =>
+		textFile(
+			`STRINGTABLE\nBEGIN\n IDS_UNICODE "${CONFORMANCE_UNICODE_SOURCE}"\nEND\n`,
+			"resources.rc",
+			"text/x-windows-rc",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'STRINGTABLE\nBEGIN\n IDS_BROKEN "unterminated',
+			"broken.rc",
+			"text/x-windows-rc",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			translatableDirectives:
+				"CAPTION,LTEXT,CTEXT,RTEXT,GROUPBOX,PUSHBUTTON,DEFPUSHBUTTON,CHECKBOX,AUTOCHECKBOX,RADIOBUTTON,AUTORADIOBUTTON,CONTROL,MENUITEM,POPUP",
+			includeVersionInfo: true,
+			includePreprocessor: false,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["text-range"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "resources.rc",
+				path: ["line[3]", "STRINGTABLE"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`STRINGTABLE\nBEGIN\n${Array.from(
+				{ length: units },
+				(_, index) => ` IDS_${index} "Message ${index}"`,
+			).join("\n")}\nEND\n`,
+			"performance.rc",
+			"text/x-windows-rc",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1443,6 +1491,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	latexFixture,
 	ttmlFixture,
 	mifFixture,
+	windowsRcFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

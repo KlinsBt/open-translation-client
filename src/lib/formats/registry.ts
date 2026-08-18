@@ -24,6 +24,7 @@ import { generateInDesignTranslation } from "$lib/functions/outputGeneration/out
 import { generateLatexTranslation } from "$lib/functions/outputGeneration/outputGenerationLatex";
 import { generateTtmlTranslation } from "$lib/functions/outputGeneration/outputGenerationTtml";
 import { generateMifTranslation } from "$lib/functions/outputGeneration/outputGenerationMif";
+import { generateWindowsRcTranslation } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -86,6 +87,7 @@ import { importInDesignFile, validateInDesignFile } from "./idml";
 import { importLatexFile, validateLatexFile } from "./latex";
 import { importTtmlFile, validateTtmlFile } from "./ttml";
 import { importMifFile, validateMifFile } from "./mif";
+import { importWindowsRcFile, validateWindowsRcFile } from "./windowsRc";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -475,6 +477,23 @@ const adapters = [
 		validate: validateMifFile,
 		importFile: importMifFile,
 		exportFile: generateMifTranslation,
+	},
+	{
+		id: "windows-rc",
+		label: "Windows RC",
+		extensions: ["rc"],
+		mimeTypes: ["text/x-windows-rc", "text/plain"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["windows-rc"],
+		sniff: async (file, context) =>
+			(await sniffText(
+				file,
+				/(?:^|\n)\s*(?:STRINGTABLE|[A-Za-z_]\w*\s+(?:DIALOGEX?|MENU(?:EX)?|VERSIONINFO))\b/,
+				context,
+			)) && (await validateWindowsRcFile(file, context)).valid,
+		validate: validateWindowsRcFile,
+		importFile: importWindowsRcFile,
+		exportFile: generateWindowsRcTranslation,
 	},
 	{
 		id: "xml",

@@ -986,6 +986,14 @@ Complete these in order after FF-000 through FF-009.
       and blocks stale mappings and split/join. Unit, conformance, filtering,
       escape/security, UTF-16, 1,000-string, detection, re-import, and generated
       browser coverage is included. FrameMaker reopen remains an external gate.
+      Windows RC complete: the lexer validates C-style strings, escapes,
+      comments and balanced resource blocks; dialog captions/controls, menus,
+      STRINGTABLE and optional VERSIONINFO/preprocessor values are selected by
+      grammar context. Export preserves IDs, numeric operands, accelerators,
+      styles, resource paths, macros, comments and source encoding while
+      reparsing every result. Unit, conformance, filter, malformed-input,
+      UTF-16, 1,000-entry, detection, re-import and browser coverage is included;
+      an opt-in GNU windres compile gate is available for equipped environments.
 
 ## Phase 4 — Explicitly constrained and conversion-based support
 

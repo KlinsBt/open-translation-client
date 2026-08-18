@@ -793,6 +793,38 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["value", "preferences", "sentences"],
 		},
 	],
+	"windows-rc": [
+		{
+			id: "translatableDirectives",
+			label: "Translatable resource directives",
+			type: "text",
+			defaultValue:
+				"CAPTION,LTEXT,CTEXT,RTEXT,GROUPBOX,PUSHBUTTON,DEFPUSHBUTTON,CHECKBOX,AUTOCHECKBOX,RADIOBUTTON,AUTORADIOBUTTON,CONTROL,MENUITEM,POPUP",
+			description:
+				"STRINGTABLE values are always included; the listed dialog and menu directives expose only their text operand.",
+		},
+		{
+			id: "includeVersionInfo",
+			label: "Include VERSIONINFO values",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "includePreprocessor",
+			label: "Include string #define values",
+			type: "boolean",
+			defaultValue: false,
+			description:
+				"Disabled by default because string macros may be identifiers, paths, or build-time data rather than user-facing text.",
+		},
+		{
+			id: "segmentationMode",
+			label: "Resource-value segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

@@ -179,6 +179,17 @@ describe("format import options", () => {
 			includeVariables: false,
 			segmentationMode: "value",
 		});
+		expect(
+			normalizeImportOptions("windows-rc", {
+				includeVersionInfo: "false",
+			}),
+		).toEqual({
+			translatableDirectives:
+				"CAPTION,LTEXT,CTEXT,RTEXT,GROUPBOX,PUSHBUTTON,DEFPUSHBUTTON,CHECKBOX,AUTOCHECKBOX,RADIOBUTTON,AUTORADIOBUTTON,CONTROL,MENUITEM,POPUP",
+			includeVersionInfo: false,
+			includePreprocessor: false,
+			segmentationMode: "value",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

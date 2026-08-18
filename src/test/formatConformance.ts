@@ -34,6 +34,7 @@ import { buildInDesignTranslationBlob } from "$lib/functions/outputGeneration/ou
 import { buildLatexTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationLatex";
 import { buildTtmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationTtml";
 import { buildMifTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationMif";
+import { buildWindowsRcTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -191,6 +192,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildTtmlTranslationBlob(project);
 		case "mif":
 			return buildMifTranslationBlob(project);
+		case "windows-rc":
+			return buildWindowsRcTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

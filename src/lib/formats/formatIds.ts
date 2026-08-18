@@ -22,6 +22,7 @@ export const FORMAT_IDS = [
 	"latex",
 	"ttml",
 	"mif",
+	"windows-rc",
 	"xml",
 	"docx",
 	"xlsx",
