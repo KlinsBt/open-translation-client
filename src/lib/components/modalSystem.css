@@ -157,6 +157,29 @@
 	outline: none;
 }
 
+.modal-action-card.primary {
+	border-color: #72bed0;
+	background: #eaf8fb;
+	color: #174f60;
+	box-shadow: 0 6px 16px rgba(39, 142, 168, 0.1);
+}
+
+.modal-action-card.primary:hover,
+.modal-action-card.primary:focus-visible {
+	border-color: #3ca3bc;
+	background: #ddf3f7;
+	box-shadow: 0 9px 22px rgba(39, 142, 168, 0.18);
+}
+
+.modal-action-card.primary .modal-action-icon {
+	background: #329fc0;
+	color: white;
+}
+
+.modal-action-card.primary .modal-action-arrow {
+	color: #237f98;
+}
+
 .modal-action-card.danger {
 	border-color: #ead0d0;
 	color: #9b3535;

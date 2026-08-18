@@ -228,7 +228,7 @@
 		{#if !renameFileWindow}
 			<div class="modal-actions">
 				<button
-					class="modal-action-card"
+					class="modal-action-card primary"
 					onclick={() => selectTmToEdit($tmIdSelected)}
 				>
 					<span class="modal-action-icon" aria-hidden="true">TM</span>
