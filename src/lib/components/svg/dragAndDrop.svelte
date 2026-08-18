@@ -18,8 +18,8 @@
 		/>
 	</svg>
 
-	<h2>Drag and drop file here</h2>
-	<p>or</p>
+	<h2>Drop your file here</h2>
+	<p>or choose it from your device</p>
 </div>
 
 <style>
@@ -28,33 +28,38 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		gap: 0.25rem;
 		border-radius: 10px;
-		padding: 0px;
-		margin: 0px;
+		padding: 0.25rem 0;
+		margin: 0;
 		text-align: center;
 	}
 
 	svg {
-		width: 50px;
-		height: 50px;
-		margin: 0px;
+		width: 44px;
+		height: 44px;
+		margin: 0 0 0.25rem;
+		border-radius: 50%;
+		background: rgba(61, 163, 190, 0.1);
+		padding: 0.65rem;
 		transition: stroke 0.3s ease;
 	}
 
 	.drag-and-drop-container h2 {
-		font-size: 15px;
+		font-size: 0.9rem;
 		margin: 0;
-		color: var(--color-theme-4);
+		color: #275665;
+		font-weight: 750;
 	}
 
 	.drag-and-drop-container > p {
-		font-size: 15px;
-		color: var(--color-theme-5);
-		margin: 0px;
+		font-size: 0.74rem;
+		color: #71878e;
+		margin: 0;
 	}
 
 	svg > path {
 		stroke: var(--color-theme-4);
-		stroke-width: 1;
+		stroke-width: 1.4;
 	}
 </style>

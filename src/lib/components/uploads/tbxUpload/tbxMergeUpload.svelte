@@ -18,6 +18,7 @@
 	} from "$lib/components/notifications/toastStore";
 	import { safeInputMessage } from "$lib/formats/safeInput";
 	import { importTbxStreaming } from "$lib/formats/streamingImporters";
+	import "$lib/components/uploads/uploadDialog.css";
 
 	let isDragging = $state(false);
 
@@ -93,21 +94,23 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="container"
+	class="upload-surface"
 	ondragover={handleDragOver}
 	ondragleave={handleDragLeave}
 	ondrop={handleDrop}
 	class:is-dragging={isDragging}
 >
-	<p class="info">
-		Upload another TBX file to merge with this current Terminology Database.
-		crreating a new file with all Term Units from the uploaded TBX file and this
-		selected TBX file.
-	</p>
+	<div class="upload-guidance">
+		<strong>Add another TBX term base</strong>
+		<span
+			>The imported concepts will be combined with the selected term base and
+			saved as a new collection.</span
+		>
+	</div>
 	<DragAndDropHere />
 	{#if extractedTbxData === null || extractedTbxData === undefined}
-		<button class="input-button-container">
-			Upload TBX File To Merge
+		<button class="upload-file-button">
+			Choose TBX file
 			<input
 				id="fileInputExcel"
 				type="file"
@@ -117,73 +120,10 @@
 		</button>
 	{:else}
 		<button
-			class="input-button-container save"
+			class="upload-file-button"
 			onclick={() => createNewProjectWithTbxFile()}
 		>
-			Merge TBX Files
+			Create merged term base
 		</button>
 	{/if}
 </div>
-
-<style>
-	.container {
-		display: grid;
-		align-items: center;
-		justify-items: center;
-		gap: 0px;
-		border: 2px dashed var(--color-theme-4);
-		border-radius: 5px;
-		padding: 5px 20px;
-		transition: background-color 0.3s;
-		max-width: 270px;
-	}
-
-	.container.is-dragging {
-		background-color: rgba(0, 0, 0, 0.05);
-		border-color: var(--color-theme-3);
-	}
-
-	.info {
-		font-size: 0.8rem;
-		font-weight: 600;
-		max-width: 250px;
-		text-align: justify;
-		color: var(--color-theme-4);
-	}
-
-	.input-button-container {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 10px 0px;
-		cursor: pointer;
-		width: 100%;
-		transition: filter 0.2s linear;
-		position: relative;
-	}
-
-	.input-button-container:hover {
-		filter: brightness(1.1);
-	}
-
-	.input-button-container:active {
-		filter: brightness(1);
-		transform: scale(0.99);
-	}
-
-	.input-button-container > input[type="file"] {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		left: 0;
-		opacity: 0;
-		cursor: pointer;
-	}
-</style>

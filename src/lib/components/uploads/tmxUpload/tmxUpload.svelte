@@ -20,6 +20,7 @@
 	} from "$lib/components/notifications/toastStore";
 	import { safeInputMessage } from "$lib/formats/safeInput";
 	import { importTmxStreaming } from "$lib/formats/streamingImporters";
+	import "$lib/components/uploads/uploadDialog.css";
 
 	let temporarySaveName: string = $state("");
 
@@ -158,168 +159,56 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if !tmxDataIdExists}
 	<div
-		class="container"
+		class="upload-surface"
 		ondragover={handleDragOver}
 		ondragleave={handleDragLeave}
 		ondrop={handleDrop}
 		class:is-dragging={isDragging}
 	>
-		<div class="name-container">
+		<div class="upload-guidance">
+			<strong>Import a TMX file or create an empty memory</strong>
+			<span>Existing language pairs and metadata are retained.</span>
+		</div>
+		<label class="upload-name-field">
+			<span>Name for a new empty memory</span>
 			<input
-				class="input-text"
+				class="upload-text-input"
 				bind:value={temporarySaveName}
 				type="text"
-				placeholder="TMX File Name"
+				placeholder="e.g. Product translations"
 			/>
-		</div>
+		</label>
 		<DragAndDropHere />
-		<button class="input-button-container">
-			Upload TMX File
-			<input
-				id="fileInputExcel"
-				type="file"
-				accept="application/xml, .tmx"
-				oninput={handleTmxFileUpload}
-			/>
-		</button>
-		{#if temporarySaveName.length === 0}
-			<button class="create-button-container" disabled>Create New TM +</button>
-		{:else}
-			<button class="create-button-container" onclick={saveNewTmx}
-				>Create New TM +</button
+		<div class="upload-actions">
+			<button class="upload-file-button">
+				Choose TMX file
+				<input
+					id="fileInputExcel"
+					type="file"
+					accept="application/xml, .tmx"
+					oninput={handleTmxFileUpload}
+				/>
+			</button>
+			<button
+				class="upload-secondary-button"
+				disabled={temporarySaveName.length === 0}
+				onclick={saveNewTmx}>Create empty TM</button
 			>
-		{/if}
+		</div>
 	</div>
 {:else}
-	<div class="container-2">
-		<p>A TMX file with the same id was found!</p>
+	<div class="upload-overwrite">
+		<p class="upload-overwrite-message">
+			A translation memory with the same identifier already exists.
+		</p>
 		<button
-			class="input-button-container"
+			class="upload-danger-button"
 			onclick={() => updateExistingProjectWithTmxFile()}
 		>
-			Overwrite TMX File
+			Replace existing memory
 		</button>
-		<button class="input-button-container" onclick={() => cancelOverwrite()}>
+		<button class="upload-secondary-button" onclick={() => cancelOverwrite()}>
 			Cancel
 		</button>
 	</div>
 {/if}
-
-<style>
-	.container {
-		display: grid;
-		align-items: center;
-		justify-items: center;
-		gap: 0px;
-		border: 2px dashed var(--color-theme-4);
-		border-radius: 5px;
-		padding: 5px 20px;
-		transition: background-color 0.3s;
-		max-width: 270px;
-	}
-
-	.container.is-dragging {
-		background-color: rgba(0, 0, 0, 0.05);
-		border-color: var(--color-theme-3);
-	}
-
-	.name-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		margin: 10px 0px 25px 0px;
-	}
-
-	.name-container > .input-text {
-		width: 215px;
-		margin: 0px;
-		padding: 5px 10px;
-		border-radius: 5px;
-		color: var(--color-theme-5);
-		border: 1px solid var(--color-theme-1);
-		font-size: 0.8rem;
-	}
-
-	.name-container > .input-text:active {
-		border-color: var(--color-theme-1);
-	}
-
-	.input-button-container,
-	.create-button-container {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 10px 0px;
-		cursor: pointer;
-		width: 100%;
-		transition: filter 0.2s linear;
-		position: relative;
-	}
-
-	.input-button-container:hover,
-	.create-button-container:hover {
-		filter: brightness(1.1);
-	}
-
-	.input-button-container:active,
-	.create-button-container:active {
-		filter: brightness(1);
-		transform: scale(0.99);
-	}
-
-	.create-button-container {
-		background: var(--color-theme-9);
-	}
-
-	.input-button-container > input[type="file"] {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		left: 0;
-		opacity: 0;
-		cursor: pointer;
-	}
-
-	.container-2 {
-		display: grid;
-		align-items: center;
-		justify-items: center;
-		gap: 0px;
-		border-radius: 5px;
-		padding: 5px 20px;
-		transition: background-color 0.3s;
-		max-width: 270px;
-	}
-
-	.container-2 > p {
-		font-size: 1rem;
-		font-weight: 600;
-		max-width: 250px;
-		text-align: center;
-		background-color: rgb(255, 218, 95);
-		background-color: var(--color-theme-1);
-		color: var(--color-theme-5);
-		padding: 10px;
-		border-radius: 5px;
-	}
-
-	.container-2 > button {
-		margin: 5px 0px;
-	}
-
-	.container-2 > button:nth-child(2) {
-		background-color: limegreen;
-	}
-
-	.container-2 > button:nth-child(3) {
-		background-color: #c02b2b;
-	}
-</style>

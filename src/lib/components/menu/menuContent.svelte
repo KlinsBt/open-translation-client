@@ -102,7 +102,7 @@
 	class="modal-element-global {showUploadModal ? '' : 'close-modal-global'}"
 	onclick={() => (showUploadModal = false)}
 >
-	<Modal title="Import Save File" content={upload} />
+	<Modal title="Import project" content={upload} wide />
 </div>
 
 <ParsingPreferencesModal bind:show={showParsingModal} bind:parsingPreferences />

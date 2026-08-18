@@ -20,6 +20,7 @@
 	import { importXliffProjectStreaming } from "$lib/formats/streamingImporters";
 	import { detectProjectFileFormat } from "$lib/formats/detect";
 	import { migrateProjectData } from "$lib/formats/persistenceMigrations";
+	import "$lib/components/uploads/uploadDialog.css";
 
 	let isDragging = $state(false);
 
@@ -124,26 +125,19 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if !saveFileIdExists}
 	<div
-		class="container"
+		class="upload-surface"
 		ondragover={handleDragOver}
 		ondragleave={handleDragLeave}
 		ondrop={handleDrop}
 		class:is-dragging={isDragging}
 	>
-		<p>
-			Formats:
-			<br />
-			<span>JSON</span>
-			<br />
-			<span>XLIFF 1.2</span>
-			<br />
-			<span>XLIFF 2.0 / 2.1</span>
-			<br />
-			<span>Vendor XLIFF profiles (protected import)</span>
-		</p>
+		<div class="upload-guidance">
+			<strong>Restore an existing Open TLC project</strong>
+			<span>Drop a portable project or CAT interchange file below.</span>
+		</div>
 		<DragAndDropHere />
-		<button class="input-button-container">
-			Upload Save File
+		<button class="upload-file-button">
+			Choose project file
 			<input
 				id="fileInput"
 				type="file"
@@ -151,119 +145,48 @@
 				oninput={handleTranslationFileUpload}
 			/>
 		</button>
+		<div class="project-format-pills" aria-label="Accepted project formats">
+			<span>Open TLC JSON</span>
+			<span>XLIFF 1.2</span>
+			<span>XLIFF 2.0 / 2.1</span>
+			<span>Vendor XLIFF profiles</span>
+		</div>
 	</div>
 {:else}
-	<div class="container-2">
-		<p>A save file with the same id was found!</p>
+	<div class="upload-overwrite">
+		<p class="upload-overwrite-message">
+			A project with the same identifier already exists. Replace its local data
+			or cancel the import.
+		</p>
 		<button
-			class="input-button-container"
+			class="upload-danger-button"
 			onclick={() => updateExistingProjectWithSaveFile()}
 		>
-			Overwrite Save File
+			Replace existing project
 		</button>
-		<button class="input-button-container" onclick={() => cancelOverwrite()}>
+		<button class="upload-secondary-button" onclick={() => cancelOverwrite()}>
 			Cancel
 		</button>
 	</div>
 {/if}
 
 <style>
-	.container {
-		display: grid;
-		align-items: center;
-		justify-items: center;
-		gap: 0px;
-		border: 2px dashed var(--color-theme-4);
-		border-radius: 5px;
-		padding: 5px 20px;
-		transition: background-color 0.3s;
-		max-width: 270px;
-	}
-
-	.container > p {
-		font-size: 15px;
-		max-width: 250px;
-		text-align: left;
-	}
-
-	.container > p > span {
-		color: var(--color-theme-4);
-	}
-
-	.container.is-dragging {
-		background-color: rgba(0, 0, 0, 0.05);
-		border-color: var(--color-theme-3);
-	}
-
-	.input-button-container {
+	.project-format-pills {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: center;
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 10px 0px;
-		cursor: pointer;
-		width: 100%;
-		min-width: 250px;
-		transition: filter 0.2s linear;
-		position: relative;
+		gap: 0.4rem;
+		padding-top: 0.2rem;
 	}
 
-	.input-button-container:hover {
-		filter: brightness(1.1);
-	}
-
-	.input-button-container:active {
-		filter: brightness(1);
-		transform: scale(0.99);
-	}
-
-	.input-button-container > input[type="file"] {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		left: 0;
-		opacity: 0;
-		cursor: pointer;
-	}
-
-	.container-2 {
-		display: grid;
-		align-items: center;
-		justify-items: center;
-		gap: 0px;
-		border-radius: 5px;
-		padding: 5px 20px;
-		transition: background-color 0.3s;
-		max-width: 270px;
-	}
-
-	.container-2 > p {
-		font-size: 1rem;
-		font-weight: 600;
-		max-width: 250px;
-		text-align: center;
-		background-color: rgb(255, 218, 95);
-		background-color: var(--color-theme-1);
-		color: var(--color-theme-5);
-		padding: 10px;
-		border-radius: 5px;
-	}
-
-	.container-2 > button {
-		margin: 5px 0px;
-	}
-
-	.container-2 > button:nth-child(2) {
-		background-color: limegreen;
-	}
-
-	.container-2 > button:nth-child(3) {
-		background-color: #c02b2b;
+	.project-format-pills span {
+		border: 1px solid #c9e0e5;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.78);
+		padding: 0.25rem 0.55rem;
+		color: #49717d;
+		font-size: 0.68rem;
+		font-weight: 700;
 	}
 </style>

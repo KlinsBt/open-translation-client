@@ -19,6 +19,7 @@
 	import { safeInputMessage } from "$lib/formats/safeInput";
 	import { importTmxStreaming } from "$lib/formats/streamingImporters";
 	import { mergeTmxData, type TmxMergePolicy } from "$lib/formats/tmx14";
+	import "$lib/components/uploads/uploadDialog.css";
 
 	let isDragging = $state(false);
 
@@ -96,20 +97,23 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="container"
+	class="upload-surface"
 	ondragover={handleDragOver}
 	ondragleave={handleDragLeave}
 	ondrop={handleDrop}
 	class:is-dragging={isDragging}
 >
-	<p class="info">
-		Upload another TMX file and choose how duplicate source segments should be
-		handled. The result is saved as a new translation memory.
-	</p>
+	<div class="upload-guidance">
+		<strong>Add another TMX memory</strong>
+		<span
+			>Choose how duplicate source segments are handled. The result is saved as
+			a new translation memory.</span
+		>
+	</div>
 	<DragAndDropHere />
 	{#if extractedTmxData === null || extractedTmxData === undefined}
-		<button class="input-button-container">
-			Upload TMX File To Merge
+		<button class="upload-file-button">
+			Choose TMX file
 			<input
 				id="fileInputExcel"
 				type="file"
@@ -118,9 +122,9 @@
 			/>
 		</button>
 	{:else}
-		<label class="merge-policy">
-			Duplicate policy
-			<select bind:value={mergePolicy}>
+		<label class="upload-choice">
+			<span>Duplicate policy</span>
+			<select class="upload-select" bind:value={mergePolicy}>
 				<option value="merge-targets">Merge unique targets</option>
 				<option value="keep-first">Keep first unit</option>
 				<option value="keep-last">Keep last unit</option>
@@ -128,90 +132,10 @@
 			</select>
 		</label>
 		<button
-			class="input-button-container save"
+			class="upload-file-button"
 			onclick={() => createNewProjectWithTmxFile()}
 		>
-			Merge TMX Files
+			Create merged memory
 		</button>
 	{/if}
 </div>
-
-<style>
-	.container {
-		display: grid;
-		align-items: center;
-		justify-items: center;
-		gap: 0px;
-		border: 2px dashed var(--color-theme-4);
-		border-radius: 5px;
-		padding: 5px 20px;
-		transition: background-color 0.3s;
-		max-width: 270px;
-	}
-
-	.container.is-dragging {
-		background-color: rgba(0, 0, 0, 0.05);
-		border-color: var(--color-theme-3);
-	}
-
-	.info {
-		font-size: 0.8rem;
-		font-weight: 600;
-		max-width: 250px;
-		text-align: justify;
-		color: var(--color-theme-4);
-	}
-
-	.merge-policy {
-		display: grid;
-		gap: 4px;
-		width: 100%;
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: var(--color-theme-4);
-	}
-
-	.merge-policy select {
-		width: 100%;
-		padding: 7px;
-		border: 1px solid var(--color-theme-4);
-		border-radius: 4px;
-		background: white;
-	}
-
-	.input-button-container {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 10px 0px;
-		cursor: pointer;
-		width: 100%;
-		transition: filter 0.2s linear;
-		position: relative;
-	}
-
-	.input-button-container:hover {
-		filter: brightness(1.1);
-	}
-
-	.input-button-container:active {
-		filter: brightness(1);
-		transform: scale(0.99);
-	}
-
-	.input-button-container > input[type="file"] {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		left: 0;
-		opacity: 0;
-		cursor: pointer;
-	}
-</style>

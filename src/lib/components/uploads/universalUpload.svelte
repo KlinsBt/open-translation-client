@@ -6,10 +6,12 @@
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
 	import {
 		detectFormatWithConfidence,
+		FORMAT_ADAPTERS,
 		getFormatAcceptValue,
 		getFormatAdapter,
 		getSupportedFormatLabels,
 	} from "$lib/formats/registry";
+	import "$lib/components/uploads/uploadDialog.css";
 	import type { FormatDetection } from "$lib/formats/detect";
 	import type { FormatId } from "$lib/formats/formatIds";
 	import type {
@@ -247,15 +249,19 @@
 		{#if !uploadedFile}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="drop-zone {isDragging ? 'dragging' : ''}"
+				class="drop-zone upload-surface {isDragging ? 'dragging' : ''}"
 				ondragover={handleDragOver}
 				ondragleave={handleDragLeave}
 				ondrop={handleDrop}
 				role="button"
 				tabindex="0"
 			>
+				<div class="upload-guidance">
+					<strong>Choose the source file you want to translate</strong>
+					<span>Its format will be detected and validated automatically.</span>
+				</div>
 				<DragAndDropHere />
-				<label for="file-input" class="btn-select">
+				<label for="file-input" class="upload-file-button">
 					Select File
 					<input
 						id="file-input"
@@ -265,7 +271,10 @@
 						style="display: none;"
 					/>
 				</label>
-				<p class="supported-formats">Supported: {supportedFormatLabels}</p>
+				<details class="upload-format-note">
+					<summary>{FORMAT_ADAPTERS.length} supported format workflows</summary>
+					<p>{supportedFormatLabels}</p>
+				</details>
 			</div>
 		{:else}
 			<div class="file-info">
@@ -456,88 +465,38 @@
 	.modal-content {
 		display: grid;
 		justify-items: center;
-		min-width: 280px;
-		max-width: 500px;
-		border-radius: 5px;
-		padding: 25px;
-		margin: 0px 10px;
+		box-sizing: border-box;
+		width: min(100%, 680px);
+		max-height: calc(100vh - 2rem);
+		border: 1px solid rgba(119, 164, 176, 0.3);
+		border-radius: 1rem;
+		padding: 1.65rem;
 		background: var(--color-theme-7);
+		overflow-y: auto;
 		pointer-events: auto;
 		position: relative;
-		z-index: 11;
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 2px 4px rgba(0, 0, 0, 0.06);
+		box-shadow: 0 24px 70px rgba(4, 28, 40, 0.28);
 	}
 
 	h2 {
 		text-align: center;
-		font-size: 1.8rem;
-		margin: 0px 0px 25px 0px;
-		color: var(--color-theme-4);
-		font-weight: 600;
+		font-size: clamp(1.35rem, 4vw, 1.75rem);
+		line-height: 1.2;
+		margin: 0 0 1.25rem;
+		color: #194858;
+		font-weight: 750;
+		letter-spacing: -0.025em;
 	}
 
 	.universal-upload-container {
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-		max-width: 270px;
+		display: grid;
+		gap: 1rem;
+		width: min(100%, 580px);
 	}
 
 	.drop-zone {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 5px 20px;
-		border: 2px dashed var(--color-theme-4);
-		border-radius: 5px;
-		background: var(--color-theme-8);
-		transition: all 0.3s ease;
+		justify-items: center;
 		cursor: pointer;
-	}
-
-	.drop-zone.dragging {
-		border-color: var(--color-theme-3);
-		background: var(--color-theme-1);
-	}
-
-	.drop-text {
-		font-size: 1.1rem;
-		color: var(--color-theme-4);
-		font-weight: 600;
-		margin: 15px 0 5px 0;
-	}
-
-	.or-text {
-		color: var(--color-theme-5);
-		margin: 10px 0;
-		font-weight: 500;
-	}
-
-	.btn-select {
-		display: inline-block;
-		background: var(--color-theme-4);
-		color: white;
-		padding: 12px 24px;
-		border-radius: 5px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: filter 0.2s linear;
-		margin: 10px 0;
-	}
-
-	.btn-select:hover {
-		filter: brightness(1.1);
-	}
-
-	.supported-formats {
-		font-size: 0.85rem;
-		color: var(--color-theme-5);
-		margin: 15px 0 0 0;
-		text-align: center;
 	}
 
 	.file-info {

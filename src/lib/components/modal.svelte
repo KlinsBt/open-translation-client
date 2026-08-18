@@ -3,20 +3,19 @@
 
 	let {
 		title,
-		// message,
 		content,
+		wide = false,
 	}: {
 		title: string;
-		// message: string;
 		content?: Snippet;
+		wide?: boolean;
 	} = $props();
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="contents" onclick={(e) => e.stopPropagation()}>
+<div class="contents" class:wide onclick={(e) => e.stopPropagation()}>
 	<h2>{title}</h2>
-	<!-- <p>{message}</p> -->
 	{@render content?.()}
 </div>
 
@@ -35,6 +34,10 @@
 		box-shadow: 0 24px 70px rgba(4, 28, 40, 0.28);
 		overflow-y: auto;
 		pointer-events: auto;
+	}
+
+	.contents.wide {
+		width: min(100%, 620px);
 	}
 
 	h2 {

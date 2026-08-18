@@ -297,13 +297,13 @@
 	onclick={() => showTbxModal.set(false)}
 >
 	{#if showTbUploadModal}
-		<Modal title="Term Base" content={tbUpload} />
+		<Modal title="Import term base" content={tbUpload} wide />
 	{/if}
 	{#if showDeletionConfirmationModal}
 		<Modal title="Confirm" content={deletionConfirmation} />
 	{/if}
 	{#if mergeTbModal}
-		<Modal title="Merge TB" content={tbMergeUpload} />
+		<Modal title="Merge term bases" content={tbMergeUpload} wide />
 	{/if}
 	{#if showSelectModal}
 		<Modal title={selectedFileName} content={selectMenu} />

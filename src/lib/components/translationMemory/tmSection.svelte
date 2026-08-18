@@ -295,13 +295,13 @@
 	onclick={() => showTmxModal.set(false)}
 >
 	{#if showTmUploadModal}
-		<Modal title="Translation Memory" content={tmUpload} />
+		<Modal title="Import translation memory" content={tmUpload} wide />
 	{/if}
 	{#if showDeletionConfirmationModal}
 		<Modal title="Confirm" content={deletionConfirmation} />
 	{/if}
 	{#if mergeTmModal}
-		<Modal title="Merge TM" content={tmMergeUpload} />
+		<Modal title="Merge translation memories" content={tmMergeUpload} wide />
 	{/if}
 	{#if showSelectModal}
 		<Modal title={selectedFileName} content={selectMenu} />
