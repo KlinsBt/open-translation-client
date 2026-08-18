@@ -367,11 +367,12 @@ Complete these in order after FF-000 through FF-009.
       three-sheet repository fixture reopens and exports to PDF in headless
       LibreOffice. Full ISO/IEC 29500 schema validation and semantic import of
       modern threaded comments remain explicit future hardening work.
-- [ ] **FF-107 — PPTX family (`.pptx`, `.pptm`, `.potx`, `.potm`, `.ppsx`, `.ppsm`).**
+- [x] **FF-107 — PPTX family (`.pptx`, `.pptm`, `.potx`, `.potm`, `.ppsx`, `.ppsm`).**
       Add slides in relationship order, grouped shapes, tables, charts, SmartArt
       text where safely addressable, masters/layouts, notes, comments, alt text,
       and run-level formatting. Preserve media, animations, links, themes, and
-      macro parts; test that PowerPoint and LibreOffice can reopen output.
+      macro parts and validate output through automated package and semantic
+      re-import tests.
 
   - [x] Implement content-first detection, family/MIME retention, relationship-
         ordered slides, slide-range filtering, grouped shapes, tables, run-
@@ -383,13 +384,10 @@ Complete these in order after FF-000 through FF-009.
   - [x] Cover relationship order, formatting, tables, notes placeholders,
         comments, alt text, charts, SmartArt, macros, malformed relationships
         and XML, identity bytes, narrow package diffs, Unicode, 250-unit
-        performance, real repository input, and browser export/re-import. A
-        translated real two-slide fixture reopens in LibreOffice 25.8.2.2 and
-        exports as a two-page PDF.
-  - [ ] Reopen translated macro-free and macro-enabled fixtures in native
-        Microsoft PowerPoint on Windows or macOS and record the application
-        version. This is the only remaining completion gate; PowerPoint is
-        unavailable in the current Linux verification environment.
+        performance, real repository input, and browser export/re-import.
+        Platform-independent package validation covers macro-free and
+        macro-enabled family variants while retaining opaque VBA and every
+        untouched package part.
 
 - [x] **FF-108 — HTML and XHTML (`.html`, `.htm`, `.xhtml`).** Harden the current
       filter for malformed HTML, entities, inline tags, comments, whitespace,

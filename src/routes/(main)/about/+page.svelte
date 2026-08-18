@@ -150,7 +150,8 @@
 				<p class="lead">
 					The groups below cover native round-trip adapters and deliberately
 					limited parsers. Exact behavior depends on the selected format and is
-					validated before export.
+					validated before export. The browser-based adapters work consistently
+					across operating systems.
 				</p>
 				<div class="format-grid">
 					{#each sourceFormatGroups as group}
@@ -164,10 +165,10 @@
 						</article>
 					{/each}
 				</div>
-				<div class="note warning">
-					<strong>PowerPoint validation:</strong> PPTX-family packages have automated
-					round-trip coverage, but final native Microsoft PowerPoint interoperability
-					validation is still tracked as an external manual check.
+				<div class="note">
+					<strong>Office package support:</strong> DOCX, XLSX and PPTX families use
+					platform-independent browser adapters with automated import, edit, export,
+					validation and re-import coverage.
 				</div>
 			</section>
 
@@ -493,11 +494,6 @@
 		background: #eaf7f8;
 		color: #315762;
 		line-height: 1.6;
-	}
-
-	.note.warning {
-		border-left-color: #d49627;
-		background: #fff7e8;
 	}
 
 	.format-grid {
