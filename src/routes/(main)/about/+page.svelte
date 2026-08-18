@@ -344,6 +344,8 @@
 
 	.about-hero > div {
 		max-width: 870px;
+		margin: 0 auto;
+		text-align: center;
 	}
 
 	.eyebrow,
@@ -365,7 +367,7 @@
 
 	.about-hero p:last-child {
 		max-width: 780px;
-		margin: 1.6rem 0 0;
+		margin: 1.6rem auto 0;
 		color: #d6e9ed;
 		font-size: 1.12rem;
 		line-height: 1.72;
