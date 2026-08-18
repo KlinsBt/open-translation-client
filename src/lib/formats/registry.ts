@@ -26,6 +26,7 @@ import { generateTtmlTranslation } from "$lib/functions/outputGeneration/outputG
 import { generateMifTranslation } from "$lib/functions/outputGeneration/outputGenerationMif";
 import { generateWindowsRcTranslation } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
 import { generateQmlTranslation } from "$lib/functions/outputGeneration/outputGenerationQml";
+import { generatePdfBilingualReview } from "$lib/functions/outputGeneration/outputGenerationPdfReview";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -90,11 +91,18 @@ import { importTtmlFile, validateTtmlFile } from "./ttml";
 import { importMifFile, validateMifFile } from "./mif";
 import { importWindowsRcFile, validateWindowsRcFile } from "./windowsRc";
 import { importQmlFile, validateQmlFile } from "./qml";
+import { importPdfFile, validatePdfFile } from "./pdf";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
 	export: true,
 	roundTrip: true,
+} as const;
+
+const SOURCE_ONLY_CAPABILITIES = {
+	import: true,
+	export: true,
+	roundTrip: false,
 } as const;
 
 async function sniffText(
@@ -513,6 +521,19 @@ const adapters = [
 		validate: validateQmlFile,
 		importFile: importQmlFile,
 		exportFile: generateQmlTranslation,
+	},
+	{
+		id: "pdf",
+		label: "PDF source-only → bilingual HTML",
+		extensions: ["pdf"],
+		mimeTypes: ["application/pdf"],
+		capabilities: SOURCE_ONLY_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.pdf,
+		sniff: async (file, context) =>
+			(await validatePdfFile(file, context)).valid,
+		validate: validatePdfFile,
+		importFile: importPdfFile,
+		exportFile: generatePdfBilingualReview,
 	},
 	{
 		id: "xml",

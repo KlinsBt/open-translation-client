@@ -1023,10 +1023,25 @@ Complete these in order after FF-000 through FF-009.
       labels, targets, warnings and picker exclusion; the operational and future
       isolated-service requirements are documented in
       `docs/CONSTRAINED_FORMAT_WORKFLOWS.md`.
-- [ ] **FF-401 — PDF (`.pdf`) as source-only extraction.** Clearly label PDF as
+- [x] **FF-401 — PDF (`.pdf`) as source-only extraction.** Clearly label PDF as
       lossy, distinguish born-digital text from OCR, retain page/bounding-box
       context, and export translation to a new accessible document or bilingual
       review format rather than promising layout-identical PDF round trips.
+      Completed 2026-08-18: a locally bundled PDF.js adapter validates the PDF
+      signature/structure, extracts selected born-digital pages into visual lines
+      or positioned items, records page/user-space bounding boxes and direction,
+      and classifies text, image-only/OCR-required, and blank pages. Page ranges
+      and skip/error OCR policies are explicit; passworded, malformed, empty,
+      cancelled, oversized, over-page-limit and text-expansion cases fail with
+      typed errors. Embedded scripts, actions, forms, links and attachments are
+      never executed or requested. The adapter is labelled source-only with
+      `roundTrip: false`; export produces CSP-locked accessible bilingual HTML
+      grouped by source page, never a purported layout-identical PDF. Synthetic
+      Unicode/RTL/non-BMP, mixed OCR, bbox, filtering, malformed, cancellation,
+      2,001-page limit, 250-line performance, detection, shared conformance and
+      real-browser coverage is included, and the reference PDF passes installed
+      `pdfinfo` independently. PDF extraction remains inherently lossy, including
+      reading order, shaping, accessibility tags and layout.
 - [ ] **FF-402 — OCR image input (`.png`, `.jpg`, `.tiff`) and media transcription.**
       Keep this outside core format adapters until a local or consent-based
       service architecture, privacy model, language detection, timestamp/layout

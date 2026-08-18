@@ -22,6 +22,7 @@ describe("browser adapter import/edit/export smoke tests", () => {
 				fixture.translatedSegments,
 			);
 			let downloaded: Blob | undefined;
+			let downloadName = "";
 			const createUrl = vi
 				.spyOn(URL, "createObjectURL")
 				.mockImplementation((value) => {
@@ -30,7 +31,9 @@ describe("browser adapter import/edit/export smoke tests", () => {
 				});
 			const click = vi
 				.spyOn(HTMLAnchorElement.prototype, "click")
-				.mockImplementation(() => undefined);
+				.mockImplementation(function (this: HTMLAnchorElement) {
+					downloadName = this.download;
+				});
 			vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
 
 			await adapter.exportFile(project);
@@ -38,6 +41,19 @@ describe("browser adapter import/edit/export smoke tests", () => {
 			expect(createUrl).toHaveBeenCalledOnce();
 			expect(click).toHaveBeenCalledOnce();
 			expect(downloaded).toBeInstanceOf(Blob);
+			if (!adapter.capabilities.roundTrip) {
+				expect(fixture.derivedOutput).toBeDefined();
+				expect(downloaded!.type).toBe(fixture.derivedOutput!.mimeType);
+				expect(downloadName).toMatch(
+					new RegExp(
+						`${fixture.derivedOutput!.downloadSuffix.replace(".", "\\.")}$`,
+					),
+				);
+				const text = await downloaded!.text();
+				for (const marker of fixture.derivedOutput!.translatedMarkers)
+					expect(text).toContain(marker);
+				return;
+			}
 			const reimported = await adapter.importFile(
 				outputFile(fixture, downloaded!),
 				fixture.importOptions,

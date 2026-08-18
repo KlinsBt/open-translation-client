@@ -109,6 +109,11 @@ export async function detectFileFormat(
 		);
 	}
 
+	if (hasPdfSignature(prefix)) {
+		const adapter = adapters.find((candidate) => candidate.id === "pdf");
+		if (adapter) return supportedContent(adapter, extension, mimeType);
+	}
+
 	const textKind = sniffTextKind(prefix);
 	if (textKind === "json") {
 		for (const candidate of adapters.filter(
@@ -494,6 +499,15 @@ function hasZipSignature(bytes: Uint8Array): boolean {
 function hasOleSignature(bytes: Uint8Array): boolean {
 	const signature = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
 	return signature.every((value, index) => bytes[index] === value);
+}
+
+function hasPdfSignature(bytes: Uint8Array): boolean {
+	const signature = [0x25, 0x50, 0x44, 0x46, 0x2d];
+	const limit = Math.min(bytes.length - signature.length, 1_024);
+	for (let start = 0; start <= limit; start++)
+		if (signature.every((value, index) => bytes[start + index] === value))
+			return true;
+	return false;
 }
 
 function legacyOfficeLabel(extension: string | undefined): string | undefined {

@@ -4,6 +4,7 @@ import {
 	CONFORMANCE_UNICODE_SOURCE,
 	CONFORMANCE_UNICODE_TARGET,
 } from "./formatConformance";
+import { createSyntheticPdf } from "./pdfFixtures";
 
 const encoder = new TextEncoder();
 
@@ -1269,6 +1270,58 @@ const qmlFixture: FormatConformanceFixture = {
 		),
 };
 
+const pdfFixture: FormatConformanceFixture = {
+	id: "pdf",
+	fileName: "source.pdf",
+	mimeType: "application/pdf",
+	createValidFile: async () =>
+		createSyntheticPdf([{ lines: ["Café e\u0301 — 𐍈.", "مرحبا", "👩🏽💻"] }]),
+	createMalformedFile: async () =>
+		new File(["%PDF-1.7\nmalformed"], "broken.pdf", {
+			type: "application/pdf",
+		}),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: ["Café e\u0301 — 𐍈.", "مرحبا", "👩🏽💻"],
+		filterOptions: {
+			pages: "all",
+			grouping: "lines",
+			ocrPolicy: "skip",
+		},
+		skeleton: { kind: "package", replacementKinds: [] },
+		units: [
+			{ id: "unit-1", part: "page-1", path: null },
+			{ id: "unit-2", part: "page-1", path: null },
+			{ id: "unit-3", part: "page-1", path: null },
+		],
+	},
+	translatedSegments: [
+		"Übersetzter Text.",
+		"Arabische Übersetzung",
+		"Emoji-Übersetzung",
+	],
+	unicodeExpectations: ["Café e\u0301 — 𐍈.", "مرحبا", "👩🏽💻"],
+	derivedOutput: {
+		mimeType: "text/html;charset=utf-8",
+		downloadSuffix: ".bilingual.html",
+		translatedMarkers: [
+			"Übersetzter Text.",
+			"Arabische Übersetzung",
+			"Emoji-Übersetzung",
+		],
+	},
+	createPerformanceFile: async (units) =>
+		createSyntheticPdf(
+			Array.from({ length: Math.ceil(units / 25) }, (_, page) => ({
+				lines: Array.from(
+					{ length: Math.min(25, units - page * 25) },
+					(_, index) => `Message ${page * 25 + index}`,
+				),
+			})),
+			"performance.pdf",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1540,6 +1593,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	mifFixture,
 	windowsRcFixture,
 	qmlFixture,
+	pdfFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

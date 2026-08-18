@@ -24,6 +24,7 @@ export const FORMAT_IDS = [
 	"mif",
 	"windows-rc",
 	"qml",
+	"pdf",
 	"xml",
 	"docx",
 	"xlsx",

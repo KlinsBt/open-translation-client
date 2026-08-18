@@ -36,6 +36,7 @@ import { buildTtmlTranslationBlob } from "$lib/functions/outputGeneration/output
 import { buildMifTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationMif";
 import { buildWindowsRcTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
 import { buildQmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQml";
+import { buildPdfBilingualReviewBlob } from "$lib/functions/outputGeneration/outputGenerationPdfReview";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -71,6 +72,12 @@ export interface FormatConformanceFixture {
 	createPerformanceFile(units: number): Promise<File>;
 	performanceOptions?: Readonly<FormatOptionValues>;
 	expectedPackageChanges?: string[];
+	unicodeExpectations?: string[];
+	derivedOutput?: {
+		mimeType: string;
+		translatedMarkers: string[];
+		downloadSuffix: string;
+	};
 }
 
 export interface SemanticPackageDiff {
@@ -197,6 +204,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildWindowsRcTranslationBlob(project);
 		case "qml":
 			return buildQmlTranslationBlob(project);
+		case "pdf":
+			return buildPdfBilingualReviewBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

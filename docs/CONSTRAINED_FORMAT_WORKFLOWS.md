@@ -38,3 +38,18 @@ extensions can be added to the picker.
   privacy policy, and reproducible test profile are configured.
 - **Read-only package:** inspect supported members without writing the vendor
   container back.
+
+## PDF source-only extraction
+
+PDF is a final-form page-description format, not an editable document model.
+Open TLC uses the locally bundled PDF.js parser to extract positioned text from
+selected pages. Each unit records its source page and PDF user-space bounding
+box. Pages with raster images but no text are reported as requiring OCR; they
+are never silently treated as blank or sent to a service.
+
+PDF projects have `roundTrip: false`. Export creates a standalone, accessible,
+script-free bilingual HTML review grouped by source page. It deliberately does
+not write a replacement PDF or promise matching line breaks, reading order,
+fonts, forms, annotations, signatures, accessibility tags, or layout. Embedded
+scripts, actions, attachments, forms, and links are not executed. Passworded
+files must be decrypted locally first.

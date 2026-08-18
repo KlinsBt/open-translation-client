@@ -227,6 +227,16 @@ export interface TtmlSegmentMeta {
 	separator?: string;
 }
 
+export interface PdfSegmentMeta {
+	profile: "pdf-source-only";
+	page: number;
+	bbox: [number, number, number, number];
+	direction: "ltr" | "rtl";
+	itemCount: number;
+	extraction: "born-digital";
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -284,6 +294,7 @@ export type SegmentMeta =
 	| SubtitleSegmentMeta
 	| PackageXmlSegmentMeta
 	| TtmlSegmentMeta
+	| PdfSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

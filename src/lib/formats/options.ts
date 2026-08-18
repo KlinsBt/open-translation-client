@@ -842,6 +842,33 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["value", "preferences", "sentences"],
 		},
 	],
+	pdf: [
+		{
+			id: "pages",
+			label: "Pages",
+			type: "text",
+			defaultValue: "all",
+			placeholder: "all or e.g. 1-5, 8",
+		},
+		{
+			id: "grouping",
+			label: "Text grouping",
+			type: "select",
+			defaultValue: "lines",
+			choices: ["lines", "items"],
+			description:
+				"Group adjacent PDF text items into visual lines or retain individual positioned items.",
+		},
+		{
+			id: "ocrPolicy",
+			label: "Pages requiring OCR",
+			type: "select",
+			defaultValue: "skip",
+			choices: ["skip", "error"],
+			description:
+				"Skip image-only pages with a recorded warning, or reject the import. Core PDF extraction never runs OCR implicitly.",
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

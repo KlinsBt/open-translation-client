@@ -61,7 +61,10 @@ describe("save-file validation", () => {
 		expect(
 			validateJsonData({
 				...makeUserData(),
-				translationData: { ...makeUserData().translationData, type: "pdf" },
+				translationData: {
+					...makeUserData().translationData,
+					type: "unsupported-format",
+				},
 			}),
 		).toBe(false);
 	});

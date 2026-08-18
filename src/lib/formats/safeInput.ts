@@ -40,6 +40,10 @@ export type SafeInputErrorCode =
 	| "MIF_INVALID"
 	| "WINDOWS_RC_INVALID"
 	| "QML_INVALID"
+	| "PDF_INVALID"
+	| "PDF_PASSWORD_REQUIRED"
+	| "PDF_OCR_REQUIRED"
+	| "PDF_LIMIT_EXCEEDED"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

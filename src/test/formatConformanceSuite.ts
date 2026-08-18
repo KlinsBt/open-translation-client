@@ -55,69 +55,93 @@ export function registerFormatConformanceSuite(
 					}
 				});
 
-				it("round-trips identity output byte-for-byte", async () => {
-					const source = await fixture.createValidFile();
-					const imported = await adapter.importFile(
-						source,
-						fixture.importOptions,
-					);
-					const identity = projectFromConformanceImport(
-						fixture,
-						imported,
-						fixture.identityTargetSegments ??
-							fixture.extractionSnapshot.segments,
-					);
-					const output = await buildConformanceOutput(identity);
+				it(
+					adapter.capabilities.roundTrip
+						? "round-trips identity output byte-for-byte"
+						: "exports a clearly derived artifact instead of claiming identity",
+					async () => {
+						const source = await fixture.createValidFile();
+						const imported = await adapter.importFile(
+							source,
+							fixture.importOptions,
+						);
+						const identity = projectFromConformanceImport(
+							fixture,
+							imported,
+							fixture.identityTargetSegments ??
+								fixture.extractionSnapshot.segments,
+						);
+						const output = await buildConformanceOutput(identity);
+						if (adapter.capabilities.roundTrip) {
+							expect(await blobBytes(output)).toEqual(await blobBytes(source));
+						} else {
+							expect(fixture.derivedOutput).toBeDefined();
+							expect(output.type).toBe(fixture.derivedOutput!.mimeType);
+							expect(await blobBytes(output)).not.toEqual(
+								await blobBytes(source),
+							);
+						}
+					},
+				);
 
-					expect(await blobBytes(output)).toEqual(await blobBytes(source));
-				});
+				it(
+					adapter.capabilities.roundTrip
+						? "validates and reimports translated output"
+						: "contains translated content in the derived output",
+					async () => {
+						const imported = await adapter.importFile(
+							await fixture.createValidFile(),
+							fixture.importOptions,
+						);
+						const project = projectFromConformanceImport(
+							fixture,
+							imported,
+							fixture.translatedSegments,
+						);
+						const output = await buildConformanceOutput(project);
+						if (!adapter.capabilities.roundTrip) {
+							expect(fixture.derivedOutput).toBeDefined();
+							expect(output.type).toBe(fixture.derivedOutput!.mimeType);
+							const text = await output.text();
+							for (const marker of fixture.derivedOutput!.translatedMarkers)
+								expect(text).toContain(marker);
+							return;
+						}
+						const translatedFile = outputFile(fixture, output);
 
-				it("validates and reimports translated output", async () => {
-					const imported = await adapter.importFile(
-						await fixture.createValidFile(),
-						fixture.importOptions,
-					);
-					const project = projectFromConformanceImport(
-						fixture,
-						imported,
-						fixture.translatedSegments,
-					);
-					const translatedFile = outputFile(
-						fixture,
-						await buildConformanceOutput(project),
-					);
-
-					await expect(adapter.validate(translatedFile)).resolves.toMatchObject(
-						{
+						await expect(
+							adapter.validate(translatedFile),
+						).resolves.toMatchObject({
 							valid: true,
-						},
-					);
-					const reimported = await adapter.importFile(
-						translatedFile,
-						fixture.importOptions,
-					);
-					if (fixture.expectTranslatedTargetSegments) {
-						expect(reimported.kind).toBe("segments");
-						if (reimported.kind !== "segments")
-							throw new Error("Expected bilingual segment import");
-						expect(reimported.targetSegments).toEqual(
-							fixture.translatedSegments,
+						});
+						const reimported = await adapter.importFile(
+							translatedFile,
+							fixture.importOptions,
 						);
-					} else {
-						expect(snapshotExtraction(reimported).segments).toEqual(
-							fixture.translatedSegments,
-						);
-					}
-				});
+						if (fixture.expectTranslatedTargetSegments) {
+							expect(reimported.kind).toBe("segments");
+							if (reimported.kind !== "segments")
+								throw new Error("Expected bilingual segment import");
+							expect(reimported.targetSegments).toEqual(
+								fixture.translatedSegments,
+							);
+						} else {
+							expect(snapshotExtraction(reimported).segments).toEqual(
+								fixture.translatedSegments,
+							);
+						}
+					},
+				);
 
 				it("preserves combining marks, RTL text, and non-BMP Unicode", async () => {
 					const result = await adapter.importFile(
 						await fixture.createValidFile(),
 						fixture.importOptions,
 					);
-					expect(snapshotExtraction(result).segments).toContain(
+					for (const expectation of fixture.unicodeExpectations ?? [
 						CONFORMANCE_UNICODE_SOURCE,
-					);
+					])
+						expect(snapshotExtraction(result).segments).toContain(expectation);
 				});
 
 				it(`imports the ${CONFORMANCE_PERFORMANCE_UNITS}-unit performance fixture within its regression budget`, async () => {

@@ -195,6 +195,11 @@ describe("format import options", () => {
 				"qsTr:1,qsTranslate:2,QT_TR_NOOP:1,QT_TRANSLATE_NOOP:2",
 			segmentationMode: "value",
 		});
+		expect(normalizeImportOptions("pdf", { grouping: "invalid" })).toEqual({
+			pages: "all",
+			grouping: "lines",
+			ocrPolicy: "skip",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",
