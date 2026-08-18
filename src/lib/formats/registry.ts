@@ -22,6 +22,7 @@ import { generateDitaTranslation } from "$lib/functions/outputGeneration/outputG
 import { generateDocBookTranslation } from "$lib/functions/outputGeneration/outputGenerationDocBook";
 import { generateInDesignTranslation } from "$lib/functions/outputGeneration/outputGenerationIdml";
 import { generateLatexTranslation } from "$lib/functions/outputGeneration/outputGenerationLatex";
+import { generateTtmlTranslation } from "$lib/functions/outputGeneration/outputGenerationTtml";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -82,6 +83,7 @@ import { importDitaFile, validateDitaFile } from "./dita";
 import { importDocBookFile, validateDocBookFile } from "./docbook";
 import { importInDesignFile, validateInDesignFile } from "./idml";
 import { importLatexFile, validateLatexFile } from "./latex";
+import { importTtmlFile, validateTtmlFile } from "./ttml";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -440,6 +442,23 @@ const adapters = [
 		validate: validateLatexFile,
 		importFile: importLatexFile,
 		exportFile: generateLatexTranslation,
+	},
+	{
+		id: "ttml",
+		label: "TTML/DFXP",
+		extensions: ["ttml", "dfxp"],
+		mimeTypes: ["application/ttml+xml", "application/xml", "text/xml"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.ttml,
+		sniff: async (file, context) =>
+			(await sniffText(
+				file,
+				/^(?:<\?xml[^?]*\?>\s*)?<tt(?:\s|>)[\s\S]*xmlns(?:\:\w+)?=["']http:\/\/(?:www\.w3\.org\/ns\/ttml|www\.w3\.org\/2006\/10\/ttaf1)["']/,
+				context,
+			)) && (await validateTtmlFile(file, context)).valid,
+		validate: validateTtmlFile,
+		importFile: importTtmlFile,
+		exportFile: generateTtmlTranslation,
 	},
 	{
 		id: "xml",

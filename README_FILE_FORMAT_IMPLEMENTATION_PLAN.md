@@ -950,10 +950,29 @@ Complete these in order after FF-000 through FF-009.
       (`OPENTLC_RUN_LATEX_ENGINE=1`), but no TeX engine is installed here, so
       release CI must execute that gate with representative macro packages before
       compiled-output support is advertised.
-- [ ] **FF-307 — TTML (`.ttml`, `.dfxp`).** Add namespace/profile-aware timed-text
+- [x] **FF-307 — TTML (`.ttml`, `.dfxp`).** Add namespace/profile-aware timed-text
       handling, nested spans, styling, regions, frame/tick rates, timing
       expressions, language, and whitespace. Validate against the selected TTML
       profile and reuse subtitle QA without assuming WebVTT timing rules.
+      Completed 2026-08-18: the TTML/DFXP adapter validates supported W3C
+      namespaces and selected TTML 1, TTML 2, or IMSC 1 profiles; frame rate and
+      multipliers, subframe/tick rates, clock/frame/subframe/tick/offset timing,
+      effective inherited begin/end/duration, unique style/region IDs and every
+      reference, positive cue durations, overlaps, and timed paragraph presence.
+      Source-ranged extraction covers direct paragraph text and nested spans with
+      inherited cue timing, style, region, language, and source whitespace;
+      metadata and value/preference/sentence segmentation are optional. Export
+      XML-escapes and reparses mapped values, preserves namespaces, profiles,
+      layout/styling/timing and identity encoding/BOM, rejoins pieces without
+      duplication, and applies cue line-length/count, reading-speed, expansion,
+      overlap and placeholder QA without WebVTT parsing assumptions. Stale
+      mappings and split/join fail closed. Unit, conformance, TTML/IMSC profiles,
+      all timing forms, inheritance/style/region/language/whitespace, metadata,
+      overlap/readability, UTF-16, security, 1,000-cue, detection, re-import, and
+      generated browser coverage verifies the workflow; output passed local
+      `xmllint --nonet`. Official TTML/IMSC schema and profile-validator checks
+      remain mandatory release-CI gates before profile-conformant output is
+      advertised.
 - [ ] **FF-308 — MIF, Windows RC, and Qt/QML specialist resources.** Implement as
       separate adapters in that order, with grammar-aware token preservation and
       real-tool reopen/compile tests. Do not use broad regex replacements for

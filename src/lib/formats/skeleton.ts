@@ -224,6 +224,18 @@ export interface PackageXmlValueReplacement extends ReplacementBase {
 	originalValue: string;
 }
 
+export interface TtmlValueReplacement
+	extends Omit<XmlValueReplacement, "kind"> {
+	kind: "ttml-value";
+	profile: string;
+	cueIndex: number;
+	startMs: number;
+	endMs: number;
+	region?: string;
+	style?: string;
+	language?: string;
+}
+
 export interface HtmlTextReplacement extends ReplacementBase {
 	kind: "html-text";
 	path: number[];
@@ -299,6 +311,7 @@ export type SkeletonReplacement =
 	| MarkupTextReplacement
 	| SubtitleCueReplacement
 	| PackageXmlValueReplacement
+	| TtmlValueReplacement
 	| XmlValueReplacement
 	| HtmlTextReplacement
 	| HtmlAttributeReplacement
@@ -413,6 +426,7 @@ export async function createTextSkeleton(
 		| "docbook"
 		| "idml"
 		| "latex"
+		| "ttml"
 		| "xml"
 		| "html",
 	content: string,

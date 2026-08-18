@@ -20,6 +20,7 @@ export const FORMAT_IDS = [
 	"docbook",
 	"idml",
 	"latex",
+	"ttml",
 	"xml",
 	"docx",
 	"xlsx",

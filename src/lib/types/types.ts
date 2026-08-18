@@ -212,6 +212,21 @@ export interface PackageXmlSegmentMeta {
 	separator?: string;
 }
 
+export interface TtmlSegmentMeta {
+	profile: string;
+	cueIndex: number;
+	startMs: number;
+	endMs: number;
+	region?: string;
+	style?: string;
+	language?: string;
+	path: string[];
+	start: number;
+	end: number;
+	originalValue: string;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -268,6 +283,7 @@ export type SegmentMeta =
 	| MarkupSegmentMeta
 	| SubtitleSegmentMeta
 	| PackageXmlSegmentMeta
+	| TtmlSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

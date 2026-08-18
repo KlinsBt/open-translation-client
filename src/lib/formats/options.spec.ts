@@ -163,6 +163,16 @@ describe("format import options", () => {
 			includeMetadata: true,
 			segmentationMode: "preferences",
 		});
+		expect(normalizeImportOptions("ttml", { profile: "invalid" })).toEqual({
+			profile: "auto",
+			includeMetadata: false,
+			overlapPolicy: "warn",
+			maxCharactersPerLine: 42,
+			maxLinesPerCue: 2,
+			maxReadingSpeed: 20,
+			maxExpansionPercent: 50,
+			segmentationMode: "value",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

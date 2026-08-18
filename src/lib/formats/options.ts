@@ -713,6 +713,59 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["range", "preferences", "sentences"],
 		},
 	],
+	ttml: [
+		{
+			id: "profile",
+			label: "TTML profile",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "ttml1", "ttml2", "imsc1"],
+		},
+		{
+			id: "includeMetadata",
+			label: "Include metadata text",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "overlapPolicy",
+			label: "Overlapping cues",
+			type: "select",
+			defaultValue: "warn",
+			choices: ["allow", "warn", "error"],
+		},
+		{
+			id: "maxCharactersPerLine",
+			label: "Maximum characters per line",
+			type: "number",
+			defaultValue: 42,
+		},
+		{
+			id: "maxLinesPerCue",
+			label: "Maximum lines per cue",
+			type: "number",
+			defaultValue: 2,
+		},
+		{
+			id: "maxReadingSpeed",
+			label: "Maximum characters per second",
+			type: "number",
+			defaultValue: 20,
+		},
+		{
+			id: "maxExpansionPercent",
+			label: "Maximum target expansion (%)",
+			type: "number",
+			defaultValue: 50,
+		},
+		{
+			id: "segmentationMode",
+			label: "Text segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

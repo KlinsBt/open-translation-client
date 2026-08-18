@@ -36,6 +36,7 @@ export type SafeInputErrorCode =
 	| "DOCBOOK_INVALID"
 	| "IDML_INVALID"
 	| "LATEX_INVALID"
+	| "TTML_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

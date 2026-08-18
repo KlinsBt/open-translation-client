@@ -1076,6 +1076,57 @@ const latexFixture: FormatConformanceFixture = {
 	performanceOptions: { segmentationMode: "sentences" },
 };
 
+const ttmlFixture: FormatConformanceFixture = {
+	id: "ttml",
+	fileName: "captions.ttml",
+	mimeType: "application/ttml+xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="UTF-8"?>\n<tt xmlns="http://www.w3.org/ns/ttml" xml:lang="en"><body><div><p xml:id="welcome" begin="0s" end="10s">${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</p></div></body></tt>\n`,
+			"captions.ttml",
+			"application/ttml+xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<!DOCTYPE tt [<!ENTITY x SYSTEM "file:///etc/passwd">]><tt xmlns="http://www.w3.org/ns/ttml"><body><p begin="0s" end="1s">&x;</p></body></tt>',
+			"broken.ttml",
+			"application/ttml+xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			profile: "ttml1",
+			includeMetadata: false,
+			overlapPolicy: "warn",
+			maxCharactersPerLine: 42,
+			maxLinesPerCue: 2,
+			maxReadingSpeed: 20,
+			maxExpansionPercent: 50,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["ttml-value"] },
+		units: [
+			{
+				id: "cue-1-1",
+				part: "captions.ttml",
+				path: ["tt[1]", "body[1]", "div[1]", "p[1]", "#text"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<tt xmlns="http://www.w3.org/ns/ttml"><body><div>${Array.from(
+				{ length: units },
+				(_, index) => `<p begin="${index * 5}s" dur="5s">Message ${index}</p>`,
+			).join("")}</div></body></tt>`,
+			"performance.ttml",
+			"application/ttml+xml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1343,6 +1394,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	docBookFixture,
 	idmlFixture,
 	latexFixture,
+	ttmlFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,
