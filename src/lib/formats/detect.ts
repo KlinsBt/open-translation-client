@@ -10,6 +10,10 @@ import {
 } from "./safeInput";
 import type { FormatAdapter } from "./types";
 import {
+	detectExternalMediaCandidate,
+	externalExtractionDisclosure,
+} from "./externalExtraction";
+import {
 	detectXliffVendorProfile,
 	type XliffVendorProfileId,
 } from "./xliffProfiles";
@@ -112,6 +116,30 @@ export async function detectFileFormat(
 	if (hasPdfSignature(prefix)) {
 		const adapter = adapters.find((candidate) => candidate.id === "pdf");
 		if (adapter) return supportedContent(adapter, extension, mimeType);
+	}
+
+	const externalCandidate = detectExternalMediaCandidate(prefix);
+	if (externalCandidate) {
+		const metadata = metadataEvidence(
+			extension,
+			mimeType,
+			externalCandidate.extensions,
+			externalCandidate.mimeTypes,
+		);
+		const disclosure = externalExtractionDisclosure(externalCandidate);
+		return unsupported(
+			externalCandidate.label,
+			metadata.length > 0 ? "high" : "medium",
+			["signature", ...metadata],
+			externalCandidate.reason,
+			{
+				kind: "external-service-required",
+				primaryAction: disclosure.primaryAction,
+				steps: disclosure.steps,
+				privacyWarning: disclosure.privacyWarning,
+				fidelityWarning: disclosure.fidelityWarning,
+			},
+		);
 	}
 
 	const textKind = sniffTextKind(prefix);

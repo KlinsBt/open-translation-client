@@ -53,3 +53,27 @@ not write a replacement PDF or promise matching line breaks, reading order,
 fonts, forms, annotations, signatures, accessibility tags, or layout. Embedded
 scripts, actions, attachments, forms, and links are not executed. Passworded
 files must be decrypted locally first.
+
+## OCR images and audio/video transcription
+
+PNG, JPEG, and TIFF images require OCR; WAV, MP3, Ogg, FLAC, MP4, MOV, and WebM
+media require transcription. Open TLC recognizes representative container
+signatures so a renamed executable or arbitrary binary cannot be routed by its
+extension alone. These extensions remain absent from the upload picker because
+no audited extraction provider is configured.
+
+The provider boundary is deliberately separate from format adapters. A local
+provider must declare a pinned model version, modalities, and file-size limit,
+must not declare an endpoint, and must not send bytes off-device. A remote
+provider must additionally use HTTPS, disclose its privacy and retention
+policies, acknowledge that bytes leave the device, and require consent bound to
+the exact provider, file name, file size, policy, and retention statement.
+
+Results are accepted only when they identify the provider and pinned model,
+report detected-language confidence, and retain review context. OCR units need
+one-based pages and finite bounding boxes; transcript units need ordered
+millisecond timestamps. Every unit needs confidence in the inclusive 0–1 range.
+Low-confidence text must remain reviewable rather than being silently promoted
+to authoritative source text. Until an implementation supplies this contract,
+its consent UI, confidence review UI, and reproducible pinned-model fixtures,
+Open TLC performs no upload and creates no project from image or media input.

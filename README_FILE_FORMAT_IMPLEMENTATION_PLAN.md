@@ -1042,10 +1042,23 @@ Complete these in order after FF-000 through FF-009.
       real-browser coverage is included, and the reference PDF passes installed
       `pdfinfo` independently. PDF extraction remains inherently lossy, including
       reading order, shaping, accessibility tags and layout.
-- [ ] **FF-402 — OCR image input (`.png`, `.jpg`, `.tiff`) and media transcription.**
+- [x] **FF-402 — OCR image input (`.png`, `.jpg`, `.tiff`) and media transcription.**
       Keep this outside core format adapters until a local or consent-based
       service architecture, privacy model, language detection, timestamp/layout
       model, confidence UI, and reproducible tests exist.
+      Completed 2026-08-18 as an explicitly disabled, enforceable integration
+      boundary: signature-first recognition identifies PNG, JPEG, TIFF and
+      common audio/video containers and presents OCR/transcription-specific
+      privacy and fidelity guidance without advertising their extensions or
+      uploading bytes. A typed provider contract distinguishes local and remote
+      processing, pins model versions and size limits, requires HTTPS privacy
+      and retention disclosures plus consent bound to the exact file for remote
+      work, and validates language/unit confidence, OCR page boxes, and
+      transcript timestamps. Deterministic contract and real-browser tests cover
+      signatures, spoofed extensions, provider/consent/result rejection and
+      picker exclusion. No extraction adapter or provider is enabled until it
+      also supplies the required consent/confidence UI and reproducible model
+      fixtures.
 - [ ] **FF-403 — Proprietary CAT packages (`.sdlppx`, `.sdlrpx`, `.wsxz`, memoQ
       packages).** Start read-only and fixture-led. Preserve all unknown package
       entries, defend against archive traversal/bombs, document unsupported
