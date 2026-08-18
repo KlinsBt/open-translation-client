@@ -56,9 +56,11 @@ export function registerFormatConformanceSuite(
 				});
 
 				it(
-					adapter.capabilities.roundTrip
-						? "round-trips identity output byte-for-byte"
-						: "exports a clearly derived artifact instead of claiming identity",
+					!adapter.capabilities.export
+						? "retains the original skeleton and rejects proprietary output"
+						: adapter.capabilities.roundTrip
+							? "round-trips identity output byte-for-byte"
+							: "exports a clearly derived artifact instead of claiming identity",
 					async () => {
 						const source = await fixture.createValidFile();
 						const imported = await adapter.importFile(
@@ -71,6 +73,15 @@ export function registerFormatConformanceSuite(
 							fixture.identityTargetSegments ??
 								fixture.extractionSnapshot.segments,
 						);
+						if (!adapter.capabilities.export) {
+							expect(
+								identity.translationData.skeleton?.source.originalFile,
+							).toBeInstanceOf(Blob);
+							await expect(adapter.exportFile(identity)).rejects.toThrow(
+								/import-only|protected import/i,
+							);
+							return;
+						}
 						const output = await buildConformanceOutput(identity);
 						if (adapter.capabilities.roundTrip) {
 							expect(await blobBytes(output)).toEqual(await blobBytes(source));
@@ -85,9 +96,11 @@ export function registerFormatConformanceSuite(
 				);
 
 				it(
-					adapter.capabilities.roundTrip
-						? "validates and reimports translated output"
-						: "contains translated content in the derived output",
+					!adapter.capabilities.export
+						? "keeps translated targets in the project without writing the package"
+						: adapter.capabilities.roundTrip
+							? "validates and reimports translated output"
+							: "contains translated content in the derived output",
 					async () => {
 						const imported = await adapter.importFile(
 							await fixture.createValidFile(),
@@ -98,6 +111,15 @@ export function registerFormatConformanceSuite(
 							imported,
 							fixture.translatedSegments,
 						);
+						if (!adapter.capabilities.export) {
+							expect(project.translationData.seg2).toEqual(
+								fixture.translatedSegments,
+							);
+							await expect(adapter.exportFile(project)).rejects.toThrow(
+								/import-only|protected import/i,
+							);
+							return;
+						}
 						const output = await buildConformanceOutput(project);
 						if (!adapter.capabilities.roundTrip) {
 							expect(fixture.derivedOutput).toBeDefined();

@@ -217,7 +217,9 @@ describe("export blocking and messages", () => {
 	});
 
 	it("guards every registered format download adapter", async () => {
-		for (const adapter of FORMAT_ADAPTERS) {
+		for (const adapter of FORMAT_ADAPTERS.filter(
+			(adapter) => adapter.capabilities.export,
+		)) {
 			const project = makeUserData({
 				type: adapter.id,
 				seg1: ["Hello {name}"],

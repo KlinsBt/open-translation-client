@@ -206,6 +206,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildQmlTranslationBlob(project);
 		case "pdf":
 			return buildPdfBilingualReviewBlob(project);
+		case "cat-package":
+			throw new Error("Read-only CAT packages have no conformance output.");
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

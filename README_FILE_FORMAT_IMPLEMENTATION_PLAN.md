@@ -1059,11 +1059,25 @@ Complete these in order after FF-000 through FF-009.
       picker exclusion. No extraction adapter or provider is enabled until it
       also supplies the required consent/confidence UI and reproducible model
       fixtures.
-- [ ] **FF-403 — Proprietary CAT packages (`.sdlppx`, `.sdlrpx`, `.wsxz`, memoQ
+- [x] **FF-403 — Proprietary CAT packages (`.sdlppx`, `.sdlrpx`, `.wsxz`, memoQ
       packages).** Start read-only and fixture-led. Preserve all unknown package
       entries, defend against archive traversal/bombs, document unsupported
       workflow metadata, and add export only after round-trip testing in the
       owning CAT tool and confirmation that licensing permits implementation.
+      Completed 2026-08-18 as protected import-only support for Trados
+      `.sdlppx`/`.sdlrpx`, WorldServer `.wsxz`, and memoQ
+      `.mqout`/`.mqback`/`.mqxlz`. Detection requires a valid safe ZIP plus
+      matching internal XLIFF/vendor markers; extension alone never suffices.
+      Users can select XLIFF-family members and whether to retain targets. Units
+      preserve vendor XLIFF protections and package paths, while every manifest,
+      database, resource and unknown binary remains byte-preserved in the
+      skeleton. Shared archive defenses reject traversal, collisions,
+      encryption, bombs, excessive expansion and malformed XML; cancellation,
+      Unicode/RTL, multi-member and 250-unit fixtures cover the importer. The
+      source export control is disabled and both the adapter and central export
+      path reject proprietary output with an actionable JSON/standard-XLIFF
+      handoff message. Package writing remains gated on licensing confirmation
+      and reopening/round-tripping generated fixtures in each owning CAT tool.
 - [ ] **FF-404 — Generic ZIP projects.** Add only as a manifest-driven batch
       container over already supported adapters. Preserve paths and bytes,
       prevent traversal/collisions, cap recursion and expansion, and report each

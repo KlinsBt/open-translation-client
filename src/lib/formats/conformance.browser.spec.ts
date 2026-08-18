@@ -11,7 +11,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("browser adapter import/edit/export smoke tests", () => {
 	for (const fixture of FORMAT_CONFORMANCE_FIXTURES) {
-		it(`imports, edits, downloads, and reimports ${fixture.id}`, async () => {
+		it(`${fixture.id} browser import/edit/${fixture.id === "cat-package" ? "read-only" : "export"} flow`, async () => {
 			const adapter = FORMAT_ADAPTERS.find((entry) => entry.id === fixture.id);
 			if (!adapter) throw new Error(`Missing ${fixture.id} adapter.`);
 			const source = await fixture.createValidFile();
@@ -36,6 +36,14 @@ describe("browser adapter import/edit/export smoke tests", () => {
 				});
 			vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
 
+			if (!adapter.capabilities.export) {
+				await expect(adapter.exportFile(project)).rejects.toThrow(
+					/import-only|protected import/i,
+				);
+				expect(createUrl).not.toHaveBeenCalled();
+				expect(click).not.toHaveBeenCalled();
+				return;
+			}
 			await adapter.exportFile(project);
 
 			expect(createUrl).toHaveBeenCalledOnce();

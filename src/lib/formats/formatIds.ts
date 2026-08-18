@@ -25,6 +25,7 @@ export const FORMAT_IDS = [
 	"windows-rc",
 	"qml",
 	"pdf",
+	"cat-package",
 	"xml",
 	"docx",
 	"xlsx",

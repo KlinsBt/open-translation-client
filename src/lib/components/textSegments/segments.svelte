@@ -18,6 +18,7 @@
 		selectedSegmentId,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { functionCreateExportFile } from "$lib/functions/outputGeneration/handleTranslationExport";
+	import { getFormatAdapter } from "$lib/formats/registry";
 
 	import { generateJsonSaveFile } from "$lib/functions/saveFileGeneration/generateJsonSaveFile";
 	import {
@@ -84,6 +85,9 @@
 		calcPercentageOfTotalSegmentsChecked(
 			$singleUserData.translationData.checked,
 		),
+	);
+	let translationExportAvailable: boolean = $derived(
+		getFormatAdapter($singleUserData.translationData.type).capabilities.export,
 	);
 
 	function handleScroll() {
@@ -715,8 +719,17 @@
 		Export Save File
 		<SaveFile marginBottom="0px" />
 	</button>
-	<button class="toolbar-button export" onclick={handleTranslationFileExport}>
-		Export Translation File
+	<button
+		class="toolbar-button export"
+		onclick={handleTranslationFileExport}
+		disabled={!translationExportAvailable}
+		title={translationExportAvailable
+			? "Export the translated source format"
+			: "This source format is import-only; use Open TLC JSON or standard XLIFF"}
+	>
+		{translationExportAvailable
+			? "Export Translation File"
+			: "Source Format Is Read-only"}
 		<Export marginBottom="2px" />
 	</button>
 	<button class="toolbar-help" aria-label="Keyboard shortcuts" tabindex="0">

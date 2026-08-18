@@ -44,6 +44,8 @@ export type SafeInputErrorCode =
 	| "PDF_PASSWORD_REQUIRED"
 	| "PDF_OCR_REQUIRED"
 	| "PDF_LIMIT_EXCEEDED"
+	| "CAT_PACKAGE_INVALID"
+	| "CAT_PACKAGE_NO_TRANSLATABLE_MEMBERS"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

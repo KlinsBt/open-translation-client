@@ -17,6 +17,7 @@ import {
 	detectXliffVendorProfile,
 	type XliffVendorProfileId,
 } from "./xliffProfiles";
+import { catPackageWorkflow, detectCatPackageProfile } from "./catPackage";
 
 export type DetectionConfidence = "high" | "medium" | "low";
 
@@ -97,7 +98,7 @@ export async function detectFileFormat(
 
 	if (hasZipSignature(prefix)) {
 		const inspection = await inspectSafeZipFile(file, context);
-		return detectZipPackage(inspection, adapters, context);
+		return detectZipPackage(inspection, adapters, file.name, context);
 	}
 
 	if (hasOleSignature(prefix)) {
@@ -304,6 +305,7 @@ function projectMetadataDetection(
 async function detectZipPackage(
 	inspection: SafeArchiveInspection,
 	adapters: readonly FormatAdapter[],
+	fileName: string,
 	context?: SafeInputContext,
 ): Promise<FormatDetection> {
 	const paths = new Set(inspection.entries.map((entry) => entry.path));
@@ -327,6 +329,30 @@ async function detectZipPackage(
 		paths.has("META-INF/container.xml")
 	) {
 		return supportedPackage(adapters, "epub", "the EPUB container declaration");
+	}
+	const catProfile = detectCatPackageProfile(fileName, [...paths]);
+	if (catProfile) {
+		const adapter = adapters.find(
+			(candidate) => candidate.id === "cat-package",
+		);
+		if (!adapter)
+			throw new Error("No adapter is registered for detected CAT packages.");
+		const workflow = catPackageWorkflow(catProfile);
+		return {
+			formatId: adapter.id,
+			label: catProfile.label,
+			supported: true,
+			confidence: "high",
+			evidence: ["package", "signature"],
+			reason: `The safe ZIP contains a recognized ${catProfile.vendor} package structure and supported bilingual members.`,
+			workflow: {
+				kind: "read-only-package",
+				primaryAction: workflow.primaryAction,
+				steps: workflow.steps,
+				fidelityWarning: workflow.fidelityWarning,
+			},
+			adapter,
+		};
 	}
 	return unsupported(
 		"ZIP archive",

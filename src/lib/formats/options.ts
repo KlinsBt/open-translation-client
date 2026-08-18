@@ -869,6 +869,25 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Skip image-only pages with a recorded warning, or reject the import. Core PDF extraction never runs OCR implicitly.",
 		},
 	],
+	"cat-package": [
+		{
+			id: "memberPaths",
+			label: "Bilingual members",
+			type: "text",
+			defaultValue: "",
+			placeholder: "All, or comma-separated package paths/globs",
+			description:
+				"Leave empty to import every supported XLIFF member, or select exact paths and * / ** wildcard patterns.",
+		},
+		{
+			id: "includeExistingTargets",
+			label: "Import existing targets",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Retain the bilingual targets and workflow state already stored in package XLIFF members.",
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

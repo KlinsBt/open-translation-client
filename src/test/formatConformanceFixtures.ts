@@ -1322,6 +1322,68 @@ const pdfFixture: FormatConformanceFixture = {
 		),
 };
 
+async function catPackageFixtureFile(
+	sources: readonly string[],
+	name = "fixture.sdlppx",
+): Promise<File> {
+	const zip = new JSZip();
+	zip.file("project/fixture.sdlproj", "opaque project metadata");
+	zip.file(
+		"target/document.sdlxliff",
+		`<?xml version="1.0" encoding="UTF-8"?><xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:sdl="http://sdl.com/FileTypes/SdlXliff/1.0"><file original="source.docx" source-language="en" target-language="de" datatype="x-sdlfilterframework2"><body>${sources
+			.map(
+				(source, index) =>
+					`<trans-unit id="${index + 1}"><source>${escapeXml(source)}</source><target>${escapeXml(`Target ${index}`)}</target><sdl:seg-defs><sdl:seg id="${index + 1}"/></sdl:seg-defs></trans-unit>`,
+			)
+			.join("")}</body></file></xliff>`,
+	);
+	zip.file("resources/opaque.bin", encoder.encode("preserved binary"));
+	return new File(
+		[await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" })],
+		name,
+		{ type: "application/x-sdl-project-package" },
+	);
+}
+
+const catPackageFixture: FormatConformanceFixture = {
+	id: "cat-package",
+	fileName: "fixture.sdlppx",
+	mimeType: "application/x-sdl-project-package",
+	createValidFile: async () =>
+		catPackageFixtureFile([CONFORMANCE_UNICODE_SOURCE]),
+	createMalformedFile: async () =>
+		zipFile(
+			{
+				"project/fixture.sdlproj": "metadata",
+				"target/document.sdlxliff": "<xliff>",
+			},
+			"broken.sdlppx",
+			"application/x-sdl-project-package",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			memberPaths: "",
+			includeExistingTargets: true,
+		},
+		skeleton: { kind: "package", replacementKinds: [] },
+		units: [
+			{
+				id: "member-1:1",
+				part: "target/document.sdlxliff",
+				path: [],
+			},
+		],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		catPackageFixtureFile(
+			Array.from({ length: units }, (_, index) => `Message ${index}`),
+			"performance.sdlppx",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1594,6 +1656,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	windowsRcFixture,
 	qmlFixture,
 	pdfFixture,
+	catPackageFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

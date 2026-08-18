@@ -77,3 +77,27 @@ Low-confidence text must remain reviewable rather than being silently promoted
 to authoritative source text. Until an implementation supplies this contract,
 its consent UI, confidence review UI, and reproducible pinned-model fixtures,
 Open TLC performs no upload and creates no project from image or media input.
+
+## Proprietary CAT packages
+
+Trados Studio project/return packages (`.sdlppx`, `.sdlrpx`), WorldServer
+packages (`.wsxz`), and memoQ handoff/archive packages (`.mqout`, `.mqback`,
+`.mqxlz`) are ZIP containers whose manifests, workflow state, checksums, and
+binary databases belong to their originating CAT tools. Open TLC therefore
+supports a protected, read-only workflow rather than guessing how to rebuild
+them.
+
+Detection requires both a safe ZIP structure and matching internal bilingual
+members/markers. Import uses the shared archive limits: traversal, duplicate
+paths, encryption, ZIP64/spanned archives, excessive entry counts, expanded
+size, and compression bombs are rejected. Selected XLIFF-family members are
+parsed with the existing protected vendor profiles. Member paths are retained
+as source context, existing targets may be included or deliberately omitted,
+and every unknown package entry remains byte-preserved in the stored skeleton.
+Nested archives and non-XLIFF databases are never opened or executed.
+
+The source-format export action is disabled. Users can save Open TLC JSON or
+standard XLIFF and complete package reconstruction in RWS Trados Studio,
+WorldServer, or memoQ. Proprietary output must remain disabled until generated
+fixtures have been reopened and round-tripped in the exact owning tool versions
+and a licensing review confirms implementation is permitted.
