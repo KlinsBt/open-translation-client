@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Modal from "../modal.svelte";
-	import RightArrow from "../svg/rightArrow.svelte";
 	import TmxUpload from "../uploads/tmxUpload/tmxUpload.svelte";
 	import TmxMergeUpload from "../uploads/tmxUpload/tmxMergeUpload.svelte";
 	import {
@@ -33,6 +32,7 @@
 		notifyInfo,
 		notifyError,
 	} from "$lib/components/notifications/toastStore";
+	import "$lib/components/resources/resourceLibrary.css";
 
 	let showTmUploadModal: boolean = $state(false);
 	let showSelectModal: boolean = $state(false);
@@ -179,6 +179,10 @@
 			),
 		];
 	}
+
+	function getSourceLanguage(tm: TmData) {
+		return tm.terms[0]?.source.lang ?? "—";
+	}
 </script>
 
 <!-- ######################################################################################################### -->
@@ -305,98 +309,138 @@
 </div>
 
 {#if !$editTm}
-	<h1 class="section-title">Translation Memory</h1>
-
-	<div class="table-container">
-		<div class="table-header">
-			<input
-				type="text"
-				placeholder="Search TM Name..."
-				bind:value={searchQuery}
-				class="search-input"
-			/>
-		</div>
-		{#each filteredData as tm, i}
-			<div class="table-row">
-				<div class="languages">
-					<span class="language-tag">{tm.terms[0].source.lang}</span>
-					{#each getUniqueTargetLanguages(tm) as uniqueLang}
-						<span class="language-tag">{uniqueLang}</span>
-					{/each}
-				</div>
-				<div class="tm-name">{tm.name}</div>
-				<div class="icon-edits-container">
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div class="icon edi" onclick={() => handleTmSelectionModal(tm.id!)}>
-						<Edit marginBottom="0px" />
-					</div>
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div
-						class="icon del"
-						onclick={() => handleOpenDeletionConfirmationModal(tm.id!)}
-					>
-						<Delete marginBottom="0px" />
-					</div>
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div class="icon exp" onclick={() => downloadTmx(tm.id!)}>
-						<Export marginBottom="0px" />
-					</div>
-				</div>
+	<div class="resource-workspace">
+		<header class="resource-page-header">
+			<div>
+				<p class="resource-eyebrow">Linguistic assets</p>
+				<h1>Translation Memory</h1>
+				<p class="resource-description">
+					Manage reusable bilingual segments, import TMX files and export
+					memories for use in other CAT tools.
+				</p>
 			</div>
-		{/each}
-		<button
-			class="add-tm-btn save"
-			onclick={() => {
-				handleTmUploadModal();
-			}}
-		>
-			Add TM +
-		</button>
+			<div class="resource-header-actions">
+				<button class="resource-secondary-action" onclick={() => goto("/app")}>
+					← Projects
+				</button>
+				<button class="resource-primary-action" onclick={handleTmUploadModal}>
+					+ Import TMX
+				</button>
+			</div>
+		</header>
+
+		<section class="resource-library-panel" aria-labelledby="tm-library-title">
+			<div class="resource-panel-heading">
+				<div>
+					<h2 id="tm-library-title">Memory library</h2>
+					<p>
+						{filteredData.length === $tmData.length
+							? `${$tmData.length} ${$tmData.length === 1 ? "memory" : "memories"}`
+							: `${filteredData.length} of ${$tmData.length} memories`}
+					</p>
+				</div>
+				<label class="resource-search">
+					<span class="resource-visually-hidden"
+						>Search translation memories</span
+					>
+					<span class="resource-search-icon" aria-hidden="true"></span>
+					<input
+						type="search"
+						placeholder="Search translation memories"
+						bind:value={searchQuery}
+					/>
+				</label>
+			</div>
+
+			{#if $tmData.length === 0}
+				<div class="resource-empty">
+					<h3>No translation memories yet</h3>
+					<p>Import a TMX file to start reusing approved translations.</p>
+					<button class="resource-primary-action" onclick={handleTmUploadModal}>
+						Import TMX
+					</button>
+				</div>
+			{:else if filteredData.length === 0}
+				<div class="resource-empty">
+					<h3>No matching memories</h3>
+					<p>Try a different translation-memory name.</p>
+					<button
+						class="resource-secondary-action"
+						onclick={() => (searchQuery = "")}>Clear search</button
+					>
+				</div>
+			{:else}
+				<div class="resource-table-wrapper">
+					<div class="resource-table">
+						<div class="resource-table-head" aria-hidden="true">
+							<span>Name</span>
+							<span>Languages</span>
+							<span>Entries</span>
+							<span>Actions</span>
+						</div>
+						{#each filteredData as tm (tm.id)}
+							<div class="resource-table-row">
+								<div class="resource-name">
+									<strong>{tm.name}</strong>
+									<small>TMX translation memory</small>
+								</div>
+								<div class="resource-languages">
+									<span class="resource-language-tag"
+										>{getSourceLanguage(tm)}</span
+									>
+									{#each getUniqueTargetLanguages(tm) as uniqueLang}
+										<span class="resource-language-tag">{uniqueLang}</span>
+									{/each}
+								</div>
+								<div class="resource-count">
+									{tm.terms.length.toLocaleString()}
+								</div>
+								<div class="resource-row-actions">
+									<button
+										title="Manage memory"
+										aria-label={`Manage ${tm.name}`}
+										onclick={() => handleTmSelectionModal(tm.id!)}
+									>
+										<Edit marginBottom="0px" />
+									</button>
+									<button
+										class="resource-delete"
+										title="Delete memory"
+										aria-label={`Delete ${tm.name}`}
+										onclick={() => handleOpenDeletionConfirmationModal(tm.id!)}
+									>
+										<Delete marginBottom="0px" />
+									</button>
+									<button
+										title="Export TMX"
+										aria-label={`Export ${tm.name}`}
+										onclick={() => downloadTmx(tm.id!)}
+									>
+										<Export marginBottom="0px" />
+									</button>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		</section>
 	</div>
-
-	<button
-		class="back-btn back"
-		onclick={() => {
-			goto("/app");
-		}}
-	>
-		<RightArrow />
-		Go Back
-	</button>
 {:else}
-	<TmEditing />
-
-	<button
-		class="back-btn back"
-		onclick={() => {
-			editTm.set(false);
-		}}
-	>
-		<RightArrow />
-		Go Back
-	</button>
+	<div class="resource-editor-shell">
+		<div class="resource-editor-toolbar">
+			<button
+				class="resource-secondary-action"
+				onclick={() => editTm.set(false)}
+			>
+				← Back to memories
+			</button>
+		</div>
+		<TmEditing />
+	</div>
 {/if}
 
 <style>
-	.section-title {
-		text-align: center;
-		font-size: 2rem;
-		font-weight: 600;
-		color: var(--color-theme-3);
-	}
-
-	.table-container {
-		width: 100%;
-		max-width: 1100px;
-		background-color: var(--color-theme-7);
-		border-radius: 5px;
-		overflow: hidden;
-		font-family: Arial, sans-serif;
-	}
-
 	.deletion-confirmation {
 		font-size: 1.2rem;
 		font-weight: 600;
@@ -429,162 +473,10 @@
 		filter: brightness(1.1);
 	}
 
-	.table-header,
-	.table-row {
-		display: flex;
-		align-items: center;
-		padding: 0px;
-	}
-
-	.table-header {
-		background-color: var(--color-theme-4);
-		font-weight: bold;
-		color: var(--color-theme-4);
-		display: flex;
-		padding: 10px;
-		background-color: var(--color-theme-7);
-	}
-
-	.search-input {
-		flex: 1;
-		padding: 12px;
-		font-size: 1em;
-		border: 1px solid var(--color-theme-3);
-		border-radius: 5px;
-		outline: none;
-	}
-
-	.search-input::placeholder {
-		color: #999;
-	}
-
 	.rename {
 		padding: 10px;
 		margin: 5px 0px;
 		border: 1px solid var(--color-theme-4);
 		border-radius: 5px;
-	}
-
-	.table-row {
-		display: flex;
-		align-items: center;
-		padding: 12px 16px;
-		background-color: #fff;
-		border-top: 1px solid #eee;
-		margin: 0px;
-		/* border-radius: 5px; */
-		/* cursor: pointer; */
-	}
-
-	.table-row:hover {
-		background-color: var(--color-theme-1);
-		background-color: #d9f2ff;
-	}
-
-	.table-row div {
-		flex: 1;
-		text-align: center;
-	}
-
-	.languages {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		max-width: 200px;
-	}
-
-	.language-tag {
-		background-color: #e0e7ff;
-		color: #3b82f6;
-		padding: 5px 10px;
-		border-radius: 4px;
-		font-size: 0.8em;
-		border: 1px solid #a8aec3;
-	}
-
-	.language-tag:nth-child(1) {
-		background-color: var(--color-theme-7);
-		/* border: 1px solid #e0e7ff; */
-		border: 1px solid #a8aec3;
-	}
-
-	.tm-name {
-		font-weight: 500;
-		color: #333;
-	}
-
-	.table-row div {
-		flex: 1;
-		text-align: center;
-	}
-
-	.languages {
-		display: flex;
-		gap: 8px;
-	}
-
-	.icon-edits-container {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		align-items: center;
-		padding: 12px 16px;
-		margin: 0px;
-		gap: 10px;
-		/* border-radius: 5px; */
-		/* cursor: pointer; */
-	}
-
-	.icon.edi,
-	.icon.del,
-	.icon.exp {
-		min-width: 100px;
-		background-color: #f1f5ff;
-		margin: 0px 5px;
-		border: 1px solid #a8aec3;
-	}
-
-	.icon {
-		cursor: pointer;
-		padding: 4px;
-		border-radius: 4px;
-		transition: background-color 0.2s ease;
-	}
-
-	.icon.edi:hover {
-		background-color: #e0f7fa;
-	}
-
-	.icon.del:hover {
-		background-color: #ffebee;
-	}
-
-	.icon.exp:hover {
-		background-color: #e8f5e9;
-	}
-
-	.add-tm-btn {
-		width: 100%;
-		min-width: 100px;
-		color: white;
-		border: none;
-		border-radius: 0px 0px 5px 5px;
-		padding: 10px 20px;
-		cursor: pointer;
-		font-weight: 600;
-		font-size: 1.3rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		gap: 0px 5px;
-		margin: 0px;
-	}
-
-	.add-tm-btn:hover {
-		filter: brightness(1.1);
-	}
-
-	.add-tm-btn:active {
-		filter: brightness(0.98);
 	}
 </style>

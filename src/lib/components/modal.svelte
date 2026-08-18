@@ -24,28 +24,26 @@
 	.contents {
 		display: grid;
 		justify-items: center;
-		min-width: 280px;
-		/* max-width: 500px; */
-		border-radius: 5px;
-		padding: 25px;
-		margin: 0px 10px;
+		box-sizing: border-box;
+		width: min(100%, 460px);
+		min-width: min(280px, 100%);
+		max-height: calc(100vh - 2rem);
+		border: 1px solid rgba(119, 164, 176, 0.3);
+		border-radius: 1rem;
+		padding: 1.65rem;
 		background: var(--color-theme-7);
+		box-shadow: 0 24px 70px rgba(4, 28, 40, 0.28);
+		overflow-y: auto;
 		pointer-events: auto;
 	}
 
 	h2 {
 		text-align: center;
-		font-size: 1.8rem;
-		margin: 0px 0px 25px 0px;
-		color: var(--color-theme-4);
-		font-weight: 600;
+		font-size: clamp(1.35rem, 4vw, 1.75rem);
+		line-height: 1.2;
+		margin: 0 0 1.25rem;
+		color: #194858;
+		font-weight: 750;
+		letter-spacing: -0.025em;
 	}
-
-	/* p {
-		text-align: center;
-		margin-top: 1.2rem;
-		font-weight: 500;
-		margin: 10px 0px 25px 0px;
-		color: var(--color-theme-11);
-	} */
 </style>

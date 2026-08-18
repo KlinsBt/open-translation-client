@@ -29,15 +29,17 @@ body {
 
 .modal-element-global {
 	position: fixed;
-	top: 0;
-	bottom: 0;
-	width: 100%;
+	inset: 0;
+	box-sizing: border-box;
+	width: auto;
+	height: auto;
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	background-color: rgba(0, 0, 0, 0.5);
-
-	z-index: 10;
+	padding: 1rem;
+	background-color: rgba(5, 28, 42, 0.62);
+	backdrop-filter: blur(2px);
+	z-index: 1000;
 }
 
 .close-modal-global {

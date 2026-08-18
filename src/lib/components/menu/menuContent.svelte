@@ -26,6 +26,7 @@
 	import {
 		filterProjects,
 		getNextProjectSort,
+		parseProjectViewMode,
 		type ProjectSortState,
 		type ProjectViewMode,
 	} from "./projectDashboard";
@@ -53,10 +54,9 @@
 		showLoading.set(false);
 		parsingPreferences = loadParsingPreferences();
 
-		const savedView = localStorage.getItem("opentlc-project-view");
-		if (savedView === "cards" || savedView === "table") {
-			viewMode = savedView;
-		}
+		viewMode = parseProjectViewMode(
+			localStorage.getItem("opentlc-project-view"),
+		);
 	});
 
 	function applySort() {
@@ -132,6 +132,30 @@
 		</div>
 	</header>
 
+	<nav class="workspace-tools" aria-label="Workspace tools">
+		<button onclick={() => (showParsingModal = true)}>
+			<span class="tool-icon" aria-hidden="true">P</span>
+			<span>
+				<strong>Parsing preferences</strong>
+				<small>Segmentation and import rules</small>
+			</span>
+		</button>
+		<button onclick={() => goto("/tm")}>
+			<span class="tool-icon" aria-hidden="true">TM</span>
+			<span>
+				<strong>Translation Memory</strong>
+				<small>Manage reusable translations</small>
+			</span>
+		</button>
+		<button onclick={() => goto("/tb")}>
+			<span class="tool-icon" aria-hidden="true">TB</span>
+			<span>
+				<strong>Term Base</strong>
+				<small>Manage approved terminology</small>
+			</span>
+		</button>
+	</nav>
+
 	<section class="workspace-panel" aria-labelledby="project-library-title">
 		<div class="panel-heading">
 			<div>
@@ -141,14 +165,6 @@
 						? `${$userData.length} ${$userData.length === 1 ? "project" : "projects"}`
 						: `${visibleProjects.length} of ${$userData.length} projects`}
 				</p>
-			</div>
-
-			<div class="utility-links" aria-label="Translation resources">
-				<button onclick={() => (showParsingModal = true)}>
-					Parsing preferences
-				</button>
-				<button onclick={() => goto("/tm")}>Translation Memory</button>
-				<button onclick={() => goto("/tb")}>Term Base</button>
 			</div>
 		</div>
 
@@ -199,6 +215,13 @@
 						<span class="cards-icon" aria-hidden="true"></span> Cards
 					</button>
 					<button
+						class:active={viewMode === "classic"}
+						aria-pressed={viewMode === "classic"}
+						onclick={() => changeViewMode("classic")}
+					>
+						<span class="classic-icon" aria-hidden="true"></span> Classic
+					</button>
+					<button
 						class:active={viewMode === "table"}
 						aria-pressed={viewMode === "table"}
 						onclick={() => changeViewMode("table")}
@@ -237,10 +260,14 @@
 					Clear search
 				</button>
 			</div>
-		{:else if viewMode === "cards"}
-			<div class="project-grid" aria-label="Projects">
+		{:else if viewMode !== "table"}
+			<div
+				class="project-grid"
+				class:classic-grid={viewMode === "classic"}
+				aria-label="Projects"
+			>
 				{#each visibleProjects as file (file.id)}
-					<ProjectCard {file} viewMode="cards" />
+					<ProjectCard {file} {viewMode} />
 				{/each}
 			</div>
 		{:else}
@@ -373,6 +400,72 @@
 		background: white;
 	}
 
+	.workspace-tools {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.8rem;
+	}
+
+	.workspace-tools button {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		min-width: 0;
+		border: 1px solid #c7dfe4;
+		border-radius: 0.75rem;
+		background: rgba(255, 255, 255, 0.82);
+		padding: 0.85rem 1rem;
+		color: #245563;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		box-shadow: 0 5px 16px rgba(34, 84, 98, 0.05);
+		transition:
+			transform 0.18s ease,
+			border-color 0.18s ease,
+			box-shadow 0.18s ease;
+	}
+
+	.workspace-tools button:hover,
+	.workspace-tools button:focus-visible {
+		border-color: #65aabd;
+		box-shadow: 0 9px 22px rgba(34, 84, 98, 0.11);
+		transform: translateY(-1px);
+		outline: none;
+	}
+
+	.tool-icon {
+		display: grid;
+		flex: 0 0 2.25rem;
+		place-items: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 0.55rem;
+		background: #dff3f6;
+		color: #126e87;
+		font-size: 0.7rem;
+		font-weight: 850;
+	}
+
+	.workspace-tools button > span:last-child {
+		display: grid;
+		min-width: 0;
+	}
+
+	.workspace-tools strong {
+		color: #194858;
+		font-size: 0.83rem;
+	}
+
+	.workspace-tools small {
+		margin-top: 0.18rem;
+		overflow: hidden;
+		color: #728990;
+		font-size: 0.68rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
 	.workspace-panel {
 		--project-columns: minmax(220px, 2fr) 84px 120px 86px 80px 150px 104px;
 		min-width: 0;
@@ -403,32 +496,6 @@
 		margin: 0.3rem 0 0;
 		color: #71868d;
 		font-size: 0.78rem;
-	}
-
-	.utility-links {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.35rem 1rem;
-	}
-
-	.utility-links button {
-		border: 0;
-		background: transparent;
-		padding: 0.25rem 0;
-		color: #24758d;
-		font: inherit;
-		font-size: 0.78rem;
-		font-weight: 700;
-		text-decoration: underline;
-		text-decoration-color: #bad3d9;
-		text-underline-offset: 0.28em;
-		cursor: pointer;
-	}
-
-	.utility-links button:hover,
-	.utility-links button:focus-visible {
-		color: #0c5870;
-		text-decoration-color: currentColor;
 	}
 
 	.project-toolbar {
@@ -578,6 +645,7 @@
 	}
 
 	.cards-icon,
+	.classic-icon,
 	.table-icon {
 		display: inline-block;
 		width: 0.75rem;
@@ -587,6 +655,12 @@
 			currentColor 0 3px,
 			transparent 3px 5px
 		);
+	}
+
+	.classic-icon {
+		border: 1px solid currentColor;
+		border-radius: 1px;
+		background: none;
 	}
 
 	.table-icon {
@@ -602,6 +676,12 @@
 		grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
 		gap: 1rem;
 		padding: 1.5rem;
+	}
+
+	.project-grid.classic-grid {
+		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+		gap: 1px;
+		background: #e3eff1;
 	}
 
 	.project-table-wrapper {
@@ -727,8 +807,8 @@
 			padding-inline: 1rem;
 		}
 
-		.utility-links {
-			width: 100%;
+		.workspace-tools {
+			grid-template-columns: 1fr;
 		}
 
 		.project-search {

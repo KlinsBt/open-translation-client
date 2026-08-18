@@ -1,7 +1,11 @@
 import type { UserData } from "$lib/types/types";
 
 export type ProjectSortField = "name" | "date";
-export type ProjectViewMode = "cards" | "table";
+export type ProjectViewMode = "cards" | "classic" | "table";
+
+export function parseProjectViewMode(value: string | null): ProjectViewMode {
+	return value === "classic" || value === "table" ? value : "cards";
+}
 
 export interface ProjectSortState {
 	field: ProjectSortField;

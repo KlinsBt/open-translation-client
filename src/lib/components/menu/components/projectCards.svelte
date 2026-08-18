@@ -194,6 +194,9 @@
 	let displayName = $derived(
 		projectName.length > 28 ? `${projectName.slice(0, 28)}…` : projectName,
 	);
+	let classicDisplayName = $derived(
+		projectName.length > 15 ? `${projectName.slice(0, 15)}...` : projectName,
+	);
 	let progress = $derived(
 		calcPercentageOfTotalSegmentsChecked(file.translationData.checked),
 	);
@@ -253,6 +256,8 @@
 						<Options />
 					</span>
 				</button>
+				<button class="btn cancel" onclick={() => (show = false)}>Cancel</button
+				>
 			</div>
 		{:else}
 			<div class="options">
@@ -410,6 +415,43 @@
 			>Project options <span aria-hidden="true">→</span></span
 		>
 	</button>
+{:else if viewMode === "classic"}
+	<button
+		type="button"
+		class="classic-project-card"
+		class:selected={$translationIdSelected === file.id}
+		onclick={() => selectAndShowModal(file.id!)}
+		aria-label={`Open options for ${projectName}`}
+	>
+		<span class="classic-words-badge">{sourceWords}</span>
+		<span class="classic-type-badge">{file.translationData.type}</span>
+		<span class="classic-progress-circle" aria-label={`${progress}% complete`}>
+			<span>{progress}%</span>
+			<svg aria-hidden="true" viewBox="0 0 100 100">
+				<circle class="bg" cx="50" cy="50" r="40"></circle>
+				<circle
+					class="progress"
+					cx="50"
+					cy="50"
+					r="40"
+					style={`stroke-dashoffset: ${(252 * (100 - progress)) / 100}`}
+				></circle>
+			</svg>
+		</span>
+		<span class="classic-project-name" title={projectName}
+			>{classicDisplayName}</span
+		>
+		<span class="classic-info">
+			<span
+				><strong>{file.translationData.checked.length}</strong> Segments</span
+			>
+			<span>{creationDate}</span>
+		</span>
+		<span class="classic-languages">
+			<span>{sourceLanguage}</span>
+			<span>{targetLanguage}</span>
+		</span>
+	</button>
 {:else}
 	<button
 		type="button"
@@ -469,9 +511,142 @@
 	}
 
 	.project-card.selected,
+	.classic-project-card.selected,
 	.project-row.selected {
 		border-color: var(--color-theme-4);
 		box-shadow: 0 0 0 2px rgba(55, 154, 184, 0.12);
+	}
+
+	.classic-project-card {
+		display: flex;
+		position: relative;
+		flex-direction: column;
+		align-items: stretch;
+		width: 100%;
+		min-height: 298px;
+		border: 0;
+		background: white;
+		padding: 1rem;
+		color: #17364a;
+		font: inherit;
+		text-align: center;
+		cursor: pointer;
+		overflow: hidden;
+		transition: box-shadow 0.18s ease;
+	}
+
+	.classic-project-card:hover,
+	.classic-project-card:focus-visible {
+		z-index: 1;
+		box-shadow: 0 1px 10px var(--color-theme-4);
+		outline: none;
+	}
+
+	.classic-words-badge,
+	.classic-type-badge {
+		position: absolute;
+		top: 10px;
+		border-radius: 3px;
+		padding: 2px 5px;
+		font-size: 0.7rem;
+	}
+
+	.classic-words-badge {
+		left: 10px;
+		background: var(--color-theme-3);
+		color: white;
+	}
+
+	.classic-type-badge {
+		right: 10px;
+		background: var(--color-theme-1);
+		color: #333;
+	}
+
+	.classic-progress-circle {
+		display: block;
+		position: relative;
+		width: 100px;
+		height: 100px;
+		margin: 0 auto 1rem;
+	}
+
+	.classic-progress-circle svg {
+		width: 100px;
+		height: 100px;
+		transform: rotate(-90deg);
+	}
+
+	.classic-progress-circle circle {
+		fill: none;
+		stroke-width: 7px;
+	}
+
+	.classic-progress-circle .bg {
+		stroke: #e0e0e0;
+	}
+
+	.classic-progress-circle .progress {
+		stroke: var(--color-theme-4);
+		stroke-dasharray: 252;
+		stroke-dashoffset: 252;
+	}
+
+	.classic-progress-circle > span {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		color: var(--color-theme-4);
+		font-size: 1.5rem;
+		font-weight: 700;
+		transform: translate(-50%, -50%);
+	}
+
+	.classic-project-name {
+		display: block;
+		margin: 0.5rem 0;
+		overflow: hidden;
+		color: var(--color-theme-6);
+		font-size: 1rem;
+		font-weight: 750;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.classic-info {
+		display: grid;
+		gap: 0.3rem;
+		margin-bottom: 5px;
+		color: #888;
+		font-size: 0.75rem;
+	}
+
+	.classic-info strong {
+		color: var(--color-theme-4);
+		font-weight: 500;
+	}
+
+	.classic-info span:last-child {
+		color: var(--color-theme-3);
+		font-size: 0.7rem;
+	}
+
+	.classic-languages {
+		display: flex;
+		justify-content: space-evenly;
+		margin-top: auto;
+		background: var(--color-theme-8);
+		padding: 2px 0;
+		font-size: 0.8rem;
+		text-transform: uppercase;
+	}
+
+	.classic-languages span:first-child {
+		color: rgb(70, 196, 213);
+	}
+
+	.classic-languages span:last-child {
+		color: rgb(38, 102, 232);
 	}
 
 	.card-topline {
@@ -751,7 +926,8 @@
 
 	.main-buttons-container {
 		display: grid;
-		gap: 0px;
+		gap: 0.55rem;
+		width: min(100%, 320px);
 	}
 
 	.main-buttons-container > .btn,
@@ -761,16 +937,33 @@
 		justify-content: center;
 		background: var(--color-theme-4);
 		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 5px 0px;
+		border: 1px solid transparent;
+		font-size: 0.92rem;
+		font-weight: 750;
+		border-radius: 0.55rem;
+		padding: 0.75rem 1rem;
+		margin: 0;
 		cursor: pointer;
 		width: 100%;
-		min-width: 250px;
-		transition: filter 0.2s linear;
+		min-width: min(280px, 100%);
+		transition:
+			filter 0.2s linear,
+			transform 0.2s ease;
 		position: relative;
+	}
+
+	.main-buttons-container > .save {
+		background: var(--color-theme-4) !important;
+	}
+
+	.main-buttons-container > .option {
+		background: #285f7f !important;
+	}
+
+	.main-buttons-container > .cancel {
+		border-color: #bed5db;
+		background: white;
+		color: #52717b;
 	}
 
 	.main-buttons-container > .btn > span,
@@ -781,6 +974,7 @@
 	.main-buttons-container > .btn:hover,
 	.option-buttons-container > .btn:hover {
 		filter: brightness(1.1);
+		transform: translateY(-1px);
 	}
 
 	.language-selection {

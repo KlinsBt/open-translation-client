@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { UserData } from "$lib/types/types";
-import { filterProjects, getNextProjectSort } from "./projectDashboard";
+import {
+	filterProjects,
+	getNextProjectSort,
+	parseProjectViewMode,
+} from "./projectDashboard";
 
 function project(
 	name: string,
@@ -56,5 +60,17 @@ describe("project dashboard sorting state", () => {
 		expect(
 			getNextProjectSort({ field: "name", ascending: false }, "date"),
 		).toEqual({ field: "date", ascending: false });
+	});
+});
+
+describe("project dashboard view preferences", () => {
+	it("keeps the modern card layout as the default", () => {
+		expect(parseProjectViewMode(null)).toBe("cards");
+		expect(parseProjectViewMode("unknown")).toBe("cards");
+	});
+
+	it("restores the classic and table alternatives", () => {
+		expect(parseProjectViewMode("classic")).toBe("classic");
+		expect(parseProjectViewMode("table")).toBe("table");
 	});
 });
