@@ -87,7 +87,7 @@ describe("PDF source-only workflow", () => {
 			lossy: true,
 			textPages: [1, 2],
 			ocrRequiredPages: [],
-			exportPolicy: "derived-bilingual-html",
+			exportPolicy: "derived-translated-pdf",
 		});
 	});
 
@@ -130,7 +130,7 @@ describe("PDF source-only workflow", () => {
 		});
 	});
 
-	it("exports a safe accessible bilingual HTML review rather than a replacement PDF", async () => {
+	it("retains the safe bilingual HTML review builder for optional inspection", async () => {
 		const { project } = await importProject(
 			createSyntheticPdf([{ lines: ['Source & "unsafe"'] }], "manual.pdf"),
 		);

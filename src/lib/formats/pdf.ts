@@ -376,7 +376,7 @@ export async function importPdfFile(
 		textPages: extraction.textPages,
 		ocrRequiredPages: extraction.ocrRequiredPages,
 		blankPages: extraction.blankPages,
-		exportPolicy: "derived-bilingual-html",
+		exportPolicy: "derived-translated-pdf",
 		security:
 			"Extraction runs locally in the app and its local PDF.js worker without remote worker/font/Wasm fetches; embedded scripts, actions, attachments, forms, and links are never requested or executed.",
 	};

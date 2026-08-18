@@ -43,12 +43,12 @@ selected pages. Each unit records its source page and PDF user-space bounding
 box. Pages with raster images but no text are reported as requiring OCR; they
 are never silently treated as blank or sent to a service.
 
-PDF projects have `roundTrip: false`. Export creates a standalone, accessible,
-script-free bilingual HTML review grouped by source page. It deliberately does
-not write a replacement PDF or promise matching line breaks, reading order,
-fonts, forms, annotations, signatures, accessibility tags, or layout. Embedded
-scripts, actions, attachments, forms, and links are not executed. Passworded
-files must be decrypted locally first.
+PDF projects have `roundTrip: false`. Export creates a real, standalone PDF with
+the translated segments grouped and paginated according to their source-page
+mapping. The output is a newly typeset delivery document, so it does not mutate
+the source PDF or copy active content, forms, annotations, signatures, scripts,
+actions, attachments, or links. Passworded files must be decrypted locally
+first.
 
 ## OCR images and audio/video transcription
 

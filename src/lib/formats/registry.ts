@@ -26,7 +26,7 @@ import { generateTtmlTranslation } from "$lib/functions/outputGeneration/outputG
 import { generateMifTranslation } from "$lib/functions/outputGeneration/outputGenerationMif";
 import { generateWindowsRcTranslation } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
 import { generateQmlTranslation } from "$lib/functions/outputGeneration/outputGenerationQml";
-import { generatePdfBilingualReview } from "$lib/functions/outputGeneration/outputGenerationPdfReview";
+import { generateTranslatedPdf } from "$lib/functions/outputGeneration/outputGenerationPdf";
 import {
 	generateOcrBilingualReview,
 	generateTranslatedWebVtt,
@@ -560,7 +560,7 @@ const adapters = [
 	},
 	{
 		id: "pdf",
-		label: "PDF source-only → bilingual HTML",
+		label: "PDF → translated PDF",
 		extensions: ["pdf"],
 		mimeTypes: ["application/pdf"],
 		capabilities: SOURCE_ONLY_CAPABILITIES,
@@ -569,7 +569,7 @@ const adapters = [
 			(await validatePdfFile(file, context)).valid,
 		validate: validatePdfFile,
 		importFile: importPdfFile,
-		exportFile: generatePdfBilingualReview,
+		exportFile: generateTranslatedPdf,
 	},
 	{
 		id: "image-ocr",
