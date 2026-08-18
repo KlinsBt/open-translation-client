@@ -9,7 +9,6 @@
 		FORMAT_ADAPTERS,
 		getFormatAcceptValue,
 		getFormatAdapter,
-		getSupportedFormatLabels,
 	} from "$lib/formats/registry";
 	import "$lib/components/uploads/uploadDialog.css";
 	import type { FormatDetection } from "$lib/formats/detect";
@@ -50,7 +49,7 @@
 	let importController: AbortController | null = $state(null);
 	let importProgress: SafeInputProgress | null = $state(null);
 	const acceptedFormats = getFormatAcceptValue();
-	const supportedFormatLabels = getSupportedFormatLabels();
+	const supportedFormatLabels = FORMAT_ADAPTERS.map((adapter) => adapter.label);
 
 	function getDetectedFormatLabel(): string {
 		return formatDetection?.label ?? "UNSUPPORTED";
@@ -274,7 +273,14 @@
 				</label>
 				<details class="upload-format-note">
 					<summary>{FORMAT_ADAPTERS.length} supported format workflows</summary>
-					<p>{supportedFormatLabels}</p>
+					<div
+						class="supported-format-pills"
+						aria-label="Supported source formats"
+					>
+						{#each supportedFormatLabels as label}
+							<span>{label}</span>
+						{/each}
+					</div>
 				</details>
 			</div>
 		{:else}
