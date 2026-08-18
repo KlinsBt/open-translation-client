@@ -143,6 +143,11 @@
 		}
 	}
 
+	async function exportTranslatedSourceAndClose() {
+		await handleTranslationFileExport();
+		showSaveFileModal = false;
+	}
+
 	function lockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
@@ -483,7 +488,45 @@
 
 {#snippet exportMenu()}
 	<div class="modal-stack">
-		<button class="modal-action-card" onclick={handleJsonSaveFileDownload}>
+		<div class="export-group-heading">
+			<strong>Translated document</strong>
+			<span>Export the completed translation for delivery.</span>
+		</div>
+		{#if translationExportAvailable}
+			<button
+				class="modal-action-card primary"
+				onclick={exportTranslatedSourceAndClose}
+			>
+				<span class="modal-action-icon">FILE</span>
+				<span class="modal-action-text"
+					><strong
+						>{getFormatAdapter($singleUserData.translationData.type)
+							.label}</strong
+					><small
+						>Rebuild the translated file in its original source format.</small
+					></span
+				>
+				<span class="modal-action-arrow">→</span>
+			</button>
+		{:else}
+			<div class="export-unavailable-note">
+				This source format is import-only. Choose a bilingual format below.
+			</div>
+		{/if}
+
+		<div class="export-group-heading export-group-heading--secondary">
+			<strong>Bilingual project formats</strong>
+			<span
+				>Continue editing here or exchange the project with another CAT tool.</span
+			>
+		</div>
+		<button
+			class="modal-action-card"
+			onclick={() => {
+				handleJsonSaveFileDownload();
+				showSaveFileModal = false;
+			}}
+		>
 			<span class="modal-action-icon">JSON</span>
 			<span class="modal-action-text"
 				><strong>Open TLC JSON</strong><small
@@ -492,7 +535,13 @@
 			>
 			<span class="modal-action-arrow">→</span>
 		</button>
-		<button class="modal-action-card" onclick={handleXliff1_2SaveFileDownload}>
+		<button
+			class="modal-action-card"
+			onclick={() => {
+				handleXliff1_2SaveFileDownload();
+				showSaveFileModal = false;
+			}}
+		>
 			<span class="modal-action-icon">1.2</span>
 			<span class="modal-action-text"
 				><strong>XLIFF 1.2</strong><small
@@ -501,7 +550,13 @@
 			>
 			<span class="modal-action-arrow">→</span>
 		</button>
-		<button class="modal-action-card" onclick={handleXliff2_0SaveFileDownload}>
+		<button
+			class="modal-action-card"
+			onclick={() => {
+				handleXliff2_0SaveFileDownload();
+				showSaveFileModal = false;
+			}}
+		>
 			<span class="modal-action-icon">2.0</span>
 			<span class="modal-action-text"
 				><strong>XLIFF 2.0</strong><small
@@ -510,7 +565,13 @@
 			>
 			<span class="modal-action-arrow">→</span>
 		</button>
-		<button class="modal-action-card" onclick={handleXliff2_1SaveFileDownload}>
+		<button
+			class="modal-action-card"
+			onclick={() => {
+				handleXliff2_1SaveFileDownload();
+				showSaveFileModal = false;
+			}}
+		>
 			<span class="modal-action-icon">2.1</span>
 			<span class="modal-action-text"
 				><strong>XLIFF 2.1</strong><small
@@ -697,8 +758,8 @@
 		onclick={() => (showSaveFileModal = false)}
 	>
 		<Modal
-			title="Export project"
-			description="Choose a portable bilingual project format."
+			title="Export files"
+			description="Choose a translated delivery file or portable bilingual project format."
 			content={exportMenu}
 			wide
 			onClose={() => (showSaveFileModal = false)}
@@ -765,16 +826,11 @@
 			</button>
 			<button
 				class="toolbar-button primary"
-				onclick={handleTranslationFileExport}
-				disabled={!translationExportAvailable}
-				title={translationExportAvailable
-					? "Export the translated source format"
-					: "This source format is import-only; use Open TLC JSON or standard XLIFF"}
+				onclick={() => toggleSaveFileModal()}
+				title="Choose a translated document or bilingual project format"
 			>
 				<Export marginBottom="2px" />
-				{translationExportAvailable
-					? "Export translation"
-					: "Import-only format"}
+				Export translation
 			</button>
 			<button class="toolbar-help" aria-label="Keyboard shortcuts" tabindex="0">
 				<span>?</span>
@@ -947,6 +1003,37 @@
 </div>
 
 <style>
+	.export-group-heading {
+		display: grid;
+		gap: 0.2rem;
+		padding: 0.1rem 0.1rem 0.2rem;
+		color: #245265;
+	}
+
+	.export-group-heading--secondary {
+		margin-top: 0.55rem;
+		padding-top: 1rem;
+		border-top: 1px solid #dbe8eb;
+	}
+
+	.export-group-heading strong {
+		font-size: 0.84rem;
+	}
+
+	.export-group-heading span,
+	.export-unavailable-note {
+		color: #70858d;
+		font-size: 0.72rem;
+		line-height: 1.45;
+	}
+
+	.export-unavailable-note {
+		border: 1px solid #d4e3e6;
+		border-radius: 0.6rem;
+		padding: 0.75rem;
+		background: #f6fafb;
+	}
+
 	.manage-tm-tb-container {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
