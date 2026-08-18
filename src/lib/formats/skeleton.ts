@@ -427,6 +427,7 @@ export async function createTextSkeleton(
 		| "idml"
 		| "latex"
 		| "ttml"
+		| "mif"
 		| "xml"
 		| "html",
 	content: string,

@@ -114,7 +114,9 @@ export async function detectFileFormat(
 			(adapter) =>
 				adapter.id !== "xml" &&
 				adapter.id !== "html" &&
-				adapter.mimeTypes.some((type) => isGenericXmlMime(type)),
+				(adapter.mimeTypes.some((type) => isGenericXmlMime(type)) ||
+					(extension !== undefined && adapter.extensions.includes(extension)) ||
+					(mimeType !== "" && adapter.mimeTypes.includes(mimeType))),
 		))
 			if (await candidate.sniff(file, context))
 				return supportedContent(candidate, extension, mimeType);

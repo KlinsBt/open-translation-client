@@ -977,6 +977,15 @@ Complete these in order after FF-000 through FF-009.
       separate adapters in that order, with grammar-aware token preservation and
       real-tool reopen/compile tests. Do not use broad regex replacements for
       syntax-bearing files.
+      Progress 2026-08-18 — MIF complete: the stack-based MIF lexer validates the
+      version signature, nested angle-tag grammar, comments, delimited strings,
+      and hexadecimal/control escapes; configurable content, marker, variable,
+      element and cross-reference string tags are source-ranged. Export encodes
+      delimiter/backslash/control characters, reparses the complete document,
+      preserves catalogs, conditions, xrefs, graphics and identity encoding/BOM,
+      and blocks stale mappings and split/join. Unit, conformance, filtering,
+      escape/security, UTF-16, 1,000-string, detection, re-import, and generated
+      browser coverage is included. FrameMaker reopen remains an external gate.
 
 ## Phase 4 — Explicitly constrained and conversion-based support
 

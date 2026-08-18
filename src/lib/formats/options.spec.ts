@@ -173,6 +173,12 @@ describe("format import options", () => {
 			maxExpansionPercent: 50,
 			segmentationMode: "value",
 		});
+		expect(normalizeImportOptions("mif", { includeMarkers: "true" })).toEqual({
+			translatableTags: "String,ElementText,XRefSrcText",
+			includeMarkers: true,
+			includeVariables: false,
+			segmentationMode: "value",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

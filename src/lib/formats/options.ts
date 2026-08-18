@@ -766,6 +766,33 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["value", "preferences", "sentences"],
 		},
 	],
+	mif: [
+		{
+			id: "translatableTags",
+			label: "Translatable MIF string tags",
+			type: "text",
+			defaultValue: "String,ElementText,XRefSrcText",
+		},
+		{
+			id: "includeMarkers",
+			label: "Include marker text",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeVariables",
+			label: "Include variable definitions",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "segmentationMode",
+			label: "String segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

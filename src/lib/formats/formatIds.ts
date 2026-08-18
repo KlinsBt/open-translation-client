@@ -21,6 +21,7 @@ export const FORMAT_IDS = [
 	"idml",
 	"latex",
 	"ttml",
+	"mif",
 	"xml",
 	"docx",
 	"xlsx",

@@ -73,6 +73,8 @@ const LATEX_EDIT_ERROR =
 	"TeX/LaTeX prose ranges cannot be split or joined because command, math, environment, and source mappings must remain aligned.";
 const TTML_EDIT_ERROR =
 	"TTML text runs cannot be split or joined because cue timing, nested spans, styles, and XML mappings must remain aligned.";
+const MIF_EDIT_ERROR =
+	"MIF strings cannot be split or joined because tag nesting, catalogs, conditions, and source ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -149,6 +151,7 @@ function validateForStructuralEdit(
 	if (translation.type === "idml") return IDML_EDIT_ERROR;
 	if (translation.type === "latex") return LATEX_EDIT_ERROR;
 	if (translation.type === "ttml") return TTML_EDIT_ERROR;
+	if (translation.type === "mif") return MIF_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

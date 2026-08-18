@@ -23,6 +23,7 @@ import { generateDocBookTranslation } from "$lib/functions/outputGeneration/outp
 import { generateInDesignTranslation } from "$lib/functions/outputGeneration/outputGenerationIdml";
 import { generateLatexTranslation } from "$lib/functions/outputGeneration/outputGenerationLatex";
 import { generateTtmlTranslation } from "$lib/functions/outputGeneration/outputGenerationTtml";
+import { generateMifTranslation } from "$lib/functions/outputGeneration/outputGenerationMif";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -84,6 +85,7 @@ import { importDocBookFile, validateDocBookFile } from "./docbook";
 import { importInDesignFile, validateInDesignFile } from "./idml";
 import { importLatexFile, validateLatexFile } from "./latex";
 import { importTtmlFile, validateTtmlFile } from "./ttml";
+import { importMifFile, validateMifFile } from "./mif";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -459,6 +461,20 @@ const adapters = [
 		validate: validateTtmlFile,
 		importFile: importTtmlFile,
 		exportFile: generateTtmlTranslation,
+	},
+	{
+		id: "mif",
+		label: "Adobe FrameMaker MIF",
+		extensions: ["mif"],
+		mimeTypes: ["application/vnd.mif", "application/x-mif", "text/plain"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.mif,
+		sniff: async (file, context) =>
+			(await sniffText(file, /^<MIFFile\s+[^\s>]+/, context)) &&
+			(await validateMifFile(file, context)).valid,
+		validate: validateMifFile,
+		importFile: importMifFile,
+		exportFile: generateMifTranslation,
 	},
 	{
 		id: "xml",

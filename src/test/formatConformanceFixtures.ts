@@ -1127,6 +1127,53 @@ const ttmlFixture: FormatConformanceFixture = {
 		),
 };
 
+const mifFixture: FormatConformanceFixture = {
+	id: "mif",
+	fileName: "manual.mif",
+	mimeType: "application/vnd.mif",
+	createValidFile: async () =>
+		textFile(
+			`<MIFFile 2020>\n<Para <ParaLine <String \`${CONFORMANCE_UNICODE_SOURCE}'> > >\n`,
+			"manual.mif",
+			"application/vnd.mif",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			"<MIFFile 2020>\n<Para <String `broken'>",
+			"broken.mif",
+			"application/vnd.mif",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			translatableTags: "String,ElementText,XRefSrcText",
+			includeMarkers: false,
+			includeVariables: false,
+			segmentationMode: "value",
+		},
+		skeleton: { kind: "text", replacementKinds: ["text-range"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "manual.mif",
+				path: ["Para[1]", "ParaLine[1]", "String[1]", "#string"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<MIFFile 2020>\n${Array.from(
+				{ length: units },
+				(_, index) => `<Para <ParaLine <String \`Message ${index}'> > >`,
+			).join("\n")}`,
+			"performance.mif",
+			"application/vnd.mif",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1395,6 +1442,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	idmlFixture,
 	latexFixture,
 	ttmlFixture,
+	mifFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,
