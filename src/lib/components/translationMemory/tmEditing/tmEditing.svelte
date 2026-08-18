@@ -6,6 +6,7 @@
 	import Edit from "$lib/components/svg/edit.svelte";
 	import Delete from "$lib/components/svg/delete2.svelte";
 	import Modal from "$lib/components/modal.svelte";
+	import "$lib/components/resources/resourceEditor.css";
 	import {
 		notifySuccess,
 		notifyInfo,
@@ -211,377 +212,168 @@
 	</div>
 {/if}
 
-<h2 class="tm-name">{localTmData.name}</h2>
+<section class="resource-editor-content">
+	<header class="resource-editor-titlebar">
+		<div>
+			<p class="resource-editor-eyebrow">Translation memory editor</p>
+			<h2 class="tm-name">{localTmData.name}</h2>
+			<p class="resource-editor-summary">
+				{localTmData.terms.length} translation {localTmData.terms.length === 1
+					? "unit"
+					: "units"}
+			</p>
+		</div>
+		<span class="resource-editor-format">TMX</span>
+	</header>
 
-<div class="tm-editing-container">
-	<div class="table-header">
-		<input
-			type="text"
-			placeholder="Search Translation Units ..."
-			bind:value={searchQuery}
-			class="search-input"
-		/>
-	</div>
+	<div class="tm-editing-container resource-editor-panel">
+		<div class="table-header">
+			<span class="search-icon" aria-hidden="true">⌕</span>
+			<input
+				type="text"
+				placeholder="Search source and target segments"
+				bind:value={searchQuery}
+				class="search-input"
+			/>
+			<span class="search-count">{filteredData.length} shown</span>
+		</div>
 
-	<div
-		class="translation-units"
-		bind:this={segmentsContainer}
-		onscroll={handleScroll}
-	>
-		{#each filteredData.slice(0, visibleSegmentsCount) as unit, unitIndex}
-			<div class="tu-header">
-				<h3>
-					Translation Unit <span
-						style="
-							color: white; 
-							border: 2px solid var(--color-theme-5); 
-							padding: 1px 5px 1px 4px; 
-							border-radius: 5px; 
-							background-color: var(--color-theme-5);">{unitIndex + 1}</span
-					>
-				</h3>
-				<div>
-					<button
-						class="edit-btn delete"
-						onclick={() => showTuDelModal(unitIndex)}
-					>
-						Delete <Delete marginBottom="-2px" />
-					</button>
-					<button
-						class="edit-btn"
-						style="background-color: limegreen;"
-						onclick={() => addTranslationSegment(unitIndex)}
-					>
-						Add Segment +
-					</button>
-				</div>
-			</div>
-			<div class="translation-unit">
-				<div class="segment-group source">
-					<div class="language-selection">
-						<select
-							class="lang-select"
-							disabled={!editMode.get(`source-${unitIndex}`)}
-							style="background-color: {editMode.get(`source-${unitIndex}`)
-								? 'white'
-								: 'var(--color-theme-8)'}"
-							bind:value={unit.source.lang}
-						>
-							<option disabled selected value=""
-								>{getLangByCode(unit.source.lang)}</option
-							>
-							{#each LANGUAGES as lang}
-								<option value={lang.code}>{lang.name} ({lang.code})</option>
-							{/each}
-						</select>
-						<button
-							class="edit-btn"
-							style="background-color: {editMode.get(`source-${unitIndex}`)
-								? 'limegreen'
-								: '#2c5e82'}"
-							onclick={() => toggleEditMode(`source-${unitIndex}`)}
-						>
-							{#if editMode.get(`source-${unitIndex}`)}
-								Save <SaveFile marginBottom="-2px" />
-							{:else}
-								Edit <Edit marginBottom="-2px" />
-							{/if}
-						</button>
-					</div>
-
-					<div class="segment-field">
-						{#if !editMode.get(`source-${unitIndex}`)}
-							<p class="field locked">{unit.source.segment}</p>
-						{:else}
-							<textarea
-								class="field unlocked"
-								bind:value={unit.source.segment}
-								use:useAutoHeight
-								placeholder="Edit source segment"
-							></textarea>
-						{/if}
-					</div>
-				</div>
-
-				<!-- Targets -->
-				{#each unit.target as trg, trgIndex}
-					<div class="segment-group target">
-						<div class="language-selection">
-							<select
-								class="lang-select"
-								disabled={!editMode.get(`target-${unitIndex}-${trgIndex}`)}
-								style="background-color: {editMode.get(
-									`target-${unitIndex}-${trgIndex}`,
-								)
-									? 'white'
-									: 'var(--color-theme-8)'}"
-								bind:value={trg.lang}
-							>
-								<option disabled selected value=""
-									>{getLangByCode(trg.lang)}</option
-								>
-								{#each LANGUAGES as lang}
-									<option value={lang.code}>{lang.name} ({lang.code})</option>
-								{/each}
-							</select>
+		<div
+			class="translation-units"
+			bind:this={segmentsContainer}
+			onscroll={handleScroll}
+		>
+			{#each filteredData.slice(0, visibleSegmentsCount) as unit, unitIndex}
+				<article class="resource-unit-card">
+					<div class="tu-header">
+						<h3>
+							Translation unit <span class="unit-number">{unitIndex + 1}</span>
+						</h3>
+						<div class="unit-actions">
 							<button
-								class="edit-btn"
-								style="background-color: {editMode.get(
-									`target-${unitIndex}-${trgIndex}`,
-								)
-									? 'limegreen'
-									: '#2c5e82'}"
-								onclick={() =>
-									toggleEditMode(`target-${unitIndex}-${trgIndex}`)}
-							>
-								{#if editMode.get(`target-${unitIndex}-${trgIndex}`)}
-									Save <SaveFile marginBottom="-2px" />
-								{:else}
-									Edit <Edit marginBottom="-2px" />
-								{/if}
-							</button>
-							<button
-								class="edit-btn delete"
-								onclick={() => showSegDelModal(unitIndex, trgIndex)}
+								class="editor-action danger"
+								onclick={() => showTuDelModal(unitIndex)}
 							>
 								Delete <Delete marginBottom="-2px" />
 							</button>
-						</div>
-						<div class="segment-field">
-							{#if !editMode.get(`target-${unitIndex}-${trgIndex}`)}
-								<p class="field locked">{trg.segment}</p>
-							{:else}
-								<textarea
-									class="field unlocked"
-									bind:value={trg.segment}
-									use:useAutoHeight
-									placeholder="Edit target segment"
-								></textarea>
-							{/if}
+							<button
+								class="editor-action primary"
+								onclick={() => addTranslationSegment(unitIndex)}
+							>
+								Add Segment +
+							</button>
 						</div>
 					</div>
-				{/each}
-			</div>
-			<hr class="seperator" />
-		{/each}
+					<div class="translation-unit">
+						<div class="segment-group source">
+							<div class="language-selection">
+								<select
+									class="lang-select"
+									disabled={!editMode.get(`source-${unitIndex}`)}
+									bind:value={unit.source.lang}
+								>
+									<option disabled selected value=""
+										>{getLangByCode(unit.source.lang)}</option
+									>
+									{#each LANGUAGES as lang}
+										<option value={lang.code}>{lang.name} ({lang.code})</option>
+									{/each}
+								</select>
+								<button
+									class="editor-action {editMode.get(`source-${unitIndex}`)
+										? 'save'
+										: 'secondary'}"
+									onclick={() => toggleEditMode(`source-${unitIndex}`)}
+								>
+									{#if editMode.get(`source-${unitIndex}`)}
+										Save <SaveFile marginBottom="-2px" />
+									{:else}
+										Edit <Edit marginBottom="-2px" />
+									{/if}
+								</button>
+							</div>
+
+							<div class="segment-field">
+								{#if !editMode.get(`source-${unitIndex}`)}
+									<p class="field locked">{unit.source.segment}</p>
+								{:else}
+									<textarea
+										class="field unlocked"
+										bind:value={unit.source.segment}
+										use:useAutoHeight
+										placeholder="Edit source segment"
+									></textarea>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Targets -->
+						{#each unit.target as trg, trgIndex}
+							<div class="segment-group target">
+								<div class="language-selection">
+									<select
+										class="lang-select"
+										disabled={!editMode.get(`target-${unitIndex}-${trgIndex}`)}
+										bind:value={trg.lang}
+									>
+										<option disabled selected value=""
+											>{getLangByCode(trg.lang)}</option
+										>
+										{#each LANGUAGES as lang}
+											<option value={lang.code}
+												>{lang.name} ({lang.code})</option
+											>
+										{/each}
+									</select>
+									<button
+										class="editor-action {editMode.get(
+											`target-${unitIndex}-${trgIndex}`,
+										)
+											? 'save'
+											: 'secondary'}"
+										onclick={() =>
+											toggleEditMode(`target-${unitIndex}-${trgIndex}`)}
+									>
+										{#if editMode.get(`target-${unitIndex}-${trgIndex}`)}
+											Save <SaveFile marginBottom="-2px" />
+										{:else}
+											Edit <Edit marginBottom="-2px" />
+										{/if}
+									</button>
+									<button
+										class="editor-action danger"
+										onclick={() => showSegDelModal(unitIndex, trgIndex)}
+									>
+										Delete <Delete marginBottom="-2px" />
+									</button>
+								</div>
+								<div class="segment-field">
+									{#if !editMode.get(`target-${unitIndex}-${trgIndex}`)}
+										<p class="field locked">{trg.segment}</p>
+									{:else}
+										<textarea
+											class="field unlocked"
+											bind:value={trg.segment}
+											use:useAutoHeight
+											placeholder="Edit target segment"
+										></textarea>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</article>
+			{/each}
+			{#if filteredData.length === 0}
+				<div class="resource-editor-empty">
+					<strong>No translation units found</strong>
+					<span>Try a different search term.</span>
+				</div>
+			{/if}
+		</div>
+
+		<button class="editor-add-main" onclick={addTranslationUnit}>
+			Add Translation Unit +
+		</button>
 	</div>
-
-	<button class="btn add-btn save" onclick={addTranslationUnit}>
-		Add Translation Unit +
-	</button>
-</div>
-
-<style>
-	.btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-theme-4);
-		color: white;
-		border: none;
-		font-size: 1.3rem;
-		border-radius: 5px;
-		padding: 10px;
-		margin: 5px 0px;
-		cursor: pointer;
-		width: 100%;
-		min-width: 250px;
-		transition: filter 0.2s linear;
-		position: relative;
-	}
-
-	.btn:hover {
-		filter: brightness(1.1);
-	}
-
-	.tm-name {
-		text-align: center;
-		font-size: 2rem;
-		font-weight: 600;
-		margin-bottom: 0px;
-		color: var(--color-theme-3);
-	}
-
-	.table-header {
-		background-color: var(--color-theme-4);
-		font-weight: bold;
-		color: var(--color-theme-4);
-		display: flex;
-		/* padding: 10px; */
-		border-radius: 5px 5px 0px 0px;
-		background-color: var(--color-theme-7);
-	}
-
-	.search-input {
-		flex: 1;
-		padding: 12px;
-		font-size: 1em;
-		border: 1px solid var(--color-theme-3);
-		border-radius: 5px 5px 0px 0px;
-		outline: none;
-	}
-
-	.search-input::placeholder {
-		color: #999;
-	}
-
-	.tm-editing-container {
-		width: 100%;
-		max-width: 800px;
-		margin: 0 auto;
-		padding: 20px 5px;
-		/* border-radius: 5px; */
-	}
-
-	.translation-units {
-		margin: 0px;
-		max-height: 400px;
-		overflow-y: scroll;
-	}
-
-	.translation-unit {
-		padding: 15px 15px 0px 15px;
-		border: 1px solid #e0e0e0;
-		/* border-radius: 0px 0px 5px 5px; */
-		margin-bottom: 15px;
-		background-color: #fff;
-	}
-
-	.tu-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		background-color: var(--color-theme-7);
-		padding: 10px;
-		/* border-radius: 5px 5px 0px 0px; */
-		margin-bottom: 0px;
-		border-top: 1px solid #e0e0e0;
-		border-left: 1px solid #e0e0e0;
-		border-right: 1px solid #e0e0e0;
-	}
-
-	.tu-header h3 {
-		margin: 0;
-		color: var(--color-theme-5);
-		font-size: 1.1rem;
-	}
-
-	.segment-group {
-		display: grid;
-		grid-template-columns: auto;
-		align-items: center;
-		gap: 10px;
-		margin-bottom: 15px;
-	}
-
-	.language-selection {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.lang-select {
-		padding: 8px;
-		/* background-color: var(--color-theme-8); */
-		border: 2px solid var(--color-theme-1);
-		color: var(--color-theme-12);
-		border-radius: 5px;
-	}
-
-	.lang-select:focus {
-		outline: none;
-		border: 2px solid var(--color-theme-3);
-	}
-
-	.field {
-		background-color: var(--color-theme-7);
-		padding: 10px;
-		border-radius: 5px;
-		border: 1px solid #ccc;
-		margin-top: 5px;
-	}
-
-	.field:last-child {
-		margin-bottom: 0px;
-	}
-
-	.locked {
-		background-color: var(--color-theme-8);
-		border: 2px solid var(--color-theme-1);
-		color: var(--color-theme-12);
-		max-width: 97.2%;
-	}
-
-	.unlocked {
-		border: 2px solid var(--color-theme-1);
-		background-color: white;
-		color: black;
-		resize: none;
-		min-width: 97.2%;
-	}
-
-	textarea:focus {
-		outline: none;
-		border: 2px solid var(--color-theme-3);
-	}
-
-	.edit-btn {
-		color: white;
-		padding: 7px 20px;
-		border: none;
-		border-radius: 5px;
-		cursor: pointer;
-		font-size: 1rem;
-	}
-
-	.edit-btn:hover {
-		filter: brightness(1.1);
-	}
-
-	.add-btn {
-		color: white;
-		border: none;
-		border-radius: 0px 0px 5px 5px;
-		padding: 10px 20px;
-		cursor: pointer;
-		font-weight: 600;
-		font-size: 1.3rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		gap: 0px 5px;
-		margin: 0px;
-		width: 100%;
-	}
-
-	.add-btn:hover {
-		filter: brightness(1.1);
-	}
-
-	.seperator {
-		display: flex;
-		margin: 15px 0px;
-		border-radius: 0px;
-		border: 1px solid var(--color-theme-5);
-		width: 95%;
-		justify-self: center;
-	}
-
-	.seperator:last-child {
-		display: none;
-	}
-
-	@media (max-width: 700px) {
-		.tm-editing-container {
-			padding: 20px 0px;
-		}
-
-		.locked {
-			max-width: 95%;
-		}
-
-		.unlocked {
-			min-width: 93%;
-		}
-	}
-</style>
+</section>

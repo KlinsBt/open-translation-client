@@ -337,7 +337,8 @@
 
 .resource-editor-toolbar {
 	display: flex;
-	margin-bottom: 1rem;
+	width: min(100%, 1040px);
+	margin: 0 auto 1rem;
 }
 
 @media (max-width: 760px) {
