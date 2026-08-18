@@ -486,6 +486,12 @@
 							</div>
 						{/if}
 
+						{#if !sourceLanguage || !targetLanguage}
+							<p class="project-requirement" aria-live="polite">
+								Choose both a source and target language to continue.
+							</p>
+						{/if}
+
 						<div class="project-actions">
 							<button
 								class="btn save"
@@ -537,26 +543,26 @@
 	.file-info {
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
+		gap: 0.85rem;
 	}
 
 	.file-details {
 		display: flex;
 		align-items: center;
-		gap: 15px;
-		padding: 15px;
-		background: var(--color-theme-8);
-		border-radius: 5px;
-		border: 2px solid var(--color-theme-1);
+		gap: 0.9rem;
+		padding: 0.85rem;
+		background: #f7fbfc;
+		border-radius: 0.7rem;
+		border: 1px solid #c8dde2;
 	}
 
 	.file-icon {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 60px;
-		height: 60px;
-		border-radius: 5px;
+		width: 3.3rem;
+		height: 3.3rem;
+		border-radius: 0.55rem;
 		background: var(--color-theme-4);
 		color: white;
 		font-weight: 700;
@@ -596,34 +602,37 @@
 	}
 
 	.file-name {
-		font-weight: 600;
-		color: var(--color-theme-4);
-		margin: 0 0 5px 0;
+		font-weight: 750;
+		color: #22546a;
+		margin: 0 0 0.2rem;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
 	.file-size {
-		font-size: 0.85rem;
-		color: var(--color-theme-5);
+		font-size: 0.72rem;
+		color: #71868e;
 		margin: 0;
 	}
 
 	.btn-remove {
-		background: #c02b2b;
-		color: white;
-		border: none;
-		border-radius: 5px;
-		padding: 8px 16px;
-		font-weight: 600;
+		background: #fff7f7;
+		color: #a33e3e;
+		border: 1px solid #e5baba;
+		border-radius: 0.5rem;
+		padding: 0.55rem 0.8rem;
+		font: inherit;
+		font-size: 0.72rem;
+		font-weight: 750;
 		cursor: pointer;
 		transition: filter 0.2s linear;
 		flex-shrink: 0;
 	}
 
 	.btn-remove:hover {
-		filter: brightness(1.1);
+		border-color: #ce8181;
+		background: #fff0f0;
 	}
 
 	.error-message {
@@ -637,23 +646,50 @@
 	}
 
 	.detection-result {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		padding: 10px 12px;
-		border-radius: 5px;
-		background: color-mix(in srgb, var(--color-theme-1) 65%, transparent);
-		color: var(--color-theme-4);
-		font-size: 0.82rem;
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 0.15rem 0.65rem;
+		padding: 0.7rem 0.85rem;
+		border: 1px solid #c8e0e4;
+		border-radius: 0.65rem;
+		background: #f1f9fa;
+		color: #315f6d;
+		font-size: 0.76rem;
+	}
+
+	.detection-result::before {
+		content: "✓";
+		display: grid;
+		grid-row: 1 / span 2;
+		place-items: center;
+		width: 1.65rem;
+		height: 1.65rem;
+		border-radius: 50%;
+		background: #d8eef1;
+		color: #20758c;
+		font-weight: 850;
+	}
+
+	.detection-result strong {
+		color: #275a6b;
 	}
 
 	.detection-result span {
+		grid-column: 2;
+		color: #688088;
 		line-height: 1.35;
 	}
 
 	.detection-result.detection-unsupported {
+		border-color: #edd4a9;
 		background: #fff4e5;
 		color: #7a4100;
+	}
+
+	.detection-result.detection-unsupported::before {
+		content: "!";
+		background: #f7e5c8;
+		color: #8a5716;
 	}
 
 	.workflow-steps {
@@ -860,6 +896,14 @@
 		gap: 8px;
 	}
 
+	.project-requirement {
+		margin: -0.15rem 0 0;
+		color: #71868e;
+		font-size: 0.7rem;
+		line-height: 1.35;
+		text-align: center;
+	}
+
 	.project-actions .cancel {
 		background: #c02b2b;
 		color: white;
@@ -906,8 +950,8 @@
 		border: none;
 		font-size: 1.1rem;
 		font-weight: 600;
-		border-radius: 5px;
-		padding: 12px;
+		border-radius: 0.55rem;
+		padding: 0.75rem;
 		cursor: pointer;
 		width: 100%;
 		transition: filter 0.2s linear;
@@ -919,7 +963,9 @@
 	}
 
 	.btn:disabled {
-		opacity: 0.6;
+		background: #e7edef;
+		color: #8b9ba0;
+		opacity: 1;
 		cursor: not-allowed;
 	}
 </style>
