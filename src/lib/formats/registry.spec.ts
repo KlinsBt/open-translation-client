@@ -86,10 +86,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -165,6 +165,15 @@ describe("format adapter registry", () => {
 				),
 			),
 		).resolves.toMatchObject({ id: "idml" });
+		await expect(
+			detectFormat(
+				textFile(
+					"\\documentclass{article}\\begin{document}Hello\\end{document}",
+					"MANUAL.TEX",
+					"application/x-tex",
+				),
+			),
+		).resolves.toMatchObject({ id: "latex" });
 		await expect(
 			detectFormat(
 				textFile("1\n00:00:00,000 --> 00:00:05,000\nHello", "CAPTIONS.SRT", ""),

@@ -21,6 +21,7 @@ import { generateSvgTranslation } from "$lib/functions/outputGeneration/outputGe
 import { generateDitaTranslation } from "$lib/functions/outputGeneration/outputGenerationDita";
 import { generateDocBookTranslation } from "$lib/functions/outputGeneration/outputGenerationDocBook";
 import { generateInDesignTranslation } from "$lib/functions/outputGeneration/outputGenerationIdml";
+import { generateLatexTranslation } from "$lib/functions/outputGeneration/outputGenerationLatex";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -80,6 +81,7 @@ import { importSvgFile, validateSvgFile } from "./svg";
 import { importDitaFile, validateDitaFile } from "./dita";
 import { importDocBookFile, validateDocBookFile } from "./docbook";
 import { importInDesignFile, validateInDesignFile } from "./idml";
+import { importLatexFile, validateLatexFile } from "./latex";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -421,6 +423,23 @@ const adapters = [
 		validate: validateInDesignFile,
 		importFile: importInDesignFile,
 		exportFile: generateInDesignTranslation,
+	},
+	{
+		id: "latex",
+		label: "TeX/LaTeX",
+		extensions: ["tex"],
+		mimeTypes: ["application/x-tex", "text/x-tex", "text/plain"],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.latex,
+		sniff: async (file, context) =>
+			(await sniffText(
+				file,
+				/^(?:%[^\n]*\n\s*)*(?:\\documentclass|\\begin\s*\{document\}|\\(?:chapter|section|title)\s*\{)/,
+				context,
+			)) && (await validateLatexFile(file, context)).valid,
+		validate: validateLatexFile,
+		importFile: importLatexFile,
+		exportFile: generateLatexTranslation,
 	},
 	{
 		id: "xml",

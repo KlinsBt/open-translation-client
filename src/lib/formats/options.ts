@@ -676,6 +676,43 @@ export const FORMAT_IMPORT_OPTIONS = {
 			choices: ["value", "preferences", "sentences"],
 		},
 	],
+	latex: [
+		{
+			id: "translatableCommands",
+			label: "Translatable macro arguments",
+			type: "text",
+			defaultValue:
+				"chapter:1,section:1,subsection:1,subsubsection:1,title:1,author:1,caption:1,footnote:1,textbf:1,textit:1,emph:1,textrm:1,textsf:1,texttt:1,href:2,hyperref:2",
+			description:
+				"Comma-separated macro:argument-index rules. Unknown macro arguments remain protected.",
+		},
+		{
+			id: "protectedEnvironments",
+			label: "Protected environments",
+			type: "text",
+			defaultValue:
+				"verbatim,Verbatim,lstlisting,minted,equation,equation*,align,align*,gather,gather*,multline,multline*,displaymath,math",
+		},
+		{
+			id: "includeComments",
+			label: "Include comments",
+			type: "boolean",
+			defaultValue: false,
+		},
+		{
+			id: "includeMetadata",
+			label: "Include title/author/date metadata",
+			type: "boolean",
+			defaultValue: true,
+		},
+		{
+			id: "segmentationMode",
+			label: "Prose segmentation",
+			type: "select",
+			defaultValue: "preferences",
+			choices: ["range", "preferences", "sentences"],
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

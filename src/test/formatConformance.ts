@@ -31,6 +31,7 @@ import { buildSvgTranslationBlob } from "$lib/functions/outputGeneration/outputG
 import { buildDitaTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationDita";
 import { buildDocBookTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationDocBook";
 import { buildInDesignTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationIdml";
+import { buildLatexTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationLatex";
 
 export const CONFORMANCE_UNICODE_SOURCE = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 export const CONFORMANCE_UNICODE_TARGET =
@@ -182,6 +183,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildDocBookTranslationBlob(project);
 		case "idml":
 			return buildInDesignTranslationBlob(project);
+		case "latex":
+			return buildLatexTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

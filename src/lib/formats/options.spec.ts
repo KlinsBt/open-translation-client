@@ -152,6 +152,17 @@ describe("format import options", () => {
 			includeAccessibilityText: true,
 			segmentationMode: "value",
 		});
+		expect(
+			normalizeImportOptions("latex", { includeComments: "true" }),
+		).toEqual({
+			translatableCommands:
+				"chapter:1,section:1,subsection:1,subsubsection:1,title:1,author:1,caption:1,footnote:1,textbf:1,textit:1,emph:1,textrm:1,textsf:1,texttt:1,href:2,hyperref:2",
+			protectedEnvironments:
+				"verbatim,Verbatim,lstlisting,minted,equation,equation*,align,align*,gather,gather*,multline,multline*,displaymath,math",
+			includeComments: true,
+			includeMetadata: true,
+			segmentationMode: "preferences",
+		});
 		expect(normalizeImportOptions("xml", { respectIts: "false" })).toEqual({
 			elementSelectors: "//*",
 			attributeSelectors: "",

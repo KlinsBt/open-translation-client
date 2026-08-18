@@ -412,6 +412,7 @@ export async function createTextSkeleton(
 		| "dita"
 		| "docbook"
 		| "idml"
+		| "latex"
 		| "xml"
 		| "html",
 	content: string,

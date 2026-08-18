@@ -69,6 +69,8 @@ const DOCBOOK_EDIT_ERROR =
 	"DocBook text runs cannot be split or joined because block, inline, cross-reference, and XML ranges must remain aligned.";
 const IDML_EDIT_ERROR =
 	"IDML/ICML text runs cannot be split or joined because story order, style ranges, and package XML mappings must remain aligned.";
+const LATEX_EDIT_ERROR =
+	"TeX/LaTeX prose ranges cannot be split or joined because command, math, environment, and source mappings must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -143,6 +145,7 @@ function validateForStructuralEdit(
 	if (translation.type === "dita") return DITA_EDIT_ERROR;
 	if (translation.type === "docbook") return DOCBOOK_EDIT_ERROR;
 	if (translation.type === "idml") return IDML_EDIT_ERROR;
+	if (translation.type === "latex") return LATEX_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

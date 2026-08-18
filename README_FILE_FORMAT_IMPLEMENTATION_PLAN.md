@@ -928,10 +928,28 @@ Complete these in order after FF-000 through FF-009.
       gate. Adobe InDesign is unavailable in this environment, so legally
       shareable fixtures are generated in tests and real InDesign reopen/preflight
       remains a mandatory release gate before origin-tool validation is advertised.
-- [ ] **FF-306 — TeX/LaTeX (`.tex`).** Protect commands, environments, math,
+- [x] **FF-306 — TeX/LaTeX (`.tex`).** Protect commands, environments, math,
       labels, citations, references, verbatim/code, and comments while exposing
       prose and selected command arguments. Make macro rules configurable and
       test compile the result where a TeX engine is available.
+      Completed 2026-08-18: the stateful lexer validates balanced groups,
+      ordered environments, inline/display math delimiters, `verb` delimiters,
+      comments, commands, optional/mandatory groups, and nested protected
+      environments without broad whole-file regex replacement. It exposes prose
+      plus configurable `macro:argument-index` ranges (including link labels),
+      while unknown macro arguments, labels, citations, references, URLs,
+      includes, package/configuration commands, math, and configurable verbatim/
+      code/math environments remain protected. Comments and document metadata
+      are optional. Export rejoins preference/sentence pieces without duplication,
+      escapes TeX-special characters in translated prose, re-lexes the complete
+      result, preserves encoding/BOM and identity bytes, enforces QA, and blocks
+      stale mappings and split/join. Unit, conformance, macro/filter, math/code/
+      reference/comment, malformed grammar, escaping, UTF-16, 1,000-paragraph,
+      detection, re-import, and generated browser coverage verifies the workflow.
+      An opt-in `pdflatex` compile/PDF test is included
+      (`OPENTLC_RUN_LATEX_ENGINE=1`), but no TeX engine is installed here, so
+      release CI must execute that gate with representative macro packages before
+      compiled-output support is advertised.
 - [ ] **FF-307 — TTML (`.ttml`, `.dfxp`).** Add namespace/profile-aware timed-text
       handling, nested spans, styling, regions, frame/tick rates, timing
       expressions, language, and whitespace. Validate against the selected TTML

@@ -19,6 +19,7 @@ export const FORMAT_IDS = [
 	"dita",
 	"docbook",
 	"idml",
+	"latex",
 	"xml",
 	"docx",
 	"xlsx",

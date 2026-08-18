@@ -1025,6 +1025,57 @@ const idmlFixture: FormatConformanceFixture = {
 		),
 };
 
+const latexFixture: FormatConformanceFixture = {
+	id: "latex",
+	fileName: "manual.tex",
+	mimeType: "application/x-tex",
+	createValidFile: async () =>
+		textFile(
+			`\\documentclass{article}\n\\begin{document}\n${CONFORMANCE_UNICODE_SOURCE}\n\\end{document}\n`,
+			"manual.tex",
+			"application/x-tex",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			"\\begin{document}Broken { text",
+			"broken.tex",
+			"application/x-tex",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			translatableCommands:
+				"chapter:1,section:1,subsection:1,subsubsection:1,title:1,author:1,caption:1,footnote:1,textbf:1,textit:1,emph:1,textrm:1,textsf:1,texttt:1,href:2,hyperref:2",
+			protectedEnvironments:
+				"verbatim,Verbatim,lstlisting,minted,equation,equation*,align,align*,gather,gather*,multline,multline*,displaymath,math",
+			includeComments: false,
+			includeMetadata: true,
+			segmentationMode: "preferences",
+		},
+		skeleton: { kind: "text", replacementKinds: ["text-range"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "manual.tex",
+				path: ["latex", "range[1]"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`\\begin{document}\n${Array.from(
+				{ length: units },
+				(_, index) => `Message ${index}.`,
+			).join("\n\n")}\n\\end{document}\n`,
+			"performance.tex",
+			"application/x-tex",
+		),
+	performanceOptions: { segmentationMode: "sentences" },
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1291,6 +1342,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	ditaFixture,
 	docBookFixture,
 	idmlFixture,
+	latexFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,
