@@ -27,6 +27,10 @@ import { generateMifTranslation } from "$lib/functions/outputGeneration/outputGe
 import { generateWindowsRcTranslation } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
 import { generateQmlTranslation } from "$lib/functions/outputGeneration/outputGenerationQml";
 import { generatePdfBilingualReview } from "$lib/functions/outputGeneration/outputGenerationPdfReview";
+import {
+	generateOcrBilingualReview,
+	generateTranslatedWebVtt,
+} from "$lib/functions/outputGeneration/outputGenerationLocalMedia";
 import { createXlsxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { createPptxFromModifiedXmlText } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import {
@@ -92,6 +96,18 @@ import { importMifFile, validateMifFile } from "./mif";
 import { importWindowsRcFile, validateWindowsRcFile } from "./windowsRc";
 import { importQmlFile, validateQmlFile } from "./qml";
 import { importPdfFile, validatePdfFile } from "./pdf";
+import {
+	importOcrImageFile,
+	OCR_IMAGE_EXTENSIONS,
+	OCR_IMAGE_MIME_TYPES,
+	validateOcrImageFile,
+} from "./localOcr";
+import {
+	importTranscriptionFile,
+	TRANSCRIPTION_EXTENSIONS,
+	TRANSCRIPTION_MIME_TYPES,
+	validateTranscriptionFile,
+} from "./localTranscription";
 import {
 	CAT_PACKAGE_EXTENSIONS,
 	CAT_PACKAGE_MIME_TYPES,
@@ -552,6 +568,32 @@ const adapters = [
 		validate: validatePdfFile,
 		importFile: importPdfFile,
 		exportFile: generatePdfBilingualReview,
+	},
+	{
+		id: "image-ocr",
+		label: "PNG/JPEG/TIFF local OCR → bilingual HTML",
+		extensions: OCR_IMAGE_EXTENSIONS,
+		mimeTypes: OCR_IMAGE_MIME_TYPES,
+		capabilities: SOURCE_ONLY_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["image-ocr"],
+		sniff: async (file, context) =>
+			(await validateOcrImageFile(file, context)).valid,
+		validate: validateOcrImageFile,
+		importFile: importOcrImageFile,
+		exportFile: generateOcrBilingualReview,
+	},
+	{
+		id: "media-transcription",
+		label: "Audio/video local transcription → WebVTT",
+		extensions: TRANSCRIPTION_EXTENSIONS,
+		mimeTypes: TRANSCRIPTION_MIME_TYPES,
+		capabilities: SOURCE_ONLY_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["media-transcription"],
+		sniff: async (file, context) =>
+			(await validateTranscriptionFile(file, context)).valid,
+		validate: validateTranscriptionFile,
+		importFile: importTranscriptionFile,
+		exportFile: generateTranslatedWebVtt,
 	},
 	{
 		id: "cat-package",

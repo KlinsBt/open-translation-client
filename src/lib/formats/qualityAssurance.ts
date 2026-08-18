@@ -70,6 +70,11 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	"windows-rc": { allowTagReorder: false, allowInlineCodeReorder: false },
 	qml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	pdf: { allowTagReorder: false, allowInlineCodeReorder: false },
+	"image-ocr": { allowTagReorder: false, allowInlineCodeReorder: false },
+	"media-transcription": {
+		allowTagReorder: false,
+		allowInlineCodeReorder: false,
+	},
 	"cat-package": { allowTagReorder: false, allowInlineCodeReorder: false },
 	"zip-project": { allowTagReorder: false, allowInlineCodeReorder: false },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },

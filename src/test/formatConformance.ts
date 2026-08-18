@@ -207,6 +207,11 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildQmlTranslationBlob(project);
 		case "pdf":
 			return buildPdfBilingualReviewBlob(project);
+		case "image-ocr":
+		case "media-transcription":
+			throw new Error(
+				`${project.translationData.type} requires a dedicated conformance output.`,
+			);
 		case "cat-package":
 			throw new Error("Read-only CAT packages have no conformance output.");
 		case "zip-project":

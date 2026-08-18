@@ -125,6 +125,13 @@ export async function detectFileFormat(
 
 	const externalCandidate = detectExternalMediaCandidate(prefix);
 	if (externalCandidate) {
+		const localAdapter = adapters.find((adapter) =>
+			externalCandidate.modality === "ocr"
+				? adapter.id === "image-ocr"
+				: adapter.id === "media-transcription",
+		);
+		if (localAdapter)
+			return supportedContent(localAdapter, extension, mimeType);
 		const metadata = metadataEvidence(
 			extension,
 			mimeType,
@@ -205,6 +212,24 @@ export async function detectFileFormat(
 	const mimeMatch = mimeType
 		? adapters.find((adapter) => adapter.mimeTypes.includes(mimeType))
 		: undefined;
+	const unverifiedLocalMedia = [extensionMatch?.id, mimeMatch?.id].find(
+		(id) => id === "image-ocr" || id === "media-transcription",
+	);
+	if (unverifiedLocalMedia) {
+		return unsupported(
+			unverifiedLocalMedia === "image-ocr"
+				? "Unrecognized image"
+				: "Unrecognized media",
+			"low",
+			metadataEvidence(
+				extension,
+				mimeType,
+				extensionMatch?.extensions ?? mimeMatch?.extensions ?? [],
+				extensionMatch?.mimeTypes ?? mimeMatch?.mimeTypes ?? [],
+			),
+			"The extension or MIME type claims a supported local format, but its binary signature does not match.",
+		);
+	}
 	if (extensionMatch && mimeMatch?.id === extensionMatch.id) {
 		return supportedMetadata(extensionMatch, "medium", ["extension", "mime"]);
 	}

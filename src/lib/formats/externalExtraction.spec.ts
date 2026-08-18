@@ -65,25 +65,25 @@ describe("external OCR/transcription boundary", () => {
 			detectFormatWithConfidence(
 				new File(["not an image"], "renamed.png", { type: "image/png" }),
 			),
-		).resolves.toBeUndefined();
+		).resolves.toMatchObject({
+			formatId: null,
+			supported: false,
+			label: "Unrecognized image",
+		});
 	});
 
-	it("returns actionable disabled-workflow metadata without advertising inputs", async () => {
+	it("routes recognized media to local adapters and advertises their inputs", async () => {
 		const png = new File(
 			[new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
 			"page.PNG",
 			{ type: "image/png" },
 		);
 		await expect(detectFormatWithConfidence(png)).resolves.toMatchObject({
-			formatId: null,
-			label: "PNG image requiring OCR",
-			supported: false,
+			formatId: "image-ocr",
+			label: "PNG/JPEG/TIFF local OCR → bilingual HTML",
+			supported: true,
 			confidence: "high",
-			evidence: ["signature", "extension", "mime"],
-			workflow: {
-				kind: "external-service-required",
-				primaryAction: "Configure a local or consent-based OCR provider",
-			},
+			evidence: ["content", "extension", "mime"],
 		});
 		const accepted = getFormatAcceptValue().split(",");
 		for (const extension of [
@@ -97,7 +97,7 @@ describe("external OCR/transcription boundary", () => {
 			".mp4",
 			".webm",
 		])
-			expect(accepted).not.toContain(extension);
+			expect(accepted).toContain(extension);
 	});
 
 	it("rejects unsafe or incomplete provider profiles", () => {

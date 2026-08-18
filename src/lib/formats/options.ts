@@ -869,6 +869,48 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Skip image-only pages with a recorded warning, or reject the import. Core PDF extraction never runs OCR implicitly.",
 		},
 	],
+	"image-ocr": [
+		{
+			id: "ocrLanguage",
+			label: "OCR language model",
+			type: "text",
+			defaultValue: "eng",
+			placeholder: "eng, deu, fra or e.g. eng+deu",
+			description:
+				"Tesseract language code(s). Model files are downloaded and cached, while the selected image remains on this device.",
+		},
+		{
+			id: "grouping",
+			label: "Text grouping",
+			type: "select",
+			defaultValue: "paragraphs",
+			choices: ["paragraphs", "lines"],
+		},
+	],
+	"media-transcription": [
+		{
+			id: "model",
+			label: "Local Whisper model",
+			type: "select",
+			defaultValue: "onnx-community/whisper-tiny",
+			choices: ["onnx-community/whisper-tiny", "onnx-community/whisper-base"],
+			description:
+				"The model is downloaded and cached by the browser. Audio samples are processed locally and are not uploaded.",
+		},
+		{
+			id: "language",
+			label: "Spoken language",
+			type: "text",
+			defaultValue: "",
+			placeholder: "Auto-detect, or e.g. english / german",
+		},
+		{
+			id: "chunkSeconds",
+			label: "Chunk length (seconds)",
+			type: "number",
+			defaultValue: 30,
+		},
+	],
 	"cat-package": [
 		{
 			id: "memberPaths",

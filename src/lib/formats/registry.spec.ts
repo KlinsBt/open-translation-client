@@ -68,7 +68,13 @@ describe("format adapter registry", () => {
 			expect(adapter.capabilities).toEqual(
 				id === "cat-package"
 					? { import: true, export: false, roundTrip: false }
-					: { import: true, export: true, roundTrip: id !== "pdf" },
+					: {
+							import: true,
+							export: true,
+							roundTrip: !["pdf", "image-ocr", "media-transcription"].includes(
+								id,
+							),
+						},
 			);
 			expect(adapter.importOptions.length).toBeGreaterThan(0);
 			expect(
@@ -87,10 +93,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF source-only → bilingual HTML, Proprietary CAT packages (read-only), Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF source-only → bilingual HTML, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, Proprietary CAT packages (read-only), Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 

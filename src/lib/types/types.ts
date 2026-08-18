@@ -237,6 +237,23 @@ export interface PdfSegmentMeta {
 	separator?: string;
 }
 
+export interface OcrSegmentMeta {
+	profile: "local-image-ocr";
+	page: 1;
+	bbox: [number, number, number, number];
+	confidence: number;
+	direction: "ltr" | "rtl";
+	separator?: string;
+}
+
+export interface TranscriptionSegmentMeta {
+	profile: "local-media-transcription";
+	startMs: number;
+	endMs: number;
+	confidence: number;
+	separator?: string;
+}
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -295,6 +312,8 @@ export type SegmentMeta =
 	| PackageXmlSegmentMeta
 	| TtmlSegmentMeta
 	| PdfSegmentMeta
+	| OcrSegmentMeta
+	| TranscriptionSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

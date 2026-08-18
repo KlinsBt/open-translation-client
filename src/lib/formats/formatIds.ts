@@ -25,6 +25,8 @@ export const FORMAT_IDS = [
 	"windows-rc",
 	"qml",
 	"pdf",
+	"image-ocr",
+	"media-transcription",
 	"cat-package",
 	"zip-project",
 	"xml",

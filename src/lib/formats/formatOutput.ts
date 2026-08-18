@@ -96,6 +96,8 @@ export async function buildRoundTripFormatOutputBlob(
 		case "pptx":
 			return buildPptxTranslationPackage(project);
 		case "pdf":
+		case "image-ocr":
+		case "media-transcription":
 		case "cat-package":
 		case "zip-project":
 			throw new Error(
