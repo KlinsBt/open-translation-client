@@ -13,13 +13,8 @@
 		sortUserDataByNameDescending,
 	} from "$lib/functions/sorting";
 	import { loadTranslationsUserDataFromIndexedDB } from "$lib/functions/saveData/indexedDb";
-	import {
-		showLoading,
-		userData,
-		userDataStatistics,
-	} from "$lib/functions/saveData/stores.svelte";
+	import { showLoading, userData } from "$lib/functions/saveData/stores.svelte";
 	import { onMount } from "svelte";
-	import { getProjectsProgressStatistics } from "$lib/functions/statistics";
 	import Modal from "../modal.svelte";
 	import { goto } from "$app/navigation";
 	import {
@@ -28,9 +23,20 @@
 	} from "$lib/functions/parsing/parsingPreferences";
 	import ParsingPreferencesModal from "./components/parsingPreferencesModal.svelte";
 	import UniversalUpload from "$lib/components/uploads/universalUpload.svelte";
+	import {
+		filterProjects,
+		getNextProjectSort,
+		type ProjectSortState,
+		type ProjectViewMode,
+	} from "./projectDashboard";
 
-	let sortByName: boolean = $state(false); // default sort by date
-	let ascendingOrder: boolean = $state(true); // default ascending order
+	let sortState: ProjectSortState = $state({
+		field: "date",
+		ascending: false,
+	});
+	let viewMode: ProjectViewMode = $state("cards");
+	let searchQuery = $state("");
+	let visibleProjects = $derived(filterProjects($userData, searchQuery));
 
 	let showUploadModal: boolean = $state(false);
 	let showNewProjectModal: boolean = $state(false);
@@ -43,37 +49,42 @@
 			await new Promise((resolve) => setTimeout(resolve, 0));
 		}
 		await loadTranslationsUserDataFromIndexedDB();
-		userDataStatistics.set(getProjectsProgressStatistics($userData));
+		applySort();
 		showLoading.set(false);
 		parsingPreferences = loadParsingPreferences();
+
+		const savedView = localStorage.getItem("opentlc-project-view");
+		if (savedView === "cards" || savedView === "table") {
+			viewMode = savedView;
+		}
 	});
 
-	function toggleSortByName() {
-		sortByName = true;
-		ascendingOrder = !ascendingOrder;
-		console.log("Asc: ", ascendingOrder);
-		if (sortByName && ascendingOrder) {
-			userData.set(sortUserDataByNameAscending($userData));
-		} else if (sortByName && !ascendingOrder) {
-			userData.set(sortUserDataByNameDescending($userData));
-		} else if (!sortByName && ascendingOrder) {
-			userData.set(sortUserDataByDateAscending($userData));
-		} else if (!sortByName && !ascendingOrder) {
-			userData.set(sortUserDataByDateDescending($userData));
+	function applySort() {
+		const projects = [...$userData];
+		if (sortState.field === "name") {
+			userData.set(
+				sortState.ascending
+					? sortUserDataByNameAscending(projects)
+					: sortUserDataByNameDescending(projects),
+			);
+			return;
 		}
+
+		userData.set(
+			sortState.ascending
+				? sortUserDataByDateAscending(projects)
+				: sortUserDataByDateDescending(projects),
+		);
 	}
 
-	function toggleSortByDate() {
-		sortByName = false;
-		ascendingOrder = !ascendingOrder;
-		// console.log("Asc: ", ascendingOrder);
-		if (ascendingOrder) {
-			userData.set(sortUserDataByDateAscending($userData));
-			console.log($userData);
-		} else {
-			userData.set(sortUserDataByDateDescending($userData));
-			console.log($userData);
-		}
+	function changeSort(field: ProjectSortState["field"]) {
+		sortState = getNextProjectSort(sortState, field);
+		applySort();
+	}
+
+	function changeViewMode(mode: ProjectViewMode) {
+		viewMode = mode;
+		localStorage.setItem("opentlc-project-view", mode);
 	}
 </script>
 
@@ -98,196 +109,583 @@
 <UniversalUpload bind:show={showNewProjectModal} />
 
 <div class="dashboard">
-	<div class="order-bar sort-bar">
-		<button
-			class:active={sortByName}
-			aria-pressed={sortByName}
-			aria-label={`Sort projects by name${sortByName ? `, ${ascendingOrder ? "ascending" : "descending"}` : ""}`}
-			onclick={toggleSortByName}
-		>
-			Name {sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
-		</button>
-		<button
-			class:active={!sortByName}
-			aria-pressed={!sortByName}
-			aria-label={`Sort projects by date${!sortByName ? `, ${ascendingOrder ? "ascending" : "descending"}` : ""}`}
-			onclick={toggleSortByDate}
-		>
-			Date {!sortByName ? (ascendingOrder ? "▲" : "▼") : ""}
-		</button>
-	</div>
-	<div class="order-bar">
-		<!-- <span>Sort by:</span> -->
-		<button class="tm-btn" onclick={() => (showParsingModal = true)}>
-			Parsing preferences
-		</button>
-		<button
-			class="tm-btn"
-			onclick={() => {
-				goto("/tm");
-			}}
-		>
-			Translation Memory
-		</button>
+	<header class="workspace-header">
+		<div class="workspace-title">
+			<p class="eyebrow">Local workspace</p>
+			<h1>Your projects</h1>
+			<p>Open, organize and continue translations stored in this browser.</p>
+		</div>
 
-		<button
-			class="tm-btn"
-			onclick={() => {
-				goto("/tb");
-			}}
-		>
-			Term Base
-		</button>
-	</div>
+		<div class="workspace-actions">
+			<button class="back-link" onclick={() => goto("/")}>
+				<span aria-hidden="true">←</span> Back to website
+			</button>
+			<button class="secondary-action" onclick={() => (showUploadModal = true)}>
+				Import project
+			</button>
+			<button
+				class="primary-action"
+				onclick={() => (showNewProjectModal = true)}
+			>
+				<span aria-hidden="true">+</span> New project
+			</button>
+		</div>
+	</header>
 
-	<div class="project-cards">
-		{#if $userData?.length > 0}
-			{#each $userData as file, i}
-				<ProjectCard {file} />
-			{/each}
-		{/if}
-		<div class="add-project">
-			<div class="add-icon">+</div>
+	<section class="workspace-panel" aria-labelledby="project-library-title">
+		<div class="panel-heading">
 			<div>
-				<button
-					onclick={() => {
-						showNewProjectModal = true;
-					}}>Create new project</button
-				>
-				<button
-					onclick={() => {
-						showUploadModal = true;
-					}}>Upload project file</button
-				>
+				<h2 id="project-library-title">Project library</h2>
+				<p>
+					{visibleProjects.length === $userData.length
+						? `${$userData.length} ${$userData.length === 1 ? "project" : "projects"}`
+						: `${visibleProjects.length} of ${$userData.length} projects`}
+				</p>
+			</div>
+
+			<div class="utility-links" aria-label="Translation resources">
+				<button onclick={() => (showParsingModal = true)}>
+					Parsing preferences
+				</button>
+				<button onclick={() => goto("/tm")}>Translation Memory</button>
+				<button onclick={() => goto("/tb")}>Term Base</button>
 			</div>
 		</div>
-	</div>
-</div>
-<div class="buttons-container">
-	<button
-		class="back-btn back"
-		onclick={() => {
-			goto("/");
-		}}
-	>
-		<!-- <RightArrow /> -->
-		Close App
-	</button>
+
+		<div class="project-toolbar">
+			<label class="project-search">
+				<span class="visually-hidden">Search projects</span>
+				<span class="search-icon" aria-hidden="true"></span>
+				<input
+					type="search"
+					placeholder="Search projects, formats or languages"
+					bind:value={searchQuery}
+				/>
+			</label>
+
+			<div class="toolbar-options">
+				<div class="sort-controls" aria-label="Sort projects">
+					<span>Sort by</span>
+					<button
+						class:active={sortState.field === "name"}
+						aria-pressed={sortState.field === "name"}
+						aria-label={`Sort projects by name${sortState.field === "name" ? `, ${sortState.ascending ? "ascending" : "descending"}` : ""}`}
+						onclick={() => changeSort("name")}
+					>
+						Name
+						{#if sortState.field === "name"}
+							<span aria-hidden="true">{sortState.ascending ? "↑" : "↓"}</span>
+						{/if}
+					</button>
+					<button
+						class:active={sortState.field === "date"}
+						aria-pressed={sortState.field === "date"}
+						aria-label={`Sort projects by date${sortState.field === "date" ? `, ${sortState.ascending ? "ascending" : "descending"}` : ""}`}
+						onclick={() => changeSort("date")}
+					>
+						Date
+						{#if sortState.field === "date"}
+							<span aria-hidden="true">{sortState.ascending ? "↑" : "↓"}</span>
+						{/if}
+					</button>
+				</div>
+
+				<div class="view-controls" aria-label="Project view">
+					<button
+						class:active={viewMode === "cards"}
+						aria-pressed={viewMode === "cards"}
+						onclick={() => changeViewMode("cards")}
+					>
+						<span class="cards-icon" aria-hidden="true"></span> Cards
+					</button>
+					<button
+						class:active={viewMode === "table"}
+						aria-pressed={viewMode === "table"}
+						onclick={() => changeViewMode("table")}
+					>
+						<span class="table-icon" aria-hidden="true"></span> Table
+					</button>
+				</div>
+			</div>
+		</div>
+
+		{#if $userData.length === 0}
+			<div class="empty-state">
+				<span aria-hidden="true">+</span>
+				<h3>Create your first project</h3>
+				<p>Import a source file or start a new translation project locally.</p>
+				<div>
+					<button
+						class="primary-action"
+						onclick={() => (showNewProjectModal = true)}
+					>
+						New project
+					</button>
+					<button
+						class="secondary-action"
+						onclick={() => (showUploadModal = true)}
+					>
+						Import project
+					</button>
+				</div>
+			</div>
+		{:else if visibleProjects.length === 0}
+			<div class="empty-state search-empty">
+				<h3>No matching projects</h3>
+				<p>Try a project name, file format, or source and target language.</p>
+				<button class="secondary-action" onclick={() => (searchQuery = "")}>
+					Clear search
+				</button>
+			</div>
+		{:else if viewMode === "cards"}
+			<div class="project-grid" aria-label="Projects">
+				{#each visibleProjects as file (file.id)}
+					<ProjectCard {file} viewMode="cards" />
+				{/each}
+			</div>
+		{:else}
+			<div class="project-table-wrapper">
+				<div class="project-table" aria-label="Projects">
+					<div class="project-table-header" aria-hidden="true">
+						<span>Project</span>
+						<span>Format</span>
+						<span>Languages</span>
+						<span>Segments</span>
+						<span>Words</span>
+						<span>Progress</span>
+						<span>Created</span>
+					</div>
+					{#each visibleProjects as file (file.id)}
+						<ProjectCard {file} viewMode="table" />
+					{/each}
+				</div>
+			</div>
+		{/if}
+	</section>
 </div>
 
 <style>
 	.dashboard {
 		display: grid;
-		align-content: center;
-		align-items: center;
-		padding: 20px 0px 50px 0px;
-		max-width: 1500px;
+		gap: 1.5rem;
+		width: min(1240px, calc(100vw - 3rem));
+		padding: 2.5rem 0 4rem;
+		color: #173947;
 	}
 
-	.order-bar {
+	.workspace-header {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		justify-content: center;
-		gap: 1rem;
-		font-weight: 600;
-		margin-bottom: 70px;
-		color: var(--color-theme-4);
+		justify-content: space-between;
+		gap: 1.5rem 2rem;
 	}
 
-	.order-bar button {
-		border: none;
-		background: none;
+	.workspace-title {
+		min-width: min(100%, 320px);
+	}
+
+	.eyebrow {
+		margin: 0 0 0.45rem;
+		color: #19708a;
+		font-size: 0.7rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+
+	.workspace-title h1 {
+		margin: 0;
+		color: #153f4e;
+		font-size: clamp(1.85rem, 3vw, 2.55rem);
+		letter-spacing: -0.035em;
+		line-height: 1.1;
+		text-align: left;
+	}
+
+	.workspace-title > p:last-child {
+		margin: 0.65rem 0 0;
+		color: #607983;
+		font-size: 0.92rem;
+	}
+
+	.workspace-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 0.65rem;
+	}
+
+	.workspace-actions button,
+	.empty-state button {
+		min-height: 2.65rem;
+		border-radius: 0.55rem;
+		padding: 0.65rem 1rem;
+		font: inherit;
+		font-size: 0.84rem;
+		font-weight: 750;
 		cursor: pointer;
-		font-size: 1rem;
-		color: var(--color-theme-3);
-	}
-
-	.sort-bar {
-		margin: 0 0 20px;
-	}
-
-	.sort-bar button {
-		padding: 0.35rem 0.2rem;
-		text-decoration-line: underline;
-		text-decoration-color: color-mix(
-			in srgb,
-			var(--color-theme-3) 38%,
-			transparent
-		);
-		text-decoration-thickness: 1px;
-		text-underline-offset: 0.48em;
 		transition:
-			color 0.2s ease,
-			text-decoration-color 0.2s ease,
-			text-decoration-thickness 0.2s ease;
+			transform 0.18s ease,
+			box-shadow 0.18s ease,
+			background-color 0.18s ease,
+			border-color 0.18s ease;
 	}
 
-	.sort-bar button:hover,
-	.sort-bar button:focus-visible {
+	.primary-action {
+		border: 1px solid var(--color-theme-4);
+		background: var(--color-theme-4);
+		color: white;
+		box-shadow: 0 6px 16px rgba(24, 112, 145, 0.16);
+	}
+
+	.primary-action span {
+		margin-right: 0.25rem;
+		font-size: 1.1rem;
+		line-height: 0;
+	}
+
+	.secondary-action {
+		border: 1px solid #aacbd3;
+		background: rgba(255, 255, 255, 0.78);
+		color: #176b84;
+	}
+
+	.back-link {
+		border: 1px solid transparent;
+		background: transparent;
+		color: #58727c;
+	}
+
+	.workspace-actions button:hover,
+	.empty-state button:hover {
+		transform: translateY(-1px);
+	}
+
+	.primary-action:hover {
+		box-shadow: 0 8px 20px rgba(24, 112, 145, 0.24);
+		filter: brightness(1.04);
+	}
+
+	.secondary-action:hover,
+	.back-link:hover {
+		border-color: #74aebb;
+		background: white;
+	}
+
+	.workspace-panel {
+		--project-columns: minmax(220px, 2fr) 84px 120px 86px 80px 150px 104px;
+		min-width: 0;
+		border: 1px solid #cfe1e5;
+		border-radius: 1rem;
+		background: rgba(255, 255, 255, 0.82);
+		box-shadow: 0 18px 50px rgba(34, 84, 98, 0.09);
+		overflow: hidden;
+	}
+
+	.panel-heading {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem 2rem;
+		padding: 1.4rem 1.5rem 1.15rem;
+		border-bottom: 1px solid #dcebed;
+	}
+
+	.panel-heading h2 {
+		margin: 0;
+		color: #194453;
+		font-size: 1.12rem;
+	}
+
+	.panel-heading p {
+		margin: 0.3rem 0 0;
+		color: #71868d;
+		font-size: 0.78rem;
+	}
+
+	.utility-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem 1rem;
+	}
+
+	.utility-links button {
+		border: 0;
+		background: transparent;
+		padding: 0.25rem 0;
+		color: #24758d;
+		font: inherit;
+		font-size: 0.78rem;
+		font-weight: 700;
+		text-decoration: underline;
+		text-decoration-color: #bad3d9;
+		text-underline-offset: 0.28em;
+		cursor: pointer;
+	}
+
+	.utility-links button:hover,
+	.utility-links button:focus-visible {
+		color: #0c5870;
 		text-decoration-color: currentColor;
 	}
 
-	.sort-bar .active {
-		font-weight: bold;
+	.project-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 1rem 1.5rem;
+		background: #f6fbfc;
+	}
+
+	.project-search {
+		position: relative;
+		flex: 1 1 300px;
+		max-width: 430px;
+	}
+
+	.project-search input {
+		width: 100%;
+		height: 2.55rem;
+		border: 1px solid #c7dce1;
+		border-radius: 0.55rem;
+		background: white;
+		padding: 0 0.85rem 0 2.45rem;
+		color: #274b58;
+		font: inherit;
+		font-size: 0.83rem;
+		outline: none;
+		transition:
+			border-color 0.18s ease,
+			box-shadow 0.18s ease;
+	}
+
+	.project-search input:focus {
+		border-color: #3994ac;
+		box-shadow: 0 0 0 3px rgba(57, 148, 172, 0.14);
+	}
+
+	.project-search input::placeholder {
+		color: #899ba1;
+	}
+
+	.search-icon {
+		position: absolute;
+		top: 50%;
+		left: 0.85rem;
+		z-index: 1;
+		width: 0.72rem;
+		height: 0.72rem;
+		border: 2px solid #6f929d;
+		border-radius: 50%;
+		transform: translateY(-58%);
+		pointer-events: none;
+	}
+
+	.search-icon::after {
+		content: "";
+		position: absolute;
+		right: -0.35rem;
+		bottom: -0.25rem;
+		width: 0.38rem;
+		height: 2px;
+		border-radius: 2px;
+		background: #6f929d;
+		transform: rotate(45deg);
+	}
+
+	.toolbar-options,
+	.sort-controls,
+	.view-controls {
+		display: flex;
+		align-items: center;
+	}
+
+	.toolbar-options {
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 0.7rem 1.25rem;
+	}
+
+	.sort-controls {
+		gap: 0.65rem;
+	}
+
+	.sort-controls > span {
+		color: #758a91;
+		font-size: 0.72rem;
+		font-weight: 750;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+
+	.sort-controls button {
+		border: 0;
+		background: transparent;
+		padding: 0.35rem 0.12rem;
+		color: #53717c;
+		font: inherit;
+		font-size: 0.79rem;
+		font-weight: 700;
+		text-decoration-line: underline;
+		text-decoration-color: #bed3d8;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.45em;
+		cursor: pointer;
+	}
+
+	.sort-controls button:hover,
+	.sort-controls button:focus-visible {
+		color: #126d86;
+		text-decoration-color: currentColor;
+	}
+
+	.sort-controls button.active {
+		color: #126d86;
 		text-decoration-color: currentColor;
 		text-decoration-thickness: 3px;
 	}
 
-	.project-cards {
+	.view-controls {
+		padding: 0.2rem;
+		border: 1px solid #c8dce1;
+		border-radius: 0.55rem;
+		background: #eaf4f6;
+	}
+
+	.view-controls button {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		border: 0;
+		border-radius: 0.38rem;
+		background: transparent;
+		padding: 0.42rem 0.62rem;
+		color: #617983;
+		font: inherit;
+		font-size: 0.75rem;
+		font-weight: 750;
+		cursor: pointer;
+	}
+
+	.view-controls button.active {
+		background: white;
+		color: #126d86;
+		box-shadow: 0 1px 4px rgba(29, 72, 86, 0.14);
+	}
+
+	.cards-icon,
+	.table-icon {
+		display: inline-block;
+		width: 0.75rem;
+		height: 0.65rem;
+		background: repeating-linear-gradient(
+			90deg,
+			currentColor 0 3px,
+			transparent 3px 5px
+		);
+	}
+
+	.table-icon {
+		background: repeating-linear-gradient(
+			0deg,
+			currentColor 0 2px,
+			transparent 2px 4px
+		);
+	}
+
+	.project-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+		gap: 1rem;
+		padding: 1.5rem;
+	}
+
+	.project-table-wrapper {
+		overflow-x: auto;
+		padding: 0 1.5rem 1.5rem;
+	}
+
+	.project-table {
+		min-width: 900px;
+		border: 1px solid #d6e5e8;
+		border-radius: 0.7rem;
+		overflow: hidden;
+	}
+
+	.project-table-header {
+		display: grid;
+		grid-template-columns: var(--project-columns);
+		gap: 0.85rem;
+		align-items: center;
+		padding: 0.75rem 1rem;
+		background: #edf6f8;
+		color: #617a83;
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.project-table :global(.project-row:last-child) {
+		border-bottom: 0;
+	}
+
+	.empty-state {
+		display: grid;
+		justify-items: center;
+		padding: 4.5rem 1.5rem;
+		text-align: center;
+	}
+
+	.empty-state > span {
+		display: grid;
+		place-items: center;
+		width: 3.5rem;
+		height: 3.5rem;
+		border: 1px dashed #5aa9bc;
+		border-radius: 50%;
+		color: #318aa2;
+		font-size: 2rem;
+	}
+
+	.empty-state h3 {
+		margin: 1rem 0 0;
+		color: #1c4a59;
+		font-size: 1.15rem;
+	}
+
+	.empty-state p {
+		max-width: 430px;
+		margin: 0.55rem 0 1.15rem;
+		color: #71868d;
+		font-size: 0.85rem;
+	}
+
+	.empty-state div {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
-		gap: 1px;
+		gap: 0.65rem;
 	}
 
-	/* .additional {
-		background-color: var(--color-theme-4);
-		color: white;
-		padding: 2px 5px;
-		border-radius: 3px;
-		font-size: 0.7rem;
-	} */
-
-	.add-project {
-		display: grid;
-		justify-items: center;
-		align-items: center;
-		background: white;
-		border: 2px dashed var(--color-theme-4);
-		/* border-radius: 8px; */
-		padding: 0px 14px;
-		width: 150px;
-		cursor: pointer;
+	.search-empty {
+		padding-block: 3.5rem;
 	}
 
-	.add-icon {
-		font-size: 5rem;
-		font-weight: 700;
-		color: var(--color-theme-4);
-		margin: 0px;
-	}
-
-	.add-project div {
-		display: flex;
-		flex-direction: column;
-		gap: 10px 0px;
-		margin-bottom: 20px;
-	}
-
-	.add-project button {
-		background-color: var(--color-theme-4);
-		color: white;
-		border: none;
-		border-radius: 5px;
-		padding: 10px;
-		cursor: pointer;
-		font-weight: bold;
-		width: 100%;
-	}
-
-	.add-project button:hover {
-		filter: brightness(1.1);
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 
 	.save-file-upload-container {
@@ -295,52 +693,7 @@
 		justify-content: center;
 		align-items: start;
 		flex-wrap: wrap;
-		padding: 0px;
-	}
-
-	.back-btn {
-		background-color: var(--color-theme-4);
-		color: white;
-		border: none;
-		border-radius: 5px;
-		padding: 10px 20px;
-		cursor: pointer;
-		font-weight: 600;
-		font-size: 1.3rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		gap: 0px 5px;
-		margin: 0px;
-	}
-
-	.back-btn:hover {
-		filter: brightness(1.1);
-	}
-
-	.buttons-container {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		align-items: center;
-		gap: 0px 20px;
-	}
-
-	.buttons-container > button {
-		margin: 10px 0px;
-	}
-
-	.tm-btn {
-		background-color: var(--color-theme-4) !important;
-		color: white !important;
-		border-radius: 5px !important;
-		padding: 10px !important;
-		font-weight: 600;
-		font-size: 0.8rem !important;
-	}
-
-	.tm-btn:hover {
-		filter: brightness(1.1);
+		padding: 0;
 	}
 
 	button:disabled {
@@ -349,13 +702,73 @@
 		pointer-events: none;
 	}
 
-	@media (max-width: 774px) {
-		.order-bar {
+	@media (max-width: 760px) {
+		.dashboard {
+			width: min(100% - 1.5rem, 1240px);
+			padding-top: 1.5rem;
+		}
+
+		.workspace-header,
+		.workspace-actions {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.workspace-actions {
+			width: 100%;
+		}
+
+		.workspace-actions button {
+			width: 100%;
+		}
+
+		.panel-heading,
+		.project-toolbar {
+			padding-inline: 1rem;
+		}
+
+		.utility-links {
+			width: 100%;
+		}
+
+		.project-search {
+			flex-basis: 100%;
+			max-width: none;
+		}
+
+		.toolbar-options {
+			width: 100%;
+			justify-content: space-between;
+		}
+
+		.project-grid {
+			grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+			padding: 1rem;
+		}
+
+		.project-table-wrapper {
+			padding-inline: 1rem;
+		}
+	}
+
+	@media (max-width: 460px) {
+		.toolbar-options {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.sort-controls,
+		.view-controls {
 			justify-content: center;
 		}
 
-		.project-cards {
+		.view-controls button {
+			flex: 1;
 			justify-content: center;
+		}
+
+		.project-grid {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>

@@ -35,6 +35,7 @@
 		notifyInfo,
 		notifyError,
 	} from "$lib/components/notifications/toastStore";
+	import type { ProjectViewMode } from "../projectDashboard";
 
 	let optionsOpen: boolean = $state(false);
 	let editNameWindow: boolean = $state(false);
@@ -184,9 +185,28 @@
 
 	let {
 		file,
+		viewMode = "cards",
 	}: {
 		file: UserData;
+		viewMode?: ProjectViewMode;
 	} = $props();
+	let projectName = $derived(file.translationData.name);
+	let displayName = $derived(
+		projectName.length > 28 ? `${projectName.slice(0, 28)}…` : projectName,
+	);
+	let progress = $derived(
+		calcPercentageOfTotalSegmentsChecked(file.translationData.checked),
+	);
+	let sourceWords = $derived(getTotalWordCount(file.translationData.seg1));
+	let sourceLanguage = $derived(
+		getStringInsideBrackets(file.translationData.sourceLang) ?? "—",
+	);
+	let targetLanguage = $derived(
+		getStringInsideBrackets(file.translationData.targetLang) ?? "—",
+	);
+	let creationDate = $derived(
+		unixTimeToDate(parseInt(file.translationData.creationDate)),
+	);
 
 	function check(opt: number, lang: string) {
 		if (opt === 1) {
@@ -346,208 +366,348 @@
 	class="modal-element-global {show ? '' : 'close-modal-global'}"
 	onclick={() => (show = false)}
 >
-	<Modal
-		title={file.translationData.name.length > 15
-			? file.translationData.name.slice(0, 15) + "..."
-			: file.translationData.name}
-		content={options}
-	/>
+	<Modal title={displayName} content={options} />
 </div>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="project-card" onclick={() => selectAndShowModal(file.id!)}>
-	<span class="words-badge">
-		{getTotalWordCount(file.translationData.seg1)}
-	</span>
-	<span class="type-badge">{file.translationData.type}</span>
-	<div class="progress-circle">
-		<span
-			>{calcPercentageOfTotalSegmentsChecked(
-				file.translationData.checked,
-			)}%</span
+{#if viewMode === "cards"}
+	<button
+		type="button"
+		class="project-card"
+		class:selected={$translationIdSelected === file.id}
+		onclick={() => selectAndShowModal(file.id!)}
+		aria-label={`Open options for ${projectName}`}
+	>
+		<span class="card-topline">
+			<span class="words-badge">{sourceWords} words</span>
+			<span class="type-badge">{file.translationData.type}</span>
+		</span>
+		<span class="progress-circle" aria-label={`${progress}% complete`}>
+			<span>{progress}%</span>
+			<svg aria-hidden="true" viewBox="0 0 100 100">
+				<circle class="bg" cx="50" cy="50" r="40"></circle>
+				<circle
+					class="progress"
+					cx="50"
+					cy="50"
+					r="40"
+					style={`stroke-dashoffset: ${(252 * (100 - progress)) / 100}`}
+				></circle>
+			</svg>
+		</span>
+		<span class="project-name" title={projectName}>{displayName}</span>
+		<span class="project-meta">
+			<span
+				><strong>{file.translationData.checked.length}</strong> segments</span
+			>
+			<span>{creationDate}</span>
+		</span>
+		<span class="languages">
+			<span class="source-lang">{sourceLanguage}</span>
+			<span class="language-arrow" aria-hidden="true">→</span>
+			<span class="target-lang">{targetLanguage}</span>
+		</span>
+		<span class="open-hint"
+			>Project options <span aria-hidden="true">→</span></span
 		>
-		<svg>
-			<circle class="bg" cx="50" cy="50" r="40"></circle>
-			<circle
-				class="progress"
-				cx="50"
-				cy="50"
-				r="40"
-				style="stroke-dashoffset: {(252 *
-					(100 -
-						parseInt(
-							calcPercentageOfTotalSegmentsChecked(
-								file.translationData.checked,
-							).toString(),
-						))) /
-					100};"
-			></circle>
-		</svg>
-	</div>
-	<h4>
-		{file.translationData.name.length > 15
-			? file.translationData.name.slice(0, 15) + "..."
-			: file.translationData.name}
-	</h4>
-	<div class="text-info">
-		<!-- <p>
-								<span>{getTotalWordCount(file.translationData.seg1)}</span> /
-								<span>{getTotalWordCount(file.translationData.seg2)}</span> Words
-							</p> -->
-		<p><span>{file.translationData.checked.length}</span> Segments</p>
-		<p class="creation-date">
-			{unixTimeToDate(parseInt(file.translationData.creationDate))}
-		</p>
-	</div>
-	<div class="languages">
-		<span class="source-lang"
-			>{getStringInsideBrackets(file.translationData.sourceLang)}</span
-		>
-		<span class="target-lang"
-			>{getStringInsideBrackets(file.translationData.targetLang)}</span
-		>
-		<!-- {#if file.translationData.additionalLanguages}
-								<span class="additional">+{file.translationData.additionalLanguages}</span>
-							{/if} -->
-	</div>
-</div>
+	</button>
+{:else}
+	<button
+		type="button"
+		class="project-row"
+		class:selected={$translationIdSelected === file.id}
+		onclick={() => selectAndShowModal(file.id!)}
+		aria-label={`Open options for ${projectName}`}
+	>
+		<span class="project-primary">
+			<strong title={projectName}>{displayName}</strong>
+			<small>Open project options</small>
+		</span>
+		<span class="table-type">{file.translationData.type}</span>
+		<span class="table-languages">
+			{sourceLanguage}<span aria-hidden="true">→</span>{targetLanguage}
+		</span>
+		<span>{file.translationData.checked.length}</span>
+		<span>{sourceWords}</span>
+		<span class="table-progress">
+			<span><i style={`width: ${progress}%`}></i></span>
+			<strong>{progress}%</strong>
+		</span>
+		<span>{creationDate}</span>
+	</button>
+{/if}
 
 <style>
 	.project-card {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		min-width: 0;
+		border: 1px solid #d4e5e8;
+		border-radius: 0.8rem;
 		background: white;
 		padding: 1rem;
+		color: #294c58;
+		font: inherit;
 		text-align: center;
 		position: relative;
-		width: 150px;
+		width: 100%;
 		cursor: pointer;
 		overflow: hidden;
-		/* border-radius: 8px; */
-		/* box-shadow: 0 2px 4px var(--color-theme-1); */
+		box-shadow: 0 5px 16px rgba(38, 83, 96, 0.06);
+		transition:
+			transform 0.18s ease,
+			box-shadow 0.18s ease,
+			border-color 0.18s ease;
 	}
 
-	.project-card:hover {
-		box-shadow: 0 1px 10px var(--color-theme-4);
+	.project-card:hover,
+	.project-card:focus-visible {
+		border-color: #72afbd;
+		box-shadow: 0 12px 28px rgba(38, 83, 96, 0.14);
+		transform: translateY(-2px);
+		outline: none;
 	}
 
-	.type-badge {
-		position: absolute;
-		top: 10px;
-		right: 10px;
-		background-color: #ffcc4d;
-		background-color: var(--color-theme-1);
-		color: #333;
-		border-radius: 3px;
-		padding: 2px 5px;
-		font-size: 0.7rem;
+	.project-card.selected,
+	.project-row.selected {
+		border-color: var(--color-theme-4);
+		box-shadow: 0 0 0 2px rgba(55, 154, 184, 0.12);
+	}
+
+	.card-topline {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		min-height: 1.55rem;
+	}
+
+	.type-badge,
+	.table-type {
+		border-radius: 999px;
+		background: #dff4f7;
+		padding: 0.25rem 0.55rem;
+		color: #176b80;
+		font-size: 0.66rem;
+		font-weight: 800;
+		letter-spacing: 0.045em;
+		text-transform: uppercase;
 	}
 
 	.words-badge {
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		background-color: var(--color-theme-3);
-		color: white;
-		border-radius: 3px;
-		padding: 2px 5px;
-		font-size: 0.7rem;
+		color: #6a8189;
+		font-size: 0.69rem;
+		font-weight: 700;
 	}
 
 	.progress-circle {
+		display: block;
 		position: relative;
-		width: 100px;
-		height: 100px;
-		margin: 0 auto 1rem;
+		width: 92px;
+		height: 92px;
+		margin: 1rem auto 0.8rem;
 	}
 
 	.progress-circle svg {
 		transform: rotate(-90deg);
-		width: 100px;
-		height: 100px;
+		width: 92px;
+		height: 92px;
 	}
 
 	.progress-circle circle {
 		fill: none;
-		stroke-width: 7;
+		stroke-width: 7px;
 	}
 
 	.progress-circle .bg {
-		stroke: #e0e0e0;
+		stroke: #e2ecee;
 	}
 
 	.progress-circle .progress {
 		stroke: var(--color-theme-4);
 		stroke-dasharray: 252;
 		stroke-dashoffset: 252;
-		transition: stroke-dashoffset 0.3s;
+		stroke-linecap: round;
+		transition: stroke-dashoffset 0.3s ease;
 	}
 
-	.progress-circle span {
+	.progress-circle > span {
 		position: absolute;
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		font-size: 1.5rem;
+		font-size: 1.15rem;
 		color: var(--color-theme-4);
-		font-weight: bold;
+		font-weight: 800;
 	}
 
-	h4 {
-		font-size: 1rem;
-		margin: 0.5rem 0;
-		color: var(--color-theme-6);
+	.project-name {
+		display: block;
+		overflow: hidden;
+		color: #173f4e;
+		font-size: 0.96rem;
+		font-weight: 800;
+		line-height: 1.35;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
-	p {
-		font-size: 0.8rem;
-		color: #888;
-		margin: 0.5rem 0;
-	}
-
-	.text-info {
+	.project-meta {
 		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-		padding: 0rem;
-		margin: 0px 0px 5px 0px;
-		border-radius: 5px;
-		font-size: 0.85rem;
-		color: #555;
-	}
-
-	.text-info > p {
-		margin: 0;
-		font-weight: 500;
-	}
-
-	.text-info > p > span {
-		font-weight: 500;
-		color: var(--color-theme-4);
-	}
-
-	.creation-date {
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		margin: 0.45rem 0 0.8rem;
+		color: #748990;
 		font-size: 0.7rem;
-		color: var(--color-theme-3);
+	}
+
+	.project-meta span + span::before {
+		content: "·";
+		margin-right: 0.4rem;
+		color: #a1b2b7;
+	}
+
+	.project-meta strong {
+		color: #3e6572;
 	}
 
 	.languages {
-		display: flex;
-		justify-content: space-evenly;
-		gap: 0rem;
-		padding: 2px 0px;
-		background-color: var(--color-theme-8);
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 0.4rem;
+		border-radius: 0.45rem;
+		background: #edf7f8;
+		padding: 0.45rem 0.6rem;
+	}
+
+	.source-lang,
+	.target-lang {
+		overflow: hidden;
+		font-size: 0.7rem;
+		font-weight: 750;
+		text-overflow: ellipsis;
+		text-transform: uppercase;
+		white-space: nowrap;
 	}
 
 	.source-lang {
-		font-size: 0.8rem;
-		text-transform: uppercase;
-		color: rgb(70, 196, 213);
+		color: #288b9f;
+		text-align: right;
 	}
 
 	.target-lang {
-		font-size: 0.8rem;
+		color: #285fc2;
+		text-align: left;
+	}
+
+	.language-arrow {
+		color: #8ba1a8;
+	}
+
+	.open-hint {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-top: 0.8rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid #e3edef;
+		color: #39798b;
+		font-size: 0.69rem;
+		font-weight: 750;
+	}
+
+	.project-row {
+		display: grid;
+		grid-template-columns: var(--project-columns);
+		gap: 0.85rem;
+		align-items: center;
+		width: 100%;
+		min-height: 4.25rem;
+		border: 0;
+		border-bottom: 1px solid #e0ebed;
+		background: white;
+		padding: 0.75rem 1rem;
+		color: #567079;
+		font: inherit;
+		font-size: 0.76rem;
+		text-align: left;
+		cursor: pointer;
+		transition:
+			background-color 0.18s ease,
+			box-shadow 0.18s ease;
+	}
+
+	.project-row:hover,
+	.project-row:focus-visible {
+		background: #f3fafb;
+		box-shadow: inset 3px 0 0 var(--color-theme-4);
+		outline: none;
+	}
+
+	.project-primary {
+		display: grid;
+		min-width: 0;
+	}
+
+	.project-primary strong {
+		overflow: hidden;
+		color: #234c5a;
+		font-size: 0.82rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.project-primary small {
+		margin-top: 0.2rem;
+		color: #8a9ca2;
+		font-size: 0.66rem;
+	}
+
+	.table-type {
+		justify-self: start;
+	}
+
+	.table-languages {
+		display: flex;
+		gap: 0.3rem;
+		align-items: center;
+		color: #316f82;
+		font-weight: 750;
 		text-transform: uppercase;
-		color: rgb(38, 102, 232);
+	}
+
+	.table-languages span {
+		color: #91a4a9;
+	}
+
+	.table-progress {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+	}
+
+	.table-progress > span {
+		flex: 1;
+		height: 0.35rem;
+		border-radius: 999px;
+		background: #dfeaec;
+		overflow: hidden;
+	}
+
+	.table-progress i {
+		display: block;
+		height: 100%;
+		border-radius: inherit;
+		background: var(--color-theme-4);
+	}
+
+	.table-progress strong {
+		min-width: 2.2rem;
+		color: #397588;
+		font-size: 0.7rem;
+		text-align: right;
 	}
 
 	.options-container {
