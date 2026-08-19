@@ -86,10 +86,26 @@ const IMAGE_CANDIDATES: readonly ExternalMediaCandidate[] = [
 	{
 		label: "JPEG image requiring OCR",
 		modality: "ocr",
-		extensions: ["jpg", "jpeg"],
-		mimeTypes: ["image/jpeg"],
+		extensions: ["jpg", "jpeg", "jpe", "jif", "jfif", "jfi"],
+		mimeTypes: ["image/jpeg", "image/pjpeg"],
 		reason:
 			"A JPEG signature was detected, but no local OCR engine is configured.",
+	},
+	{
+		label: "BMP or DIB image requiring OCR",
+		modality: "ocr",
+		extensions: ["bmp", "dib"],
+		mimeTypes: ["image/bmp", "image/x-bmp", "image/x-ms-bmp", "image/x-dib"],
+		reason:
+			"A BMP/DIB signature was detected, but no local OCR engine is configured.",
+	},
+	{
+		label: "GIF image requiring OCR",
+		modality: "ocr",
+		extensions: ["gif"],
+		mimeTypes: ["image/gif"],
+		reason:
+			"A GIF signature was detected, but no local OCR engine is configured.",
 	},
 	{
 		label: "TIFF image requiring OCR",
@@ -138,7 +154,16 @@ export function detectExternalMediaCandidate(
 		startsWith(bytes, [0x49, 0x49, 0x2a, 0x00]) ||
 		startsWith(bytes, [0x4d, 0x4d, 0x00, 0x2a])
 	)
+		return IMAGE_CANDIDATES[4];
+	if (
+		ascii(bytes, 0, 2) === "BM" ||
+		[12, 40, 52, 56, 64, 108, 124].includes(
+			(bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24)) >>> 0,
+		)
+	)
 		return IMAGE_CANDIDATES[2];
+	if (["GIF87a", "GIF89a"].includes(ascii(bytes, 0, 6)))
+		return IMAGE_CANDIDATES[3];
 	if (
 		ascii(bytes, 0, 4) === "RIFF" &&
 		["WAVE", "AVI "].includes(ascii(bytes, 8, 4))

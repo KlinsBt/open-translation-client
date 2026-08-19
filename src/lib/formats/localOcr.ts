@@ -13,14 +13,36 @@ import type {
 	FormatOptionValues,
 	FormatValidationResult,
 } from "./types";
+import {
+	inspectOcrImage,
+	type OcrImageInspection,
+	wrapDibAsBmp,
+} from "./ocrImageInspection";
 
-const IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/tiff"] as const;
+const IMAGE_MIME_TYPES = [
+	"image/png",
+	"image/jpeg",
+	"image/pjpeg",
+	"image/tiff",
+	"image/bmp",
+	"image/x-bmp",
+	"image/x-ms-bmp",
+	"image/x-dib",
+	"image/gif",
+] as const;
 export const OCR_IMAGE_EXTENSIONS = [
 	"png",
 	"jpg",
 	"jpeg",
+	"jpe",
+	"jif",
+	"jfif",
+	"jfi",
 	"tif",
 	"tiff",
+	"bmp",
+	"dib",
+	"gif",
 ] as const;
 export const OCR_IMAGE_MIME_TYPES = IMAGE_MIME_TYPES;
 
@@ -64,26 +86,120 @@ export interface LocalOcrEngine {
 	): Promise<TesseractPageLike>;
 }
 
-function hasImageSignature(bytes: Uint8Array): boolean {
-	const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every(
-		(value, index) => bytes[index] === value,
+export interface LocalOcrImageDecoder {
+	decode(
+		file: File,
+		bytes: Uint8Array,
+		inspection: OcrImageInspection,
+	): Promise<File>;
+}
+
+async function canvasPng(
+	canvas: OffscreenCanvas | HTMLCanvasElement,
+): Promise<Blob> {
+	if ("convertToBlob" in canvas)
+		return canvas.convertToBlob({ type: "image/png" });
+	return new Promise((resolve, reject) =>
+		canvas.toBlob(
+			(blob) =>
+				blob ? resolve(blob) : reject(new Error("Canvas PNG encoding failed.")),
+			"image/png",
+		),
 	);
-	const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-	const tiff =
-		(bytes[0] === 0x49 &&
-			bytes[1] === 0x49 &&
-			bytes[2] === 0x2a &&
-			bytes[3] === 0) ||
-		(bytes[0] === 0x4d &&
-			bytes[1] === 0x4d &&
-			bytes[2] === 0 &&
-			bytes[3] === 0x2a);
-	return png || jpeg || tiff;
+}
+
+const browserImageDecoder: LocalOcrImageDecoder = {
+	async decode(file, bytes, inspection) {
+		if (typeof createImageBitmap !== "function")
+			throw new SafeInputError(
+				"OCR_DECODE_FAILED",
+				"This browser cannot safely decode BMP, DIB, or GIF images locally.",
+			);
+		const source =
+			inspection.profile === "dib"
+				? new Blob([wrapDibAsBmp(bytes)], { type: "image/bmp" })
+				: file;
+		let bitmap: ImageBitmap;
+		try {
+			bitmap = await createImageBitmap(source, {
+				imageOrientation: "from-image",
+				premultiplyAlpha: "default",
+				colorSpaceConversion: "default",
+			});
+		} catch {
+			throw new SafeInputError(
+				"OCR_DECODE_FAILED",
+				`The browser could not decode this ${inspection.profile.toUpperCase()} image safely.`,
+			);
+		}
+		try {
+			if (
+				bitmap.width !== inspection.width ||
+				bitmap.height !== inspection.height
+			)
+				throw new SafeInputError(
+					"OCR_DECODE_FAILED",
+					"The decoded image dimensions do not match its validated header.",
+					{
+						headerWidth: inspection.width,
+						headerHeight: inspection.height,
+						decodedWidth: bitmap.width,
+						decodedHeight: bitmap.height,
+					},
+				);
+			const canvas =
+				typeof OffscreenCanvas === "function"
+					? new OffscreenCanvas(bitmap.width, bitmap.height)
+					: Object.assign(document.createElement("canvas"), {
+							width: bitmap.width,
+							height: bitmap.height,
+						});
+			const drawing = canvas.getContext("2d");
+			if (!drawing)
+				throw new SafeInputError(
+					"OCR_DECODE_FAILED",
+					"A local 2D image decoder is unavailable.",
+				);
+			drawing.drawImage(bitmap, 0, 0);
+			const blob = await canvasPng(canvas);
+			return new File(
+				[blob],
+				`${file.name.replace(/\.[^.]+$/, "")}.normalized.png`,
+				{ type: "image/png" },
+			);
+		} catch (error) {
+			if (error instanceof SafeInputError) throw error;
+			throw new SafeInputError(
+				"OCR_DECODE_FAILED",
+				`The browser could not normalize this ${inspection.profile.toUpperCase()} image for local OCR.`,
+			);
+		} finally {
+			bitmap.close();
+		}
+	},
+};
+
+function validateBox(box: OcrBox, width?: number, height?: number): void {
+	const values = [box.x0, box.y0, box.x1, box.y1];
+	if (
+		!values.every(Number.isFinite) ||
+		box.x0 < 0 ||
+		box.y0 < 0 ||
+		box.x1 < box.x0 ||
+		box.y1 < box.y0 ||
+		(width !== undefined && box.x1 > width) ||
+		(height !== undefined && box.y1 > height)
+	)
+		throw new SafeInputError(
+			"OCR_INVALID_RESULT",
+			"The local OCR engine returned a text box outside the validated image bounds.",
+		);
 }
 
 export function ocrUnitsFromPage(
 	page: TesseractPageLike,
 	grouping: "paragraphs" | "lines" = "paragraphs",
+	imageBounds?: Readonly<{ width: number; height: number }>,
 ): LocalOcrUnit[] {
 	const paragraphs = (page.blocks ?? []).flatMap((block) => block.paragraphs);
 	const candidates =
@@ -104,6 +220,8 @@ export function ocrUnitsFromPage(
 				candidate.is_ltr === false ? ("rtl" as const) : ("ltr" as const),
 		}))
 		.filter((unit) => unit.text.length > 0);
+	for (const unit of units)
+		validateBox(unit.bbox, imageBounds?.width, imageBounds?.height);
 	if (units.length > 0) return units;
 	const text = page.text.replace(/\s+/g, " ").trim();
 	return text
@@ -145,15 +263,12 @@ export async function validateOcrImageFile(
 ): Promise<FormatValidationResult> {
 	try {
 		const bytes = await readSafeFileBytes(file, context);
-		return hasImageSignature(bytes)
-			? { valid: true }
-			: {
-					valid: false,
-					reason: "The file is not a valid PNG, JPEG, or TIFF image.",
-				};
+		inspectOcrImage(bytes);
+		return { valid: true };
 	} catch (error) {
 		return {
 			valid: false,
+			errorCode: error instanceof SafeInputError ? error.code : "OCR_INVALID",
 			reason:
 				error instanceof Error
 					? error.message
@@ -167,21 +282,36 @@ export async function importOcrImageFile(
 	options?: Readonly<FormatOptionValues>,
 	context?: SafeInputContext,
 	engine?: LocalOcrEngine,
+	decoder: LocalOcrImageDecoder = browserImageDecoder,
 ): Promise<FormatImportResult> {
-	const validation = await validateOcrImageFile(file, context);
-	if (!validation.valid)
-		throw new SafeInputError(
-			"OCR_INVALID",
-			validation.reason ?? "Invalid OCR image.",
-		);
+	const bytes = await readSafeFileBytes(file, context);
+	const inspection = inspectOcrImage(bytes);
 	const normalized = normalizeImportOptions("image-ocr", options);
 	const language = String(normalized.ocrLanguage || "eng");
 	const grouping =
 		String(normalized.grouping) === "lines" ? "lines" : "paragraphs";
+	const gifAnimationPolicy = String(normalized.gifAnimationPolicy || "reject");
+	if (
+		inspection.profile === "gif" &&
+		inspection.animated &&
+		gifAnimationPolicy !== "first-frame"
+	)
+		throw new SafeInputError(
+			"OCR_ANIMATED_GIF",
+			`This GIF contains ${inspection.frameCount} frames. Choose “Use first frame” to OCR only its first frame.`,
+			{ frameCount: inspection.frameCount },
+		);
+	throwIfAborted(context?.signal);
+	const requiresNormalization = ["bmp", "dib", "gif"].includes(
+		inspection.profile,
+	);
+	const ocrFile = requiresNormalization
+		? await decoder.decode(file, bytes, inspection)
+		: file;
 	throwIfAborted(context?.signal);
 	const selectedEngine = engine ?? (await defaultOcrEngine());
 	const page = await selectedEngine.recognize(
-		file,
+		ocrFile,
 		language,
 		(progress, status) => {
 			context?.onProgress?.({
@@ -193,7 +323,7 @@ export async function importOcrImageFile(
 		},
 	);
 	throwIfAborted(context?.signal);
-	const units = ocrUnitsFromPage(page, grouping);
+	const units = ocrUnitsFromPage(page, grouping, inspection);
 	if (units.length === 0)
 		throw new SafeInputError(
 			"EMPTY_CONTENT",
@@ -229,6 +359,15 @@ export async function importOcrImageFile(
 		fileUploaded: false,
 		exportPolicy: "derived-bilingual-html",
 		languageModel: language,
+		imageProfile: inspection.profile,
+		imageWidth: inspection.width,
+		imageHeight: inspection.height,
+		imageOrientation: inspection.orientation,
+		imageFrames: inspection.frameCount,
+		imageAlpha: inspection.hasAlpha,
+		imageColorProfile: inspection.hasColorProfile,
+		gifFramePolicy:
+			inspection.profile === "gif" ? gifAnimationPolicy : "not-applicable",
 	};
 	return {
 		kind: "segments",
@@ -240,6 +379,15 @@ export async function importOcrImageFile(
 			profile: "local-image-ocr",
 			engine: "tesseract.js",
 			languageModel: language,
+			imageProfile: inspection.profile,
+			imageWidth: String(inspection.width),
+			imageHeight: String(inspection.height),
+			imageOrientation: String(inspection.orientation),
+			imageFrames: String(inspection.frameCount),
+			imageAlpha: String(inspection.hasAlpha),
+			imageColorProfile: String(inspection.hasColorProfile),
+			gifFramePolicy:
+				inspection.profile === "gif" ? gifAnimationPolicy : "not-applicable",
 		} as TypeRef,
 		segmentsMeta: meta,
 	};

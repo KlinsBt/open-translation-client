@@ -629,7 +629,7 @@ const adapters = [
 	},
 	{
 		id: "image-ocr",
-		label: "PNG/JPEG/TIFF local OCR → bilingual HTML",
+		label: "PNG/JPEG/TIFF/BMP/DIB/GIF local OCR → bilingual HTML",
 		extensions: OCR_IMAGE_EXTENSIONS,
 		mimeTypes: OCR_IMAGE_MIME_TYPES,
 		capabilities: SOURCE_ONLY_CAPABILITIES,

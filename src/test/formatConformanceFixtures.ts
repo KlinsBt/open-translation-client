@@ -9,6 +9,7 @@ import { importOcrImageFile } from "$lib/formats/localOcr";
 import { importTranscriptionFile } from "$lib/formats/localTranscription";
 import * as XLSX from "xlsx";
 import { writePsdUint8Array } from "ag-psd";
+import { structuredPng } from "./ocrImageFixtures";
 
 const encoder = new TextEncoder();
 
@@ -1383,11 +1384,7 @@ const pdfFixture: FormatConformanceFixture = {
 };
 
 function pngFixtureFile(name = "unicode.png"): File {
-	return new File(
-		[new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])],
-		name,
-		{ type: "image/png" },
-	);
+	return new File([structuredPng()], name, { type: "image/png" });
 }
 
 function countFromFixtureName(name: string): number {
@@ -1404,7 +1401,11 @@ const imageOcrFixture: FormatConformanceFixture = {
 	expectMalformedImportFailure: true,
 	extractionSnapshot: {
 		segments: [CONFORMANCE_UNICODE_SOURCE],
-		filterOptions: { ocrLanguage: "eng", grouping: "paragraphs" },
+		filterOptions: {
+			ocrLanguage: "eng",
+			grouping: "paragraphs",
+			gifAnimationPolicy: "reject",
+		},
 		skeleton: { kind: "package", replacementKinds: [] },
 		units: [{ id: "unit-1", part: null, path: null }],
 	},
@@ -1426,7 +1427,7 @@ const imageOcrFixture: FormatConformanceFixture = {
 							text:
 								count === 1 ? CONFORMANCE_UNICODE_SOURCE : `Message ${index}`,
 							confidence: 97,
-							bbox: { x0: 0, y0: index * 10, x1: 100, y1: index * 10 + 8 },
+							bbox: { x0: 0, y0: index % 90, x1: 100, y1: (index % 90) + 8 },
 							is_ltr: true,
 							lines: [],
 						})),

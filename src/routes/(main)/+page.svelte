@@ -91,7 +91,7 @@
 		{
 			title: "Local extraction and packages",
 			formats: [
-				"PNG / JPEG / TIFF OCR",
+				"PNG / JPEG / TIFF / BMP / DIB / GIF OCR",
 				"Photoshop PSD text layers to SVG",
 				"Audio and video transcription",
 				"Trados return packages",

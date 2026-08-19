@@ -123,7 +123,7 @@
 		{
 			title: "Local media and CAT containers",
 			formats: [
-				"PNG, JPEG and TIFF on-device OCR",
+				"PNG, JPEG, TIFF, BMP, DIB and GIF on-device OCR",
 				"Photoshop PSD text layers with translated SVG delivery",
 				"WAV, MP3, M4A, Ogg and FLAC transcription",
 				"MP4, MOV and WebM transcription",
@@ -393,10 +393,10 @@
 					<article>
 						<strong>OCR and transcription run on-device</strong>
 						<p>
-							Images are read with local OCR and audio/video is transcribed with
-							a local Whisper model. Model files may be downloaded and cached by
-							the browser, but source media is not uploaded and no provider
-							consent is needed.
+							PNG, JPEG, TIFF, BMP, DIB and GIF images are read with local OCR;
+							audio/video is transcribed with a local Whisper model. Model files
+							may be downloaded and cached by the browser, but source media is
+							not uploaded and no provider consent is needed.
 						</p>
 					</article>
 				</div>

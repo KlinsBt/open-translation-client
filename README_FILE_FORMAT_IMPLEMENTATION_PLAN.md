@@ -1047,6 +1047,8 @@ Complete these in order after FF-000 through FF-009.
       stay on-device in the project skeleton/IndexedDB. Signature-first routing
       rejects renamed binaries. Tests cover provider-independent local engines,
       confidence/context mapping, retained originals and derived exports.
+      Additional raster aliases and animation handling are completed under
+      FF-510.
 - [x] **FF-403 — Proprietary CAT packages (`.sdlppx`, `.sdlrpx`, `.wsxz`, memoQ
       packages).** Preserve unknown entries, defend against hostile archives,
       update bilingual members, and create compatible return containers.
@@ -1656,13 +1658,54 @@ definition of done below before checking them.
 
 ### Priority C — Secondary media and document ecosystems
 
-- [ ] **FF-510 — Additional OCR image inputs.** Add `.bmp`, `.dib`, `.gif`,
+- [x] **FF-510 — Additional OCR image inputs.** Add `.bmp`, `.dib`, `.gif`,
       `.jpe`, `.jif`, `.jfif`, and `.jfi` with signature validation and local
       decoding before the existing OCR pipeline. Treat animated GIFs explicitly
       by selecting frames or rejecting animation with a useful message. Extend
       tests for renamed files, orientation, color profiles, alpha, large pixel
       dimensions, decompression limits, and output bounding boxes. `.psd` remains
       owned by FF-507 rather than this raster adapter.
+
+      **Completed 2026-08-19.** The local OCR adapter now accepts BMP, standalone
+      DIB, GIF, and JPEG aliases `.jpe`, `.jif`, `.jfif`, and `.jfi` in addition
+      to PNG/JPEG/TIFF. A bounded signature parser validates PNG chunks and
+      dimensions, JPEG SOF/scan/end markers plus EXIF orientation and ICC
+      markers, TIFF IFD dimensions, BMP/DIB headers/palettes/masks/pixel extents,
+      and the complete GIF record/sub-block chain. It enforces 16,384 pixels per
+      side, 40 million pixels, and a 160 MB RGBA decode estimate before browser
+      allocation; filename and MIME claims alone never select the adapter.
+
+      BMP, DIB, and GIF are decoded locally with `createImageBitmap`, rendered to
+      a canvas, and normalized to a single PNG passed to Tesseract. Standalone
+      DIB bytes receive a validated in-memory BMP file header only for decoding;
+      the exact imported bytes remain in the project skeleton and IndexedDB.
+      Animated GIFs are rejected by default with their frame count, or the user
+      can explicitly choose first-frame OCR; animation is never played or
+      executed. OCR bounding boxes must be finite, ordered, nonnegative, and
+      inside the validated image. Profile, size, orientation, frame count,
+      alpha, color-profile, and GIF policy metadata persist with the project.
+      This metadata is additive to the existing project schema, so no destructive
+      persistence migration is required; older OCR projects continue to reopen.
+
+      Tests generate structured PNG, JPEG/EXIF/ICC, TIFF, BMP, DIB and GIF data
+      at runtime and cover renamed files, all JPEG aliases through the registry,
+      top-down orientation, alpha, malformed/truncated records, hostile offsets,
+      pixel/decode limits, logical large-file rejection, cancellation, animated
+      GIF reject/first-frame paths, invalid OCR boxes, exact original-byte
+      identity retention, Unicode/RTL translation, and an independently parsed
+      bilingual HTML round trip. Chromium independently decodes BMP, wrapped DIB
+      and GIF to PNG, then persists/reopens the original and OCR metadata through
+      IndexedDB. The landing page, About support matrix, picker registry, import
+      options, export filename handling, conformance fixture, and browser routing
+      advertise the expanded workflow. PSD remains isolated in FF-507.
+
+      References: Microsoft [Bitmap Storage](https://learn.microsoft.com/en-us/windows/win32/gdi/bitmap-storage),
+      Microsoft [`BITMAPFILEHEADER`](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapfileheader),
+      W3C [PNG specification](https://www.w3.org/TR/png-3/), the GIF89a
+      [format specification](https://www.w3.org/Graphics/GIF/spec-gif89a.txt),
+      the W3C [JFIF specification](https://www.w3.org/Graphics/JPEG/jfif.pdf),
+      WHATWG [`createImageBitmap`](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html),
+      and Tesseract's [input format guidance](https://tesseract-ocr.github.io/tessdoc/InputFormats.html).
 
 - [ ] **FF-511 — Auxiliary text, mind-map, and resource formats.** Add plain or
       structured profiles for `.inf`, Windows Registry `.reg`, and FreeMind `.mm`.

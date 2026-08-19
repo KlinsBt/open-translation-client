@@ -219,7 +219,9 @@ export async function detectFileFormat(
 	}
 	if (
 		psdCandidate &&
-		(extension === "psd" || psdCandidate.mimeTypes.includes(mimeType))
+		(extension === "psd" ||
+			(mimeType !== "application/octet-stream" &&
+				psdCandidate.mimeTypes.includes(mimeType)))
 	)
 		return unsupported(
 			"Unrecognized Photoshop document",
@@ -240,8 +242,17 @@ export async function detectFileFormat(
 				? adapter.id === "image-ocr"
 				: adapter.id === "media-transcription",
 		);
-		if (localAdapter)
-			return supportedContent(localAdapter, extension, mimeType);
+		if (localAdapter) {
+			const validation = await localAdapter.validate(file, context);
+			return validation.valid
+				? supportedContent(localAdapter, extension, mimeType)
+				: unsupported(
+						`Invalid ${externalCandidate.label}`,
+						"high",
+						["signature"],
+						validation.reason ?? "The media structure is invalid.",
+					);
+		}
 		const metadata = metadataEvidence(
 			extension,
 			mimeType,

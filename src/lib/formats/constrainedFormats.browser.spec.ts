@@ -5,6 +5,7 @@ import { makeUserData } from "../../test/fixtures";
 import { createSyntheticPdf } from "../../test/pdfFixtures";
 import { importPdfFile } from "./pdf";
 import { detectFormatWithConfidence, getFormatAcceptValue } from "./registry";
+import { structuredPng } from "../../test/ocrImageFixtures";
 
 describe("browser local and constrained format routing", () => {
 	it("advertises signed legacy Office input through the local adapter", async () => {
@@ -32,12 +33,7 @@ describe("browser local and constrained format routing", () => {
 	});
 
 	it.each([
-		[
-			"scan.png",
-			"image/png",
-			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-			"ocr",
-		],
+		["scan.png", "image/png", structuredPng(), "ocr"],
 		[
 			"interview.wav",
 			"audio/wav",

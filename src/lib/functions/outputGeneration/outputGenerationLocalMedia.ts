@@ -65,7 +65,7 @@ export async function generateOcrBilingualReview(
 	project: UserData,
 ): Promise<void> {
 	const base = (project.translationData.name || "image").replace(
-		/\.(png|jpe?g|tiff?)$/i,
+		/\.(png|jpe?g|jpe|jif|jfif|jfi|tiff?|bmp|dib|gif)$/i,
 		"",
 	);
 	download(

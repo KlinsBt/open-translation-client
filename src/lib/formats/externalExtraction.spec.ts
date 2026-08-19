@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, it } from "vitest";
+import { structuredPng } from "../../test/ocrImageFixtures";
 import {
 	detectExternalMediaCandidate,
 	type ExternalExtractionProviderProfile,
@@ -73,14 +74,10 @@ describe("external OCR/transcription boundary", () => {
 	});
 
 	it("routes recognized media to local adapters and advertises their inputs", async () => {
-		const png = new File(
-			[new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
-			"page.PNG",
-			{ type: "image/png" },
-		);
+		const png = new File([structuredPng()], "page.PNG", { type: "image/png" });
 		await expect(detectFormatWithConfidence(png)).resolves.toMatchObject({
 			formatId: "image-ocr",
-			label: "PNG/JPEG/TIFF local OCR → bilingual HTML",
+			label: "PNG/JPEG/TIFF/BMP/DIB/GIF local OCR → bilingual HTML",
 			supported: true,
 			confidence: "high",
 			evidence: ["content", "extension", "mime"],
@@ -90,8 +87,15 @@ describe("external OCR/transcription boundary", () => {
 			".png",
 			".jpg",
 			".jpeg",
+			".jpe",
+			".jif",
+			".jfif",
+			".jfi",
 			".tif",
 			".tiff",
+			".bmp",
+			".dib",
+			".gif",
 			".wav",
 			".mp3",
 			".mp4",

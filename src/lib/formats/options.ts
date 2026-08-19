@@ -896,6 +896,15 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: "paragraphs",
 			choices: ["paragraphs", "lines"],
 		},
+		{
+			id: "gifAnimationPolicy",
+			label: "Animated GIFs",
+			type: "select",
+			defaultValue: "reject",
+			choices: ["reject", "first-frame"],
+			description:
+				"Reject animated GIFs by default, or explicitly OCR only the first frame. Animation is never executed during OCR.",
+		},
 	],
 	"media-transcription": [
 		{
