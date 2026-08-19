@@ -97,7 +97,7 @@
 				"INI, .desktop and .lang",
 				"Static PHP localization arrays and mixed PHP/HTML templates",
 				"Windows RC resources",
-				"MIF interchange files",
+				"FrameMaker MIF and MIF2 filter-alias files",
 				"Markdown and AsciiDoc",
 				"SRT, WebVTT and SBV subtitles",
 			],
@@ -111,7 +111,8 @@
 				"SVG",
 				"DITA and DITAMAP",
 				"DocBook",
-				"Adobe IDML and ICML",
+				"Adobe IDML, ICML and INX",
+				"QuarkXPress XTG and TAG",
 				"TeX and LaTeX",
 				"TTML and DFXP timed text",
 			],
@@ -120,6 +121,7 @@
 			title: "Local media and CAT containers",
 			formats: [
 				"PNG, JPEG and TIFF on-device OCR",
+				"Photoshop PSD text layers with translated SVG delivery",
 				"WAV, MP3, M4A, Ogg and FLAC transcription",
 				"MP4, MOV and WebM transcription",
 				"Trados SDLPPX and SDLRPX return packages",
@@ -170,7 +172,7 @@
 				Open Translation Client is a browser-based, open source CAT tool for
 				professional translators, learners and teams. It began as a master's
 				thesis project at Anhalt University of Applied Sciences in Germany and
-				has grown into a local-first editor with 39 registered format workflows.
+				has grown into a local-first editor with 41 registered format workflows.
 			</p>
 		</div>
 	</header>
@@ -219,6 +221,12 @@
 					embedded objects, images, and unknown resources remain protected. Legacy
 					compound binaries retain exact bytes when unchanged and use an explicit
 					VDX delivery after translation.
+				</div>
+				<div class="note">
+					<strong>Adobe and Quark support:</strong> IDML, ICML, INX, FrameMaker MIF/MIF2
+					and XPress Tags use structure-aware text round trips. Photoshop PSD reads
+					only validated text-layer descriptors; an unchanged project retains the
+					exact PSD, while translated delivery is a safe SVG text-layer conversion.
 				</div>
 			</section>
 
@@ -352,6 +360,17 @@
 							Exact identity exports keep the original bytes; translated
 							delivery uses VDX. VSDX, VSDM, VSSX, VSSM, VSTX, VSTM, VDX, VSX
 							and VTX retain their native family.
+						</p>
+					</article>
+					<article>
+						<strong>Photoshop PSD uses protected text-layer conversion</strong>
+						<p>
+							PSD files are accepted only after their 8BPS header and layer
+							structure validate. Pixel data, linked files, smart objects,
+							effects, annotations and unknown resources are never executed and
+							remain in the retained original. Unchanged output is the exact
+							PSD; translated output is SVG because browser-side PSD text
+							rewriting cannot preserve every Photoshop feature safely.
 						</p>
 					</article>
 					<article>

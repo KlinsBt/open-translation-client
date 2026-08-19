@@ -33,6 +33,7 @@ import { buildRtfTranslationBlob } from "./rtf";
 import { buildCatReturnPackage } from "./catPackage";
 import { buildLegacyBilingualTranslation } from "./legacyBilingual";
 import { buildVisioTranslationBlob } from "./visio";
+import { buildQuarkTranslationBlob } from "./quark";
 
 /** Builds only native, same-format round-trip output. */
 export async function buildRoundTripFormatOutputBlob(
@@ -103,6 +104,7 @@ export async function buildRoundTripFormatOutputBlob(
 		case "image-ocr":
 		case "media-transcription":
 		case "legacy-office":
+		case "psd":
 		case "zip-project":
 			throw new Error(
 				`${project.translationData.type} does not provide same-format round-trip output.`,
@@ -115,5 +117,7 @@ export async function buildRoundTripFormatOutputBlob(
 			return (await buildCatReturnPackage(project)).blob;
 		case "visio":
 			return buildVisioTranslationBlob(project);
+		case "quark":
+			return buildQuarkTranslationBlob(project);
 	}
 }

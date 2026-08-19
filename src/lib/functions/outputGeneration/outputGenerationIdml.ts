@@ -42,7 +42,7 @@ function validateMappings(
 		)
 	)
 		throw new Error(
-			`IDML/ICML export cannot continue because ${replacements.length} mappings do not align uniquely with ${targetCount} targets.`,
+			`IDML/ICML/INX export cannot continue because ${replacements.length} mappings do not align uniquely with ${targetCount} targets.`,
 		);
 }
 
@@ -146,7 +146,7 @@ export async function buildInDesignTranslationBlob(
 	const content = getTextSkeletonContent(data.skeleton, "idml");
 	if (content === undefined)
 		throw new Error(
-			"ICML export requires its original positional XML skeleton.",
+			"ICML/INX export requires its original positional XML skeleton.",
 		);
 	const replacements = data.skeleton!.replacements.filter(
 		(replacement): replacement is XmlValueReplacement =>
@@ -160,9 +160,15 @@ export async function buildInDesignTranslationBlob(
 	)
 		return data.skeleton.source.originalFile;
 	const encoding = data.skeleton?.source.encoding ?? "utf-8";
+	const inx =
+		typeof data.typeRef === "object" && data.typeRef.profile === "inx";
 	return new Blob(
 		[encodeTextBytes(output, encoding, data.skeleton?.source.hasBom ?? false)],
-		{ type: `application/vnd.adobe.incopy-icml;charset=${encoding}` },
+		{
+			type: inx
+				? `application/xml;charset=${encoding}`
+				: `application/vnd.adobe.incopy-icml;charset=${encoding}`,
+		},
 	);
 }
 
@@ -179,7 +185,7 @@ export async function generateInDesignTranslation(
 		? /\.idml$/i.test(sourceName)
 			? sourceName
 			: `${sourceName}.idml`
-		: /\.icml$/i.test(sourceName)
+		: /\.(?:icml|inx)$/i.test(sourceName)
 			? sourceName
 			: `${sourceName}.icml`;
 	const url = URL.createObjectURL(await buildInDesignTranslationBlob(project));

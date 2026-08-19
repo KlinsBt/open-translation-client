@@ -1468,13 +1468,66 @@ definition of done below before checking them.
       [mixed shape text and fields](https://learn.microsoft.com/en-us/openspecs/sharepoint_protocols/ms-vsdx/9aec7e65-2abe-4518-aaa7-650e2fd6ceff),
       and [MS-VGSFF `.vdw` Web Drawing](https://learn.microsoft.com/en-us/openspecs/sharepoint_protocols/ms-vgsff/64090058-3e11-485c-a169-6822c889a68c).
 
-- [ ] **FF-507 — Additional Adobe, FrameMaker, Photoshop, and Quark formats.**
+- [x] **FF-507 — Additional Adobe, FrameMaker, Photoshop, and Quark formats.**
       Add InDesign INX `.inx`, FrameMaker `.mi2`, Photoshop `.psd`, and
       QuarkXPress `.xtg`/`.tag`. Reuse IDML/MIF/XML infrastructure only where the
       native grammar matches. PSD support must target validated text layers and
       preserve all image/layer resources; it must not be advertised as ordinary
       image OCR. Define explicit source-only behavior for formats that cannot be
       safely rewritten in-browser and provide fixture-led conversion exports.
+
+      **Completed 2026-08-19.** INX is implemented as the native, single-XML
+      predecessor of IDML: detection requires an InDesign `Document` root,
+      `DOMVersion`, story content and safe XML, then reuses the positional
+      IDML/ICML value mapping without flattening colors, styles, labels, scripts
+      or unknown DOM nodes. Identity output is byte-exact and translated output
+      retains `.inx`. FrameMaker `.mi2` is deliberately accepted only when the
+      file contains the existing native `<MIFFile …>` grammar. “MIF2/MI2” is a
+      memoQ filter generation/alias rather than a separately documented Adobe
+      interchange grammar, so extension-only files are rejected and same-family
+      MIF output preserves `.mi2`.
+
+      A dedicated QuarkXPress Tags adapter validates adjacent `<v…><e…>` native
+      version/encoding commands, checks UTF-8/UTF-16 declarations, protects all
+      case-sensitive commands and style-sheet definitions, and extracts visible
+      story text in file order. Literal `@`, `<`, `>` and backslash characters
+      use the documented XPress Tags escapes on output. Both `.xtg` and `.tag`
+      retain their extension, encoding, BOM, unknown commands and exact identity
+      bytes; translated output is parsed again before download.
+
+      PSD is a separately labelled source-only text-layer workflow, never an OCR
+      shortcut. It requires the `8BPS` signature, PSD version 1, zero reserved
+      bytes, valid channels/dimensions/depth/color mode, safe file/pixel limits,
+      and a successful strict `ag-psd` structure parse with all layer/composite
+      pixels, thumbnails and linked-file payloads skipped. Only validated text
+      descriptors become units; hidden layers are optional. The exact original
+      PSD—including pixels, effects, masks, smart objects, linked files and
+      unknown resources—remains in IndexedDB and is returned byte-for-byte when
+      unchanged. Because available browser writers cannot reliably redraw text
+      or preserve all Photoshop features, edited delivery is explicitly a safe,
+      standalone SVG text-layer conversion using recorded canvas positions,
+      size, color, layer names, line breaks and RTL direction.
+
+      Tests cover minimal and nested source data, complex formatting, style
+      protection, Unicode/combining marks/RTL/emoji, special-character escaping,
+      hidden PSD layers, exact identity and translated reopen, `.inx`/`.mi2`
+      aliases, content/extension impostors, malformed/truncated/adversarial
+      headers and tags, unsafe dimensions, cancellation, deterministic generated
+      1,000-unit XPress Tags and 250-layer PSD files, registry/conformance
+      snapshots, browser download MIME/name behavior and non-execution. PSD
+      fixtures are generated during tests rather than committed. Generated SVG
+      is independently parsed as XML; INX, MIF and XPress Tags outputs are
+      reopened by their independent structural parsers. `npm run verify` passes
+      with 1,007 unit tests (3 intentional skips), 63 real-Chromium tests,
+      formatting, type checks and the production build.
+
+      References: Adobe's [IDML specification](https://community.adobe.com/havfw69955/attachments/havfw69955/indesign/632652/1/idml-specification.pdf),
+      [InDesign supported formats](https://helpx.adobe.com/indesign/using/supported-file-formats.html),
+      official [MIF Reference](https://help.adobe.com/en_US/framemaker/mifreference/mifref.pdf),
+      memoQ's [MIF2 filter documentation](https://docs-memoq-com.azurewebsites.net/current/en/Workspace/adobe-framemaker-documents-mi2.html),
+      Adobe's [Photoshop file-format specification](https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/),
+      the `ag-psd` [documented reader/writer limits](https://github.com/skylab-tech/ag-psd/blob/main/README.md),
+      and Quark's [XPress Tags 2025 guide](https://www.quark.com/documentation/quarkxpress/2025/english/A%20Guide%20to%20XPress%20Tags%202025/).
 
 - [ ] **FF-508 — Specialist XML, SGML, and multilingual XML profiles.** Add
       W3C ITS rule files `.its`, multilingual XML `.mulix`, DITA `.bookmap`,

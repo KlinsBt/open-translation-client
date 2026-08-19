@@ -166,6 +166,22 @@
 						description: `Rebuild the translated ${extension} drawing, stencil, template, or report while retaining formulas, geometry, macros, relationships, objects, and binary resources.`,
 					};
 		}
+		if (data.type === "psd") {
+			const unchanged =
+				data.seg1.length === data.seg2.length &&
+				data.seg1.every((source, index) => source === data.seg2[index]);
+			return unchanged
+				? {
+						label: "Original PSD",
+						description:
+							"Export the exact retained Photoshop source because no text layer has changed.",
+					}
+				: {
+						label: "SVG text-layer conversion",
+						description:
+							"Create a safe SVG containing the translated text layers at their recorded positions; the retained original PSD remains in the project.",
+					};
+		}
 		if (data.type !== "legacy-office")
 			return {
 				label: getFormatAdapter(data.type).label,

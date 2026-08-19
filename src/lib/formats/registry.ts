@@ -148,6 +148,19 @@ import {
 	VISIO_EXTENSIONS,
 	VISIO_MIME_TYPES,
 } from "./visio";
+import {
+	generateQuarkTranslation,
+	importQuarkFile,
+	QUARK_EXTENSIONS,
+	QUARK_MIME_TYPES,
+	validateQuarkFile,
+} from "./quark";
+import {
+	generatePsdTranslation,
+	importPsdFile,
+	PSD_MIME_TYPES,
+	validatePsdFile,
+} from "./psd";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -475,8 +488,8 @@ const adapters = [
 	},
 	{
 		id: "idml",
-		label: "Adobe IDML/ICML",
-		extensions: ["idml", "icml"],
+		label: "Adobe IDML/ICML/INX",
+		extensions: ["idml", "icml", "inx"],
 		mimeTypes: [
 			"application/vnd.adobe.indesign-idml-package",
 			"application/vnd.adobe.incopy-icml",
@@ -532,8 +545,8 @@ const adapters = [
 	},
 	{
 		id: "mif",
-		label: "Adobe FrameMaker MIF",
-		extensions: ["mif"],
+		label: "Adobe FrameMaker MIF / MIF2",
+		extensions: ["mif", "mi2"],
 		mimeTypes: ["application/vnd.mif", "application/x-mif", "text/plain"],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.mif,
@@ -696,6 +709,33 @@ const adapters = [
 		validate: validateVisioFile,
 		importFile: importVisioFile,
 		exportFile: generateVisioTranslation,
+	},
+	{
+		id: "quark",
+		label: "QuarkXPress Tags",
+		extensions: [...QUARK_EXTENSIONS],
+		mimeTypes: [...QUARK_MIME_TYPES],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.quark,
+		sniff: async (file, context) =>
+			(await sniffText(file, /^<v\d+(?:\.\d+)?><e\d+>/, context)) &&
+			(await validateQuarkFile(file, context)).valid,
+		validate: validateQuarkFile,
+		importFile: importQuarkFile,
+		exportFile: generateQuarkTranslation,
+	},
+	{
+		id: "psd",
+		label: "Photoshop PSD text layers → SVG",
+		extensions: ["psd"],
+		mimeTypes: [...PSD_MIME_TYPES],
+		capabilities: SOURCE_ONLY_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.psd,
+		sniff: async (file, context) =>
+			(await validatePsdFile(file, context)).valid,
+		validate: validatePsdFile,
+		importFile: importPsdFile,
+		exportFile: generatePsdTranslation,
 	},
 	{
 		id: "xml",

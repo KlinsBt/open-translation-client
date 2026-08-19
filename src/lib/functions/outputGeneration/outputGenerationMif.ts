@@ -102,7 +102,9 @@ export async function generateMifTranslation(project: UserData): Promise<void> {
 		project.translationData.name ||
 		project.translationData.skeleton?.source.name ||
 		"document.mif";
-	const name = /\.mif$/i.test(requested) ? requested : `${requested}.mif`;
+	const name = /\.(?:mif|mi2)$/i.test(requested)
+		? requested
+		: `${requested}.mif`;
 	const url = URL.createObjectURL(buildMifTranslationBlob(project));
 	const link = document.createElement("a");
 	link.href = url;

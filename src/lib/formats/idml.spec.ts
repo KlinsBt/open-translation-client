@@ -80,6 +80,38 @@ beforeEach(() => {
 });
 
 describe("Adobe IDML and ICML workflow", () => {
+	it("recognizes native INX XML and preserves its complete single-file DOM", async () => {
+		const source = `<?xml version="1.0" encoding="UTF-8"?><?aid style="50" type="document" readerVersion="6.0" featureSet="257" product="6.0(352)"?><Document DOMVersion="6.0"><Color Self="Color/Protected"/><Story Self="story"><ParagraphStyleRange><CharacterStyleRange><Content>Hello INX مرحبا</Content></CharacterStyleRange></ParagraphStyleRange></Story><ScriptLabel Self="inert">never executed</ScriptLabel></Document>`;
+		const { file, result, project } = await importProject(source, "layout.inx");
+		expect(result.segments).toEqual(["Hello INX مرحبا"]);
+		expect(result.typeRef).toMatchObject({ profile: "inx" });
+		const identity = await buildInDesignTranslationBlob(project);
+		expect(new Uint8Array(await identity.arrayBuffer())).toEqual(
+			new Uint8Array(await file.arrayBuffer()),
+		);
+		project.translationData.seg2 = ["Hallo INX عالم"];
+		const output = await (await buildInDesignTranslationBlob(project)).text();
+		expect(output).toContain("<Content>Hallo INX عالم</Content>");
+		expect(output).toContain('<Color Self="Color/Protected"/>');
+		expect(output).toContain(
+			'<ScriptLabel Self="inert">never executed</ScriptLabel>',
+		);
+		await expect(
+			validateInDesignFile(new File([output], "layout.inx")),
+		).resolves.toEqual({ valid: true });
+	});
+
+	it("rejects extension-only INX and INX without native document metadata", async () => {
+		for (const source of [
+			"plain text",
+			"<Document><Story><Content>Missing DOMVersion</Content></Story></Document>",
+			'<Story DOMVersion="6.0"><Content>Wrong root</Content></Story>',
+		])
+			await expect(
+				validateInDesignFile(new File([source], "fake.inx")),
+			).resolves.toMatchObject({ valid: false });
+	});
+
 	it("extracts ICML content in story/style order and preserves tables, anchored objects, tags, and cross-references", async () => {
 		const source = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Document DOMVersion="18.0"><Story Self="u1"><ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/Body"><CharacterStyleRange AppliedCharacterStyle="CharacterStyle/Emphasis"><Content>Hello</Content><Rectangle Self="anchored"><TextFrame ParentStory="u1"/></Rectangle><Content> world</Content></CharacterStyleRange></ParagraphStyleRange><Table Self="table"><Row><Cell><Content>Cell text</Content></Cell></Row></Table><XMLElement MarkupTag="XMLTag/term"><Content>Tagged text</Content></XMLElement><HyperlinkTextSource Self="link" Name="Cross reference"><Content>Link text</Content></HyperlinkTextSource></Story></Document>`;

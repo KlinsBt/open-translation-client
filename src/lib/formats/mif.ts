@@ -234,7 +234,7 @@ export async function importMifFile(
 		})),
 	});
 	document.metadata = {
-		profile: `MIF ${parsed.version}`,
+		profile: `${/\.mi2$/i.test(file.name) ? "MIF2 filter / MIF" : "MIF"} ${parsed.version}`,
 		tags: parsed.tags,
 		strings: parsed.strings.length,
 		encoding: read.encoding,
@@ -253,7 +253,10 @@ export async function importMifFile(
 			createSkeletonSource(file, read),
 		),
 		filterOptions,
-		typeRef: { profile: "mif", version: parsed.version } as TypeRef,
+		typeRef: {
+			profile: /\.mi2$/i.test(file.name) ? "mif2-filter-alias" : "mif",
+			version: parsed.version,
+		} as TypeRef,
 		segmentsMeta: meta,
 	};
 }

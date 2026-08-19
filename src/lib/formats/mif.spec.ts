@@ -22,8 +22,9 @@ async function importProject(
 	content: BlobPart,
 	options: Readonly<FormatOptionValues> = {},
 	targets?: string[],
+	name = "manual.mif",
 ) {
-	const file = new File([content], "manual.mif", {
+	const file = new File([content], name, {
 		type: "application/vnd.mif",
 	});
 	const result = await importMifFile(file, options);
@@ -32,7 +33,7 @@ async function importProject(
 		result,
 		project: makeUserData({
 			type: "mif",
-			name: "manual.mif",
+			name,
 			seg1: result.segments,
 			seg2: targets ?? [...result.segments],
 			checked: result.segments.map(() => false),
@@ -56,6 +57,25 @@ beforeEach(() => {
 });
 
 describe("Adobe FrameMaker MIF workflow", () => {
+	it("accepts .mi2 only as the documented MIF2 filter alias over native MIF grammar", async () => {
+		const source =
+			"<MIFFile 2020>\n<Para <ParaLine <String `MI2 text مرحبا'> > >";
+		const { result, project } = await importProject(
+			source,
+			{},
+			undefined,
+			"manual.mi2",
+		);
+		expect(result.segments).toEqual(["MI2 text مرحبا"]);
+		expect(result.typeRef).toMatchObject({ profile: "mif2-filter-alias" });
+		expect(result.document.metadata?.profile).toContain("MIF2 filter / MIF");
+		project.translationData.seg2 = ["MIF2 Übersetzung"];
+		expect(buildMifTranslation(project)).toContain("MIF2 Übersetzung");
+		await expect(
+			validateMifFile(new File(["not MIF"], "fake.mi2")),
+		).resolves.toMatchObject({ valid: false });
+	});
+
 	it("extracts configured tagged strings while preserving catalogs, conditions, xrefs, and nesting", async () => {
 		const source = `<MIFFile 2020>
 <PgfCatalog <Pgf <PgfTag \`Body'> > >

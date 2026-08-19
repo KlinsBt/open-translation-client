@@ -8,6 +8,7 @@ import { createSyntheticPdf } from "./pdfFixtures";
 import { importOcrImageFile } from "$lib/formats/localOcr";
 import { importTranscriptionFile } from "$lib/formats/localTranscription";
 import * as XLSX from "xlsx";
+import { writePsdUint8Array } from "ag-psd";
 
 const encoder = new TextEncoder();
 
@@ -50,6 +51,31 @@ async function visioPackageFile(
 		},
 		name,
 		"application/vnd.visio",
+	);
+}
+
+function psdTextLayerFile(texts: readonly string[], name = "design.psd"): File {
+	return new File(
+		[
+			writePsdUint8Array({
+				width: 640,
+				height: 480,
+				children: texts.map((text, index) => ({
+					name: `Text ${index + 1}`,
+					left: 20,
+					top: 30 + index * 2,
+					right: 620,
+					bottom: 70 + index * 2,
+					text: {
+						text,
+						transform: [1, 0, 0, 1, 20, 30 + index * 2],
+						style: { fontSize: 20 },
+					},
+				})),
+			}),
+		],
+		name,
+		{ type: "image/vnd.adobe.photoshop" },
 	);
 }
 
@@ -1761,6 +1787,77 @@ const visioFixture: FormatConformanceFixture = {
 	expectedPackageChanges: ["visio/pages/page1.xml"],
 };
 
+const quarkFixture: FormatConformanceFixture = {
+	id: "quark",
+	fileName: "story.xtg",
+	mimeType: "application/vnd.quark.quarkxpress",
+	createValidFile: async () =>
+		textFile(
+			`<v21.00><e9>\n${CONFORMANCE_UNICODE_SOURCE}`,
+			"story.xtg",
+			"application/vnd.quark.quarkxpress",
+		),
+	createMalformedFile: async () =>
+		textFile("not XPress Tags", "broken.xtg", "text/plain"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { segmentationMode: "value" },
+		skeleton: { kind: "text", replacementKinds: ["text-range"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "story.xtg",
+				path: ["line[2]", "text[1]"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<v21.00><e9>\n${Array.from({ length: units }, (_, index) => `Message ${index}`).join("\n")}`,
+			"performance.xtg",
+			"application/vnd.quark.quarkxpress",
+		),
+};
+
+const psdFixture: FormatConformanceFixture = {
+	id: "psd",
+	fileName: "design.psd",
+	mimeType: "image/vnd.adobe.photoshop",
+	createValidFile: async () => psdTextLayerFile([CONFORMANCE_UNICODE_SOURCE]),
+	createMalformedFile: async () =>
+		new File(["8BPS invalid"], "broken.psd", {
+			type: "image/vnd.adobe.photoshop",
+		}),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { includeHiddenText: false },
+		skeleton: { kind: "package", replacementKinds: [] },
+		units: [
+			{
+				id: "psd-layer-0",
+				part: "design.psd",
+				path: ["layers", 0, "Text 1"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_TARGET],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		psdTextLayerFile(
+			Array.from({ length: units }, (_, index) => `Message ${index}`),
+			"performance.psd",
+		),
+	derivedOutput: {
+		mimeType: "image/svg+xml;charset=utf-8",
+		translatedMarkers: [CONFORMANCE_UNICODE_TARGET],
+		downloadSuffix: ".translated.svg",
+	},
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -2041,6 +2138,8 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	catPackageFixture,
 	zipProjectFixture,
 	visioFixture,
+	quarkFixture,
+	psdFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

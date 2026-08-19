@@ -40,10 +40,11 @@ interface InDesignStory {
 	part: string;
 	content: string;
 	syntax: XmlSyntaxDocument;
+	profile: "idml" | "icml" | "inx";
 }
 
 interface InDesignSource {
-	profile: "idml" | "icml";
+	profile: "idml" | "icml" | "inx";
 	parts: Record<string, string | Blob>;
 	stories: InDesignStory[];
 	archive?: SafeZipPackage;
@@ -125,6 +126,7 @@ function parseStory(
 	part: string,
 	content: string,
 	packageStory: boolean,
+	profile: InDesignSource["profile"],
 ): InDesignStory {
 	const syntax = parseXmlSyntax(content);
 	const root = syntax.elements[0];
@@ -141,9 +143,18 @@ function parseStory(
 		throw invalidIdml(
 			"ICML requires a Document or Story root containing a Story element.",
 		);
+	if (
+		profile === "inx" &&
+		(root.localName !== "Document" ||
+			!attribute(root, "DOMVersion") ||
+			!syntax.elements.some((element) => element.localName === "Story"))
+	)
+		throw invalidIdml(
+			"INX requires an InDesign Document root with DOMVersion and Story content.",
+		);
 	if (!syntax.elements.some((element) => element.localName === "Content"))
 		throw invalidIdml(`${part} has no InDesign Content elements.`);
-	return { part, content, syntax };
+	return { part, content, syntax, profile };
 }
 
 function parseIdmlArchive(archive: SafeZipPackage): InDesignSource {
@@ -175,7 +186,7 @@ function parseIdmlArchive(archive: SafeZipPackage): InDesignSource {
 			"Signed IDML packages must be re-signed after localization.",
 		);
 	const stories = storyPaths.map((path) =>
-		parseStory(path, textPart(archive.parts, path), true),
+		parseStory(path, textPart(archive.parts, path), true, "idml"),
 	);
 	const selfIds = new Set<string>();
 	for (const story of stories)
@@ -206,10 +217,15 @@ async function readInDesignSource(
 	if (/\.idml$/i.test(file.name) || (await isZipFile(file)))
 		return parseIdmlArchive(await readSafeZipPackage(file, context));
 	const textSource = await readSafeTextFile(file, context);
+	const profile =
+		/\.inx$/i.test(file.name) ||
+		/<\?aid\b[^?]*\btype=["']document["']/i.test(textSource.text)
+			? "inx"
+			: "icml";
 	return {
-		profile: "icml",
+		profile,
 		parts: { [file.name]: textSource.text },
-		stories: [parseStory(file.name, textSource.text, false)],
+		stories: [parseStory(file.name, textSource.text, false, profile)],
 		textSource,
 	};
 }
@@ -284,9 +300,7 @@ function extractStory(
 			? effective
 			: [{ text: candidate.value, separator: "" }])
 			output.push({
-				profile: story.part.toLowerCase().endsWith(".icml")
-					? "icml-story"
-					: "idml-story",
+				profile: `${story.profile}-story`,
 				part: story.part,
 				path: candidate.path,
 				location: candidate.location,
@@ -312,7 +326,7 @@ export async function validateInDesignFile(
 			? { valid: false, reason: error.message, errorCode: error.code }
 			: {
 					valid: false,
-					reason: "The file is not a safe, valid IDML/ICML document.",
+					reason: "The file is not a safe, valid IDML/ICML/INX document.",
 				};
 	}
 }

@@ -84,6 +84,8 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	"cat-package": { allowTagReorder: false, allowInlineCodeReorder: false },
 	"zip-project": { allowTagReorder: false, allowInlineCodeReorder: false },
 	visio: { allowTagReorder: false, allowInlineCodeReorder: false },
+	quark: { allowTagReorder: false, allowInlineCodeReorder: false },
+	psd: { allowTagReorder: false, allowInlineCodeReorder: false },
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },

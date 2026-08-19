@@ -1251,6 +1251,27 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Include title, subject, description, category, and keywords; creator and technical metadata stay protected.",
 		},
 	],
+	quark: [
+		{
+			id: "segmentationMode",
+			label: "Text segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+			description:
+				"Keep each visible XPress Tags text run intact, or apply the active segmentation rules.",
+		},
+	],
+	psd: [
+		{
+			id: "includeHiddenText",
+			label: "Include hidden text layers",
+			type: "boolean",
+			defaultValue: false,
+			description:
+				"Hidden text layers are skipped by default. Layer pixels, effects, smart objects, and scripts are never executed.",
+		},
+	],
 	html: [
 		{
 			id: "includeTextNodes",

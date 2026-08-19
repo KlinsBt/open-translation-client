@@ -74,6 +74,7 @@ describe("format adapter registry", () => {
 					"image-ocr",
 					"media-transcription",
 					"legacy-office",
+					"psd",
 				].includes(id),
 			});
 			expect(adapter.importOptions.length).toBeGreaterThan(0);
@@ -93,10 +94,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ott,.odm,.ods,.ots,.odp,.otp,.odf,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.ttx,.itd,.txml,.doc,.docx,.bak,.dot,.xls,.xlt,.xlsb,.ppt,.pps,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.pxf,.ppf,.txf,.tpf,.tipp,.coti,.xlz,.zip,.vsd,.vdx,.vsx,.vtx,.vdw,.vsr,.vss,.vsdx,.vsdm,.vssx,.vssm,.vstx,.vstm,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.sldx,.html,.htm,.xhtml,.shtml,.jsp,.asp,.aspx,.ascx,.inc,.hhc,.hhk",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ott,.odm,.ods,.ots,.odp,.otp,.odf,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.inx,.tex,.ttml,.dfxp,.mif,.mi2,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.ttx,.itd,.txml,.doc,.docx,.bak,.dot,.xls,.xlt,.xlsb,.ppt,.pps,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.pxf,.ppf,.txf,.tpf,.tipp,.coti,.xlz,.zip,.vsd,.vdx,.vsx,.vtx,.vdw,.vsr,.vss,.vsdx,.vsdm,.vssx,.vssm,.vstx,.vstm,.xtg,.tag,.psd,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.sldx,.html,.htm,.xhtml,.shtml,.jsp,.asp,.aspx,.ascx,.inc,.hhc,.hhk",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument documents, templates, masters + formulas, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF → translated PDF, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, TTX / ITD / TXML / Workbench bilingual, Legacy Office + XLSB, CAT handoff and return packages, Manifest-driven ZIP projects, Microsoft Visio drawings, stencils and templates, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML, server pages and HTML Help",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument documents, templates, masters + formulas, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML/INX, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF / MIF2, Windows RC, Qt QML source, PDF → translated PDF, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, TTX / ITD / TXML / Workbench bilingual, Legacy Office + XLSB, CAT handoff and return packages, Manifest-driven ZIP projects, Microsoft Visio drawings, stencils and templates, QuarkXPress Tags, Photoshop PSD text layers → SVG, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML, server pages and HTML Help",
 		);
 	});
 

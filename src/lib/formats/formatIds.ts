@@ -33,6 +33,8 @@ export const FORMAT_IDS = [
 	"cat-package",
 	"zip-project",
 	"visio",
+	"quark",
+	"psd",
 	"xml",
 	"docx",
 	"xlsx",

@@ -64,7 +64,9 @@
 				"Visio VDX / VSX / VTX and protected legacy VSD / VSS / VDW",
 				"DITA",
 				"DocBook",
-				"IDML / ICML",
+				"IDML / ICML / INX",
+				"FrameMaker MIF / MIF2",
+				"QuarkXPress XTG / TAG",
 				"TeX / LaTeX",
 				"SVG",
 				"TTML",
@@ -87,6 +89,7 @@
 			title: "Local extraction and packages",
 			formats: [
 				"PNG / JPEG / TIFF OCR",
+				"Photoshop PSD text layers to SVG",
 				"Audio and video transcription",
 				"Trados return packages",
 				"WorldServer WSXZ / XLZ packages",
@@ -104,7 +107,7 @@
 	<title>Open TLC — Open source browser-based CAT tool</title>
 	<meta
 		name="description"
-		content="Translate 39 office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool."
+		content="Translate 41 office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool."
 	/>
 </svelte:head>
 
@@ -116,7 +119,7 @@
 			<h1>Translation work belongs in your hands.</h1>
 			<p class="hero-copy">
 				Open TLC is a computer-assisted translation tool for translators,
-				students and teams. Work with 39 registered format workflows, protect
+				students and teams. Work with 41 registered format workflows, protect
 				inline content, and keep projects on your own device.
 			</p>
 			<div class="hero-actions">
@@ -129,7 +132,7 @@
 	</section>
 
 	<section class="status-strip" aria-label="Open TLC highlights">
-		<div><strong>39</strong><span>registered format workflows</span></div>
+		<div><strong>41</strong><span>registered format workflows</span></div>
 		<div>
 			<strong>1.2–2.1</strong><span>standard + vendor XLIFF exchange</span>
 		</div>
@@ -197,9 +200,11 @@
 				PPT are imported in the browser and exported to DOCX and HTML. CAT
 				packages are rebuilt as return packages. Modern Visio drawings, stencils
 				and templates retain their exact family; edited legacy Visio binaries
-				use an explicit VDX delivery. Image OCR and media transcription run
-				on-device—the app downloads model assets, never the source file to a
-				processing service.
+				use an explicit VDX delivery. INX, MIF/MIF2 and XPress Tags preserve
+				their structured text. PSD imports validated text layers and delivers
+				translated SVG while retaining the exact original PSD. Image OCR and
+				media transcription run on-device—the app downloads model assets, never
+				the source file to a processing service.
 			</p>
 			<a class="text-link" href="/about#constrained-workflows"
 				>Read the support policy →</a

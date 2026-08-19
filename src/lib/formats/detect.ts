@@ -194,6 +194,40 @@ export async function detectFileFormat(
 		if (adapter) return supportedContent(adapter, extension, mimeType);
 	}
 
+	const psdCandidate = adapters.find((candidate) => candidate.id === "psd");
+	if (
+		psdCandidate &&
+		prefix[0] === 0x38 &&
+		prefix[1] === 0x42 &&
+		prefix[2] === 0x50 &&
+		prefix[3] === 0x53
+	) {
+		const validation = await psdCandidate.validate(file, context);
+		return validation.valid
+			? supportedContent(psdCandidate, extension, mimeType)
+			: unsupported(
+					"Invalid Photoshop PSD",
+					"high",
+					["signature"],
+					validation.reason ?? "The PSD structure is invalid.",
+				);
+	}
+	if (
+		psdCandidate &&
+		(extension === "psd" || psdCandidate.mimeTypes.includes(mimeType))
+	)
+		return unsupported(
+			"Unrecognized Photoshop document",
+			"low",
+			metadataEvidence(
+				extension,
+				mimeType,
+				psdCandidate.extensions,
+				psdCandidate.mimeTypes,
+			),
+			"The extension or MIME type claims Photoshop PSD, but the 8BPS signature and internal structure do not match.",
+		);
+
 	const externalCandidate = detectExternalMediaCandidate(prefix);
 	if (externalCandidate) {
 		const localAdapter = adapters.find((adapter) =>
@@ -226,6 +260,24 @@ export async function detectFileFormat(
 	}
 
 	const textKind = sniffTextKind(prefix);
+	const quarkCandidate = adapters.find((candidate) => candidate.id === "quark");
+	if (
+		quarkCandidate &&
+		(/^\ufeff?<v\d+(?:\.\d+)?><e\d+>/.test(decodeTextPrefix(prefix) ?? "") ||
+			(extension !== undefined &&
+				quarkCandidate.extensions.includes(extension)))
+	) {
+		const validation = await quarkCandidate.validate(file, context);
+		return validation.valid
+			? supportedContent(quarkCandidate, extension, mimeType)
+			: unsupported(
+					"Invalid QuarkXPress Tags document",
+					"low",
+					["extension"],
+					validation.reason ??
+						"The native XPress Tags version/encoding header is missing or malformed.",
+				);
+	}
 	if (textKind === "json") {
 		for (const candidate of adapters.filter(
 			(adapter) =>

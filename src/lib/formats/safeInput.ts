@@ -55,6 +55,8 @@ export type SafeInputErrorCode =
 	| "ZIP_PROJECT_INVALID"
 	| "ZIP_PROJECT_MEMBER_FAILED"
 	| "VISIO_INVALID"
+	| "QUARK_INVALID"
+	| "PSD_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

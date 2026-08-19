@@ -23,7 +23,7 @@ Open TLC stores all translation projects locally using your browser's own Indexe
 </p>
 
 <p>
-Open TLC supports 39 registered office, web, localization, diagram, publishing, subtitle and media workflows. This includes XLIFF 1.2–2.1, TMX, TBX, TTX, ITD, TXML, XLIFF:doc, Workbench bilingual files, modern and legacy Office files, Visio OPC/XML drawings, stencils and templates, protected legacy Visio conversion, local image OCR, local audio/video transcription, and Trados, WorldServer and memoQ return packages. Source files and projects stay in the browser; OCR and transcription may download model assets but do not upload the user's media.
+Open TLC supports 41 registered office, web, localization, diagram, publishing, subtitle and media workflows. This includes XLIFF 1.2–2.1, TMX, TBX, TTX, ITD, TXML, XLIFF:doc, Workbench bilingual files, modern and legacy Office files, Visio OPC/XML drawings, Adobe IDML/ICML/INX, FrameMaker MIF/MIF2, QuarkXPress Tags, protected Photoshop PSD text-layer conversion, local image OCR, local audio/video transcription, and Trados, WorldServer and memoQ return packages. Source files and projects stay in the browser; PSD resources stay in the retained original, while OCR and transcription may download model assets but do not upload the user's media.
 </p>
 
 <p> 
