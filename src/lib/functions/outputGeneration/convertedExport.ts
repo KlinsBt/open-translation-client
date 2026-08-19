@@ -1,6 +1,13 @@
 import type { UserData } from "$lib/types/types";
+import { buildSegmentDeliveryPdf } from "./outputGenerationPdf";
 
-export type ConvertedExportFormat = "docx" | "rtf" | "html" | "txt" | "csv";
+export type ConvertedExportFormat =
+	| "pdf"
+	| "docx"
+	| "rtf"
+	| "html"
+	| "txt"
+	| "csv";
 
 export interface ConvertedExportFile {
 	blob: Blob;
@@ -81,7 +88,9 @@ export async function buildConvertedTranslation(
 	const targets = targetSegments(project);
 	let blob: Blob;
 
-	if (format === "docx") {
+	if (format === "pdf") {
+		blob = await buildSegmentDeliveryPdf(project);
+	} else if (format === "docx") {
 		blob = await docxBlob(project);
 	} else if (format === "html") {
 		const lang = escapeHtml(languageCode(project.translationData.targetLang));

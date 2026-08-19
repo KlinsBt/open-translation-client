@@ -11,6 +11,8 @@ interface JpegPage {
 
 const PDF_WIDTH = 595.28;
 const PDF_HEIGHT = 841.89;
+const DELIVERY_WIDTH = 1240;
+const DELIVERY_HEIGHT = 1754;
 
 function ascii(value: string): Uint8Array {
 	return new TextEncoder().encode(value);
@@ -156,6 +158,131 @@ function targetIsRtl(language: string): boolean {
 	return ["ar", "dv", "fa", "he", "ps", "ur", "yi"].includes(
 		code.toLowerCase().split(/[-_]/)[0],
 	);
+}
+
+function wrapDeliveryText(
+	context: CanvasRenderingContext2D,
+	text: string,
+	maxWidth: number,
+): string[] {
+	const output: string[] = [];
+	for (const paragraph of text.split(/\r?\n/)) {
+		if (!paragraph.trim()) {
+			output.push("");
+			continue;
+		}
+		let line = "";
+		for (const word of paragraph.split(/\s+/)) {
+			const candidate = line ? `${line} ${word}` : word;
+			if (context.measureText(candidate).width <= maxWidth) {
+				line = candidate;
+				continue;
+			}
+			if (line) output.push(line);
+			line = word;
+			while (context.measureText(line).width > maxWidth && line.length > 1) {
+				let boundary = line.length - 1;
+				while (
+					boundary > 1 &&
+					context.measureText(line.slice(0, boundary)).width > maxWidth
+				)
+					boundary -= 1;
+				output.push(line.slice(0, boundary));
+				line = line.slice(boundary);
+			}
+		}
+		if (line) output.push(line);
+	}
+	return output;
+}
+
+/** Builds a clean target-language PDF when the source format is not itself PDF. */
+export async function buildSegmentDeliveryPdf(
+	project: UserData,
+): Promise<Blob> {
+	assertProjectExportQuality(project);
+	const data = project.translationData;
+	const rtl = targetIsRtl(data.targetLang);
+	const pages: JpegPage[] = [];
+	const margin = 90;
+	const maxWidth = DELIVERY_WIDTH - margin * 2;
+	const lineHeight = 42;
+	let canvas!: HTMLCanvasElement;
+	let context!: CanvasRenderingContext2D;
+	let y = 0;
+
+	function startPage() {
+		canvas = document.createElement("canvas");
+		canvas.width = DELIVERY_WIDTH;
+		canvas.height = DELIVERY_HEIGHT;
+		const pageContext = canvas.getContext("2d");
+		if (!pageContext) throw new Error("This browser cannot render PDF pages.");
+		context = pageContext;
+		context.fillStyle = "#ffffff";
+		context.fillRect(0, 0, DELIVERY_WIDTH, DELIVERY_HEIGHT);
+		context.fillStyle = "#173f50";
+		context.font = "700 32px Arial, sans-serif";
+		context.textAlign = rtl ? "right" : "left";
+		context.direction = rtl ? "rtl" : "ltr";
+		context.fillText(
+			data.name || "Translation",
+			rtl ? DELIVERY_WIDTH - margin : margin,
+			78,
+			maxWidth,
+		);
+		context.fillStyle = "#667f88";
+		context.font = "20px Arial, sans-serif";
+		context.fillText(
+			data.targetLang || "Translated document",
+			rtl ? DELIVERY_WIDTH - margin : margin,
+			116,
+			maxWidth,
+		);
+		context.fillStyle = "#d8e8ec";
+		context.fillRect(margin, 142, maxWidth, 2);
+		y = 195;
+	}
+
+	function finishPage() {
+		context.fillStyle = "#7b9097";
+		context.font = "18px Arial, sans-serif";
+		context.textAlign = "center";
+		context.direction = "ltr";
+		context.fillText(String(pages.length + 1), DELIVERY_WIDTH / 2, 1690);
+		pages.push({
+			bytes: canvasJpeg(canvas),
+			width: canvas.width,
+			height: canvas.height,
+		});
+	}
+
+	startPage();
+	context.fillStyle = "#243f49";
+	context.font = "28px Arial, sans-serif";
+	for (const segment of data.seg2) {
+		const lines = wrapDeliveryText(context, segment ?? "", maxWidth);
+		const requiredHeight = Math.max(lineHeight, lines.length * lineHeight) + 24;
+		if (y + requiredHeight > 1630) {
+			finishPage();
+			startPage();
+			context.fillStyle = "#243f49";
+			context.font = "28px Arial, sans-serif";
+		}
+		context.textAlign = rtl ? "right" : "left";
+		context.direction = rtl ? "rtl" : "ltr";
+		for (const line of lines.length ? lines : [""]) {
+			context.fillText(
+				line,
+				rtl ? DELIVERY_WIDTH - margin : margin,
+				y,
+				maxWidth,
+			);
+			y += lineHeight;
+		}
+		y += 24;
+	}
+	finishPage();
+	return buildJpegPdf(pages);
 }
 
 export async function buildTranslatedPdf(project: UserData): Promise<Blob> {

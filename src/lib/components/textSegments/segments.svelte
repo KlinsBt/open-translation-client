@@ -69,6 +69,12 @@
 		description: string;
 	}> = [
 		{
+			format: "pdf",
+			icon: "PDF",
+			label: "PDF document",
+			description: "A polished, shareable PDF containing the translated text.",
+		},
+		{
 			format: "docx",
 			icon: "DOCX",
 			label: "Word document",

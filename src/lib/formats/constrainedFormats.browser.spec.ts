@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildConvertedTranslation } from "$lib/functions/outputGeneration/convertedExport";
 import { buildTranslatedPdf } from "$lib/functions/outputGeneration/outputGenerationPdf";
 import { makeUserData } from "../../test/fixtures";
 import { createSyntheticPdf } from "../../test/pdfFixtures";
@@ -94,6 +95,35 @@ describe("browser local and constrained format routing", () => {
 		);
 		expect((await document.getPage(2)).getViewport({ scale: 1 })).toMatchObject(
 			{ width: 612, height: 792 },
+		);
+		await loadingTask.destroy();
+	}, 20_000);
+
+	it("creates a reopenable PDF delivery from non-PDF translated segments", async () => {
+		const project = makeUserData({
+			name: "Client guide.docx",
+			type: "docx",
+			sourceLang: "English (en)",
+			targetLang: "German (de)",
+			seg1: ["Welcome", "Use the translated guide."],
+			seg2: ["Willkommen", "Verwenden Sie den übersetzten Leitfaden."],
+			checked: [true, true],
+		});
+		const exported = await buildConvertedTranslation(project, "pdf");
+		expect(exported.fileName).toBe("Client guide.pdf");
+		expect(exported.blob.type).toBe("application/pdf");
+
+		const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+		const loadingTask = pdfjs.getDocument({
+			data: new Uint8Array(await exported.blob.arrayBuffer()),
+		});
+		const document = await loadingTask.promise;
+		expect(document.numPages).toBe(1);
+		expect((await document.getPage(1)).getViewport({ scale: 1 })).toMatchObject(
+			{
+				width: 595.28,
+				height: 841.89,
+			},
 		);
 		await loadingTask.destroy();
 	}, 20_000);
