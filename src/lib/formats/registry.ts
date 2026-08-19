@@ -84,6 +84,13 @@ import {
 	validateAuxiliaryResourceFile,
 } from "./auxiliaryResources";
 import {
+	generateOutlookMsgTranslation,
+	importOutlookMsgFile,
+	OUTLOOK_MSG_EXTENSIONS,
+	OUTLOOK_MSG_MIME_TYPES,
+	validateOutlookMsgFile,
+} from "./outlookMsg";
+import {
 	importPhpLocalizationFile,
 	validatePhpLocalizationFile,
 } from "./phpLocalization";
@@ -401,6 +408,19 @@ const adapters = [
 		validate: validateAuxiliaryResourceFile,
 		importFile: importAuxiliaryResourceFile,
 		exportFile: generateAuxiliaryResourceTranslation,
+	},
+	{
+		id: "outlook-msg",
+		label: "Outlook MSG → safe EML",
+		extensions: OUTLOOK_MSG_EXTENSIONS,
+		mimeTypes: OUTLOOK_MSG_MIME_TYPES,
+		capabilities: SOURCE_ONLY_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["outlook-msg"],
+		sniff: async (file, context) =>
+			(await validateOutlookMsgFile(file, context)).valid,
+		validate: validateOutlookMsgFile,
+		importFile: importOutlookMsgFile,
+		exportFile: generateOutlookMsgTranslation,
 	},
 	{
 		id: "php",

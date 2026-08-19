@@ -1784,7 +1784,7 @@ definition of done below before checking them.
       and FreeMind's official [file-format description](https://freemind.sourceforge.io/wiki/index.php/File_format)
       and [1.0.1 XSD](https://freemind.sourceforge.io/wiki/index.php/Freemind.xsd).
 
-- [ ] **FF-512 — Outlook message items.** Add `.msg` import with sender,
+- [x] **FF-512 — Outlook message items.** Add `.msg` import with sender,
       recipients, subject, plain/HTML body, selected attachment names, and message
       metadata as context. Keep attachments and MAPI properties opaque, block
       embedded active content and external fetches, and define a clear output
@@ -1792,15 +1792,59 @@ definition of done below before checking them.
       EML/HTML/PDF delivery otherwise. Include malformed compound-file and nested-
       message limits.
 
+      **Completed 2026-08-20.** The
+      `outlook-msg` adapter recognizes `.msg` from an MS-CFB/OLE compound-file
+      signature plus the top-level MAPI property stream and `PidTagMessageClass`;
+      an extension alone is never accepted. A bounded local property reader
+      extracts the subject, sender, To/Cc/Bcc recipients, plain or inert HTML
+      body, selected attachment display names, message class, and available
+      creation/submission/delivery times. Import options choose the preferred
+      body representation and whether subject or attachment names are exposed.
+      The selected values, option state, neutral-document mappings, context, and
+      exact source Blob persist through the current IndexedDB schema without a
+      destructive migration.
+
+      Unknown MAPI properties and attachment bytes are not interpreted or
+      copied into an edited delivery. Nested `MSG` objects are rejected, HTML is
+      parsed only as inert text with active/embedded/form elements excluded, and
+      no URL is fetched. Inputs are bounded by the common 100 MiB file cap plus
+      10,000 CFB entries, 500 recipients, 256 attachments, and 20 million body
+      characters. An unchanged project returns the exact retained `.msg` bytes;
+      an edited project is explicitly labelled and downloaded as a UTF-8 `.eml`
+      delivery with sanitized/RFC 2047-encoded headers and an attachment-omission
+      notice. Rewriting proprietary MSG structures is deliberately not claimed.
+
+      Coverage generates real CFB fixtures in memory for minimal, complex,
+      Unicode/RTL, inert-HTML, malformed, short, nested-message, 257-attachment,
+      cancellation, and 3,000-paragraph cases. The large case has a 10-second
+      regression ceiling (approximately one second on the implementation host);
+      parsing is additionally bounded by input/body limits, although browser
+      APIs do not expose a portable peak-heap measurement and the CFB decode
+      itself is synchronous. Identity output is byte-compared and reopened with
+      `cfb`; translated EML is reopened with the independent `postal-mime`
+      parser. Browser coverage persists/restores the opaque source in IndexedDB
+      and reopens translated EML, while the shared conformance suite covers the
+      adapter import/edit/download name and MIME flow. Split/join is blocked for
+      protected mappings. The landing page, About matrix, picker registry,
+      detection explanation, export UI, QA policy, and conformance fixture table
+      now identify this as the 44th protected/source-only workflow. The final
+      gate passed formatting, zero-error type checking, 1,087 unit tests (four
+      deliberate skips), 74 real-browser tests, and a production build.
+
+      Normative references: Microsoft [MS-OXMSG overview](https://learn.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxmsg/b046868c-9fbf-41ae-9ffb-8de2bd4eec82),
+      [top-level MSG structure](https://learn.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxmsg/1a69e000-f391-4c03-9d43-32d5f554bca7),
+      [MS-OXMSG compound-file relationship](https://learn.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxmsg/cd44ec9f-01bb-4ea3-b335-87cfeb827594),
+      and Microsoft [MS-CFB](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/53989ce4-7b05-4f8d-829b-d08d6148375b).
+
 ### Phase 5 completion gate
 
-- [ ] Every extension listed in FF-500 through FF-512 appears in a generated,
+- [x] Every extension listed in FF-500 through FF-512 appears in a generated,
       registry-backed support matrix with one of: native round trip, protected
       import, source-only conversion, or deliberately unsupported with reason.
-- [ ] The upload picker, content detector, landing/about pages, help text, export
+- [x] The upload picker, content detector, landing/about pages, help text, export
       menu, MIME/download names, migrations, and conformance fixture table agree
       with that matrix.
-- [ ] No task may be checked based solely on extension acceptance, generic XML/
+- [x] No task may be checked based solely on extension acceptance, generic XML/
       HTML parsing, or a serializer that has not been reopened and semantically
       inspected in tests.
 

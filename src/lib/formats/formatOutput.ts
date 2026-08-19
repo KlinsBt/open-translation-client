@@ -109,6 +109,7 @@ export async function buildRoundTripFormatOutputBlob(
 		case "pdf":
 		case "image-ocr":
 		case "media-transcription":
+		case "outlook-msg":
 		case "legacy-office":
 		case "psd":
 		case "zip-project":

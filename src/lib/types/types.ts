@@ -192,6 +192,16 @@ export interface AuxiliarySegmentMeta {
 	separator?: string;
 }
 
+export interface OutlookMsgSegmentMeta {
+	profile: "outlook-msg-source-only";
+	kind: "subject" | "body" | "attachment-name";
+	bodyKind?: "plain" | "html";
+	attachmentIndex?: number;
+	originalFileName?: string;
+	extension?: string;
+	separator?: string;
+}
+
 export interface PhpSegmentMeta {
 	path: string[];
 	start: number;
@@ -415,6 +425,7 @@ export type SegmentMeta =
 	| QtTsSegmentMeta
 	| IniSegmentMeta
 	| AuxiliarySegmentMeta
+	| OutlookMsgSegmentMeta
 	| PhpSegmentMeta
 	| MarkupSegmentMeta
 	| SubtitleSegmentMeta

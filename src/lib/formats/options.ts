@@ -405,6 +405,32 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Expose visible rich-content notes as editable units in addition to node labels.",
 		},
 	],
+	"outlook-msg": [
+		{
+			id: "bodyPreference",
+			label: "Message body",
+			type: "select",
+			defaultValue: "prefer-plain",
+			choices: ["prefer-plain", "prefer-html", "plain-only", "html-only"],
+			description:
+				"Choose one body representation. HTML is parsed as inert source text; scripts, forms, embedded objects, and external resources are never rendered or fetched.",
+		},
+		{
+			id: "includeSubject",
+			label: "Include subject",
+			type: "boolean",
+			defaultValue: true,
+			description: "Expose the Outlook subject as the first translation unit.",
+		},
+		{
+			id: "includeAttachmentNames",
+			label: "Include attachment names",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Expose visible attachment base names only. Extensions and attachment payloads remain protected and opaque.",
+		},
+	],
 	php: [
 		{
 			id: "pathSelectors",

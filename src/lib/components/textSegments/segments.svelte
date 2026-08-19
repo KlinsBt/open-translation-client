@@ -182,6 +182,22 @@
 							"Create a safe SVG containing the translated text layers at their recorded positions; the retained original PSD remains in the project.",
 					};
 		}
+		if (data.type === "outlook-msg") {
+			const unchanged =
+				data.seg1.length === data.seg2.length &&
+				data.seg1.every((source, index) => source === data.seg2[index]);
+			return unchanged
+				? {
+						label: "Original Outlook MSG",
+						description:
+							"Export the exact retained Outlook item because no selected text has changed.",
+					}
+				: {
+						label: "Safe EML delivery",
+						description:
+							"Create a UTF-8 email containing the translated subject and body. Opaque attachments and unknown MAPI properties remain only in the retained source MSG.",
+					};
+		}
 		if (data.type !== "legacy-office")
 			return {
 				label: getFormatAdapter(data.type).label,

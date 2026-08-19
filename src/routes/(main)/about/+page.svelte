@@ -100,6 +100,7 @@
 				"INI, .desktop and .lang",
 				"Windows INF localized Strings and Registry REG string values",
 				"FreeMind MM node labels, rich text and notes",
+				"Outlook MSG subject/body → safe EML delivery",
 				"Static PHP localization arrays and mixed PHP/HTML templates",
 				"Windows RC resources",
 				"FrameMaker MIF and MIF2 filter-alias files",
@@ -177,7 +178,7 @@
 				Open Translation Client is a browser-based, open source CAT tool for
 				professional translators, learners and teams. It began as a master's
 				thesis project at Anhalt University of Applied Sciences in Germany and
-				has grown into a local-first editor with 43 registered format workflows.
+				has grown into a local-first editor with 44 registered format workflows.
 			</p>
 		</div>
 	</header>
@@ -226,6 +227,14 @@
 					keys and binary values, node IDs, links, hooks, scripts and unknown XML
 					remain inert and unchanged. REG files are downloaded as files and are never
 					applied to the operating system.
+				</div>
+				<div class="note">
+					<strong>Outlook message safety:</strong> MSG files are verified as compound
+					MAPI items and read locally. Sender and recipients are context; subject,
+					the selected plain/HTML body and optional attachment names are editable.
+					Attachments and unknown properties remain opaque, nested messages are rejected,
+					and HTML is never rendered or allowed to fetch external content. Unchanged
+					projects retain the original MSG; edited delivery uses safe EML.
 				</div>
 				<div class="note">
 					<strong>Visio support:</strong> VSDX-family OPC packages and standalone

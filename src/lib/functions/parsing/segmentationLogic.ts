@@ -55,6 +55,8 @@ const INI_EDIT_ERROR =
 	"INI resource values cannot be split or joined because sections, keys, locale suffixes, and line ranges must remain aligned.";
 const AUXILIARY_RESOURCE_EDIT_ERROR =
 	"INF, Registry, and FreeMind values cannot be split or joined because typed values, resource keys, and XML ranges must remain aligned.";
+const OUTLOOK_MSG_EDIT_ERROR =
+	"Outlook message units cannot be split or joined because subject, body, attachment-name, and delivery mappings must remain aligned.";
 const PHP_EDIT_ERROR =
 	"PHP localization values cannot be split or joined because array paths and string ranges must remain aligned.";
 const MARKUP_EDIT_ERROR =
@@ -158,6 +160,7 @@ function validateForStructuralEdit(
 	if (translation.type === "ini") return INI_EDIT_ERROR;
 	if (translation.type === "auxiliary-resources")
 		return AUXILIARY_RESOURCE_EDIT_ERROR;
+	if (translation.type === "outlook-msg") return OUTLOOK_MSG_EDIT_ERROR;
 	if (translation.type === "php") return PHP_EDIT_ERROR;
 	if (translation.type === "markup") return MARKUP_EDIT_ERROR;
 	if (translation.type === "subtitles") return SUBTITLE_EDIT_ERROR;

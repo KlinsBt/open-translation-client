@@ -116,6 +116,37 @@ export async function detectFileFormat(
 	}
 
 	if (hasOleSignature(prefix)) {
+		const outlook = adapters.find(
+			(candidate) => candidate.id === "outlook-msg",
+		);
+		if (outlook) {
+			const validation = await outlook.validate(file, context);
+			if (validation.valid) {
+				const detection = supportedContent(outlook, extension, mimeType);
+				detection.reason =
+					"The OLE compound structure contains a top-level Outlook MAPI property stream and message class. Attachments and unknown properties remain opaque, and active or external content is never rendered or fetched.";
+				detection.workflow = {
+					kind: "source-only",
+					primaryAction: "Import protected Outlook text and deliver safe EML",
+					steps: [
+						"Read sender, recipients, subject, the selected body representation, metadata context, and optional attachment display names locally.",
+						"Translate text without opening attachments, executing MAPI objects, rendering HTML, or fetching external resources.",
+						"Export an interoperable EML delivery; an unchanged project retains the exact original MSG bytes.",
+					],
+					fidelityWarning:
+						"Edited delivery is EML rather than a rewritten proprietary MSG. Original attachments and opaque MAPI properties remain in the retained source MSG and are explicitly omitted from EML.",
+				};
+				return detection;
+			}
+			if (extension === "msg")
+				return unsupported(
+					"Invalid Outlook MSG item",
+					"high",
+					["signature", "extension"],
+					validation.reason ??
+						"The compound file does not contain a valid top-level Outlook message structure.",
+				);
+		}
 		const visio = adapters.find((candidate) => candidate.id === "visio");
 		if (
 			visio &&

@@ -11,6 +11,7 @@ export const FORMAT_IDS = [
 	"qt-ts",
 	"ini",
 	"auxiliary-resources",
+	"outlook-msg",
 	"php",
 	"markup",
 	"subtitles",

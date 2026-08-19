@@ -59,6 +59,7 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 		allowTagReorder: false,
 		allowInlineCodeReorder: false,
 	},
+	"outlook-msg": { allowTagReorder: false, allowInlineCodeReorder: false },
 	php: { allowTagReorder: false, allowInlineCodeReorder: false },
 	markup: { allowTagReorder: false, allowInlineCodeReorder: false },
 	subtitles: { allowTagReorder: true, allowInlineCodeReorder: true },

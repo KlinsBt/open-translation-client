@@ -10,6 +10,10 @@ import { importTranscriptionFile } from "$lib/formats/localTranscription";
 import * as XLSX from "xlsx";
 import { writePsdUint8Array } from "ag-psd";
 import { structuredPng } from "./ocrImageFixtures";
+import {
+	createMalformedOutlookCompound,
+	createOutlookMsgFixture,
+} from "./outlookMsgFixture";
 
 const encoder = new TextEncoder();
 
@@ -685,6 +689,56 @@ const auxiliaryResourcesFixture: FormatConformanceFixture = {
 			"performance.mm",
 			"application/x-freemind",
 		),
+};
+
+const outlookMsgFixture: FormatConformanceFixture = {
+	id: "outlook-msg",
+	fileName: "unicode.msg",
+	mimeType: "application/vnd.ms-outlook",
+	importOptions: {
+		bodyPreference: "prefer-plain",
+		includeSubject: false,
+		includeAttachmentNames: false,
+	},
+	createValidFile: async () =>
+		createOutlookMsgFixture({
+			name: "unicode.msg",
+			subject: "Protected subject",
+			body: CONFORMANCE_UNICODE_SOURCE,
+		}),
+	createMalformedFile: async () => createMalformedOutlookCompound("bad.msg"),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			bodyPreference: "prefer-plain",
+			includeSubject: false,
+			includeAttachmentNames: false,
+		},
+		skeleton: { kind: "package", replacementKinds: [] },
+		units: [{ id: "body-1", part: "body", path: ["body"] }],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_TARGET],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		createOutlookMsgFixture({
+			name: "performance.msg",
+			subject: "Performance",
+			body: Array.from(
+				{ length: units },
+				(_, index) => `Message ${index}`,
+			).join("\r\n\r\n"),
+		}),
+	performanceOptions: {
+		bodyPreference: "prefer-plain",
+		includeSubject: false,
+		includeAttachmentNames: false,
+	},
+	derivedOutput: {
+		mimeType: "message/rfc822",
+		translatedMarkers: [],
+		downloadSuffix: ".eml",
+	},
 };
 
 const phpFixture: FormatConformanceFixture = {
@@ -2206,6 +2260,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	qtTsFixture,
 	iniFixture,
 	auxiliaryResourcesFixture,
+	outlookMsgFixture,
 	phpFixture,
 	markupFixture,
 	subtitlesFixture,

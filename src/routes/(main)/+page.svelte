@@ -56,6 +56,7 @@
 				"Qt TS / QML",
 				"Windows INF / Registry REG",
 				"FreeMind MM mind maps",
+				"Outlook MSG → safe EML",
 			],
 		},
 		{
@@ -112,7 +113,7 @@
 	<title>Open TLC — Open source browser-based CAT tool</title>
 	<meta
 		name="description"
-		content="Translate 43 office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool."
+		content="Translate 44 office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool."
 	/>
 </svelte:head>
 
@@ -124,7 +125,7 @@
 			<h1>Translation work belongs in your hands.</h1>
 			<p class="hero-copy">
 				Open TLC is a computer-assisted translation tool for translators,
-				students and teams. Work with 43 registered format workflows, protect
+				students and teams. Work with 44 registered format workflows, protect
 				inline content, and keep projects on your own device.
 			</p>
 			<div class="hero-actions">
@@ -137,7 +138,7 @@
 	</section>
 
 	<section class="status-strip" aria-label="Open TLC highlights">
-		<div><strong>43</strong><span>registered format workflows</span></div>
+		<div><strong>44</strong><span>registered format workflows</span></div>
 		<div>
 			<strong>1.2–2.1</strong><span>standard + vendor XLIFF exchange</span>
 		</div>
