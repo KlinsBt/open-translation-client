@@ -60,6 +60,8 @@
 			title: "Publishing and technical",
 			formats: [
 				"EPUB",
+				"Visio VSDX / VSDM / VSSX / VSSM / VSTX / VSTM",
+				"Visio VDX / VSX / VTX and protected legacy VSD / VSS / VDW",
 				"DITA",
 				"DocBook",
 				"IDML / ICML",
@@ -102,7 +104,7 @@
 	<title>Open TLC — Open source browser-based CAT tool</title>
 	<meta
 		name="description"
-		content="Translate more than 35 office, web, software-localization, media and publishing formats with a local-first open source CAT tool."
+		content="Translate 39 office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool."
 	/>
 </svelte:head>
 
@@ -114,7 +116,7 @@
 			<h1>Translation work belongs in your hands.</h1>
 			<p class="hero-copy">
 				Open TLC is a computer-assisted translation tool for translators,
-				students and teams. Work with more than 35 format workflows, protect
+				students and teams. Work with 39 registered format workflows, protect
 				inline content, and keep projects on your own device.
 			</p>
 			<div class="hero-actions">
@@ -127,7 +129,7 @@
 	</section>
 
 	<section class="status-strip" aria-label="Open TLC highlights">
-		<div><strong>35+</strong><span>format workflows</span></div>
+		<div><strong>39</strong><span>registered format workflows</span></div>
 		<div>
 			<strong>1.2–2.1</strong><span>standard + vendor XLIFF exchange</span>
 		</div>
@@ -193,9 +195,11 @@
 			<p>
 				PDF remains source-only. RTF and XLS round-trip locally; legacy DOC and
 				PPT are imported in the browser and exported to DOCX and HTML. CAT
-				packages are rebuilt as return packages. Image OCR and media
-				transcription run on-device—the app downloads model assets, never the
-				source file to a processing service.
+				packages are rebuilt as return packages. Modern Visio drawings, stencils
+				and templates retain their exact family; edited legacy Visio binaries
+				use an explicit VDX delivery. Image OCR and media transcription run
+				on-device—the app downloads model assets, never the source file to a
+				processing service.
 			</p>
 			<a class="text-link" href="/about#constrained-workflows"
 				>Read the support policy →</a

@@ -1217,6 +1217,40 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Include reusable master and layout text; disabled by default to avoid duplicates.",
 		},
 	],
+	visio: [
+		{
+			id: "includePageNames",
+			label: "Page names",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Include localized page names while keeping internal names and relationships protected.",
+		},
+		{
+			id: "includeMasterNames",
+			label: "Master and stencil names",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Include display names and prompts for masters; stable IDs and universal names remain protected.",
+		},
+		{
+			id: "includeShapeData",
+			label: "Shape-data labels and values",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Include human-readable property labels, prompts, and literal values. Formulas and geometry are never imported.",
+		},
+		{
+			id: "includeMetadata",
+			label: "Document metadata",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Include title, subject, description, category, and keywords; creator and technical metadata stay protected.",
+		},
+	],
 	html: [
 		{
 			id: "includeTextNodes",

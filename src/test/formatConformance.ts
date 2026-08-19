@@ -42,6 +42,7 @@ import { buildRtfTranslationBlob } from "$lib/formats/rtf";
 import { buildLegacyOfficeTranslation } from "$lib/formats/legacyOffice";
 import { buildCatReturnPackage } from "$lib/formats/catPackage";
 import { buildLegacyBilingualTranslation } from "$lib/formats/legacyBilingual";
+import { buildVisioTranslationBlob } from "$lib/formats/visio";
 import {
 	buildOcrBilingualReview,
 	buildTranslatedWebVtt,
@@ -243,6 +244,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return (await buildCatReturnPackage(project)).blob;
 		case "zip-project":
 			return buildZipProjectTranslationPackage(project);
+		case "visio":
+			return buildVisioTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":

@@ -141,6 +141,13 @@ import {
 	importZipProjectFile,
 	validateZipProjectFile,
 } from "./zipProject";
+import {
+	generateVisioTranslation,
+	importVisioFile,
+	validateVisioFile,
+	VISIO_EXTENSIONS,
+	VISIO_MIME_TYPES,
+} from "./visio";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -676,6 +683,19 @@ const adapters = [
 		importFile: (file, options, context) =>
 			importZipProjectFile(file, options, context, getFormatAdapter),
 		exportFile: generateZipProjectTranslation,
+	},
+	{
+		id: "visio",
+		label: "Microsoft Visio drawings, stencils and templates",
+		extensions: VISIO_EXTENSIONS,
+		mimeTypes: VISIO_MIME_TYPES,
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS.visio,
+		sniff: async (file, context) =>
+			(await validateVisioFile(file, context)).valid,
+		validate: validateVisioFile,
+		importFile: importVisioFile,
+		exportFile: generateVisioTranslation,
 	},
 	{
 		id: "xml",

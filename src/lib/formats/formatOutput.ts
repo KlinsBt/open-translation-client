@@ -32,6 +32,7 @@ import { buildPptxTranslationPackage } from "$lib/functions/outputGeneration/out
 import { buildRtfTranslationBlob } from "./rtf";
 import { buildCatReturnPackage } from "./catPackage";
 import { buildLegacyBilingualTranslation } from "./legacyBilingual";
+import { buildVisioTranslationBlob } from "./visio";
 
 /** Builds only native, same-format round-trip output. */
 export async function buildRoundTripFormatOutputBlob(
@@ -112,5 +113,7 @@ export async function buildRoundTripFormatOutputBlob(
 			return (await buildLegacyBilingualTranslation(project)).blob;
 		case "cat-package":
 			return (await buildCatReturnPackage(project)).blob;
+		case "visio":
+			return buildVisioTranslationBlob(project);
 	}
 }

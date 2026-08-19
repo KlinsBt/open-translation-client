@@ -28,6 +28,31 @@ async function zipFile(
 	});
 }
 
+async function visioPackageFile(
+	texts: readonly string[],
+	name = "unicode.vsdx",
+): Promise<File> {
+	return zipFile(
+		{
+			"[Content_Types].xml":
+				'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/visio/document.xml" ContentType="application/vnd.ms-visio.drawing.main+xml"/><Override PartName="/visio/pages/page1.xml" ContentType="application/vnd.ms-visio.page+xml"/></Types>',
+			"_rels/.rels":
+				'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/document" Target="visio/document.xml"/></Relationships>',
+			"visio/document.xml":
+				'<VisioDocument xmlns="http://schemas.microsoft.com/office/visio/2011/1/core"><DocumentSheet><Cell N="DocLangID" V="en-US" F="GUARD(1033)"/></DocumentSheet></VisioDocument>',
+			"visio/pages/page1.xml": `<PageContents xmlns="http://schemas.microsoft.com/office/visio/2011/1/core"><Shapes>${texts
+				.map(
+					(text, index) =>
+						`<Shape ID="${index + 1}" Type="Shape"><Cell N="PinX" V="${index + 1}"/><Cell N="PinY" V="1"/><Text>${escapeXml(text)}</Text></Shape>`,
+				)
+				.join("")}</Shapes></PageContents>`,
+			"visio/media/image1.png": new Uint8Array([137, 80, 78, 71]),
+		},
+		name,
+		"application/vnd.visio",
+	);
+}
+
 async function odfPackageFile(
 	content: string,
 	name = "document.odt",
@@ -1693,6 +1718,49 @@ const zipProjectFixture: FormatConformanceFixture = {
 	expectedPackageChanges: ["source.txt"],
 };
 
+const visioFixture: FormatConformanceFixture = {
+	id: "visio",
+	fileName: "unicode.vsdx",
+	mimeType: "application/vnd.visio",
+	createValidFile: async () => visioPackageFile([CONFORMANCE_UNICODE_SOURCE]),
+	createMalformedFile: async () =>
+		zipFile(
+			{
+				"[Content_Types].xml":
+					'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/visio/document.xml" ContentType="application/vnd.ms-visio.drawing.main+xml"/></Types>',
+				"visio/document.xml":
+					'<VisioDocument xmlns="http://schemas.microsoft.com/office/visio/2011/1/core"/>',
+			},
+			"broken.vsdx",
+			"application/vnd.visio",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			includePageNames: true,
+			includeMasterNames: true,
+			includeShapeData: true,
+			includeMetadata: true,
+		},
+		skeleton: { kind: "package", replacementKinds: ["package-xml-value"] },
+		units: [
+			{
+				id: "visio/pages/page1.xml:PageContents[1]/Shapes[1]/Shape[1]/Text[1]/#text:0",
+				part: "visio/pages/page1.xml",
+				path: ["PageContents[1]", "Shapes[1]", "Shape[1]", "Text[1]", "#text"],
+			},
+		],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		visioPackageFile(
+			Array.from({ length: units }, (_, index) => `Message ${index}`),
+			"performance.vsdx",
+		),
+	expectedPackageChanges: ["visio/pages/page1.xml"],
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -1972,6 +2040,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	legacyOfficeFixture,
 	catPackageFixture,
 	zipProjectFixture,
+	visioFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

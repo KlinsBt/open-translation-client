@@ -106,6 +106,8 @@
 			title: "Publishing and technical authoring",
 			formats: [
 				"EPUB 2 and 3",
+				"Visio VSDX/VSDM drawings, VSSX/VSSM stencils and VSTX/VSTM templates",
+				"Visio VDX/VSX/VTX XML and protected legacy VSD/VSS/VDW/VSR",
 				"SVG",
 				"DITA and DITAMAP",
 				"DocBook",
@@ -168,8 +170,7 @@
 				Open Translation Client is a browser-based, open source CAT tool for
 				professional translators, learners and teams. It began as a master's
 				thesis project at Anhalt University of Applied Sciences in Germany and
-				has grown into a local-first editor with more than 35 registered format
-				workflows.
+				has grown into a local-first editor with 39 registered format workflows.
 			</p>
 		</div>
 	</header>
@@ -210,6 +211,14 @@
 					<strong>Translation safeguards:</strong> Inline codes and placeholders
 					remain protected, split and join operations retain their segment lineage,
 					and structured imports can offer format-specific extraction options.
+				</div>
+				<div class="note">
+					<strong>Visio support:</strong> VSDX-family OPC packages and standalone
+					Visio XML retain their drawing, stencil, or template family while only
+					localized XML values change. Geometry, formulas, relationships, macros,
+					embedded objects, images, and unknown resources remain protected. Legacy
+					compound binaries retain exact bytes when unchanged and use an explicit
+					VDX delivery after translation.
 				</div>
 			</section>
 
@@ -333,6 +342,16 @@
 							unknown content. Edited binary OLE Workbench DOC/BAK files use an
 							explicit bilingual RTF delivery because safely rewriting arbitrary
 							Word binary streams in the browser is not defined.
+						</p>
+					</article>
+					<article>
+						<strong>Legacy Visio uses a protected conversion</strong>
+						<p>
+							VSD, VSS, VDW and legacy compound variants are inspected locally
+							without executing macros, formulas, links, or embedded objects.
+							Exact identity exports keep the original bytes; translated
+							delivery uses VDX. VSDX, VSDM, VSSX, VSSM, VSTX, VSTM, VDX, VSX
+							and VTX retain their native family.
 						</p>
 					</article>
 					<article>

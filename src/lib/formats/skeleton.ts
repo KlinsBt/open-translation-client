@@ -439,6 +439,7 @@ export async function createTextSkeleton(
 		| "qml"
 		| "rtf"
 		| "legacy-bilingual"
+		| "visio"
 		| "xml"
 		| "html",
 	content: string,
@@ -1154,6 +1155,7 @@ export function synchronizeSkeletonReplacements(
 		skeleton.format === "xlsx" ||
 		skeleton.format === "csv" ||
 		skeleton.format === "odf" ||
+		skeleton.format === "visio" ||
 		skeleton.format === "legacy-bilingual"
 	)
 		return skeleton;

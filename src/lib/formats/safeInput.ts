@@ -54,6 +54,7 @@ export type SafeInputErrorCode =
 	| "CAT_PACKAGE_NO_TRANSLATABLE_MEMBERS"
 	| "ZIP_PROJECT_INVALID"
 	| "ZIP_PROJECT_MEMBER_FAILED"
+	| "VISIO_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

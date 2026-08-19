@@ -32,6 +32,7 @@ export const FORMAT_IDS = [
 	"legacy-office",
 	"cat-package",
 	"zip-project",
+	"visio",
 	"xml",
 	"docx",
 	"xlsx",

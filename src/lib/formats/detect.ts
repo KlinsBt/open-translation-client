@@ -110,6 +110,29 @@ export async function detectFileFormat(
 	}
 
 	if (hasOleSignature(prefix)) {
+		const visio = adapters.find((candidate) => candidate.id === "visio");
+		if (
+			visio &&
+			extension !== undefined &&
+			visio.extensions.includes(extension) &&
+			(await visio.validate(file, context)).valid
+		) {
+			const detection = supportedContent(visio, extension, mimeType);
+			detection.reason =
+				"The OLE compound structure contains Visio document or web-drawing streams. Active content and embedded objects remain inert; edited legacy output is delivered as Visio XML (VDX).";
+			detection.workflow = {
+				kind: "source-only",
+				primaryAction: "Import protected Visio text and deliver VDX",
+				steps: [
+					"Extract defensibly identified local text without executing VBA, formulas, links, or embedded objects.",
+					"Translate the protected units in Open TLC.",
+					"Export an interoperable VDX delivery; unchanged projects retain the exact original compound file.",
+				],
+				fidelityWarning:
+					"The proprietary legacy binary layout cannot be rewritten safely in-browser. Use VDX/VSDX input when exact edited layout retention is required.",
+			};
+			return detection;
+		}
 		const bilingual = adapters.find(
 			(candidate) => candidate.id === "legacy-bilingual",
 		);
@@ -465,6 +488,28 @@ async function detectZipPackage(
 	}
 	if (paths.has("ppt/presentation.xml")) {
 		return supportedPackage(adapters, "pptx", "ppt/presentation.xml");
+	}
+	if (paths.has("visio/document.xml")) {
+		const adapter = adapters.find((candidate) => candidate.id === "visio");
+		if (!adapter)
+			throw new Error("No adapter is registered for detected Visio packages.");
+		const candidate = new File([inspection.bytes], fileName, {
+			type: "application/vnd.visio",
+		});
+		const validation = await adapter.validate(candidate, context);
+		if (!validation.valid)
+			return unsupported(
+				"Invalid Microsoft Visio package",
+				"high",
+				["package", "signature"],
+				validation.reason ??
+					"The ZIP contains visio/document.xml but its OPC relationships or content types are invalid.",
+			);
+		return supportedPackage(
+			adapters,
+			"visio",
+			"visio/document.xml and matching OPC content types",
+		);
 	}
 	const standaloneSlide = packageDetails.rootRelationships.match(
 		/<(?:[\w.-]+:)?Relationship\b(?=[^>]*\bType=["'][^"']*\/officeDocument["'])(?=[^>]*\bTarget=["']\/?(ppt\/slides\/[^"']+\.xml)["'])[^>]*\/?>/i,

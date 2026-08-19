@@ -1393,7 +1393,7 @@ definition of done below before checking them.
 
 ### Priority B — Diagram, publishing, XML, and subtitle formats
 
-- [ ] **FF-506 — Microsoft Visio families.** Add legacy and package-aware
+- [x] **FF-506 — Microsoft Visio families.** Add legacy and package-aware
       support for `.vsd`, `.vdx`, `.vsx`, `.vtx`, `.vdw`, `.vsr`, `.vss`,
       `.vsdx`, `.vsdm`, `.vssx`, `.vssm`, `.vstx`, and `.vstm`. Extract shape,
       connector, page, master, layer, data-graphic, and selected metadata text in
@@ -1401,6 +1401,72 @@ definition of done below before checking them.
       embedded objects, and binary resources; retain the exact drawing/stencil/
       template family; and reopen generated outputs in an independent Visio-
       compatible implementation.
+
+      **Completed 2026-08-19.** A dedicated Visio adapter now identifies every
+      listed family from its ZIP/OPC, DataDiagramML/report XML, or OLE compound
+      signature and internal structure. Modern packages require the Visio main
+      content type, root document relationship, `visio/document.xml`, recognized
+      Visio namespace, and a content-type/extension match. A generically named
+      ZIP is classified from those package declarations; renamed family
+      impostors are rejected. Standalone XML requires the expected document or
+      report root and namespace. Legacy OLE input requires `VisioDocument` or
+      documented Web Drawing streams such as `VisioServerData`, not merely the
+      compound-file magic bytes.
+
+      | Profile | Extensions | Delivery behavior |
+      | --- | --- | --- |
+      | OPC drawing | `.vsdx`, `.vsdm` | Native same-family package round trip |
+      | OPC stencil | `.vssx`, `.vssm` | Native same-family package round trip |
+      | OPC template | `.vstx`, `.vstm` | Native same-family package round trip |
+      | DataDiagramML | `.vdx`, `.vsx`, `.vtx` | Native positional XML round trip |
+      | Legacy drawing/stencil/Web Drawing | `.vsd`, `.vss`, `.vdw` | Exact identity bytes; edited VDX conversion |
+      | Structurally identified report | `.vsr` | Native report XML when applicable; protected OLE identity or edited VDX conversion otherwise |
+
+      Package extraction visits selected document metadata, page names, page
+      shape/connector text in XML z-order, shape-data labels/prompts/literal
+      values, layer names, data-graphic callouts, master names/prompts, and
+      master shape text in a deterministic order. Import options can omit page,
+      master, shape-data, or metadata units. Fields, formula-bearing cells,
+      geometry, universal names, IDs, relationships, data connections, VBA,
+      external links, images, embedded objects, signatures, and unknown binary
+      resources never become editable or executable. Translated OPC output
+      changes only mapped XML ranges and retains all other ZIP members. A
+      digitally signed package is byte-exact when unchanged and gives a helpful
+      refusal after edits rather than retaining a now-invalid signature.
+
+      Legacy compound streams are scanned locally only for defensibly aligned
+      UTF-16 text in named Visio document/page/shape/Web Drawing streams; VBA and
+      object pools are excluded. Because safely rewriting the proprietary binary
+      drawing layout is not specified in this browser stack, edited legacy
+      projects make that limitation explicit and produce VDX instead of
+      pretending to preserve VSD/VSS/VDW structure. `.vsr` is treated
+      conservatively because the extension is ambiguous in third-party support
+      lists: only a recognized report-definition XML root or validated Visio OLE
+      structure is accepted.
+
+      Tests cover all 13 extensions, exact identity output, translated native
+      and conversion output, Unicode/RTL/emoji, stable page/connector/master/
+      layer/property/data-graphic ordering, macros, formulas, geometry,
+      external links, embedded and unknown resources, digital signatures,
+      extension/content conflicts, generic ZIP names, malformed XML/packages,
+      external entities, non-execution, cancellation, a generated 1,000-shape
+      package, conformance snapshots, migration-safe IndexedDB persistence,
+      browser download MIME/name behavior, and translated re-import. Generated
+      packages are reopened with independent DOM and ZIP parsers; the translated
+      VSDX was also accepted by the installed `libvisio` `vsd2raw` importer. No
+      oversized binary fixture is committed. `npm run verify` passes with 985
+      unit tests (3 intentional skips), 59 real-Chromium tests, formatting,
+      type checks, and the production build.
+
+      Normative references used: Microsoft [Introduction to the Visio VSDX file
+      format](https://learn.microsoft.com/en-us/office/client-developer/visio/introduction-to-the-visio-file-formatvsdx),
+      [programmatic package manipulation](https://learn.microsoft.com/en-us/office/client-developer/visio/how-to-manipulate-the-visio-file-format-programmatically),
+      [MS-VSDX overview](https://learn.microsoft.com/en-us/openspecs/sharepoint_protocols/ms-vsdx/29bd5bbc-db66-46f9-906e-140c5a4e59c8),
+      [part enumeration](https://learn.microsoft.com/en-us/openspecs/sharepoint_protocols/ms-vsdx/33056f18-c258-4a29-8026-03c58cbc8bca),
+      [Document XML part](https://learn.microsoft.com/en-us/openspecs/sharepoint_protocols/ms-vsdx/7ec3d7b0-0de2-4711-a7b6-92daa2020d71),
+      [Page XML part](https://learn.microsoft.com/en-us/openspecs/sharepoint_protocols/ms-vsdx/bf3c0a23-fab6-49a1-9f9d-3aac4c8757eb),
+      [mixed shape text and fields](https://learn.microsoft.com/en-us/openspecs/sharepoint_protocols/ms-vsdx/9aec7e65-2abe-4518-aaa7-650e2fd6ceff),
+      and [MS-VGSFF `.vdw` Web Drawing](https://learn.microsoft.com/en-us/openspecs/sharepoint_protocols/ms-vgsff/64090058-3e11-485c-a169-6822c889a68c).
 
 - [ ] **FF-507 — Additional Adobe, FrameMaker, Photoshop, and Quark formats.**
       Add InDesign INX `.inx`, FrameMaker `.mi2`, Photoshop `.psd`, and

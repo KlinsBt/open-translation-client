@@ -147,6 +147,25 @@
 				description: `Rebuild the translated ${extension} file while preserving server directives, template expressions, help targets, encoding, and unrelated markup.`,
 			};
 		}
+		if (data.type === "visio") {
+			const extension =
+				typeof data.typeRef === "object" &&
+				typeof data.typeRef.sourceExtension === "string"
+					? data.typeRef.sourceExtension.toUpperCase()
+					: "VISIO";
+			const binary =
+				typeof data.typeRef === "object" &&
+				data.typeRef.profile === "visio-binary";
+			return binary
+				? {
+						label: "VDX conversion",
+						description: `Create an editable Visio XML drawing from the translated ${extension} source; unchanged projects retain the exact original binary.`,
+					}
+				: {
+						label: extension,
+						description: `Rebuild the translated ${extension} drawing, stencil, template, or report while retaining formulas, geometry, macros, relationships, objects, and binary resources.`,
+					};
+		}
 		if (data.type !== "legacy-office")
 			return {
 				label: getFormatAdapter(data.type).label,
