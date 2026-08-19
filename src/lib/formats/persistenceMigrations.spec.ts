@@ -166,4 +166,54 @@ describe("persisted data migrations", () => {
 		expect(split.data.seg2).toEqual(["Eins ", "zwei"]);
 		expect(split.data.checked).toEqual([true, false]);
 	});
+
+	it("retains FF-500 Office profile metadata and original binary resources", async () => {
+		const original = new Blob([new Uint8Array([0x50, 0x4b, 3, 4, 7, 8, 9])], {
+			type: "application/vnd.ms-excel.sheet.binary.macroenabled.12",
+		});
+		const project = makeUserData({
+			type: "legacy-office",
+			typeRef: {
+				profile: "legacy-office-browser",
+				subtype: "xls",
+				sourceExtension: "xlsb",
+			},
+			segmentsMeta: [
+				{
+					profile: "legacy-office-browser",
+					subtype: "xls",
+					sourceExtension: "xlsb",
+					sheet: "Main",
+					cell: "A1",
+				},
+			],
+		});
+		project.translationData.skeleton = {
+			schemaVersion: 1,
+			format: "legacy-office",
+			source: {
+				name: "binary.xlsb",
+				mimeType: original.type,
+				originalFile: original,
+			},
+			payload: { kind: "package", parts: {} },
+			replacements: [],
+		};
+
+		const migrated = migrateProjectData(project);
+		expect(migrated.translationData.typeRef).toMatchObject({
+			profile: "legacy-office-browser",
+			sourceExtension: "xlsb",
+		});
+		expect(migrated.translationData.segmentsMeta?.[0]).toMatchObject({
+			sourceExtension: "xlsb",
+			sheet: "Main",
+			cell: "A1",
+		});
+		expect(
+			new Uint8Array(
+				await migrated.translationData.skeleton!.source.originalFile!.arrayBuffer(),
+			),
+		).toEqual(new Uint8Array(await original.arrayBuffer()));
+	});
 });

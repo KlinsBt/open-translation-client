@@ -32,8 +32,11 @@
 		{
 			title: "Office and web",
 			formats: [
-				"DOCX / XLSX / PPTX",
-				"Legacy DOC / XLS / PPT",
+				"DOCX / XLSX / PPTX / SLDX",
+				"Legacy DOC / DOT / BAK",
+				"XLS / XLT / XLSB",
+				"PPT / PPS / POT",
+				"SpreadsheetML 2003 XML",
 				"RTF",
 				"ODT / ODS / ODP",
 				"HTML / XHTML",

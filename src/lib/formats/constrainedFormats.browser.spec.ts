@@ -8,12 +8,17 @@ import { detectFormatWithConfidence, getFormatAcceptValue } from "./registry";
 
 describe("browser local and constrained format routing", () => {
 	it("advertises signed legacy Office input through the local adapter", async () => {
-		const ole = new Uint8Array([
-			0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0,
-		]);
+		const XLSX = await import("xlsx");
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(
+			workbook,
+			XLSX.utils.aoa_to_sheet([["Confidential"]]),
+			"Sheet1",
+		);
+		const ole = XLSX.write(workbook, { type: "array", bookType: "xls" });
 		const detection = await detectFormatWithConfidence(
-			new File([ole], "confidential.doc", {
-				type: "application/msword",
+			new File([ole], "confidential.xls", {
+				type: "application/vnd.ms-excel",
 			}),
 		);
 

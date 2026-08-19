@@ -264,6 +264,16 @@ export interface RtfSegmentMeta {
 export interface LegacyOfficeSegmentMeta {
 	profile: "legacy-office-browser";
 	subtype: "doc" | "xls" | "ppt";
+	sourceExtension?:
+		| "doc"
+		| "dot"
+		| "bak"
+		| "xls"
+		| "xlt"
+		| "xlsb"
+		| "ppt"
+		| "pps"
+		| "pot";
 	paragraph?: number;
 	sheet?: string;
 	cell?: string;

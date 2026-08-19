@@ -214,26 +214,40 @@ export async function validatePptxFile(
 	try {
 		const { parts } = await readSafeZipPackage(file, context);
 		const presentationXml = parts["ppt/presentation.xml"];
-		if (typeof presentationXml !== "string")
-			return {
-				valid: false,
-				reason: "The PPTX package has no ppt/presentation.xml.",
-			};
-		const presentation = safeParseXml(presentationXml, context);
-		if (presentation.documentElement.localName !== "presentation")
-			return {
-				valid: false,
-				reason: "ppt/presentation.xml has no presentation root element.",
-			};
-		const slideIds = Array.from(presentation.getElementsByTagName("*")).filter(
-			(element) => element.localName === "sldId",
-		).length;
 		const slides = getPresentationSlides(parts);
-		if (slides.length !== slideIds)
+		if (!slides.length)
 			return {
 				valid: false,
 				reason:
-					"One or more presentation slide relationships are missing or invalid.",
+					"The package has neither a valid presentation slide list nor a standalone slide relationship.",
+			};
+		if (typeof presentationXml === "string") {
+			if (/\.sldx$/i.test(file.name))
+				return {
+					valid: false,
+					reason:
+						"The .sldx extension is reserved for a standalone slide package, but this package contains a presentation deck.",
+				};
+			const presentation = safeParseXml(presentationXml, context);
+			if (presentation.documentElement.localName !== "presentation")
+				return {
+					valid: false,
+					reason: "ppt/presentation.xml has no presentation root element.",
+				};
+			const slideIds = Array.from(
+				presentation.getElementsByTagName("*"),
+			).filter((element) => element.localName === "sldId").length;
+			if (slides.length !== slideIds)
+				return {
+					valid: false,
+					reason:
+						"One or more presentation slide relationships are missing or invalid.",
+				};
+		} else if (!/\.sldx$/i.test(file.name))
+			return {
+				valid: false,
+				reason:
+					"A standalone slide package must use the .sldx extension after its package relationship is verified.",
 			};
 		for (const slide of slides) {
 			const xml = parts[slide.path];
@@ -279,9 +293,11 @@ export async function importPptxFile(
 	const filterOptions = normalizeImportOptions("pptx", options);
 	const archive = await readSafeZipPackage(file, context);
 	const content = archive.parts;
-	if (typeof content["ppt/presentation.xml"] !== "string")
-		throw new Error("The PPTX package has no ppt/presentation.xml.");
 	const slideCatalog = getPresentationSlides(content);
+	if (!slideCatalog.length)
+		throw new Error(
+			"The package has neither a valid presentation slide list nor a standalone slide relationship.",
+		);
 	const parsed = segmentPresentationPackage(content, undefined, {
 		slides: parsePositiveRanges(filterOptions.slides, slideCatalog.length),
 		includeNotes: filterOptions.includeNotes === true,

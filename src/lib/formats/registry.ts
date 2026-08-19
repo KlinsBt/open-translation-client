@@ -612,7 +612,7 @@ const adapters = [
 	},
 	{
 		id: "legacy-office",
-		label: "Legacy Office DOC/XLS/PPT",
+		label: "Legacy Office + XLSB",
 		extensions: LEGACY_OFFICE_EXTENSIONS,
 		mimeTypes: LEGACY_OFFICE_MIME_TYPES,
 		capabilities: SOURCE_ONLY_CAPABILITIES,

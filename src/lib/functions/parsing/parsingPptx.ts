@@ -111,7 +111,17 @@ export function getPresentationSlides(
 	parts: Record<string, string | Blob>,
 ): PptxSlideEntry[] {
 	const presentationXml = parts["ppt/presentation.xml"];
-	if (typeof presentationXml !== "string") return [];
+	if (typeof presentationXml !== "string") {
+		const standalone = relationships(parts, "_rels/.rels", "").find(
+			(relationship) =>
+				/\/officeDocument$/i.test(relationship.type) &&
+				/^ppt\/slides\/[^/]+\.xml$/i.test(relationship.target) &&
+				typeof parts[relationship.target] === "string",
+		);
+		return standalone
+			? [{ index: 1, id: standalone.id, path: standalone.target }]
+			: [];
+	}
 	const byId = new Map(
 		relationships(parts, "ppt/_rels/presentation.xml.rels", "ppt")
 			.filter((relationship) => /\/slide$/i.test(relationship.type))

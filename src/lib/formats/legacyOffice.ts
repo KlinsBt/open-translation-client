@@ -7,10 +7,11 @@ import { createNeutralDocument } from "./documentModel";
 import { normalizeImportOptions } from "./options";
 import {
 	readSafeFileBytes,
+	readSafeZipPackage,
 	SafeInputError,
 	type SafeInputContext,
 } from "./safeInput";
-import { createPackageSkeleton } from "./skeleton";
+import { createPackageSkeleton, skeletonHasIdentityTargets } from "./skeleton";
 import type {
 	FormatImportResult,
 	FormatOptionValues,
@@ -18,15 +19,27 @@ import type {
 } from "./types";
 import { assertProjectExportQuality } from "./qualityAssurance";
 
-export const LEGACY_OFFICE_EXTENSIONS = ["doc", "xls", "ppt"] as const;
+export const LEGACY_OFFICE_EXTENSIONS = [
+	"doc",
+	"dot",
+	"bak",
+	"xls",
+	"xlt",
+	"xlsb",
+	"ppt",
+	"pps",
+	"pot",
+] as const;
 export const LEGACY_OFFICE_MIME_TYPES = [
 	"application/msword",
 	"application/vnd.ms-excel",
 	"application/vnd.ms-powerpoint",
+	"application/vnd.ms-excel.sheet.binary.macroenabled.12",
 	"application/x-ole-storage",
 ] as const;
 
 type LegacySubtype = "doc" | "xls" | "ppt";
+type LegacyOfficeExtension = (typeof LEGACY_OFFICE_EXTENSIONS)[number];
 
 interface TextRun {
 	text: string;
@@ -41,11 +54,15 @@ function extensionOf(name: string): string {
 	return name.toLowerCase().split(".").at(-1) ?? "";
 }
 
-function subtypeOf(file: File): LegacySubtype | undefined {
-	const extension = extensionOf(file.name);
-	return LEGACY_OFFICE_EXTENSIONS.includes(extension as LegacySubtype)
-		? (extension as LegacySubtype)
-		: undefined;
+function sourceExtensionOf(file: File): LegacyOfficeExtension | undefined {
+	const extension = extensionOf(file.name) as LegacyOfficeExtension;
+	return LEGACY_OFFICE_EXTENSIONS.includes(extension) ? extension : undefined;
+}
+
+function subtypeOfExtension(extension: LegacyOfficeExtension): LegacySubtype {
+	if (["doc", "dot", "bak"].includes(extension)) return "doc";
+	if (["xls", "xlt", "xlsb"].includes(extension)) return "xls";
+	return "ppt";
 }
 
 function hasOleSignature(bytes: Uint8Array): boolean {
@@ -88,6 +105,7 @@ async function importLegacySpreadsheet(
 	file: File,
 	bytes: Uint8Array,
 	includeNumbers: boolean,
+	sourceExtension: LegacyOfficeExtension,
 ): Promise<{
 	segments: string[];
 	meta: LegacyOfficeSegmentMeta[];
@@ -96,6 +114,7 @@ async function importLegacySpreadsheet(
 	const workbook = XLSX.read(bytes, {
 		type: "array",
 		cellDates: false,
+		bookVBA: true,
 	});
 	const segments: string[] = [];
 	const meta: LegacyOfficeSegmentMeta[] = [];
@@ -121,6 +140,7 @@ async function importLegacySpreadsheet(
 				meta.push({
 					profile: "legacy-office-browser",
 					subtype: "xls",
+					sourceExtension,
 					sheet: sheetName,
 					cell: address,
 				});
@@ -135,22 +155,62 @@ async function importLegacySpreadsheet(
 	return { segments, meta };
 }
 
+async function validateXlsbPackage(
+	file: File,
+	context?: SafeInputContext,
+): Promise<Uint8Array> {
+	const archive = await readSafeZipPackage(file, context);
+	const workbook = archive.parts["xl/workbook.bin"];
+	const contentTypes = archive.parts["[Content_Types].xml"];
+	if (!(workbook instanceof Blob))
+		throw new SafeInputError(
+			"LEGACY_OFFICE_INVALID",
+			"The XLSB package has no xl/workbook.bin binary workbook part.",
+		);
+	if (
+		typeof contentTypes !== "string" ||
+		!/application\/vnd\.ms-excel\.(?:sheet|template)\.binary\.macroEnabled\.main/i.test(
+			contentTypes,
+		)
+	)
+		throw new SafeInputError(
+			"LEGACY_OFFICE_INVALID",
+			"The package does not declare an XLSB binary workbook content type.",
+		);
+	return archive.bytes;
+}
+
 export async function validateLegacyOfficeFile(
 	file: File,
 	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
 	try {
-		const subtype = subtypeOf(file);
-		const bytes = await readSafeFileBytes(file, context);
-		if (!subtype || !hasOleSignature(bytes))
+		const sourceExtension = sourceExtensionOf(file);
+		if (!sourceExtension)
 			return {
 				valid: false,
 				reason:
-					"A DOC, XLS, or PPT extension and matching OLE signature are required.",
+					"A supported legacy or binary Office filename is required before its internal structure can be verified.",
+			};
+		const subtype = subtypeOfExtension(sourceExtension);
+		const bytes =
+			sourceExtension === "xlsb"
+				? await validateXlsbPackage(file, context)
+				: await readSafeFileBytes(file, context);
+		if (sourceExtension !== "xlsb" && !hasOleSignature(bytes))
+			return {
+				valid: false,
+				reason: `.${sourceExtension} requires a matching OLE compound-document signature.`,
 			};
 		if (subtype === "xls") {
 			const XLSX = await import("xlsx");
-			XLSX.read(bytes, { type: "array", bookSheets: true });
+			const workbook = XLSX.read(bytes, {
+				type: "array",
+				bookSheets: true,
+				bookVBA: true,
+			});
+			if (!workbook.SheetNames.length)
+				return { valid: false, reason: "The workbook has no worksheets." };
 		} else {
 			const { Ream } = await import("reamkit");
 			const parsed = Ream.parse(bytes);
@@ -177,12 +237,21 @@ export async function importLegacyOfficeFile(
 	options?: Readonly<FormatOptionValues>,
 	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
-	const subtype = subtypeOf(file);
-	const bytes = await readSafeFileBytes(file, context);
-	if (!subtype || !hasOleSignature(bytes))
+	const sourceExtension = sourceExtensionOf(file);
+	if (!sourceExtension)
 		throw new SafeInputError(
 			"LEGACY_OFFICE_INVALID",
-			"The file is not a recognized DOC, XLS, or PPT binary document.",
+			"The filename is not a supported legacy or binary Office variant.",
+		);
+	const subtype = subtypeOfExtension(sourceExtension);
+	const bytes =
+		sourceExtension === "xlsb"
+			? await validateXlsbPackage(file, context)
+			: await readSafeFileBytes(file, context);
+	if (sourceExtension !== "xlsb" && !hasOleSignature(bytes))
+		throw new SafeInputError(
+			"LEGACY_OFFICE_INVALID",
+			`.${sourceExtension} does not have a valid OLE compound-document signature.`,
 		);
 	const normalized = normalizeImportOptions("legacy-office", options);
 	let segments: string[];
@@ -193,6 +262,7 @@ export async function importLegacyOfficeFile(
 			file,
 			bytes,
 			Boolean(normalized.includeNumbers),
+			sourceExtension,
 		));
 	} else {
 		const { Ream } = await import("reamkit");
@@ -207,6 +277,7 @@ export async function importLegacyOfficeFile(
 		meta = paragraphs.map((_, paragraph) => ({
 			profile: "legacy-office-browser",
 			subtype,
+			sourceExtension,
 			paragraph,
 		}));
 		losses = [...parsed.losses];
@@ -229,12 +300,13 @@ export async function importLegacyOfficeFile(
 	documentModel.metadata = {
 		profile: "Legacy Office browser-native best effort",
 		subtype,
+		sourceExtension,
 		processing: "on-device",
 		fileUploaded: false,
 		losses,
 		exportPolicy:
 			subtype === "xls"
-				? "same-format-xls"
+				? "identity-in-source-format-or-translated-xlsx/xlsm-conversion"
 				: subtype === "doc"
 					? "modern-docx"
 					: "translated-html",
@@ -245,7 +317,11 @@ export async function importLegacyOfficeFile(
 		document: documentModel,
 		skeleton: await createPackageSkeleton(file, "legacy-office", {}, []),
 		filterOptions: normalized,
-		typeRef: { profile: "legacy-office-browser", subtype } as TypeRef,
+		typeRef: {
+			profile: "legacy-office-browser",
+			subtype,
+			sourceExtension,
+		} as TypeRef,
 		segmentsMeta: meta,
 	};
 }
@@ -269,13 +345,35 @@ function projectSubtype(project: UserData): LegacySubtype {
 	return subtype;
 }
 
+function projectSourceExtension(project: UserData): LegacyOfficeExtension {
+	const extension =
+		typeof project.translationData.typeRef === "object"
+			? project.translationData.typeRef.sourceExtension
+			: undefined;
+	if (
+		typeof extension === "string" &&
+		LEGACY_OFFICE_EXTENSIONS.includes(extension as LegacyOfficeExtension)
+	)
+		return extension as LegacyOfficeExtension;
+	return projectSubtype(project);
+}
+
 export async function buildLegacyOfficeTranslation(project: UserData): Promise<{
 	blob: Blob;
-	extension: "xls" | "docx" | "html";
+	extension: LegacyOfficeExtension | "docx" | "xlsx" | "xlsm" | "html";
 }> {
 	assertProjectExportQuality(project);
 	const subtype = projectSubtype(project);
-	const bytes = new Uint8Array(await originalBlob(project).arrayBuffer());
+	const sourceExtension = projectSourceExtension(project);
+	const original = originalBlob(project);
+	if (
+		skeletonHasIdentityTargets(
+			project.translationData.seg1,
+			project.translationData.seg2,
+		)
+	)
+		return { blob: original, extension: sourceExtension };
+	const bytes = new Uint8Array(await original.arrayBuffer());
 	const translations = project.translationData.seg2.map(
 		(target, index) => target || project.translationData.seg1[index] || "",
 	);
@@ -285,6 +383,7 @@ export async function buildLegacyOfficeTranslation(project: UserData): Promise<{
 			type: "array",
 			cellDates: false,
 			cellStyles: true,
+			bookVBA: true,
 		});
 		const meta =
 			project.translationData.segmentsMeta?.filter(
@@ -306,14 +405,23 @@ export async function buildLegacyOfficeTranslation(project: UserData): Promise<{
 			cell.t = "s";
 			delete cell.w;
 		}
+		const hasVba = Boolean(
+			(workbook as typeof workbook & { vbaraw?: Uint8Array }).vbaraw,
+		);
+		const extension = hasVba ? "xlsm" : "xlsx";
 		const output = XLSX.write(workbook, {
 			type: "array",
-			bookType: "xls",
+			bookType: extension,
 			cellStyles: true,
-		});
+			bookVBA: true,
+		}) as Uint8Array;
 		return {
-			blob: new Blob([output], { type: "application/vnd.ms-excel" }),
-			extension: "xls",
+			blob: new Blob([output], {
+				type: hasVba
+					? "application/vnd.ms-excel.sheet.macroenabled.12"
+					: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+			}),
+			extension,
 		};
 	}
 	const { Ream } = await import("reamkit");
@@ -346,7 +454,7 @@ export async function generateLegacyOfficeTranslation(
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement("a");
 	link.href = url;
-	link.download = `${(project.translationData.name || "translation").replace(/\.(doc|xls|ppt)$/i, "")}.translated.${extension}`;
+	link.download = `${(project.translationData.name || "translation").replace(/\.(doc|dot|bak|xls|xlt|xlsb|ppt|pps|pot)$/i, "")}.translated.${extension}`;
 	document.body.appendChild(link);
 	link.click();
 	link.remove();

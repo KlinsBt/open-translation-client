@@ -53,16 +53,18 @@ describe("browser adapter import/edit/export smoke tests", () => {
 			expect(click).toHaveBeenCalledOnce();
 			expect(downloaded).toBeInstanceOf(Blob);
 			if (!adapter.capabilities.roundTrip) {
-				expect(fixture.derivedOutput).toBeDefined();
-				expect(downloaded!.type).toBe(fixture.derivedOutput!.mimeType);
+				const expectedOutput =
+					fixture.browserDerivedOutput ?? fixture.derivedOutput;
+				expect(expectedOutput).toBeDefined();
+				expect(downloaded!.type).toBe(expectedOutput!.mimeType);
 				expect(downloadName).toMatch(
-					new RegExp(
-						`${fixture.derivedOutput!.downloadSuffix.replace(".", "\\.")}$`,
-					),
+					new RegExp(`${expectedOutput!.downloadSuffix.replace(".", "\\.")}$`),
 				);
-				const text = await downloaded!.text();
-				for (const marker of fixture.derivedOutput!.translatedMarkers)
-					expect(text).toContain(marker);
+				if (expectedOutput!.translatedMarkers.length > 0) {
+					const text = await downloaded!.text();
+					for (const marker of expectedOutput!.translatedMarkers)
+						expect(text).toContain(marker);
+				}
 				return;
 			}
 			const reimported = await importFixture(

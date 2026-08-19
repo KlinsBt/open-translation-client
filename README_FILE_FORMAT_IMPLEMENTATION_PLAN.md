@@ -1099,7 +1099,7 @@ definition of done below before checking them.
 
 ### Priority A — Common Office, web, and CAT compatibility gaps
 
-- [ ] **FF-500 — Remaining legacy and specialist Microsoft Office variants.**
+- [x] **FF-500 — Remaining legacy and specialist Microsoft Office variants.**
       Add signature-driven handling for Word `.dot` and applicable `.bak`, Excel
       `.xlt` and `.xlsb`, and PowerPoint `.pps`, `.pot`, and `.sldx`. Add a
       SpreadsheetML 2003 XML profile instead of treating those workbooks as
@@ -1110,6 +1110,54 @@ definition of done below before checking them.
       slide masters, and unknown OLE/OOXML records opaquely and never execute
       active content. Test every extension independently rather than aliasing it
       from the filename.
+
+      **Completed 2026-08-19.** Detection now verifies the OLE application
+      streams for `.doc`/`.dot`/applicable `.bak`, `.xls`/`.xlt`, and
+      `.ppt`/`.pps`/`.pot`; an OLE signature or extension alone is rejected.
+      XLSB requires a safe OPC package, `xl/workbook.bin`, the binary-workbook
+      content type, and a workbook that the offline parser can reopen. SLDX
+      requires a root `officeDocument` relationship to one standalone
+      PresentationML slide. Excel 2003 XML is identified by its `Workbook` root
+      and `urn:schemas-microsoft-com:office:spreadsheet` namespace and extracts
+      only string `Data` values outside formula cells.
+
+      | Profile | Delivery behavior |
+      | --- | --- |
+      | DOC/DOT/applicable BAK | Exact original for identity; translated DOCX conversion |
+      | XLS/XLT/XLSB | Exact original for identity; translated XLSX, or XLSM when a VBA project is retained |
+      | PPT/PPS/POT | Exact original for identity; translated HTML conversion |
+      | SLDX | Native package-preserving identity and translated round trip |
+      | SpreadsheetML 2003 XML | Native positional XML round trip with formula/control markup protected |
+
+      The original file, unknown binary/package resources, fields, formulas,
+      cached formula values, VBA payloads, embedded objects, masters, and other
+      unaddressed content remain opaque and are never executed or evaluated.
+      SLDX export changes only addressed XML parts. Binary spreadsheet delivery
+      deliberately converts to XLSX/XLSM instead of rewriting BIFF/XLSB because
+      the available browser writer can otherwise discard formulas; consequently
+      a translated conversion does not claim byte preservation of undocumented
+      binary records. Legacy Word and PowerPoint delivery likewise remains an
+      explicit conversion because the browser parser has no safe DOC/PPT writer.
+
+      Tests cover every extension independently, mismatched/spoofed OLE files,
+      real BIFF input, generated XLSB, SpreadsheetML 2003, standalone SLDX,
+      Unicode/RTL/emoji, formulas and cached values, retained VBA, opaque slide
+      resources, malformed packages, cancellation, exact identity output,
+      translated re-import, migration metadata, and IndexedDB save/reload in a
+      real browser. Generated stress coverage uses 2,000 XLSB rows and 750
+      SpreadsheetML rows without committed binary fixtures; the focused local
+      run completed the XLSB generation/cancellation case in about 2.1 seconds
+      and the three Chromium workflows in about 1.9 seconds on the development
+      machine. Archive size, entry-count, expansion-ratio, path, XML entity/DTD,
+      and cancellation limits are inherited from the shared safe-input layer.
+
+      Normative references used: Microsoft [MS-XLSB structure and package
+      model](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xlsb/1a21ca23-7635-4212-9504-8759eb984b12),
+      [MS-XLS binary/OLE relationship](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xls/08a9fc1a-a2da-4fdd-af7a-98c8f2f56341),
+      [Office 2003 XML schema and SpreadsheetML availability](https://news.microsoft.com/source/2003/11/17/microsoft-announces-availability-of-open-and-royalty-free-license-for-office-2003-xml-reference-schemas/),
+      [PresentationML slide structure](https://learn.microsoft.com/en-us/office/open-xml/presentation/structure-of-a-presentationml-document),
+      and Microsoft's [Office binary/template format validation
+      guidance](https://learn.microsoft.com/en-us/security-updates/securityadvisories/2011/2501584).
 
 - [ ] **FF-501 — OpenDocument templates and master documents.** Extend the ODF
       adapter to `.ott`, `.odm`, `.otp`, `.ots`, and explicitly detected generic

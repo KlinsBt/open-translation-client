@@ -114,8 +114,18 @@ export async function detectFileFormat(
 			adapter &&
 			extension !== undefined &&
 			adapter.extensions.includes(extension)
-		)
-			return supportedContent(adapter, extension, mimeType);
+		) {
+			const validation = await adapter.validate(file, context);
+			if (validation.valid)
+				return supportedContent(adapter, extension, mimeType);
+			return unsupported(
+				"Invalid legacy Office document",
+				"high",
+				["signature", "extension"],
+				validation.reason ??
+					"The OLE signature is present, but its internal application streams do not match the requested Office family.",
+			);
+		}
 		const legacy = legacyOfficeLabel(extension);
 		return unsupported(
 			legacy ?? "OLE compound document",
@@ -192,7 +202,20 @@ export async function detectFileFormat(
 			if (await candidate.sniff(file, context))
 				return supportedContent(candidate, extension, mimeType);
 		const adapter = adapters.find((candidate) => candidate.id === "xml");
-		if (adapter) return supportedContent(adapter, extension, mimeType);
+		if (adapter) {
+			const detection = supportedContent(adapter, extension, mimeType);
+			const text = decodeTextPrefix(prefix) ?? "";
+			if (
+				/<(?:[\w.-]+:)?Workbook\b[^>]*\bxmlns(?::[\w.-]+)?=["']urn:schemas-microsoft-com:office:spreadsheet["']/i.test(
+					text,
+				)
+			) {
+				detection.label = "SpreadsheetML 2003 XML";
+				detection.reason =
+					"The XML root and namespace identify an Excel 2003 SpreadsheetML workbook; workbook formulas and control markup remain protected.";
+			}
+			return detection;
+		}
 		const metadata = metadataEvidence(
 			extension,
 			mimeType,
@@ -362,9 +385,17 @@ async function detectZipPackage(
 	if (paths.has("xl/workbook.xml")) {
 		return supportedPackage(adapters, "xlsx", "xl/workbook.xml");
 	}
+	if (paths.has("xl/workbook.bin")) {
+		return supportedPackage(adapters, "legacy-office", "xl/workbook.bin");
+	}
 	if (paths.has("ppt/presentation.xml")) {
 		return supportedPackage(adapters, "pptx", "ppt/presentation.xml");
 	}
+	const standaloneSlide = packageDetails.rootRelationships.match(
+		/<(?:[\w.-]+:)?Relationship\b(?=[^>]*\bType=["'][^"']*\/officeDocument["'])(?=[^>]*\bTarget=["']\/?(ppt\/slides\/[^"']+\.xml)["'])[^>]*\/?>/i,
+	)?.[1];
+	if (standaloneSlide && paths.has(standaloneSlide))
+		return supportedPackage(adapters, "pptx", standaloneSlide);
 
 	const odf = odfLabel(packageDetails.mimetype);
 	if (odf) {
@@ -444,18 +475,25 @@ async function readSmallPackageDetails(
 ): Promise<{
 	mimetype: string;
 	contentTypes: string;
+	rootRelationships: string;
 	openTlcManifest: string;
 }> {
 	const wanted = new Set([
 		"mimetype",
 		"[Content_Types].xml",
+		"_rels/.rels",
 		ZIP_PROJECT_MANIFEST_PATH,
 	]);
 	const readable = inspection.entries.filter(
 		(entry) => wanted.has(entry.path) && entry.uncompressedSize <= 1024 * 1024,
 	);
 	if (readable.length === 0)
-		return { mimetype: "", contentTypes: "", openTlcManifest: "" };
+		return {
+			mimetype: "",
+			contentTypes: "",
+			rootRelationships: "",
+			openTlcManifest: "",
+		};
 	throwIfAborted(context?.signal);
 	const zip = await JSZip.loadAsync(inspection.bytes);
 	const values = new Map<string, string>();
@@ -466,6 +504,7 @@ async function readSmallPackageDetails(
 	return {
 		mimetype: values.get("mimetype")?.trim() ?? "",
 		contentTypes: values.get("[Content_Types].xml") ?? "",
+		rootRelationships: values.get("_rels/.rels") ?? "",
 		openTlcManifest: values.get(ZIP_PROJECT_MANIFEST_PATH) ?? "",
 	};
 }

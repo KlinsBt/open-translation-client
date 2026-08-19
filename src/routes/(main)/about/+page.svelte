@@ -64,10 +64,13 @@
 			formats: [
 				"DOCX, DOCM, DOTX and DOTM",
 				"XLSX, XLSM, XLTX and XLTM",
-				"PPTX, PPTM, POTX, POTM, PPSX and PPSM",
+				"PPTX, PPTM, POTX, POTM, PPSX, PPSM and standalone SLDX",
 				"ODT, ODS and ODP",
 				"RTF native round trips",
-				"Legacy DOC to DOCX, XLS to XLS, and PPT to HTML",
+				"Legacy DOC, DOT and applicable BAK to DOCX",
+				"Legacy XLS and XLT, plus binary XLSB",
+				"Legacy PPT, PPS and POT to translated HTML",
+				"SpreadsheetML 2003 XML workbooks",
 				"HTML and XHTML",
 				"TXT, CSV and TSV",
 			],
@@ -293,10 +296,12 @@
 							>Legacy Office runs locally with format-specific output</strong
 						>
 						<p>
-							DOC, XLS, PPT and RTF are imported in the browser. RTF and XLS
-							keep their formats; DOC exports to DOCX and PPT exports to HTML
-							because no LibreOffice server or remote conversion service is
-							used.
+							DOC/DOT/BAK, XLS/XLT/XLSB, PPT/PPS/POT and RTF are inspected and
+							imported locally. Unchanged files retain their exact binary
+							family; translated spreadsheet variants use an explicit XLSX/XLSM
+							conversion; Word variants export to DOCX and PowerPoint binary
+							variants export to HTML as explicit conversions. Standalone SLDX
+							slides retain their OOXML package and unknown resources.
 						</p>
 					</article>
 					<article>

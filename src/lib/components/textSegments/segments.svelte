@@ -121,6 +121,34 @@
 		$singleUserData.translationData.tb?.active ?? false,
 	);
 	let lastSelectedSegmentId: number = $state(0);
+	const primaryExportPresentation = $derived.by(() => {
+		const data = $singleUserData.translationData;
+		if (data.type !== "legacy-office")
+			return {
+				label: getFormatAdapter(data.type).label,
+				description:
+					"Rebuild the translated file in its original source format.",
+			};
+		const extension =
+			typeof data.typeRef === "object" &&
+			typeof data.typeRef.sourceExtension === "string"
+				? data.typeRef.sourceExtension.toUpperCase()
+				: "LEGACY OFFICE";
+		if (["DOC", "DOT", "BAK"].includes(extension))
+			return {
+				label: "DOCX conversion",
+				description: `Create an editable DOCX from the translated ${extension} source.`,
+			};
+		if (["PPT", "PPS", "POT"].includes(extension))
+			return {
+				label: "HTML conversion",
+				description: `Create translated HTML from the ${extension} source without claiming layout round-trip.`,
+			};
+		return {
+			label: "XLSX conversion",
+			description: `Create a modern XLSX/XLSM delivery from the translated ${extension} workbook so formulas and VBA can remain protected.`,
+		};
+	});
 
 	let showSaveFileModal: boolean = $state(false);
 	let showTmTbModal: boolean = $state(false);
@@ -560,11 +588,8 @@
 			>
 				<span class="modal-action-icon">FILE</span>
 				<span class="modal-action-text"
-					><strong
-						>{getFormatAdapter($singleUserData.translationData.type)
-							.label}</strong
-					><small
-						>Rebuild the translated file in its original source format.</small
+					><strong>{primaryExportPresentation.label}</strong><small
+						>{primaryExportPresentation.description}</small
 					></span
 				>
 				<span class="modal-action-arrow">→</span>

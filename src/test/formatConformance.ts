@@ -91,6 +91,11 @@ export interface FormatConformanceFixture {
 		translatedMarkers: string[];
 		downloadSuffix: string;
 	};
+	browserDerivedOutput?: {
+		mimeType: string;
+		translatedMarkers: string[];
+		downloadSuffix: string;
+	};
 }
 
 export interface SemanticPackageDiff {

@@ -210,4 +210,66 @@ describe("lossless generic XML and ITS 2.0 workflow", () => {
 		expect(first.segments).toHaveLength(1_000);
 		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
 	});
+
+	it("uses the SpreadsheetML 2003 profile and protects formulas and workbook markup", async () => {
+		const source = `<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:custom="urn:opaque">
+  <Styles><Style ss:ID="Default"><Alignment ss:Horizontal="Left"/></Style></Styles>
+  <Worksheet ss:Name="Report"><Table>
+    <Row><Cell><Data ss:Type="String">Hello עולם مرحبا 😀</Data></Cell><Cell><Data ss:Type="Number">42</Data></Cell></Row>
+    <Row><Cell ss:Formula="=R[-1]C[1]*2"><Data ss:Type="String">Cached formula text</Data></Cell><Cell><Data ss:Type="String">Second value</Data></Cell></Row>
+  </Table><custom:Opaque custom:code="keep">Do not translate</custom:Opaque></Worksheet>
+</Workbook>`;
+		const { result, project } = await importProject(source, "workbook.xml", {
+			segmentationMode: "value",
+			elementSelectors: "//*",
+			attributeSelectors: "//*[@*]",
+		});
+		expect(result.typeRef).toMatchObject({ profile: "spreadsheetml-2003" });
+		expect(result.segments).toEqual(["Hello עולם مرحبا 😀", "Second value"]);
+		expect(result.document.metadata).toMatchObject({
+			profile: "SpreadsheetML 2003",
+		});
+
+		expect(await bytes(buildXmlTranslationBlob(project))).toEqual(
+			new TextEncoder().encode(source),
+		);
+		project.translationData.seg2 = ["Translated שלום مرحبا", "Zweiter Wert"];
+		const output = buildXmlTranslation(project);
+		expect(output).toContain("Translated שלום مرحبا");
+		expect(output).toContain("Zweiter Wert");
+		expect(output).toContain('ss:Formula="=R[-1]C[1]*2"');
+		expect(output).toContain("Cached formula text");
+		expect(output).toContain(
+			'<custom:Opaque custom:code="keep">Do not translate</custom:Opaque>',
+		);
+		const reopened = await importXmlFile(
+			new File([output], "translated.xml", { type: "application/xml" }),
+			{ segmentationMode: "value" },
+		);
+		expect(reopened.kind).toBe("segments");
+		if (reopened.kind === "segments")
+			expect(reopened.segments).toEqual([
+				"Translated שלום مرحبا",
+				"Zweiter Wert",
+			]);
+	});
+
+	it("handles a generated large SpreadsheetML workbook deterministically", async () => {
+		const rows = Array.from(
+			{ length: 750 },
+			(_, index) =>
+				`<Row><Cell><Data ss:Type="String">Value ${index} 世界</Data></Cell></Row>`,
+		).join("");
+		const source = `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Large"><Table>${rows}</Table></Worksheet></Workbook>`;
+		const imported = await importXmlFile(
+			new File([source], "large-workbook.xml"),
+			{ segmentationMode: "value" },
+		);
+		expect(imported.kind).toBe("segments");
+		if (imported.kind === "segments") {
+			expect(imported.segments).toHaveLength(750);
+			expect(imported.segments.at(-1)).toBe("Value 749 世界");
+		}
+	});
 });

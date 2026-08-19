@@ -4,7 +4,8 @@ export type PptxFamilyExtension =
 	| "potx"
 	| "potm"
 	| "ppsx"
-	| "ppsm";
+	| "ppsm"
+	| "sldx";
 
 export const PPTX_FAMILY_EXTENSIONS: readonly PptxFamilyExtension[] = [
 	"pptx",
@@ -13,6 +14,7 @@ export const PPTX_FAMILY_EXTENSIONS: readonly PptxFamilyExtension[] = [
 	"potm",
 	"ppsx",
 	"ppsm",
+	"sldx",
 ];
 
 export const PPTX_FAMILY_MIME_TYPES: Readonly<
@@ -24,6 +26,7 @@ export const PPTX_FAMILY_MIME_TYPES: Readonly<
 	potm: "application/vnd.ms-powerpoint.template.macroenabled.12",
 	ppsx: "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
 	ppsm: "application/vnd.ms-powerpoint.slideshow.macroenabled.12",
+	sldx: "application/vnd.openxmlformats-officedocument.presentationml.slide",
 };
 
 export function detectPptxFamilyExtension(
@@ -35,7 +38,7 @@ export function detectPptxFamilyExtension(
 			? parts["[Content_Types].xml"]
 			: "";
 	const sourceExtension = sourceName
-		.match(/\.(pptx|pptm|potx|potm|ppsx|ppsm)$/i)?.[1]
+		.match(/\.(pptx|pptm|potx|potm|ppsx|ppsm|sldx)$/i)?.[1]
 		?.toLowerCase() as PptxFamilyExtension | undefined;
 	const hasMacro =
 		parts["ppt/vbaProject.bin"] !== undefined ||
@@ -55,6 +58,11 @@ export function detectPptxFamilyExtension(
 		) ||
 		sourceExtension === "ppsx" ||
 		sourceExtension === "ppsm";
+	const isStandaloneSlide =
+		sourceExtension === "sldx" &&
+		parts["ppt/presentation.xml"] === undefined &&
+		Object.keys(parts).some((path) => /^ppt\/slides\/[^/]+\.xml$/i.test(path));
+	if (isStandaloneSlide) return "sldx";
 	if (isTemplate) return hasMacro ? "potm" : "potx";
 	if (isSlideShow) return hasMacro ? "ppsm" : "ppsx";
 	return hasMacro ? "pptm" : "pptx";
@@ -66,6 +74,9 @@ export function pptxFamilyOutputName(
 	sourceName = "",
 ): string {
 	const extension = detectPptxFamilyExtension(parts, sourceName);
-	const base = projectName.replace(/\.(?:pptx|pptm|potx|potm|ppsx|ppsm)$/i, "");
+	const base = projectName.replace(
+		/\.(?:pptx|pptm|potx|potm|ppsx|ppsm|sldx)$/i,
+		"",
+	);
 	return `${base}.${extension}`;
 }

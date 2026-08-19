@@ -295,6 +295,71 @@ describe("PPTX import and lossless package export", () => {
 });
 
 describe("PPTX family and structural safety", () => {
+	it("imports and round-trips a structurally detected standalone SLDX slide", async () => {
+		const standaloneParts = {
+			"[Content_Types].xml": `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`,
+			"_rels/.rels": `<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="ppt/slides/slide1.xml"/></Relationships>`,
+			"ppt/slides/slide1.xml": slide2.replace(
+				"Second slide.",
+				"Standalone שלום مرحبا 😀.",
+			),
+			"ppt/media/opaque.bin": new Uint8Array([4, 3, 2, 1]),
+		};
+		const source = await presentationFile(standaloneParts, "single.sldx");
+		expect(await validatePptxFile(source.file)).toEqual({ valid: true });
+		const imported = await importPptxFile(source.file, {
+			includeNotes: false,
+			includeAltText: false,
+		});
+		if (imported.kind !== "segments") throw new Error("Expected segments");
+		expect(imported.segments).toEqual(["Standalone שלום مرحبا 😀."]);
+		const identity = await buildPptxTranslationPackage(
+			projectFromImport(imported),
+		);
+		expect(new Uint8Array(await identity.arrayBuffer())).toEqual(source.bytes);
+
+		const project = projectFromImport(imported);
+		project.translationData.name = "translated.sldx";
+		project.translationData.seg2 = ["Translated שקופית شريحة 😀."];
+		const output = await buildPptxTranslationPackage(project);
+		expect(output.type).toBe(PPTX_FAMILY_MIME_TYPES.sldx);
+		expect(
+			pptxFamilyOutputName(
+				project.translationData.name,
+				imported.typeRef as Record<string, string | Blob>,
+				"single.sldx",
+			),
+		).toBe("translated.sldx");
+		const reopenedFile = new File([output], "translated.sldx", {
+			type: output.type,
+		});
+		expect(await validatePptxFile(reopenedFile)).toEqual({ valid: true });
+		const reopened = await importPptxFile(reopenedFile, {
+			includeNotes: false,
+			includeAltText: false,
+		});
+		expect(reopened.kind).toBe("segments");
+		if (reopened.kind === "segments")
+			expect(reopened.segments).toEqual(["Translated שקופית شريحة 😀."]);
+		const outputZip = await JSZip.loadAsync(await output.arrayBuffer());
+		expect(
+			await outputZip.file("ppt/media/opaque.bin")!.async("uint8array"),
+		).toEqual(new Uint8Array([4, 3, 2, 1]));
+	});
+
+	it("rejects extension-only and malformed standalone slide claims", async () => {
+		const ordinary = await presentationFile(packageParts, "renamed.sldx");
+		expect((await validatePptxFile(ordinary.file)).valid).toBe(false);
+		const noRootRelationship = await presentationFile(
+			{
+				"[Content_Types].xml": `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`,
+				"ppt/slides/slide1.xml": slide2,
+			},
+			"broken.sldx",
+		);
+		expect((await validatePptxFile(noRootRelationship.file)).valid).toBe(false);
+	});
+
 	it.each([
 		["pptx", false, "presentation"],
 		["pptm", true, "presentation"],

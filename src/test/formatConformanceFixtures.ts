@@ -1313,6 +1313,11 @@ const pdfFixture: FormatConformanceFixture = {
 			"Emoji-Übersetzung",
 		],
 	},
+	browserDerivedOutput: {
+		mimeType: "application/pdf",
+		downloadSuffix: ".translated.pdf",
+		translatedMarkers: [],
+	},
 	createPerformanceFile: async (units) =>
 		createSyntheticPdf(
 			Array.from({ length: Math.ceil(units / 25) }, (_, page) => ({
@@ -1495,6 +1500,7 @@ const legacyOfficeFixture: FormatConformanceFixture = {
 		textFile("not an OLE workbook", "broken.xls", "application/vnd.ms-excel"),
 	expectMalformedImportFailure: true,
 	identityOutputMayEqualSource: true,
+	identityTargetSegments: [CONFORMANCE_UNICODE_TARGET],
 	extractionSnapshot: {
 		segments: [CONFORMANCE_UNICODE_SOURCE],
 		filterOptions: { includeNumbers: false },
@@ -1503,8 +1509,9 @@ const legacyOfficeFixture: FormatConformanceFixture = {
 	},
 	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
 	derivedOutput: {
-		mimeType: "application/vnd.ms-excel",
-		downloadSuffix: ".translated.xls",
+		mimeType:
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		downloadSuffix: ".translated.xlsx",
 		translatedMarkers: [],
 	},
 	createPerformanceFile: async (units) =>

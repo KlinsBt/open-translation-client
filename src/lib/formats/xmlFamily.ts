@@ -19,6 +19,8 @@ import type {
 
 const ITS_NAMESPACE = "http://www.w3.org/2005/11/its";
 const XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+const SPREADSHEETML_2003_NAMESPACE =
+	"urn:schemas-microsoft-com:office:spreadsheet";
 
 export interface XmlAttributeLocation {
 	qName: string;
@@ -425,12 +427,25 @@ export async function importXmlFile(
 	const filterOptions = normalizeImportOptions("xml", options);
 	const read = await readSafeTextFile(file, context);
 	const syntax = parseXmlSyntax(read.text, context);
+	const spreadsheetMl2003 = isSpreadsheetMl2003(syntax);
 	const elementSelectors = parseList(filterOptions.elementSelectors);
 	const attributeSelectors = parseList(filterOptions.attributeSelectors);
 	const candidates: XmlValueLocation[] = [];
 	for (const value of syntax.values) {
 		const element = syntax.elements[value.elementId];
 		if (!element || isItsInfrastructure(element)) continue;
+		if (spreadsheetMl2003) {
+			if (
+				value.location !== "text" ||
+				element.localName !== "Data" ||
+				element.namespaceUri !== SPREADSHEETML_2003_NAMESPACE ||
+				!isSpreadsheetStringData(element) ||
+				hasSpreadsheetFormulaAncestor(element, syntax.elements)
+			)
+				continue;
+			candidates.push(value);
+			continue;
+		}
 		if (filterOptions.respectIts && !element.effectiveTranslate) continue;
 		if (value.location === "cdata" && !filterOptions.includeCdata) continue;
 		if (
@@ -440,7 +455,7 @@ export async function importXmlFile(
 		)
 			candidates.push(value);
 	}
-	for (const element of syntax.elements) {
+	for (const element of spreadsheetMl2003 ? [] : syntax.elements) {
 		if (isItsInfrastructure(element)) continue;
 		if (filterOptions.respectIts && !element.effectiveTranslate) continue;
 		for (const attribute of element.attributes) {
@@ -517,7 +532,17 @@ export async function importXmlFile(
 			segmentIndex: index,
 		})),
 	});
-	document.metadata = { encoding: read.encoding, hasBom: read.hasBom };
+	document.metadata = {
+		encoding: read.encoding,
+		hasBom: read.hasBom,
+		profile: spreadsheetMl2003 ? "SpreadsheetML 2003" : "Generic XML",
+		...(spreadsheetMl2003
+			? {
+					activeContentPolicy:
+						"Formulas, scripts, external links, and embedded objects are preserved but never evaluated.",
+				}
+			: {}),
+	};
 	const localizationNotes = new Map<number, string[]>();
 	for (const noteValue of syntax.values) {
 		const noteElement = syntax.elements[noteValue.elementId];
@@ -576,9 +601,51 @@ export async function importXmlFile(
 			createSkeletonSource(file, read),
 		),
 		filterOptions,
-		typeRef: { profile: "generic-xml" } as TypeRef,
+		typeRef: {
+			profile: spreadsheetMl2003 ? "spreadsheetml-2003" : "generic-xml",
+		} as TypeRef,
 		segmentsMeta: meta,
 	};
+}
+
+function isSpreadsheetMl2003(syntax: XmlSyntaxDocument): boolean {
+	const root = syntax.elements.find(
+		(element) => element.parentId === undefined,
+	);
+	return (
+		root?.localName === "Workbook" &&
+		root.namespaceUri === SPREADSHEETML_2003_NAMESPACE
+	);
+}
+
+function isSpreadsheetStringData(element: XmlElementLocation): boolean {
+	const type = element.attributes.find(
+		(attribute) =>
+			attribute.localName === "Type" &&
+			(attribute.namespaceUri === SPREADSHEETML_2003_NAMESPACE ||
+				attribute.qName === "Type"),
+	)?.value;
+	return !type || type.toLowerCase() === "string";
+}
+
+function hasSpreadsheetFormulaAncestor(
+	element: XmlElementLocation,
+	elements: readonly XmlElementLocation[],
+): boolean {
+	let current =
+		element.parentId === undefined ? undefined : elements[element.parentId];
+	while (current) {
+		if (
+			current.localName === "Cell" &&
+			current.attributes.some(
+				(attribute) => attribute.localName.toLowerCase() === "formula",
+			)
+		)
+			return true;
+		current =
+			current.parentId === undefined ? undefined : elements[current.parentId];
+	}
+	return false;
 }
 
 function isItsInfrastructure(element: XmlElementLocation): boolean {

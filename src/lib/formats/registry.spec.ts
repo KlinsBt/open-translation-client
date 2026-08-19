@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
+import { readFile } from "node:fs/promises";
 import { FORMAT_IDS } from "./formatIds";
 import {
 	detectFormat,
@@ -92,10 +93,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.doc,.xls,.ppt,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.doc,.dot,.bak,.xls,.xlt,.xlsb,.ppt,.pps,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.sldx,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF → translated PDF, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, Legacy Office DOC/XLS/PPT, Trados/WorldServer/memoQ return packages, Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF → translated PDF, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, Legacy Office + XLSB, Trados/WorldServer/memoQ return packages, Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -314,8 +315,8 @@ describe("format adapter registry", () => {
 		).resolves.toBeUndefined();
 	});
 
-	it.each(["doc", "xls", "ppt"])(
-		"recognizes legacy Office .%s as browser-native source content",
+	it.each(["doc", "dot", "bak", "xls", "xlt", "ppt", "pps", "pot"])(
+		"does not accept an OLE signature alone as legacy Office .%s",
 		async (extension) => {
 			const ole = new Uint8Array([
 				0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0,
@@ -327,11 +328,10 @@ describe("format adapter registry", () => {
 					}),
 				),
 			).resolves.toMatchObject({
-				formatId: "legacy-office",
-				label: "Legacy Office DOC/XLS/PPT",
-				supported: true,
+				formatId: null,
+				supported: false,
 				confidence: "high",
-				evidence: ["content", "extension"],
+				evidence: ["signature", "extension"],
 			});
 		},
 	);
@@ -384,10 +384,8 @@ describe("format adapter registry", () => {
 	});
 
 	it("routes signed legacy Office binaries but rejects extension-only spoofs", async () => {
-		const ole = new Uint8Array([
-			0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0,
-		]);
-		const legacy = new File([ole], "accounts.XLS", {
+		const bytes = await readFile("Test files/xls_test_file_100_rows.xls");
+		const legacy = new File([bytes], "accounts.XLS", {
 			type: "application/vnd.ms-excel",
 		});
 		await expect(detectFormat(legacy)).resolves.toMatchObject({
@@ -395,7 +393,7 @@ describe("format adapter registry", () => {
 		});
 		await expect(detectFormatWithConfidence(legacy)).resolves.toMatchObject({
 			formatId: "legacy-office",
-			label: "Legacy Office DOC/XLS/PPT",
+			label: "Legacy Office + XLSB",
 			supported: true,
 			confidence: "high",
 			evidence: ["content", "extension", "mime"],
@@ -430,6 +428,56 @@ describe("format adapter registry", () => {
 		await expect(
 			detectFormatWithConfidence(renamedXlsx),
 		).resolves.toMatchObject({ formatId: "xlsx", label: "XLSX" });
+	});
+
+	it("detects XLSB, standalone SLDX, and SpreadsheetML 2003 from structure", async () => {
+		const XLSX = await import("xlsx");
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(
+			workbook,
+			XLSX.utils.aoa_to_sheet([["Hello"]]),
+			"Main",
+		);
+		const xlsb = new File(
+			[XLSX.write(workbook, { type: "array", bookType: "xlsb" })],
+			"workbook.xlsb",
+			{ type: "application/octet-stream" },
+		);
+		await expect(detectFormatWithConfidence(xlsb)).resolves.toMatchObject({
+			formatId: "legacy-office",
+			confidence: "high",
+			evidence: ["package", "signature"],
+		});
+
+		const sldx = await zipFile(
+			{
+				"[Content_Types].xml":
+					'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>',
+				"_rels/.rels":
+					'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/slides/slide1.xml"/></Relationships>',
+				"ppt/slides/slide1.xml":
+					'<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>',
+			},
+			"single.sldx",
+		);
+		await expect(detectFormatWithConfidence(sldx)).resolves.toMatchObject({
+			formatId: "pptx",
+			label: "PPTX",
+			confidence: "high",
+		});
+
+		const spreadsheetXml = textFile(
+			'<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet/></Workbook>',
+			"workbook.xml",
+			"application/xml",
+		);
+		await expect(
+			detectFormatWithConfidence(spreadsheetXml),
+		).resolves.toMatchObject({
+			formatId: "xml",
+			label: "SpreadsheetML 2003 XML",
+			confidence: "high",
+		});
 	});
 
 	it.each(["docm", "dotx", "dotm"])(
