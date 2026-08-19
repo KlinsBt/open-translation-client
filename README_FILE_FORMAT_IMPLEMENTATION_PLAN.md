@@ -1089,6 +1089,141 @@ Complete these in order after FF-000 through FF-009.
       missing/duplicate/unsafe/recursive manifest, optional failure, bomb,
       cancellation, 250-unit, re-import and real-browser tests cover the adapter.
 
+## Phase 5 — Expanded CAT-tool format parity backlog
+
+Gap-audited against the active registry and common RWS Trados/memoQ format lists
+on 2026-08-19. These tasks are intentionally unchecked: an extension is not
+considered supported merely because a generic XML, HTML, ZIP, OLE, or image
+sniffer can sometimes read it. Complete tasks in priority order and apply the
+definition of done below before checking them.
+
+### Priority A — Common Office, web, and CAT compatibility gaps
+
+- [ ] **FF-500 — Remaining legacy and specialist Microsoft Office variants.**
+      Add signature-driven handling for Word `.dot` and applicable `.bak`, Excel
+      `.xlt` and `.xlsb`, and PowerPoint `.pps`, `.pot`, and `.sldx`. Add a
+      SpreadsheetML 2003 XML profile instead of treating those workbooks as
+      generic XML. Extend the existing browser-only legacy Office adapters so
+      `.doc` and `.ppt` produce same-family delivery files when technically
+      possible; otherwise expose an explicit, tested conversion output without
+      claiming a round trip. Preserve macros, formulas, fields, embedded objects,
+      slide masters, and unknown OLE/OOXML records opaquely and never execute
+      active content. Test every extension independently rather than aliasing it
+      from the filename.
+
+- [ ] **FF-501 — OpenDocument templates and master documents.** Extend the ODF
+      adapter to `.ott`, `.odm`, `.otp`, `.ots`, and explicitly detected generic
+      `.odf` packages. Detect the package media type and internal manifest, retain
+      the exact template/master-document family on export, preserve scripts and
+      embedded objects without executing them, and add identity, translated,
+      malformed-manifest, MIME-conflict, and independent reopen coverage.
+
+- [ ] **FF-502 — Server-side and help-system HTML families.** Add deliberate
+      profiles for `.shtml`, `.jsp`, `.asp`, `.aspx`, `.ascx`, `.inc`, `.hhc`,
+      and `.hhk`, plus mixed PHP/HTML pages distinct from the existing limited
+      PHP localization-array adapter. Translate only HTML-visible content and
+      selected attributes while protecting server directives, template syntax,
+      includes, code blocks, variables, and executable regions byte-for-byte.
+      Detection must be content-first because several extensions also contain
+      non-HTML source code.
+
+- [ ] **FF-503 — Extended XLIFF aliases and vendor delivery.** Add `.xlif` and
+      memoQ `.mqxlf` aliases, a fixture-led WorldServer WsXLIFF profile, and
+      explicit handling for WordPress WPML and other vendor `.xlf`/`.xliff`
+      variants already recognized structurally. Promote `.sdlxliff`, `.mqxliff`,
+      and `.mxliff` from protected imports to tested same-profile exports only
+      after namespace, inline-code, lock/state, skeleton, and unknown-extension
+      preservation pass round-trip and originating-tool fixtures. Keep generic
+      XLIFF 1.2/2.x serializers separate from vendor writers.
+
+- [ ] **FF-504 — Legacy bilingual CAT documents.** Implement TRADOStag `.ttx`,
+      SDL Edit `.itd`, Wordfast/GlobalLink `.txml`, XLIFF:doc `.xliffdoc`, and
+      Trados Translator's Workbench bilingual `.doc`, `.docx`, `.rtf`, and `.bak`
+      profiles. Protect native segment delimiters, inline tags, IDs, workflow
+      states, hidden text, styles, and existing targets; distinguish these files
+      structurally from ordinary Word/RTF documents; and export to the same
+      bilingual family where its structure is sufficiently specified.
+
+- [ ] **FF-505 — Additional CAT handoff and package containers.** Add STAR
+      Transit `.pxf`/`.ppf`, TIPP packages, COTI `.coti` and COTI ZIP packages,
+      and legacy WorldServer `.xlz`. Preserve all opaque resources and manifests,
+      update only validated bilingual members, generate the expected return
+      package extension, and reuse the archive traversal, collision, encryption,
+      entry-count, expansion-ratio, cancellation, and byte-preservation guards.
+      Do not route an arbitrary ZIP into any of these profiles.
+
+### Priority B — Diagram, publishing, XML, and subtitle formats
+
+- [ ] **FF-506 — Microsoft Visio families.** Add legacy and package-aware
+      support for `.vsd`, `.vdx`, `.vsx`, `.vtx`, `.vdw`, `.vsr`, `.vss`,
+      `.vsdx`, `.vsdm`, `.vssx`, `.vssm`, `.vstx`, and `.vstm`. Extract shape,
+      connector, page, master, layer, data-graphic, and selected metadata text in
+      stable visual order; protect formulas, geometry, relationships, macros,
+      embedded objects, and binary resources; retain the exact drawing/stencil/
+      template family; and reopen generated outputs in an independent Visio-
+      compatible implementation.
+
+- [ ] **FF-507 — Additional Adobe, FrameMaker, Photoshop, and Quark formats.**
+      Add InDesign INX `.inx`, FrameMaker `.mi2`, Photoshop `.psd`, and
+      QuarkXPress `.xtg`/`.tag`. Reuse IDML/MIF/XML infrastructure only where the
+      native grammar matches. PSD support must target validated text layers and
+      preserve all image/layer resources; it must not be advertised as ordinary
+      image OCR. Define explicit source-only behavior for formats that cannot be
+      safely rewritten in-browser and provide fixture-led conversion exports.
+
+- [ ] **FF-508 — Specialist XML, SGML, and multilingual XML profiles.** Add
+      W3C ITS rule files `.its`, multilingual XML `.mulix`, DITA `.bookmap`,
+      AuthorIT, MadCap, Typo3, and Microsoft Excel 2003 XML profiles, plus a
+      constrained `.sgm`/`.sgml` workflow. Each vocabulary needs its own
+      translatable/protected element and attribute rules, inline-code mapping,
+      namespace/doctype policy, and output validation; generic XML success alone
+      does not complete this task. Never resolve external entities or network
+      schemas.
+
+- [ ] **FF-509 — Additional subtitle formats.** Add Advanced SubStation Alpha
+      `.ass`/`.ssa` and Spruce `.stl`. Preserve cue timing, IDs, positioning,
+      styles, override tags, comments, line breaks, encoding, frame-rate/timebase
+      metadata, and format-specific headers. Prevent subtitle markup from being
+      flattened into target text and add timing/order/overlap QA plus player-
+      independent reopen tests.
+
+### Priority C — Secondary media and document ecosystems
+
+- [ ] **FF-510 — Additional OCR image inputs.** Add `.bmp`, `.dib`, `.gif`,
+      `.jpe`, `.jif`, `.jfif`, and `.jfi` with signature validation and local
+      decoding before the existing OCR pipeline. Treat animated GIFs explicitly
+      by selecting frames or rejecting animation with a useful message. Extend
+      tests for renamed files, orientation, color profiles, alpha, large pixel
+      dimensions, decompression limits, and output bounding boxes. `.psd` remains
+      owned by FF-507 rather than this raster adapter.
+
+- [ ] **FF-511 — Auxiliary text, mind-map, and resource formats.** Add plain or
+      structured profiles for `.inf`, Windows Registry `.reg`, and FreeMind `.mm`.
+      Preserve comments, encodings, escaping, registry value types, node IDs,
+      links, rich content, and nontranslatable metadata. Detect `.reg` headers
+      and FreeMind XML roots structurally instead of treating either as generic
+      text/XML.
+
+- [ ] **FF-512 — Outlook message items.** Add `.msg` import with sender,
+      recipients, subject, plain/HTML body, selected attachment names, and message
+      metadata as context. Keep attachments and MAPI properties opaque, block
+      embedded active content and external fetches, and define a clear output
+      policy such as translated `.msg` when safely writable or translated
+      EML/HTML/PDF delivery otherwise. Include malformed compound-file and nested-
+      message limits.
+
+### Phase 5 completion gate
+
+- [ ] Every extension listed in FF-500 through FF-512 appears in a generated,
+      registry-backed support matrix with one of: native round trip, protected
+      import, source-only conversion, or deliberately unsupported with reason.
+- [ ] The upload picker, content detector, landing/about pages, help text, export
+      menu, MIME/download names, migrations, and conformance fixture table agree
+      with that matrix.
+- [ ] No task may be checked based solely on extension acceptance, generic XML/
+      HTML parsing, or a serializer that has not been reopened and semantically
+      inspected in tests.
+
 ## Definition of done for every format task
 
 The implementing LLM must complete and record every item below for the selected
