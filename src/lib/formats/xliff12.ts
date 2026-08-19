@@ -381,6 +381,16 @@ export function contentToEditableText(content: SegmentContent): string {
 export function buildXliff12(userData: UserData): string {
 	const data = userData.translationData;
 	assertVendorXliffExportAllowed(data.documentModel);
+	return buildXliff12PreservingDocument(userData);
+}
+
+/** Structural serializer used by the dedicated same-profile vendor writer. */
+export function buildXliff12PreservingDocument(
+	userData: UserData,
+	options: { includeOpenTlcMetadata?: boolean } = {},
+): string {
+	const data = userData.translationData;
+	const includeOpenTlcMetadata = options.includeOpenTlcMetadata !== false;
 	const baseDocument =
 		data.documentModel && data.documentModel.units.length === data.seg1.length
 			? data.documentModel
@@ -431,10 +441,14 @@ export function buildXliff12(userData: UserData): string {
 		...(documentMetadata?.rootAttributes ?? {}),
 		xmlns: XLIFF_12_NAMESPACE,
 		version: "1.2",
-		"xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-		"xsi:schemaLocation": mergeSchemaLocation(
-			documentMetadata?.rootAttributes["xsi:schemaLocation"],
-		),
+		...(includeOpenTlcMetadata
+			? {
+					"xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+					"xsi:schemaLocation": mergeSchemaLocation(
+						documentMetadata?.rootAttributes["xsi:schemaLocation"],
+					),
+				}
+			: {}),
 	};
 	const lines = [
 		'<?xml version="1.0" encoding="UTF-8"?>',
@@ -457,16 +471,22 @@ export function buildXliff12(userData: UserData): string {
 				: {}),
 		};
 		lines.push(`  <file${renderAttributes(attributes)}>`);
-		const preservedHeader = file.headerChildren.filter(
-			(child) =>
-				!/<(?:[\w.-]+:)?SourceInfo\b/.test(child) &&
-				!/<note\b[^>]*\bfrom=(?:"OpenTLC"|'OpenTLC')/.test(child),
-		);
-		if (filePosition === 0 || preservedHeader.length > 0) {
+		const preservedHeader = includeOpenTlcMetadata
+			? file.headerChildren.filter(
+					(child) =>
+						!/<(?:[\w.-]+:)?SourceInfo\b/.test(child) &&
+						!/<note\b[^>]*\bfrom=(?:"OpenTLC"|'OpenTLC')/.test(child),
+				)
+			: file.headerChildren;
+		if (
+			preservedHeader.length > 0 ||
+			(filePosition === 0 && includeOpenTlcMetadata)
+		) {
 			lines.push("    <header>");
 			for (const child of preservedHeader.filter(isXliffCoreXml))
 				lines.push(indent(child, 3));
-			if (filePosition === 0) lines.push(...renderOpenTlcMetadata(userData, 3));
+			if (filePosition === 0 && includeOpenTlcMetadata)
+				lines.push(...renderOpenTlcMetadata(userData, 3));
 			for (const child of preservedHeader.filter(
 				(child) => !isXliffCoreXml(child),
 			))
@@ -743,7 +763,9 @@ function renderRecord(record: RenderRecord, depth: number): string[] {
 	const attributes = {
 		...(metadata?.attributes ?? {}),
 		id: metadata?.transUnitId ?? first.id,
-		translate: first.translatable ? "yes" : "no",
+		...(metadata?.attributes.translate || !first.translatable
+			? { translate: first.translatable ? "yes" : "no" }
+			: {}),
 		...(first.state === "reviewed" || first.state === "final"
 			? { approved: "yes" }
 			: metadata?.attributes.approved
@@ -941,8 +963,10 @@ function renderContent(content: SegmentContent): string {
 		.map((fragment) =>
 			fragment.kind === "text"
 				? escapeXml(fragment.text)
-				: fragment.originalData ||
-					`<x id="${escapeXmlAttribute(fragment.id)}"/>`,
+				: fragment.id.startsWith("html-")
+					? escapeXml(fragment.originalData ?? "")
+					: fragment.originalData ||
+						`<x id="${escapeXmlAttribute(fragment.id)}"/>`,
 		)
 		.join("");
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="urn:example:worldserver-extension"
+  xmlns:custom="urn:example:worldserver-extension"
+  elementFormDefault="qualified">
+  <xsd:complexType name="openContent" mixed="true">
+    <xsd:sequence><xsd:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/></xsd:sequence>
+    <xsd:anyAttribute processContents="lax"/>
+  </xsd:complexType>
+  <xsd:element name="opaque" type="custom:openContent"/>
+  <xsd:element name="workflow" type="custom:openContent"/>
+</xsd:schema>

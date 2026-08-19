@@ -12,6 +12,7 @@ export type XliffVendorProfileId =
 	| "sdl-trados"
 	| "memoq"
 	| "phrase-mxliff"
+	| "worldserver-wsxliff"
 	| "wordpress-wpml"
 	| "drupal-tmgmt"
 	| "articulate-rise"
@@ -30,8 +31,8 @@ export interface XliffVendorProfile {
 	xliffVersion: string;
 	sourceExtension?: string;
 	evidence: XliffProfileEvidence[];
-	exportPolicy: "import-only";
-	exportVerification: "not-tested-in-originating-tool";
+	exportPolicy: "same-profile";
+	exportVerification: "automated-round-trip";
 	warnings: string[];
 }
 
@@ -66,9 +67,25 @@ const PROFILE_DEFINITIONS: readonly ProfileDefinition[] = [
 		id: "memoq",
 		label: "MQXLIFF / memoQ",
 		vendor: "memoQ",
-		extensions: ["mqxliff"],
+		extensions: ["mqxlf", "mqxliff"],
 		namespacePatterns: [/["']MQXliff["']/i],
 		structurePatterns: [/\bmq:(?:status|locked|versioninfos)\b/i],
+	},
+	{
+		id: "worldserver-wsxliff",
+		label: "WorldServer WsXLIFF",
+		vendor: "RWS WorldServer",
+		extensions: ["xlf", "xlif", "xliff"],
+		namespacePatterns: [
+			/https?:\/\/(?:www\.)?(?:idiominc\.com|sdl\.com)\/[^"']*(?:ws|worldserver|asset)/i,
+		],
+		toolPatterns: [
+			/tool-(?:id|name)=["'][^"']*(?:WorldServer|Idiom)[^"']*["']/i,
+		],
+		structurePatterns: [
+			/<(?:[\w.-]+:)?segment-metadata\b[^>]*(?:tm_score|max_segment_length)/i,
+			/\b(?:x-idiom-source-ipath|x-idiom-target-ipath)\b/i,
+		],
 	},
 	{
 		id: "phrase-mxliff",
@@ -82,7 +99,7 @@ const PROFILE_DEFINITIONS: readonly ProfileDefinition[] = [
 		id: "drupal-tmgmt",
 		label: "Drupal TMGMT XLIFF",
 		vendor: "Drupal Translation Management Tool",
-		extensions: ["xlf", "xliff"],
+		extensions: ["xlf", "xlif", "xliff"],
 		toolPatterns: [
 			/tool-id=["']tmgmt["']/i,
 			/tool-name=["'][^"']*Drupal Translation Management/i,
@@ -94,7 +111,7 @@ const PROFILE_DEFINITIONS: readonly ProfileDefinition[] = [
 		id: "wordpress-wpml",
 		label: "WordPress WPML XLIFF",
 		vendor: "OnTheGoSystems WPML",
-		extensions: ["xlf", "xliff"],
+		extensions: ["xlf", "xlif", "xliff"],
 		toolPatterns: [/tool-(?:id|name)=["'][^"']*WPML/i],
 		structurePatterns: [
 			/<file\b[^>]*\boriginal=["']\d+-[a-f\d]{20,}["'][^>]*\bdatatype=["']plaintext["']/i,
@@ -105,7 +122,7 @@ const PROFILE_DEFINITIONS: readonly ProfileDefinition[] = [
 		id: "articulate-storyline",
 		label: "Articulate Storyline XLIFF",
 		vendor: "Articulate Storyline",
-		extensions: ["xlf", "xliff"],
+		extensions: ["xlf", "xlif", "xliff"],
 		toolPatterns: [/tool-(?:id|name)=["'][^"']*Articulate[^"']*Storyline/i],
 		structurePatterns: [/datatype=["']x-DocumentState["']/i],
 		protectEmbeddedMarkup: true,
@@ -114,7 +131,7 @@ const PROFILE_DEFINITIONS: readonly ProfileDefinition[] = [
 		id: "articulate-rise",
 		label: "Articulate Rise XLIFF",
 		vendor: "Articulate Rise",
-		extensions: ["xlf", "xliff"],
+		extensions: ["xlf", "xlif", "xliff"],
 		toolPatterns: [/tool-(?:id|name)=["'][^"']*Articulate[^"']*Rise/i],
 		structurePatterns: [
 			/<file\b[^>]*\boriginal=["']course["'][^>]*\bdatatype=["']plaintext["']/i,
@@ -123,14 +140,14 @@ const PROFILE_DEFINITIONS: readonly ProfileDefinition[] = [
 	},
 ];
 
-export class UnverifiedVendorXliffExportError extends Error {
+export class VendorXliffRequiresSameProfileExportError extends Error {
 	readonly profile: XliffVendorProfile;
 
 	constructor(profile: XliffVendorProfile) {
 		super(
-			`${profile.label} is supported for protected import only. XLIFF export stays disabled until a generated file has been reopened successfully in ${profile.vendor}. Save the Open TLC project as JSON to retain your work.`,
+			`${profile.label} must be exported with its dedicated same-profile writer so vendor namespaces, workflow data, and skeleton content remain intact. Choose “${profile.label}” in the export dialog.`,
 		);
-		this.name = "UnverifiedVendorXliffExportError";
+		this.name = "VendorXliffRequiresSameProfileExportError";
 		this.profile = profile;
 	}
 }
@@ -160,13 +177,15 @@ export function detectXliffVendorProfile(
 			label: definition.label,
 			vendor: definition.vendor,
 			xliffVersion,
-			...(extension ? { sourceExtension: extension } : {}),
+			...(extension && definition.extensions.includes(extension)
+				? { sourceExtension: extension }
+				: {}),
 			evidence,
-			exportPolicy: "import-only",
-			exportVerification: "not-tested-in-originating-tool",
+			exportPolicy: "same-profile",
+			exportVerification: "automated-round-trip",
 			warnings: [
 				"Vendor namespaces, workflow attributes, identifiers, and structural skeleton are retained in the project model.",
-				`Re-export is disabled until interoperability is verified in ${definition.vendor}.`,
+				"Export through the dedicated same-profile action; generic XLIFF conversion is intentionally separate.",
 			],
 		};
 	}
@@ -194,16 +213,35 @@ export function getXliffVendorProfile(
 	document: NeutralDocument | undefined,
 ): XliffVendorProfile | undefined {
 	const value = document?.metadata?.xliffProfile as
-		| XliffVendorProfile
+		| (Partial<XliffVendorProfile> & { id?: string })
 		| undefined;
-	return value?.exportPolicy === "import-only" ? value : undefined;
+	const definition = PROFILE_DEFINITIONS.find(
+		(candidate) => candidate.id === value?.id,
+	);
+	if (!value || !definition) return undefined;
+	return {
+		id: definition.id,
+		label: value.label ?? definition.label,
+		vendor: value.vendor ?? definition.vendor,
+		xliffVersion: value.xliffVersion ?? "unknown",
+		...(value.sourceExtension
+			? { sourceExtension: value.sourceExtension.toLowerCase() }
+			: {}),
+		evidence: Array.isArray(value.evidence) ? value.evidence : ["structure"],
+		exportPolicy: "same-profile",
+		exportVerification: "automated-round-trip",
+		warnings: [
+			"Vendor namespaces, workflow attributes, identifiers, and structural skeleton are retained in the project model.",
+			"Export through the dedicated same-profile action; generic XLIFF conversion is intentionally separate.",
+		],
+	};
 }
 
 export function assertVendorXliffExportAllowed(
 	document: NeutralDocument | undefined,
 ): void {
 	const profile = getXliffVendorProfile(document);
-	if (profile) throw new UnverifiedVendorXliffExportError(profile);
+	if (profile) throw new VendorXliffRequiresSameProfileExportError(profile);
 }
 
 function applyUnitProfile(
@@ -293,7 +331,55 @@ function vendorUnitState(
 			locked: yesValue(attributes["m:locked"]),
 		};
 	}
+	if (profile === "worldserver-wsxliff") {
+		const metadata = findWorldServerMetadata(extensions);
+		const status = metadata?.translation_status;
+		return {
+			...(status ? { status, state: worldServerState(status) } : {}),
+			locked: metadata?.lock_status?.toLowerCase() === "locked",
+		};
+	}
 	return { locked: false };
+}
+
+function findWorldServerMetadata(
+	extensions: string[],
+): Record<string, string> | undefined {
+	for (const xml of extensions) {
+		if (!/(?:WorldServer|idiominc|segment-metadata)/i.test(xml)) continue;
+		try {
+			const root = safeParseXml(xml).documentElement;
+			const status = [root, ...Array.from(root.getElementsByTagName("*"))].find(
+				(element) =>
+					(element.localName || element.tagName.split(":").at(-1)) === "status",
+			);
+			if (status)
+				return Object.fromEntries(
+					Array.from(status.attributes).map((attribute) => [
+						attribute.name,
+						attribute.value,
+					]),
+				);
+		} catch {
+			// Optional vendor metadata never weakens core XLIFF validation.
+		}
+	}
+	return undefined;
+}
+
+function worldServerState(status: string): TranslationState {
+	switch (status.toLowerCase()) {
+		case "finished":
+			return "reviewed";
+		case "translated":
+		case "in_progress":
+		case "in-progress":
+			return "translated";
+		case "rejected":
+			return "needs-review";
+		default:
+			return "initial";
+	}
 }
 
 function findSdlSegment(

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://www.idiominc.com/ws/asset"
+  xmlns:iws="http://www.idiominc.com/ws/asset"
+  elementFormDefault="qualified">
+  <xsd:complexType name="openContent">
+    <xsd:sequence><xsd:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/></xsd:sequence>
+    <xsd:anyAttribute processContents="lax"/>
+  </xsd:complexType>
+  <xsd:element name="asset-metadata" type="iws:openContent"/>
+  <xsd:element name="segment-metadata" type="iws:openContent"/>
+  <xsd:element name="status" type="iws:openContent"/>
+</xsd:schema>

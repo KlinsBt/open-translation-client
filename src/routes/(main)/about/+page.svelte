@@ -244,9 +244,11 @@
 					<h2>CAT projects, memories and terminology</h2>
 					<p>
 						Open TLC imports and exports standard XLIFF 1.2, 2.0 and 2.1
-						projects. It also retains the structure of supported Trados,
-						WorldServer and memoQ containers and writes translated return
-						packages.
+						projects. SDLXLIFF, MQXLIFF/MQXLF, Phrase MXLIFF, WorldServer
+						WsXLIFF, WPML and recognized CMS/e-learning variants use a dedicated
+						same-profile export that retains vendor namespaces, workflow state,
+						inline codes, skeletons and unknown extensions. The `.xlif` alias is
+						accepted alongside `.xlf` and `.xliff`.
 					</p>
 				</div>
 				<ul class="capability-list">
@@ -358,7 +360,9 @@
 					The versioned Open TLC JSON format keeps application-specific project
 					state in a readable structure. Standard XLIFF 1.2, 2.0 and 2.1 exports
 					provide interoperable bilingual project files for compatible CAT
-					tools.
+					tools. Imported vendor XLIFF is returned through a separate
+					same-profile writer, so generic conversion cannot silently discard its
+					proprietary workflow metadata.
 				</p>
 				<p>
 					Project-save formats are separate from translated source-document

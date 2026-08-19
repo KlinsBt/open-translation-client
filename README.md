@@ -19,7 +19,7 @@ Open Translation Client (Open TLC) is a free and open source web-based CAT-Tool 
 </p>
 
 <p> 
-Open TLC stores all translation projects locally using your browser's own IndexedDB database, ensuring full control over your data without relying on external servers. Users can export projects in JSON or XLIFF formats for backup or sharing purposes. To prevent data loss from unforeseen issues like cache clearing or device failures, regular backups are recommended.
+Open TLC stores all translation projects locally using your browser's own IndexedDB database, ensuring full control over your data without relying on external servers. Users can export projects in JSON or standard XLIFF formats for backup or sharing. Imported SDLXLIFF, MQXLIFF/MQXLF, Phrase MXLIFF, WorldServer WsXLIFF, WPML, and recognized CMS/e-learning XLIFF variants have a separate same-profile export that preserves their vendor structure. To prevent data loss from unforeseen issues like cache clearing or device failures, regular backups are recommended.
 </p>
 
 <p>

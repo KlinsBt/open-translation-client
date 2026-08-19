@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2"
+  xmlns:iws="http://www.idiominc.com/ws/asset"
+  xmlns:custom="urn:example:worldserver-extension"
+  version="1.2">
+  <file original="content/help.xml" source-language="en-US" target-language="ar" datatype="xml">
+    <header>
+      <tool tool-id="WorldServer" tool-name="RWS WorldServer"/>
+      <iws:asset-metadata asset-id="asset-42"><custom:opaque keep="exact">أصل</custom:opaque></iws:asset-metadata>
+    </header>
+    <body>
+      <trans-unit id="101" resname="heading">
+        <source>Welcome <ph id="1" ctype="x-html-br" equiv-text="&lt;br&gt;"/>friend</source>
+        <target state="translated">مرحبًا <ph id="1" ctype="x-html-br" equiv-text="&lt;br&gt;"/>يا صديقي</target>
+        <iws:segment-metadata tm_score="86.50" max_segment_length="80">
+          <iws:status translation_status="finished" lock_status="unlocked" match-quality="fuzzy"/>
+        </iws:segment-metadata>
+        <custom:workflow value="review-later"/>
+      </trans-unit>
+      <trans-unit id="102" resname="locked-warning" translate="no">
+        <source>Do not change 🔒</source>
+        <target state="final">لا تغيّر 🔒</target>
+        <iws:segment-metadata tm_score="100.00">
+          <iws:status translation_status="finished" lock_status="locked" match-quality="guaranteed"/>
+        </iws:segment-metadata>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

@@ -8,7 +8,7 @@
 		},
 		{
 			title: "CAT interoperability",
-			text: "Exchange XLIFF projects, TMX memories and TBX terminology, and import, edit and rebuild Trados, WorldServer and memoQ return packages.",
+			text: "Exchange standard XLIFF projects, preserve and return vendor XLIFF from Trados, memoQ, Phrase, WorldServer and WPML, and work with TMX memories and TBX terminology.",
 		},
 		{
 			title: "Translation-focused QA",
@@ -76,6 +76,7 @@
 				"Markdown / AsciiDoc",
 				"SRT / WebVTT / SBV",
 				"XLIFF 1.2 / 2.x",
+				"SDLXLIFF / MQXLIFF / MXLIFF / WsXLIFF / WPML",
 				"TMX / TBX",
 			],
 		},
@@ -123,7 +124,9 @@
 
 	<section class="status-strip" aria-label="Open TLC highlights">
 		<div><strong>35+</strong><span>format workflows</span></div>
-		<div><strong>1.2–2.1</strong><span>XLIFF project exchange</span></div>
+		<div>
+			<strong>1.2–2.1</strong><span>standard + vendor XLIFF exchange</span>
+		</div>
 		<div><strong>TMX + TBX</strong><span>memory and terminology</span></div>
 		<div><strong>Local</strong><span>IndexedDB project storage</span></div>
 	</section>

@@ -250,10 +250,9 @@ Complete these in order after FF-000 through FF-009.
       memoQ statuses, Phrase confirmations, and vendor locks map into neutral
       workflow state and translatability. Embedded CMS and e-learning HTML is
       converted to protected inline codes while its text remains editable.
-      Vendor extensions are accepted by the upload UI and clearly identified as
-      protected imports. Every XLIFF 1.2, 2.0, and 2.1 exporter now hard-blocks
-      these profiles with an actionable notification; export remains deliberately
-      disabled because originating-tool reopen validation has not yet occurred.
+      Vendor extensions are accepted by the upload UI and clearly identified.
+      Generic XLIFF 1.2, 2.0, and 2.1 serializers reject vendor documents so the
+      profile-specific writer introduced in FF-503 is always used for delivery.
       Seven focused fixtures and 22 profile tests cover detection, preservation,
       state/lock mapping, protected markup, malformed input, false positives,
       persistence, and the export guard. All 254 unit tests and five Chromium
@@ -1247,7 +1246,7 @@ definition of done below before checking them.
       Microsoft [ASP.NET page syntax](https://learn.microsoft.com/en-us/previous-versions/aspnet/k33801s3%28v%3Dvs.100%29),
       and Microsoft guidance for [HTML Help contents and index entries](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/htmlhelp/to-open-a-compiled-help-file-from-a-contents-or-index-entry).
 
-- [ ] **FF-503 — Extended XLIFF aliases and vendor delivery.** Add `.xlif` and
+- [x] **FF-503 — Extended XLIFF aliases and vendor delivery.** Add `.xlif` and
       memoQ `.mqxlf` aliases, a fixture-led WorldServer WsXLIFF profile, and
       explicit handling for WordPress WPML and other vendor `.xlf`/`.xliff`
       variants already recognized structurally. Promote `.sdlxliff`, `.mqxliff`,
@@ -1255,6 +1254,32 @@ definition of done below before checking them.
       after namespace, inline-code, lock/state, skeleton, and unknown-extension
       preservation pass round-trip and originating-tool fixtures. Keep generic
       XLIFF 1.2/2.x serializers separate from vendor writers.
+      Completed 2026-08-19: project detection and upload now accept `.xlif` and
+      `.mqxlf` aliases, but only after an XLIFF root and valid content are
+      confirmed. A fixture-led WorldServer profile recognizes the `iws`
+      extension/tool signatures, maps translation and lock status, and preserves
+      WorldServer metadata. SDLXLIFF, MQXLIFF/MQXLF, Phrase MXLIFF, WsXLIFF,
+      WPML, Drupal TMGMT, and Articulate profiles now expose a dedicated
+      same-profile export action. The writer retains the imported extension,
+      namespaces, headers, group/file skeleton, identifiers, target state,
+      vendor locks/status attributes, protected inline/embedded markup, notes,
+      and unknown extensions; it refuses source edits, locked-target edits,
+      profile loss, unsupported versions, or structurally invalid output.
+      Generic XLIFF 1.2/2.x writers remain separate and reject vendor models to
+      prevent accidental metadata loss. Legacy persisted `import-only` profile
+      metadata is normalized to the new same-profile policy on access. Tests
+      cover every profile, `.xlif`/`.mqxlf`, extension-only impostors, WordPress
+      embedded markup, WorldServer inline/unknown data, Unicode/RTL/emoji,
+      malformed input, cancellation, locked edits, a generated 1,500-unit file,
+      identity and translated re-imports, browser IndexedDB persistence,
+      browser XML reopening, and download naming. The implementation follows
+      OASIS XLIFF 1.2/2.x, official memoQ MQXLIFF export guidance, Phrase MXLIFF
+      documentation, WPML CAT-tool guidance, and WorldServer XLF documentation.
+      `npm run verify` passes with 923 unit tests (3 skipped), 52 Chromium tests,
+      type checks, formatting, and the production build. Same-profile export
+      requires an imported vendor skeleton: it does not manufacture a Trados,
+      memoQ, Phrase, WorldServer, or CMS profile from generic XLIFF, and vendor-
+      locked targets deliberately remain immutable.
 
 - [ ] **FF-504 — Legacy bilingual CAT documents.** Implement TRADOStag `.ttx`,
       SDL Edit `.itd`, Wordfast/GlobalLink `.txml`, XLIFF:doc `.xliffdoc`, and
@@ -1447,6 +1472,8 @@ events and reconstruct the original format.
 - [OASIS XLIFF 1.2 specification](https://docs.oasis-open.org/xliff/v1.2/os/xliff-core.html)
 - [RWS Trados Studio SDLXLIFF file-type overview](https://developers.rws.com/studio-api-docs/17.2/apiconcepts/filetypesupport/file_type_support_overview.html)
 - [memoQ vendor-XLIFF processing guidance](https://docs.memoq.com/current/en/Globalese/How_Globalese_processes_XLIFF_files.html)
+- [memoQ MQXLIFF export settings](https://docs.memoq.com/current/en/Workspace/mqxliff-export-settings.html)
+- [memoQ WorldServer XLF/XLZ guidance](https://docs.memoq.com/current/en/Workspace/worldserver-xlf_xlz-files.html)
 - [Phrase MXLIFF format guidance](https://support.phrase.com/hc/en-us/articles/5709739992860--MXLIFF-Files-TMS)
 - [WPML XLIFF configuration guidance](https://wpml.org/documentation/translating-your-contents/using-desktop-cat-tools/configuring-xliff-file-options/)
 - [Drupal Translation Management Tool](https://www.drupal.org/project/tmgmt)

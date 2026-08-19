@@ -30,6 +30,8 @@
 		generateXliffSaveFile2_1,
 	} from "$lib/functions/saveFileGeneration/generateXliffSaveFile2_0";
 	import { generateXliffSaveFile1_2 } from "$lib/functions/saveFileGeneration/generateXliffSaveFile1_2";
+	import { getXliffVendorProfile } from "$lib/formats/xliffProfiles";
+	import { downloadVendorXliff } from "$lib/formats/vendorXliff";
 	import {
 		getTbNamesAndIds,
 		getTmNamesAndIds,
@@ -186,6 +188,9 @@
 	let translationExportAvailable: boolean = $derived(
 		getFormatAdapter($singleUserData.translationData.type).capabilities.export,
 	);
+	let vendorXliffProfile = $derived(
+		getXliffVendorProfile($singleUserData.translationData.documentModel),
+	);
 
 	function handleScroll() {
 		if (!segmentsContainer) return;
@@ -225,6 +230,20 @@
 	function handleXliff1_2SaveFileDownload() {
 		if (!$singleUserData) return console.log("Data not found");
 		generateXliffSaveFile1_2($singleUserData);
+	}
+
+	function handleVendorXliffSaveFileDownload() {
+		try {
+			const output = downloadVendorXliff($singleUserData);
+			showSaveFileModal = false;
+			notifySuccess(`${output.profile.label} exported`);
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "The vendor XLIFF file could not be exported.",
+			);
+		}
 	}
 
 	async function handleTranslationFileExport() {
@@ -666,51 +685,69 @@
 			>
 			<span class="modal-action-arrow">→</span>
 		</button>
-		<button
-			class="modal-action-card"
-			onclick={() => {
-				handleXliff1_2SaveFileDownload();
-				showSaveFileModal = false;
-			}}
-		>
-			<span class="modal-action-icon">1.2</span>
-			<span class="modal-action-text"
-				><strong>XLIFF 1.2</strong><small
-					>Broad compatibility with established CAT workflows.</small
-				></span
+		{#if vendorXliffProfile}
+			<button
+				class="modal-action-card primary"
+				onclick={handleVendorXliffSaveFileDownload}
 			>
-			<span class="modal-action-arrow">→</span>
-		</button>
-		<button
-			class="modal-action-card"
-			onclick={() => {
-				handleXliff2_0SaveFileDownload();
-				showSaveFileModal = false;
-			}}
-		>
-			<span class="modal-action-icon">2.0</span>
-			<span class="modal-action-text"
-				><strong>XLIFF 2.0</strong><small
-					>Modern standards-based bilingual interchange.</small
-				></span
+				<span class="modal-action-icon"
+					>{vendorXliffProfile.sourceExtension?.toUpperCase() ?? "XLF"}</span
+				>
+				<span class="modal-action-text"
+					><strong>{vendorXliffProfile.label}</strong><small
+						>Export to the imported vendor profile while retaining its
+						namespaces, workflow state, inline codes, skeleton, and extensions.</small
+					></span
+				>
+				<span class="modal-action-arrow">→</span>
+			</button>
+		{:else}
+			<button
+				class="modal-action-card"
+				onclick={() => {
+					handleXliff1_2SaveFileDownload();
+					showSaveFileModal = false;
+				}}
 			>
-			<span class="modal-action-arrow">→</span>
-		</button>
-		<button
-			class="modal-action-card"
-			onclick={() => {
-				handleXliff2_1SaveFileDownload();
-				showSaveFileModal = false;
-			}}
-		>
-			<span class="modal-action-icon">2.1</span>
-			<span class="modal-action-text"
-				><strong>XLIFF 2.1</strong><small
-					>Latest supported XLIFF project interchange.</small
-				></span
+				<span class="modal-action-icon">1.2</span>
+				<span class="modal-action-text"
+					><strong>XLIFF 1.2</strong><small
+						>Broad compatibility with established CAT workflows.</small
+					></span
+				>
+				<span class="modal-action-arrow">→</span>
+			</button>
+			<button
+				class="modal-action-card"
+				onclick={() => {
+					handleXliff2_0SaveFileDownload();
+					showSaveFileModal = false;
+				}}
 			>
-			<span class="modal-action-arrow">→</span>
-		</button>
+				<span class="modal-action-icon">2.0</span>
+				<span class="modal-action-text"
+					><strong>XLIFF 2.0</strong><small
+						>Modern standards-based bilingual interchange.</small
+					></span
+				>
+				<span class="modal-action-arrow">→</span>
+			</button>
+			<button
+				class="modal-action-card"
+				onclick={() => {
+					handleXliff2_1SaveFileDownload();
+					showSaveFileModal = false;
+				}}
+			>
+				<span class="modal-action-icon">2.1</span>
+				<span class="modal-action-text"
+					><strong>XLIFF 2.1</strong><small
+						>Latest supported XLIFF project interchange.</small
+					></span
+				>
+				<span class="modal-action-arrow">→</span>
+			</button>
+		{/if}
 	</div>
 {/snippet}
 

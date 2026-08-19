@@ -337,6 +337,11 @@ export async function importXliffProjectStreaming(
 						)
 					: seg1.map(() => false);
 	const numericId = Number(state.id);
+	const projectName =
+		vendorProfile &&
+		(state.name === "Unnamed Translation" || /^Translation\s/.test(state.name))
+			? fileNameWithoutExtension(file.name)
+			: state.name;
 	return {
 		data: migrateProjectData({
 			...(state.schemaVersion === undefined
@@ -344,7 +349,7 @@ export async function importXliffProjectStreaming(
 				: { schemaVersion: state.schemaVersion }),
 			...(Number.isFinite(numericId) ? { id: numericId } : {}),
 			translationData: {
-				name: state.name,
+				name: projectName,
 				sourceLang: state.sourceLang,
 				targetLang: state.targetLang,
 				creationDate: Date.now().toString(),
@@ -608,6 +613,12 @@ function normalizeLang(value: string): string {
 
 function normalizeType(value: string): Type {
 	return FORMAT_IDS.includes(value as Type) ? (value as Type) : "text";
+}
+
+function fileNameWithoutExtension(fileName: string): string {
+	const leaf = fileName.replaceAll("\\", "/").split("/").at(-1) ?? fileName;
+	const dot = leaf.lastIndexOf(".");
+	return dot > 0 ? leaf.slice(0, dot) : leaf || "Translation";
 }
 
 function escapeRegExp(value: string): string {

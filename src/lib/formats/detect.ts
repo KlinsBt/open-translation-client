@@ -65,13 +65,15 @@ export interface ProjectFileDetection {
 	evidence: readonly DetectionEvidence[];
 	reason: string;
 	profileId?: XliffVendorProfileId;
-	exportPolicy?: "import-only";
+	exportPolicy?: "same-profile";
 }
 
 const XLIFF_PROJECT_EXTENSIONS = new Set([
 	"xlf",
+	"xlif",
 	"xliff",
 	"sdlxliff",
+	"mqxlf",
 	"mqxliff",
 	"mxliff",
 ]);
@@ -364,7 +366,7 @@ export async function detectProjectFileFormat(
 			confidence: evidence.length > 1 ? "high" : "medium",
 			evidence,
 			reason: profile
-				? `${profile.label} markers were detected; the file will be imported with vendor XLIFF export disabled pending origin-tool verification.`
+				? `${profile.label} markers were detected; the file can be edited and exported through its dedicated same-profile workflow.`
 				: "The XML document has an XLIFF root element; its Open TLC metadata will be validated during import.",
 			...(profile
 				? { profileId: profile.id, exportPolicy: profile.exportPolicy }

@@ -53,11 +53,11 @@
 			}
 			const profile = saveData.translationData.documentModel?.metadata
 				?.xliffProfile as
-				| { label?: string; exportPolicy?: "import-only" }
+				| { label?: string; exportPolicy?: "same-profile" }
 				| undefined;
 			notifySuccess(
-				profile?.exportPolicy === "import-only"
-					? `${profile.label ?? detection.label} detected. Imported in protected profile mode; vendor XLIFF export is disabled pending origin-tool verification.`
+				profile?.exportPolicy === "same-profile"
+					? `${profile.label ?? detection.label} detected. Vendor structure will be retained by the same-profile export.`
 					: `${detection.label} detected (${detection.confidence} confidence). New project created.`,
 			);
 			createNewProjectWithSaveFile();
@@ -141,7 +141,7 @@
 			<input
 				id="fileInput"
 				type="file"
-				accept="application/json,application/xml,text/xml,.json,.xlf,.xliff,.sdlxliff,.mqxliff,.mxliff"
+				accept="application/json,application/xml,text/xml,.json,.xlf,.xlif,.xliff,.sdlxliff,.mqxlf,.mqxliff,.mxliff"
 				oninput={handleTranslationFileUpload}
 			/>
 		</button>
@@ -149,7 +149,8 @@
 			<span>Open TLC JSON</span>
 			<span>XLIFF 1.2</span>
 			<span>XLIFF 2.0 / 2.1</span>
-			<span>Vendor XLIFF profiles</span>
+			<span>Vendor XLIFF + same-profile export</span>
+			<span>.xlif / .mqxlf aliases</span>
 		</div>
 	</div>
 {:else}

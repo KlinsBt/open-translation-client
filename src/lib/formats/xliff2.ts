@@ -333,6 +333,17 @@ export function buildXliff2(
 	const versionedData = migrateProjectData(userData);
 	const data = versionedData.translationData;
 	assertVendorXliffExportAllowed(data.documentModel);
+	return buildXliff2PreservingDocument(versionedData, version);
+}
+
+/** Structural serializer used by the dedicated same-profile vendor writer. */
+export function buildXliff2PreservingDocument(
+	userData: UserData,
+	version: Xliff2Version,
+	options: { includeOpenTlcMetadata?: boolean } = {},
+): string {
+	const versionedData = migrateProjectData(userData);
+	const data = versionedData.translationData;
 	const baseDocument =
 		data.documentModel && data.documentModel.units.length === data.seg1.length
 			? data.documentModel
@@ -377,7 +388,12 @@ export function buildXliff2(
 			.join("");
 		body = `<xliff xmlns="${XLIFF_2_NAMESPACE}" version="${version}" srcLang="${escapeXmlAttribute(data.sourceLang || "und")}"${data.targetLang ? ` trgLang="${escapeXmlAttribute(data.targetLang)}"` : ""}><file id="${escapeXmlAttribute(fileId)}" original="${escapeXmlAttribute(data.name || "translation")}">${unitXml}</file></xliff>`;
 	}
-	return finalizeDocument(body, versionedData, version);
+	return finalizeDocument(
+		body,
+		versionedData,
+		version,
+		options.includeOpenTlcMetadata !== false,
+	);
 }
 
 export function validateXliff2Xml(xml: string): Xliff2ValidationResult {
@@ -655,6 +671,7 @@ function finalizeDocument(
 	xml: string,
 	userData: UserData,
 	version: Xliff2Version,
+	includeOpenTlcMetadata: boolean,
 ): string {
 	const document = safeParseXml(xml.replace(/^\s*<\?xml[^?]*\?>\s*/i, ""));
 	const root = document.documentElement;
@@ -663,16 +680,20 @@ function finalizeDocument(
 	if (userData.translationData.targetLang)
 		root.setAttribute("trgLang", userData.translationData.targetLang);
 	else root.removeAttribute("trgLang");
-	root.setAttributeNS(XMLNS_NAMESPACE, "xmlns:xsi", XSI_NAMESPACE);
-	root.setAttributeNS(XMLNS_NAMESPACE, "xmlns:mda", XLIFF_METADATA_NAMESPACE);
-	root.setAttributeNS(
-		XSI_NAMESPACE,
-		"xsi:schemaLocation",
-		mergeSchemaLocation(
-			root.getAttributeNS(XSI_NAMESPACE, "schemaLocation"),
-			version,
-		),
-	);
+	if (includeOpenTlcMetadata) {
+		root.setAttributeNS(XMLNS_NAMESPACE, "xmlns:xsi", XSI_NAMESPACE);
+		root.setAttributeNS(XMLNS_NAMESPACE, "xmlns:mda", XLIFF_METADATA_NAMESPACE);
+		root.setAttributeNS(
+			XSI_NAMESPACE,
+			"xsi:schemaLocation",
+			mergeSchemaLocation(
+				root.getAttributeNS(XSI_NAMESPACE, "schemaLocation"),
+				version,
+			),
+		);
+	}
+	if (!includeOpenTlcMetadata)
+		return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(document)}\n`;
 	const firstFile = directChildren(root, "file")[0];
 	if (!firstFile) throw new Error("XLIFF export requires a file element.");
 	for (const group of allElements(firstFile).filter(
@@ -815,8 +836,10 @@ function renderContent(content: SegmentContent): string {
 		.map((fragment) =>
 			fragment.kind === "text"
 				? escapeXml(fragment.text)
-				: fragment.originalData ||
-					`<ph id="${escapeXmlAttribute(fragment.id)}"/>`,
+				: fragment.id.startsWith("html-")
+					? escapeXml(fragment.originalData ?? "")
+					: fragment.originalData ||
+						`<ph id="${escapeXmlAttribute(fragment.id)}"/>`,
 		)
 		.join("");
 }
