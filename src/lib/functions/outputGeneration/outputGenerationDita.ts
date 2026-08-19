@@ -178,7 +178,7 @@ export async function generateDitaTranslation(
 		? /\.ditazip$/i.test(sourceName)
 			? sourceName
 			: `${sourceName}.ditazip`
-		: /\.(?:dita|ditamap)$/i.test(sourceName)
+		: /\.(?:dita|ditamap|bookmap)$/i.test(sourceName)
 			? sourceName
 			: `${sourceName}.dita`;
 	const url = URL.createObjectURL(await buildDitaTranslationBlob(project));

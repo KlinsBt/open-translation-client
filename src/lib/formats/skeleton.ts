@@ -441,6 +441,7 @@ export async function createTextSkeleton(
 		| "legacy-bilingual"
 		| "visio"
 		| "quark"
+		| "specialist-xml"
 		| "xml"
 		| "html",
 	content: string,
@@ -1159,6 +1160,7 @@ export function synchronizeSkeletonReplacements(
 		skeleton.format === "visio" ||
 		skeleton.format === "quark" ||
 		skeleton.format === "psd" ||
+		skeleton.format === "specialist-xml" ||
 		skeleton.format === "legacy-bilingual"
 	)
 		return skeleton;

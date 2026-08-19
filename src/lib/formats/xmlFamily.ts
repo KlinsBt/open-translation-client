@@ -282,13 +282,20 @@ function applyItsTranslateRules(elements: XmlElementLocation[]): void {
 		const selector = attributeValue(rule, "selector");
 		const translate = attributeValue(rule, "translate");
 		if (!selector || (translate !== "yes" && translate !== "no")) continue;
-		if (!isSupportedElementSelector(selector))
+		const selectors = selector
+			.split("|")
+			.map((entry) => entry.trim())
+			.filter(Boolean);
+		if (
+			selectors.length === 0 ||
+			selectors.some((entry) => !isSupportedElementSelector(entry))
+		)
 			throw new SafeInputError(
 				"XML_UNSUPPORTED_ITS",
 				`ITS translateRule selector “${selector}” is outside the supported safe XPath subset.`,
 			);
 		for (const element of elements)
-			if (matchesElementSelector(element, selector))
+			if (selectors.some((entry) => matchesElementSelector(element, entry)))
 				element.globalTranslate = translate === "yes";
 	}
 }

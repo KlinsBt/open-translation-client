@@ -34,6 +34,7 @@ import { buildCatReturnPackage } from "./catPackage";
 import { buildLegacyBilingualTranslation } from "./legacyBilingual";
 import { buildVisioTranslationBlob } from "./visio";
 import { buildQuarkTranslationBlob } from "./quark";
+import { buildSpecialistXmlTranslationBlob } from "./specialistXml";
 
 /** Builds only native, same-format round-trip output. */
 export async function buildRoundTripFormatOutputBlob(
@@ -92,6 +93,8 @@ export async function buildRoundTripFormatOutputBlob(
 			return buildQmlTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
+		case "specialist-xml":
+			return buildSpecialistXmlTranslationBlob(project);
 		case "html":
 			return buildHtmlTranslationBlob(project);
 		case "docx":

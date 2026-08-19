@@ -970,6 +970,25 @@ export const FORMAT_IMPORT_OPTIONS = {
 				"Reject any failing member, or skip only members explicitly marked required:false while retaining a report.",
 		},
 	],
+	"specialist-xml": [
+		{
+			id: "segmentationMode",
+			label: "Text-node segmentation",
+			type: "select",
+			defaultValue: "value",
+			choices: ["value", "preferences", "sentences"],
+			description:
+				"Keep each vocabulary-defined text node intact, or apply the active segmentation rules. Structural and inline markup always remains protected.",
+		},
+		{
+			id: "includeMetadata",
+			label: "Include descriptive metadata",
+			type: "boolean",
+			defaultValue: false,
+			description:
+				"Also expose explicitly supported descriptions, titles, alternative text, and localization notes. IDs, selectors, formulas, links, code, and control metadata remain protected.",
+		},
+	],
 	xml: [
 		{
 			id: "elementSelectors",

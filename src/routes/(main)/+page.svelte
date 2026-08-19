@@ -62,7 +62,7 @@
 				"EPUB",
 				"Visio VSDX / VSDM / VSSX / VSSM / VSTX / VSTM",
 				"Visio VDX / VSX / VTX and protected legacy VSD / VSS / VDW",
-				"DITA",
+				"DITA / DITAMAP / BOOKMAP",
 				"DocBook",
 				"IDML / ICML / INX",
 				"FrameMaker MIF / MIF2",
@@ -77,6 +77,9 @@
 			formats: [
 				"TXT / CSV / TSV",
 				"XML + ITS 2.0",
+				"ITS rules / MULIX multilingual XML",
+				"Author-it / MadCap / TYPO3 XML",
+				"Constrained SGML",
 				"Markdown / AsciiDoc",
 				"SRT / WebVTT / SBV",
 				"XLIFF 1.2 / 2.x",
@@ -107,7 +110,7 @@
 	<title>Open TLC — Open source browser-based CAT tool</title>
 	<meta
 		name="description"
-		content="Translate 41 office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool."
+		content="Translate 42 office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool."
 	/>
 </svelte:head>
 
@@ -119,7 +122,7 @@
 			<h1>Translation work belongs in your hands.</h1>
 			<p class="hero-copy">
 				Open TLC is a computer-assisted translation tool for translators,
-				students and teams. Work with 41 registered format workflows, protect
+				students and teams. Work with 42 registered format workflows, protect
 				inline content, and keep projects on your own device.
 			</p>
 			<div class="hero-actions">
@@ -132,7 +135,7 @@
 	</section>
 
 	<section class="status-strip" aria-label="Open TLC highlights">
-		<div><strong>41</strong><span>registered format workflows</span></div>
+		<div><strong>42</strong><span>registered format workflows</span></div>
 		<div>
 			<strong>1.2–2.1</strong><span>standard + vendor XLIFF exchange</span>
 		</div>

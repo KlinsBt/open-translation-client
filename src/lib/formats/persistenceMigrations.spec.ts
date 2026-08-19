@@ -384,4 +384,55 @@ describe("persisted data migrations", () => {
 			await migrated.translationData.skeleton!.source.originalFile!.text(),
 		).toContain("TRADOStag");
 	});
+
+	it("retains FF-508 specialist vocabulary metadata and positional source bytes", async () => {
+		const content =
+			'<mulix source-language="en" target-language="de"><entry id="one"><source>Hello</source><target>Hallo</target><note>Keep</note></entry></mulix>';
+		const original = new Blob([content], { type: "application/xml" });
+		const project = makeUserData({
+			type: "specialist-xml",
+			typeRef: {
+				profile: "mulix",
+				sourceExtension: "mulix",
+				root: "mulix",
+			},
+			segmentsMeta: [
+				{
+					kind: "text",
+					path: ["mulix[1]", "entry[1]", "target[1]", "#text"],
+					start: 100,
+					end: 105,
+					originalValue: "Hallo",
+					separator: "",
+				},
+			],
+		});
+		project.translationData.skeleton = {
+			schemaVersion: 1,
+			format: "specialist-xml",
+			source: {
+				name: "catalog.mulix",
+				mimeType: original.type,
+				encoding: "utf-8",
+				hasBom: false,
+				originalFile: original,
+			},
+			payload: { kind: "text", content },
+			replacements: [],
+		};
+
+		const migrated = migrateProjectData(project);
+		expect(migrated.translationData.type).toBe("specialist-xml");
+		expect(migrated.translationData.typeRef).toMatchObject({
+			profile: "mulix",
+			sourceExtension: "mulix",
+		});
+		expect(migrated.translationData.segmentsMeta?.[0]).toMatchObject({
+			kind: "text",
+			originalValue: "Hallo",
+		});
+		expect(
+			await migrated.translationData.skeleton!.source.originalFile!.text(),
+		).toBe(content);
+	});
 });

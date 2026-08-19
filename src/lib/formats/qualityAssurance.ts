@@ -86,6 +86,10 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	visio: { allowTagReorder: false, allowInlineCodeReorder: false },
 	quark: { allowTagReorder: false, allowInlineCodeReorder: false },
 	psd: { allowTagReorder: false, allowInlineCodeReorder: false },
+	"specialist-xml": {
+		allowTagReorder: false,
+		allowInlineCodeReorder: false,
+	},
 	xml: { allowTagReorder: false, allowInlineCodeReorder: false },
 	docx: { allowTagReorder: true, allowInlineCodeReorder: true },
 	xlsx: { allowTagReorder: false, allowInlineCodeReorder: false },

@@ -39,6 +39,8 @@ const PO_EDIT_ERROR =
 	"Gettext entries cannot be split or joined because msgid/msgstr and plural-form alignment must be preserved.";
 const XML_EDIT_ERROR =
 	"XML values cannot be split or joined because text, CDATA, attribute, namespace, and ITS ranges must remain aligned.";
+const SPECIALIST_XML_EDIT_ERROR =
+	"Specialist XML and SGML vocabulary mappings cannot be split or joined.";
 const ANDROID_EDIT_ERROR =
 	"Android resources cannot be split or joined because keys, arrays, plurals, and inline markup must remain aligned.";
 const APPLE_EDIT_ERROR =
@@ -169,6 +171,7 @@ function validateForStructuralEdit(
 	if (translation.type === "pdf") return PDF_EDIT_ERROR;
 	if (translation.type === "quark") return QUARK_EDIT_ERROR;
 	if (translation.type === "psd") return PSD_EDIT_ERROR;
+	if (translation.type === "specialist-xml") return SPECIALIST_XML_EDIT_ERROR;
 	if (translation.type === "legacy-bilingual")
 		return LEGACY_BILINGUAL_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;

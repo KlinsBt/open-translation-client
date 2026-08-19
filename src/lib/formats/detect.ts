@@ -19,6 +19,10 @@ import {
 } from "./xliffProfiles";
 import { catPackageWorkflow, detectCatPackageProfile } from "./catPackage";
 import {
+	detectSpecialistXmlProfile,
+	specialistXmlProfileLabel,
+} from "./specialistXml";
+import {
 	inspectZipProjectManifest,
 	ZIP_PROJECT_MANIFEST_PATH,
 } from "./zipProject";
@@ -277,6 +281,33 @@ export async function detectFileFormat(
 					validation.reason ??
 						"The native XPress Tags version/encoding header is missing or malformed.",
 				);
+	}
+	const specialistCandidate = adapters.find(
+		(candidate) => candidate.id === "specialist-xml",
+	);
+	if (specialistCandidate) {
+		const profile = await detectSpecialistXmlProfile(file, context);
+		if (profile) {
+			const detection = supportedContent(
+				specialistCandidate,
+				extension,
+				mimeType,
+			);
+			detection.label = specialistXmlProfileLabel(profile);
+			detection.reason =
+				"The root, namespace, vocabulary structure, and protected-content policy match this specialist profile; external entities, schemas, scripts, and formulas are never evaluated.";
+			return detection;
+		}
+		if (
+			extension !== undefined &&
+			["its", "mulix", "sgm", "sgml"].includes(extension)
+		)
+			return unsupported(
+				"Invalid specialist XML/SGML document",
+				"low",
+				["extension"],
+				"The filename claims a specialist vocabulary, but its content signature and required structure do not match.",
+			);
 	}
 	if (textKind === "json") {
 		for (const candidate of adapters.filter(

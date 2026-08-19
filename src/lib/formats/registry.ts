@@ -161,6 +161,14 @@ import {
 	PSD_MIME_TYPES,
 	validatePsdFile,
 } from "./psd";
+import {
+	detectSpecialistXmlProfile,
+	generateSpecialistXmlTranslation,
+	importSpecialistXmlFile,
+	SPECIALIST_XML_EXTENSIONS,
+	SPECIALIST_XML_MIME_TYPES,
+	validateSpecialistXmlFile,
+} from "./specialistXml";
 
 const READ_WRITE_CAPABILITIES = {
 	import: true,
@@ -454,8 +462,8 @@ const adapters = [
 	},
 	{
 		id: "dita",
-		label: "DITA/DITAMAP",
-		extensions: ["dita", "ditamap", "ditazip"],
+		label: "DITA/DITAMAP/BOOKMAP",
+		extensions: ["dita", "ditamap", "bookmap", "ditazip"],
 		mimeTypes: ["application/dita+xml", "application/xml", "text/xml"],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.dita,
@@ -736,6 +744,19 @@ const adapters = [
 		validate: validatePsdFile,
 		importFile: importPsdFile,
 		exportFile: generatePsdTranslation,
+	},
+	{
+		id: "specialist-xml",
+		label: "ITS, MULIX, Author-it, MadCap, TYPO3, SpreadsheetML + safe SGML",
+		extensions: [...SPECIALIST_XML_EXTENSIONS],
+		mimeTypes: [...SPECIALIST_XML_MIME_TYPES],
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["specialist-xml"],
+		sniff: async (file, context) =>
+			(await detectSpecialistXmlProfile(file, context)) !== undefined,
+		validate: validateSpecialistXmlFile,
+		importFile: importSpecialistXmlFile,
+		exportFile: generateSpecialistXmlTranslation,
 	},
 	{
 		id: "xml",

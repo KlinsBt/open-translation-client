@@ -35,6 +35,7 @@ export const FORMAT_IDS = [
 	"visio",
 	"quark",
 	"psd",
+	"specialist-xml",
 	"xml",
 	"docx",
 	"xlsx",

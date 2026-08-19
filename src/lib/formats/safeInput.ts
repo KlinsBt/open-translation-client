@@ -57,6 +57,7 @@ export type SafeInputErrorCode =
 	| "VISIO_INVALID"
 	| "QUARK_INVALID"
 	| "PSD_INVALID"
+	| "SPECIALIST_XML_INVALID"
 	| "XML_MALFORMED";
 
 export class SafeInputError extends Error {

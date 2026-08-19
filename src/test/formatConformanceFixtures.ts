@@ -1858,6 +1858,48 @@ const psdFixture: FormatConformanceFixture = {
 	},
 };
 
+const specialistXmlFixture: FormatConformanceFixture = {
+	id: "specialist-xml",
+	fileName: "unicode.its",
+	mimeType: "application/its+xml",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="UTF-8"?>\n<its:rules xmlns:its="http://www.w3.org/2005/11/its" version="2.0"><its:translateRule selector="//code | //path" translate="no"/><its:locNoteRule selector="//title"><its:locNote>${escapeXml(CONFORMANCE_UNICODE_SOURCE)}</its:locNote></its:locNoteRule></its:rules>\n`,
+			"unicode.its",
+			"application/its+xml",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<!DOCTYPE rules [<!ENTITY leak SYSTEM "file:///etc/passwd">]><rules xmlns="http://www.w3.org/2005/11/its"><locNote>&leak;</locNote></rules>',
+			"broken.its",
+			"application/its+xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { segmentationMode: "value", includeMetadata: false },
+		skeleton: { kind: "text", replacementKinds: ["xml-value"] },
+		units: [
+			{
+				id: "unit-1",
+				part: "unicode.its",
+				path: ["its:rules[1]", "its:locNoteRule[1]", "its:locNote[1]", "#text"],
+			},
+		],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<its:rules xmlns:its="http://www.w3.org/2005/11/its" version="2.0">${Array.from(
+				{ length: units },
+				(_, index) =>
+					`<its:locNoteRule selector="//item[@id='${index}']"><its:locNote>Message ${index}</its:locNote></its:locNoteRule>`,
+			).join("")}</its:rules>`,
+			"performance.its",
+			"application/its+xml",
+		),
+};
+
 const xmlFixture: FormatConformanceFixture = {
 	id: "xml",
 	fileName: "unicode.xml",
@@ -2140,6 +2182,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	visioFixture,
 	quarkFixture,
 	psdFixture,
+	specialistXmlFixture,
 	xmlFixture,
 	docxFixture,
 	xlsxFixture,

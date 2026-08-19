@@ -84,6 +84,9 @@
 				"YAML 1.2",
 				"GNU gettext PO and POT",
 				"XML with ITS 2.0",
+				"W3C ITS rule files and MULIX multilingual XML",
+				"Author-it, MadCap and legacy TYPO3 XML",
+				"Constrained SGML with safe fixed doctypes",
 				"Android strings.xml",
 				"Apple .strings, .stringsdict and .xcstrings",
 				"Java and Mozilla .properties",
@@ -109,7 +112,7 @@
 				"Visio VSDX/VSDM drawings, VSSX/VSSM stencils and VSTX/VSTM templates",
 				"Visio VDX/VSX/VTX XML and protected legacy VSD/VSS/VDW/VSR",
 				"SVG",
-				"DITA and DITAMAP",
+				"DITA, DITAMAP and BOOKMAP",
 				"DocBook",
 				"Adobe IDML, ICML and INX",
 				"QuarkXPress XTG and TAG",
@@ -172,7 +175,7 @@
 				Open Translation Client is a browser-based, open source CAT tool for
 				professional translators, learners and teams. It began as a master's
 				thesis project at Anhalt University of Applied Sciences in Germany and
-				has grown into a local-first editor with 41 registered format workflows.
+				has grown into a local-first editor with 42 registered format workflows.
 			</p>
 		</div>
 	</header>
@@ -227,6 +230,13 @@
 					and XPress Tags use structure-aware text round trips. Photoshop PSD reads
 					only validated text-layer descriptors; an unchanged project retains the
 					exact PSD, while translated delivery is a safe SVG text-layer conversion.
+				</div>
+				<div class="note">
+					<strong>Specialist XML and SGML:</strong> ITS rules, MULIX, Author-it,
+					MadCap, TYPO3 and SpreadsheetML use vocabulary-specific extraction and
+					protected-content rules. DITA BOOKMAP retains its native DITA family. Constrained
+					SGML accepts only validated XML-compatible markup with a safe fixed doctype;
+					entities and network schemas are never resolved.
 				</div>
 			</section>
 

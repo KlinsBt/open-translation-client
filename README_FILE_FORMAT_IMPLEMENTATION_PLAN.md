@@ -1529,7 +1529,7 @@ definition of done below before checking them.
       the `ag-psd` [documented reader/writer limits](https://github.com/skylab-tech/ag-psd/blob/main/README.md),
       and Quark's [XPress Tags 2025 guide](https://www.quark.com/documentation/quarkxpress/2025/english/A%20Guide%20to%20XPress%20Tags%202025/).
 
-- [ ] **FF-508 — Specialist XML, SGML, and multilingual XML profiles.** Add
+- [x] **FF-508 — Specialist XML, SGML, and multilingual XML profiles.** Add
       W3C ITS rule files `.its`, multilingual XML `.mulix`, DITA `.bookmap`,
       AuthorIT, MadCap, Typo3, and Microsoft Excel 2003 XML profiles, plus a
       constrained `.sgm`/`.sgml` workflow. Each vocabulary needs its own
@@ -1537,6 +1537,67 @@ definition of done below before checking them.
       namespace/doctype policy, and output validation; generic XML success alone
       does not complete this task. Never resolve external entities or network
       schemas.
+
+      **Completed 2026-08-19.** A dedicated `specialist-xml` adapter now routes
+      files by root, namespace, vocabulary structure and safe doctype evidence
+      before the generic XML/HTML adapters. `.its` requires an ITS 2.0 `rules`
+      root and exposes localization notes while protecting selectors and rule
+      metadata. Author-it requires `AuthorITroot`; MadCap requires XHTML plus the
+      MadCap schema namespace; legacy TYPO3 requires `T3locallang`; and Excel
+      2003 XML requires the SpreadsheetML `Workbook` namespace. Each profile has
+      an explicit allowlist for editable prose, supported metadata/attributes,
+      protected code/control elements and inline descendants. Spreadsheet
+      formulas and cached formula values stay inert. The shared ITS safe-XPath
+      subset now handles validated union selectors without evaluating arbitrary
+      XPath.
+
+      Canonical MULIX files require a recognized multilingual root and paired
+      sibling `source`/`target` elements; positional inline values are mapped in
+      order so existing targets, notes, IDs and unknown nodes survive native
+      export. DITA `.bookmap` is registered in the existing DITA adapter and
+      retained through standalone and bundle output. The SGML workflow is
+      intentionally constrained to well-formed, XML-compatible `.sgm`/`.sgml`
+      content with either a safe fixed doctype or `SGMLDoc` root. A doctype is
+      masked before parsing and retained byte-for-byte, while internal subsets,
+      entity/element/attribute/notation declarations, malformed markup and
+      extension-only impostors fail closed. External DTDs, entities and network
+      schemas are never resolved.
+
+      All profiles preserve declarations, namespaces, doctypes, encoding/BOM,
+      unknown elements and original source bytes in the positional skeleton and
+      IndexedDB. Identity output is byte-exact; edited output changes only mapped
+      values, escapes them for their XML context, validates the original profile
+      again and retains the source extension/MIME family. Structural split/join
+      is disabled because it would invalidate vocabulary mappings. Registry,
+      upload hints, export dispatch, import options, QA, persistence migration,
+      landing/about support lists and the reusable conformance matrix now include
+      the 42nd adapter.
+
+      Tests cover every profile, complex inline content, optional metadata,
+      formulas/control markup, Unicode/combining marks/RTL/emoji, malformed and
+      adversarial doctypes/entities, extension impostors, cancellation,
+      byte-identical and translated round trips, independent DOM reopening,
+      generated 1,000-unit Author-it and 250-unit ITS inputs, deterministic
+      mappings, BOOKMAP identity output, IndexedDB save/reload and real-Chromium
+      download/re-import. No oversized fixture is committed. `npm run verify`
+      passes with 1,021 unit tests (3 intentional skips), 65 real-Chromium tests,
+      formatting, type/accessibility checks and the production build.
+
+      Limits are explicit: this is not a validating full-SGML parser; SGML that
+      depends on omitted end tags, unquoted attributes or DTD entity expansion is
+      rejected. MULIX has no single public normative schema, so the adapter
+      supports the canonical paired source/target structure rather than importing
+      arbitrary memoQ XPath filter configurations. Unknown vocabulary content is
+      preserved but not made editable unless it matches that profile's allowlist.
+
+      References: W3C [Internationalization Tag Set (ITS) Version 2.0](https://www.w3.org/TR/its20/),
+      OASIS [DITA 1.3 BOOKMAP reference](https://docs.oasis-open.org/dita/dita/v1.3/os/part3-all-inclusive/langRef/technicalContent/bookmap.html),
+      Author-it [XML format for translation](https://kc.author-it.com/r/books/Author-it-Cloud/Author-Module-Guide/Author-it-XML-format-for-translation),
+      MadCap [Flare meta tags and XML namespaces](https://docs.madcapsoftware.com/flare2025r2/Flare-Meta-Tags-Guide.pdf),
+      memoQ [multilingual XML files](https://docs.memoq.com/12-3/en/Workspace/multilingual-xml-files.html),
+      TYPO3 [XLIFF and legacy localization background](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Localization/XliffFormat.html),
+      Microsoft [Office 2003 XML schema availability](https://news.microsoft.com/source/2003/11/17/microsoft-announces-availability-of-open-and-royalty-free-license-for-office-2003-xml-reference-schemas/),
+      and W3C [SGML and HTML introduction](https://www.w3.org/TR/html401/sgml/intro.html).
 
 - [ ] **FF-509 — Additional subtitle formats.** Add Advanced SubStation Alpha
       `.ass`/`.ssa` and Spruce `.stl`. Preserve cue timing, IDs, positioning,

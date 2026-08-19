@@ -315,7 +315,7 @@ function validateBundle(
 				);
 			const target = models.get(reference.target);
 			if (!target) {
-				if (/\.(?:dita|ditamap)$/i.test(reference.target))
+				if (/\.(?:dita|ditamap|bookmap)$/i.test(reference.target))
 					throw invalidDita(
 						`${model.part} references missing DITA document ${reference.target}.`,
 					);
@@ -369,7 +369,10 @@ async function readDitaSource(
 		const archive = await readSafeZipPackage(file, context);
 		const models = new Map<string, DitaPartModel>();
 		for (const [part, content] of Object.entries(archive.parts))
-			if (typeof content === "string" && /\.(?:dita|ditamap)$/i.test(part))
+			if (
+				typeof content === "string" &&
+				/\.(?:dita|ditamap|bookmap)$/i.test(part)
+			)
 				models.set(part, parseDitaPart(part, content));
 		if (!models.size)
 			throw invalidDita("The DITA bundle contains no DITA XML documents.");

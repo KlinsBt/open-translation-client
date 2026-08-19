@@ -45,6 +45,7 @@ import { buildLegacyBilingualTranslation } from "$lib/formats/legacyBilingual";
 import { buildVisioTranslationBlob } from "$lib/formats/visio";
 import { buildQuarkTranslationBlob } from "$lib/formats/quark";
 import { buildPsdTranslationBlob } from "$lib/formats/psd";
+import { buildSpecialistXmlTranslationBlob } from "$lib/formats/specialistXml";
 import {
 	buildOcrBilingualReview,
 	buildTranslatedWebVtt,
@@ -252,6 +253,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildQuarkTranslationBlob(project);
 		case "psd":
 			return buildPsdTranslationBlob(project);
+		case "specialist-xml":
+			return buildSpecialistXmlTranslationBlob(project);
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":
