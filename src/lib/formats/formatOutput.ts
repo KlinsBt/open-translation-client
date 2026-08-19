@@ -35,6 +35,7 @@ import { buildLegacyBilingualTranslation } from "./legacyBilingual";
 import { buildVisioTranslationBlob } from "./visio";
 import { buildQuarkTranslationBlob } from "./quark";
 import { buildSpecialistXmlTranslationBlob } from "./specialistXml";
+import { buildAuxiliaryResourceTranslationBlob } from "./auxiliaryResources";
 
 /** Builds only native, same-format round-trip output. */
 export async function buildRoundTripFormatOutputBlob(
@@ -63,6 +64,8 @@ export async function buildRoundTripFormatOutputBlob(
 			return buildQtTsTranslationBlob(project);
 		case "ini":
 			return buildIniTranslationBlob(project);
+		case "auxiliary-resources":
+			return buildAuxiliaryResourceTranslationBlob(project);
 		case "php":
 			return buildPhpTranslationBlob(project);
 		case "markup":

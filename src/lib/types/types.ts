@@ -167,6 +167,31 @@ export interface IniSegmentMeta {
 	separator?: string;
 }
 
+export interface AuxiliarySegmentMeta {
+	profile: "inf" | "reg" | "freemind";
+	location:
+		| "inf-string"
+		| "reg-string"
+		| "reg-expand"
+		| "reg-multi"
+		| "xml-text"
+		| "xml-cdata"
+		| "xml-attribute";
+	start: number;
+	end: number;
+	originalValue: string;
+	key?: string;
+	path?: string[];
+	section?: string;
+	line?: number;
+	registryPath?: string;
+	registryType?: string;
+	nodeId?: string;
+	link?: string;
+	richContentType?: "NODE" | "NOTE";
+	separator?: string;
+}
+
 export interface PhpSegmentMeta {
 	path: string[];
 	start: number;
@@ -389,6 +414,7 @@ export type SegmentMeta =
 	| ResxSegmentMeta
 	| QtTsSegmentMeta
 	| IniSegmentMeta
+	| AuxiliarySegmentMeta
 	| PhpSegmentMeta
 	| MarkupSegmentMeta
 	| SubtitleSegmentMeta

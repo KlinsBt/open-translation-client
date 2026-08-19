@@ -76,6 +76,14 @@ import { importResxFile, validateResxFile } from "./resxFamily";
 import { importQtTsFile, validateQtTsFile } from "./qtTsFamily";
 import { importIniFile, validateIniFile } from "./iniFamily";
 import {
+	AUXILIARY_RESOURCE_EXTENSIONS,
+	AUXILIARY_RESOURCE_MIME_TYPES,
+	detectAuxiliaryResourceProfile,
+	generateAuxiliaryResourceTranslation,
+	importAuxiliaryResourceFile,
+	validateAuxiliaryResourceFile,
+} from "./auxiliaryResources";
+import {
 	importPhpLocalizationFile,
 	validatePhpLocalizationFile,
 } from "./phpLocalization";
@@ -380,6 +388,19 @@ const adapters = [
 		validate: validateIniFile,
 		importFile: importIniFile,
 		exportFile: generateIniTranslation,
+	},
+	{
+		id: "auxiliary-resources",
+		label: "Windows INF/REG + FreeMind MM",
+		extensions: AUXILIARY_RESOURCE_EXTENSIONS,
+		mimeTypes: AUXILIARY_RESOURCE_MIME_TYPES,
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["auxiliary-resources"],
+		sniff: async (file, context) =>
+			(await detectAuxiliaryResourceProfile(file, context)) !== undefined,
+		validate: validateAuxiliaryResourceFile,
+		importFile: importAuxiliaryResourceFile,
+		exportFile: generateAuxiliaryResourceTranslation,
 	},
 	{
 		id: "php",

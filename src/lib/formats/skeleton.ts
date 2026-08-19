@@ -179,6 +179,24 @@ export interface IniValueReplacement extends ReplacementBase {
 	insertionTextSuffix?: string;
 }
 
+export interface AuxiliaryValueReplacement extends ReplacementBase {
+	kind: "auxiliary-value";
+	profile: "inf" | "reg" | "freemind";
+	location:
+		| "inf-string"
+		| "reg-string"
+		| "reg-expand"
+		| "reg-multi"
+		| "xml-text"
+		| "xml-cdata"
+		| "xml-attribute";
+	start: number;
+	end: number;
+	originalValue: string;
+	key?: string;
+	path?: string[];
+}
+
 export interface PhpValueReplacement extends ReplacementBase {
 	kind: "php-value";
 	path: string[];
@@ -319,6 +337,7 @@ export type SkeletonReplacement =
 	| ResxValueReplacement
 	| QtTsValueReplacement
 	| IniValueReplacement
+	| AuxiliaryValueReplacement
 	| PhpValueReplacement
 	| MarkupTextReplacement
 	| SubtitleCueReplacement
@@ -431,6 +450,7 @@ export async function createTextSkeleton(
 		| "resx"
 		| "qt-ts"
 		| "ini"
+		| "auxiliary-resources"
 		| "php"
 		| "markup"
 		| "subtitles"
@@ -731,7 +751,8 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				replacement.kind === "json-value" ||
 				replacement.kind === "yaml-scalar" ||
 				replacement.kind === "android-value" ||
-				replacement.kind === "apple-value") &&
+				replacement.kind === "apple-value" ||
+				replacement.kind === "auxiliary-value") &&
 			(replacement.start < 0 || replacement.end < replacement.start)
 		) {
 			issues.push("Replacement text ranges are invalid.");
@@ -877,6 +898,24 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 				typeof replacement.originalValue !== "string")
 		) {
 			issues.push("INI value replacement metadata is invalid.");
+		}
+		if (
+			replacement.kind === "auxiliary-value" &&
+			(!["inf", "reg", "freemind"].includes(replacement.profile) ||
+				![
+					"inf-string",
+					"reg-string",
+					"reg-expand",
+					"reg-multi",
+					"xml-text",
+					"xml-cdata",
+					"xml-attribute",
+				].includes(replacement.location) ||
+				replacement.start < 0 ||
+				replacement.end < replacement.start ||
+				typeof replacement.originalValue !== "string")
+		) {
+			issues.push("Auxiliary resource replacement metadata is invalid.");
 		}
 		if (
 			replacement.kind === "php-value" &&
@@ -1168,6 +1207,7 @@ export function synchronizeSkeletonReplacements(
 		skeleton.format === "odf" ||
 		skeleton.format === "visio" ||
 		skeleton.format === "quark" ||
+		skeleton.format === "auxiliary-resources" ||
 		skeleton.format === "psd" ||
 		skeleton.format === "specialist-xml" ||
 		skeleton.format === "legacy-bilingual"

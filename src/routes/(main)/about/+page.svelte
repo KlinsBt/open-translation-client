@@ -98,6 +98,8 @@
 			formats: [
 				"Qt Linguist TS and QML",
 				"INI, .desktop and .lang",
+				"Windows INF localized Strings and Registry REG string values",
+				"FreeMind MM node labels, rich text and notes",
 				"Static PHP localization arrays and mixed PHP/HTML templates",
 				"Windows RC resources",
 				"FrameMaker MIF and MIF2 filter-alias files",
@@ -175,7 +177,7 @@
 				Open Translation Client is a browser-based, open source CAT tool for
 				professional translators, learners and teams. It began as a master's
 				thesis project at Anhalt University of Applied Sciences in Germany and
-				has grown into a local-first editor with 42 registered format workflows.
+				has grown into a local-first editor with 43 registered format workflows.
 			</p>
 		</div>
 	</header>
@@ -216,6 +218,14 @@
 					<strong>Translation safeguards:</strong> Inline codes and placeholders
 					remain protected, split and join operations retain their segment lineage,
 					and structured imports can offer format-specific extraction options.
+				</div>
+				<div class="note">
+					<strong>Auxiliary resource safety:</strong> INF imports only selected localized
+					Strings sections, REG imports only typed string-bearing values, and FreeMind
+					imports node labels and visible rich content. Setup directives, registry
+					keys and binary values, node IDs, links, hooks, scripts and unknown XML
+					remain inert and unchanged. REG files are downloaded as files and are never
+					applied to the operating system.
 				</div>
 				<div class="note">
 					<strong>Visio support:</strong> VSDX-family OPC packages and standalone

@@ -641,6 +641,52 @@ const iniFixture: FormatConformanceFixture = {
 	performanceOptions: { profile: "generic", keySelectors: "messages.*" },
 };
 
+const auxiliaryResourcesFixture: FormatConformanceFixture = {
+	id: "auxiliary-resources",
+	fileName: "mind-map.mm",
+	mimeType: "application/x-freemind",
+	createValidFile: async () =>
+		textFile(
+			`<?xml version="1.0" encoding="UTF-8"?>\n<map version="1.0.1"><node ID="ID_ROOT" TEXT="${escapeXml(CONFORMANCE_UNICODE_SOURCE)}" LINK="https://example.invalid/inert"><hook NAME="preserved"/></node></map>\n`,
+			"mind-map.mm",
+			"application/x-freemind",
+		),
+	createMalformedFile: async () =>
+		textFile(
+			'<map version="1.0"><node ID="duplicate"/><node ID="duplicate"/></map>',
+			"bad.mm",
+			"application/x-freemind",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: {
+			profile: "freemind",
+			infSections: "Strings,Strings.*",
+			includeFreeMindNotes: true,
+		},
+		skeleton: { kind: "text", replacementKinds: ["auxiliary-value"] },
+		units: [
+			{
+				id: "ID_ROOT:text",
+				part: "mind-map.mm",
+				path: ["map[1]", "node[1]", "@TEXT"],
+			},
+		],
+	},
+	identityTargetSegments: [CONFORMANCE_UNICODE_SOURCE],
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	createPerformanceFile: async (units) =>
+		textFile(
+			`<map version="1.0.1"><node ID="root" TEXT="Root">${Array.from(
+				{ length: units - 1 },
+				(_, index) => `<node ID="node_${index}" TEXT="Message ${index}"/>`,
+			).join("")}</node></map>`,
+			"performance.mm",
+			"application/x-freemind",
+		),
+};
+
 const phpFixture: FormatConformanceFixture = {
 	id: "php",
 	fileName: "messages.php",
@@ -2159,6 +2205,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	resxFixture,
 	qtTsFixture,
 	iniFixture,
+	auxiliaryResourcesFixture,
 	phpFixture,
 	markupFixture,
 	subtitlesFixture,

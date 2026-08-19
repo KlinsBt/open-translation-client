@@ -1707,12 +1707,82 @@ definition of done below before checking them.
       WHATWG [`createImageBitmap`](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html),
       and Tesseract's [input format guidance](https://tesseract-ocr.github.io/tessdoc/InputFormats.html).
 
-- [ ] **FF-511 — Auxiliary text, mind-map, and resource formats.** Add plain or
+- [x] **FF-511 — Auxiliary text, mind-map, and resource formats.** Add plain or
       structured profiles for `.inf`, Windows Registry `.reg`, and FreeMind `.mm`.
       Preserve comments, encodings, escaping, registry value types, node IDs,
       links, rich content, and nontranslatable metadata. Detect `.reg` headers
       and FreeMind XML roots structurally instead of treating either as generic
       text/XML.
+
+      **Completed 2026-08-20.** A dedicated `auxiliary-resources` adapter now
+      detects all three profiles from their content rather than their filename.
+      Windows INF requires a valid `[Version]` `Signature` plus one or more
+      `[Strings]`/`[Strings.LanguageID]` sections. Registry files require the
+      exact `Windows Registry Editor Version 5.00` or `REGEDIT4` header and
+      structurally valid keys and typed values. FreeMind requires safe,
+      well-formed XML with a versioned `<map>` root and at least one `<node>`;
+      duplicate node IDs, doctypes, entities, malformed attributes and
+      extension-only impostors fail closed.
+
+      INF import exposes only selected localized Strings sections (default
+      `Strings,Strings.*`), preserves comments and physical continuations, and
+      understands outer quotes plus doubled-quote escaping. Exact GUID/resource
+      metadata stays protected, as do all setup directives, paths, tokens,
+      manufacturers and operational sections. Export quotes and escapes changed
+      values, retains untouched bytes and UTF-8/UTF-16 BOM policy, enforces the
+      4,095-character payload limit, reparses the complete result and returns
+      `.inf`. Identity output reuses the exact original file.
+
+      REG import exposes `REG_SZ`, UTF-16LE `REG_EXPAND_SZ` (`hex(2)`) and
+      `REG_MULTI_SZ` (`hex(7)`) text while retaining registry paths, value names,
+      value types and translator context. DWORD/QWORD, arbitrary binary data,
+      deletion instructions, comments and unknown records never become
+      editable. Changed values are escaped or re-encoded into their original
+      type, including continuations and required NUL terminators, then the full
+      file is reparsed. Open TLC treats REG content only as inert text stored in
+      IndexedDB and downloaded as `.reg`; it never invokes Registry Editor or
+      modifies the operating-system registry.
+
+      FreeMind import exposes node `TEXT` labels and visible XHTML text below
+      `richcontent TYPE="NODE"`; `TYPE="NOTE"` is optional and enabled by
+      default. Node IDs, links, arrow destinations, icons, hooks, attributes,
+      styles, scripts, forms and unknown XML stay inert and positional. When a
+      rich node label is present it takes precedence over the fallback `TEXT`
+      attribute, avoiding duplicate units. Export escapes only mapped text,
+      CDATA or attribute ranges, preserves the complete map around them,
+      validates the generated map and returns `.mm`. Split/join is deliberately
+      disabled for all three profiles because it would break typed value and XML
+      range alignment.
+
+      Tests cover renamed content, extensions and picker/registry routing;
+      realistic comments, continuations, quoted strings, typed REG values,
+      Unicode/combining marks/RTL/emoji, FreeMind labels/rich text/notes and
+      unknown content; protected GUIDs, directives, keys, numeric/binary data,
+      IDs, links, arrows, hooks and scripts; malformed headers, odd/truncated
+      hexadecimal values, duplicate IDs, XXE/doctype input, cancellation,
+      structural-edit refusal, exact UTF-16 identity bytes, translated
+      re-imports, and a generated 3,000-unit INF without committed large
+      fixtures. The conformance matrix supplies the 43rd adapter fixture.
+      Chromium persists/reopens the skeleton and original bytes through
+      IndexedDB, exports the translated map and independently parses its XML DOM
+      before adapter re-import. The landing page, About matrix, upload picker,
+      import controls, export dispatch, download names, QA, persistence and
+      support count agree. `npm run verify` passes with 1,069 unit tests (4
+      intentional/host-dependent skips), 72 real-Chromium tests, formatting,
+      type/accessibility checks and the production build.
+
+      Deliberate limits: INF does not interpret or execute setup directives and
+      therefore translates only its resource string table; ambiguous string-table
+      identifiers that are exact GUID metadata are protected. REG numeric,
+      binary and deletion records are preserved but not translated. FreeMind
+      active/embedded markup is retained as inert XML and never rendered or
+      executed. The implementation follows Microsoft Learn's [INF general
+      syntax](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/general-syntax-rules-for-inf-files)
+      and [Strings section](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/inf-strings-section),
+      Microsoft's [REG file syntax](https://support.microsoft.com/en-us/topic/how-to-add-modify-or-delete-registry-subkeys-and-values-by-using-a-reg-file-9c7f37cf-a5e9-e1cd-c4fa-2a26218a1a23)
+      and [registry value types](https://learn.microsoft.com/en-us/troubleshoot/windows-server/performance/windows-registry-advanced-users),
+      and FreeMind's official [file-format description](https://freemind.sourceforge.io/wiki/index.php/File_format)
+      and [1.0.1 XSD](https://freemind.sourceforge.io/wiki/index.php/Freemind.xsd).
 
 - [ ] **FF-512 — Outlook message items.** Add `.msg` import with sender,
       recipients, subject, plain/HTML body, selected attachment names, and message

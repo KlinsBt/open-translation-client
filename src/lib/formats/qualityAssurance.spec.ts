@@ -65,6 +65,15 @@ describe("placeholder export QA", () => {
 			expect.arrayContaining(["MALFORMED_PLACEHOLDER", "MISSING_PLACEHOLDER"]),
 		);
 	});
+
+	it("protects Windows environment placeholders without mistaking them for printf", () => {
+		expect(issueCodes("Open %PATH% safely", "%PATH% sicher öffnen")).toEqual(
+			[],
+		);
+		expect(issueCodes("Open %PATH% safely", "Sicher öffnen")).toContain(
+			"MISSING_PLACEHOLDER",
+		);
+	});
 });
 
 describe("markup export QA", () => {

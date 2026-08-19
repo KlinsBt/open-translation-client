@@ -53,6 +53,8 @@ const QT_TS_EDIT_ERROR =
 	"Qt TS messages cannot be split or joined because contexts, numerus forms, variants, and translation ranges must remain aligned.";
 const INI_EDIT_ERROR =
 	"INI resource values cannot be split or joined because sections, keys, locale suffixes, and line ranges must remain aligned.";
+const AUXILIARY_RESOURCE_EDIT_ERROR =
+	"INF, Registry, and FreeMind values cannot be split or joined because typed values, resource keys, and XML ranges must remain aligned.";
 const PHP_EDIT_ERROR =
 	"PHP localization values cannot be split or joined because array paths and string ranges must remain aligned.";
 const MARKUP_EDIT_ERROR =
@@ -154,6 +156,8 @@ function validateForStructuralEdit(
 	if (translation.type === "resx") return RESX_EDIT_ERROR;
 	if (translation.type === "qt-ts") return QT_TS_EDIT_ERROR;
 	if (translation.type === "ini") return INI_EDIT_ERROR;
+	if (translation.type === "auxiliary-resources")
+		return AUXILIARY_RESOURCE_EDIT_ERROR;
 	if (translation.type === "php") return PHP_EDIT_ERROR;
 	if (translation.type === "markup") return MARKUP_EDIT_ERROR;
 	if (translation.type === "subtitles") return SUBTITLE_EDIT_ERROR;

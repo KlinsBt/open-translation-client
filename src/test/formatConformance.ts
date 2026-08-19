@@ -22,6 +22,7 @@ import { buildPropertiesTranslationBlob } from "$lib/functions/outputGeneration/
 import { buildResxTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationResx";
 import { buildQtTsTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQtTs";
 import { buildIniTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationIni";
+import { buildAuxiliaryResourceTranslationBlob } from "$lib/formats/auxiliaryResources";
 import { buildPhpTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationPhp";
 import { buildLightweightMarkupTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationMarkup";
 import { buildSubtitleTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationSubtitles";
@@ -199,6 +200,8 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 			return buildQtTsTranslationBlob(project);
 		case "ini":
 			return buildIniTranslationBlob(project);
+		case "auxiliary-resources":
+			return buildAuxiliaryResourceTranslationBlob(project);
 		case "php":
 			return buildPhpTranslationBlob(project);
 		case "markup":

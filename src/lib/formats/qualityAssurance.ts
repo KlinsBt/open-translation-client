@@ -55,6 +55,10 @@ export const FORMAT_QA_POLICIES: Readonly<Record<FormatId, FormatQaPolicy>> = {
 	resx: { allowTagReorder: false, allowInlineCodeReorder: false },
 	"qt-ts": { allowTagReorder: true, allowInlineCodeReorder: true },
 	ini: { allowTagReorder: false, allowInlineCodeReorder: false },
+	"auxiliary-resources": {
+		allowTagReorder: false,
+		allowInlineCodeReorder: false,
+	},
 	php: { allowTagReorder: false, allowInlineCodeReorder: false },
 	markup: { allowTagReorder: false, allowInlineCodeReorder: false },
 	subtitles: { allowTagReorder: true, allowInlineCodeReorder: true },
@@ -145,6 +149,7 @@ const PRINTF_PATTERN =
 	/%(?:(\d+)\$)?[-+#0 ']*(?:\d+|\*)?(?:\.(?:\d+|\*))?[hlLzjt]*([@diuoxXfFeEgGaAcspn])/g;
 const APPLE_SUBSTITUTION_PATTERN = /%#@([A-Za-z_][\w.-]*)@/g;
 const QT_PLACEHOLDER_PATTERN = /%(?:L(\d+)|(\d+)(?![\d$])|n)/g;
+const WINDOWS_ENVIRONMENT_PATTERN = /%([A-Za-z_][A-Za-z0-9_]*)%/g;
 
 export function runProjectExportQuality(
 	project: UserData,
@@ -617,6 +622,17 @@ function scanPrintf(
 	malformed: string[],
 ): void {
 	const covered = new Set<number>();
+	WINDOWS_ENVIRONMENT_PATTERN.lastIndex = 0;
+	for (const match of text.matchAll(WINDOWS_ENVIRONMENT_PATTERN)) {
+		for (let offset = 0; offset < match[0].length; offset++)
+			covered.add(match.index + offset);
+		placeholders.push({
+			key: `windows-environment:${match[1].toLowerCase()}`,
+			raw: match[0],
+			index: match.index,
+			orderSensitive: false,
+		});
+	}
 	APPLE_SUBSTITUTION_PATTERN.lastIndex = 0;
 	for (const match of text.matchAll(APPLE_SUBSTITUTION_PATTERN)) {
 		for (let offset = 0; offset < match[0].length; offset++)
@@ -644,6 +660,8 @@ function scanPrintf(
 	PRINTF_PATTERN.lastIndex = 0;
 	for (const match of text.matchAll(PRINTF_PATTERN)) {
 		const index = match.index;
+		if ([...match[0]].some((_, offset) => covered.has(index + offset)))
+			continue;
 		for (let offset = 0; offset < match[0].length; offset++)
 			covered.add(index + offset);
 		const position = match[1];

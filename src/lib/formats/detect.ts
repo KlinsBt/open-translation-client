@@ -22,6 +22,7 @@ import {
 	detectSpecialistXmlProfile,
 	specialistXmlProfileLabel,
 } from "./specialistXml";
+import { detectAuxiliaryResourceProfile } from "./auxiliaryResources";
 import { detectSubtitleFileProfile } from "./subtitles";
 import {
 	inspectZipProjectManifest,
@@ -343,6 +344,53 @@ export async function detectFileFormat(
 					validation.reason ??
 						"The native XPress Tags version/encoding header is missing or malformed.",
 				);
+	}
+	const auxiliaryCandidate = adapters.find(
+		(candidate) => candidate.id === "auxiliary-resources",
+	);
+	const auxiliaryText =
+		decodeTextPrefix(prefix)
+			?.replace(/^\ufeff/, "")
+			.trimStart() ?? "";
+	const auxiliaryClaim =
+		extension !== undefined && ["inf", "reg", "mm"].includes(extension);
+	const auxiliarySignature =
+		/^(?:Windows Registry Editor Version 5\.00|REGEDIT4)(?:\r?\n|$)/.test(
+			auxiliaryText,
+		) ||
+		(/^\[Version\]/im.test(auxiliaryText) &&
+			/^\s*Signature\s*=\s*["']?\$(?:Windows NT|Chicago)\$/im.test(
+				auxiliaryText,
+			)) ||
+		/^\s*(?:<\?xml[^?]*\?>\s*)?<map\b/i.test(auxiliaryText);
+	if (auxiliaryCandidate && (auxiliaryClaim || auxiliarySignature)) {
+		const profile = await detectAuxiliaryResourceProfile(file, context);
+		if (profile) {
+			const detection = supportedContent(
+				auxiliaryCandidate,
+				extension,
+				mimeType,
+			);
+			detection.label =
+				profile === "inf"
+					? "Windows INF string resources"
+					: profile === "reg"
+						? "Windows Registry string resources"
+						: "FreeMind mind map";
+			detection.reason =
+				profile === "reg"
+					? "The Registry Editor header and typed value syntax match; Open TLC edits string data without applying the file to the operating system registry."
+					: profile === "inf"
+						? "The INF Version signature and localized Strings sections match; setup directives remain protected and are never interpreted."
+						: "The XML root, versioned map structure, and node content match FreeMind; IDs, links, hooks, and active markup remain inert.";
+			return detection;
+		}
+		return unsupported(
+			"Invalid auxiliary resource",
+			auxiliaryClaim ? "low" : "medium",
+			auxiliaryClaim ? ["extension"] : ["content"],
+			"The file does not match a safe Windows INF, Registry, or FreeMind structure.",
+		);
 	}
 	const specialistCandidate = adapters.find(
 		(candidate) => candidate.id === "specialist-xml",

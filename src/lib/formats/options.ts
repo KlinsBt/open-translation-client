@@ -377,6 +377,34 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: false,
 		},
 	],
+	"auxiliary-resources": [
+		{
+			id: "profile",
+			label: "Auxiliary resource profile",
+			type: "select",
+			defaultValue: "auto",
+			choices: ["auto", "inf", "reg", "freemind"],
+			description:
+				"Auto detects Windows INF strings, Registry string values, or FreeMind map text from the file structure.",
+		},
+		{
+			id: "infSections",
+			label: "INF string sections",
+			type: "text",
+			defaultValue: "Strings,Strings.*",
+			placeholder: "Strings, Strings.0407",
+			description:
+				"Comma-separated Strings section names; * matches a language-ID suffix. Setup directives are always protected.",
+		},
+		{
+			id: "includeFreeMindNotes",
+			label: "Include FreeMind notes",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Expose visible rich-content notes as editable units in addition to node labels.",
+		},
+	],
 	php: [
 		{
 			id: "pathSelectors",
