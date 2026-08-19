@@ -93,10 +93,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ott,.odm,.ods,.ots,.odp,.otp,.odf,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.doc,.dot,.bak,.xls,.xlt,.xlsb,.ppt,.pps,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.sldx,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ott,.odm,.ods,.ots,.odp,.otp,.odf,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.doc,.dot,.bak,.xls,.xlt,.xlsb,.ppt,.pps,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.sldx,.html,.htm,.xhtml,.shtml,.jsp,.asp,.aspx,.ascx,.inc,.hhc,.hhk",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument documents, templates, masters + formulas, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF → translated PDF, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, Legacy Office + XLSB, Trados/WorldServer/memoQ return packages, Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument documents, templates, masters + formulas, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF → translated PDF, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, Legacy Office + XLSB, Trados/WorldServer/memoQ return packages, Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML, server pages and HTML Help",
 		);
 	});
 
@@ -638,7 +638,7 @@ describe("format adapter registry", () => {
 			),
 		).resolves.toMatchObject({
 			formatId: "html",
-			label: "HTML",
+			label: "HTML, server pages and HTML Help",
 			supported: true,
 			confidence: "high",
 		});
@@ -794,7 +794,10 @@ describe("registered importers and validators", () => {
 		if (result.kind !== "segments") throw new Error("Expected segments");
 		expect(result.segments).toEqual(["Hello world."]);
 		expect(result.segmentsMeta).toHaveLength(1);
-		expect(result.typeRef).toContain("<p>Hello world.</p>");
+		expect(result.typeRef).toMatchObject({
+			profile: "html",
+			sourceExtension: "html",
+		});
 		expect(result.document.units).toHaveLength(1);
 		expect(result.skeleton.payload).toMatchObject({ kind: "text" });
 	});

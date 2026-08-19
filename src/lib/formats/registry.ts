@@ -100,6 +100,7 @@ import { importTtmlFile, validateTtmlFile } from "./ttml";
 import { importMifFile, validateMifFile } from "./mif";
 import { importWindowsRcFile, validateWindowsRcFile } from "./windowsRc";
 import { importQmlFile, validateQmlFile } from "./qml";
+import { SERVER_HTML_EXTENSIONS } from "./serverHtml";
 import { importPdfFile, validatePdfFile } from "./pdf";
 import {
 	importOcrImageFile,
@@ -710,13 +711,19 @@ const adapters = [
 	},
 	{
 		id: "html",
-		label: "HTML",
-		extensions: ["html", "htm", "xhtml"],
-		mimeTypes: ["text/html", "application/xhtml+xml"],
+		label: "HTML, server pages and HTML Help",
+		extensions: SERVER_HTML_EXTENSIONS,
+		mimeTypes: [
+			"text/html",
+			"application/xhtml+xml",
+			"text/x-jsp",
+			"text/asp",
+			"application/x-httpd-php",
+		],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.html,
-		sniff: (file, context) =>
-			sniffText(file, /^<(?:!doctype\s+html|html|head|body)(?:\s|>)/i, context),
+		sniff: async (file, context) =>
+			(await validateHtmlFile(file, context)).valid,
 		validate: validateHtmlFile,
 		importFile: importHtmlFile,
 		exportFile: createHtmlFromModifiedText,

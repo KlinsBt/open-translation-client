@@ -39,7 +39,9 @@
 				"SpreadsheetML 2003 XML",
 				"RTF",
 				"ODT / OTT / ODM / ODS / OTS / ODP / OTP / ODF Formula",
-				"HTML / XHTML",
+				"HTML / XHTML / server pages",
+				"SHTML / JSP / ASP.NET / PHP templates",
+				"HTML Help contents and indexes",
 			],
 		},
 		{

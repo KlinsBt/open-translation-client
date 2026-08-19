@@ -241,6 +241,31 @@ export async function detectFileFormat(
 		);
 	}
 
+	const serverHtmlCandidates = adapters.filter(
+		(adapter) =>
+			(adapter.id === "html" || adapter.id === "php") &&
+			((extension !== undefined && adapter.extensions.includes(extension)) ||
+				(mimeType !== "" && adapter.mimeTypes.includes(mimeType))),
+	);
+	for (const candidate of serverHtmlCandidates)
+		if (await candidate.sniff(file, context))
+			return supportedContent(candidate, extension, mimeType);
+	if (
+		serverHtmlCandidates.length > 0 &&
+		serverHtmlCandidates.some((candidate) => candidate.id === "html")
+	)
+		return unsupported(
+			"Unrecognized server-side HTML document",
+			"low",
+			metadataEvidence(
+				extension,
+				mimeType,
+				serverHtmlCandidates.flatMap((candidate) => candidate.extensions),
+				serverHtmlCandidates.flatMap((candidate) => candidate.mimeTypes),
+			),
+			"The filename claims an HTML, server-page, or HTML Help format, but the content has no matching markup signature.",
+		);
+
 	const extensionMatch = extension
 		? adapters.find((adapter) => adapter.extensions.includes(extension))
 		: undefined;

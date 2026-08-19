@@ -275,4 +275,54 @@ describe("persisted data migrations", () => {
 			),
 		).toEqual(new Uint8Array([0, 255, 128, 1]));
 	});
+
+	it("retains FF-502 server-page profile, encoding, and original source bytes", async () => {
+		const bytes = new Uint8Array([0xff, 0xfe, 0x3c, 0x00, 0x25, 0x00]);
+		const original = new Blob([bytes], { type: "text/x-jsp" });
+		const project = makeUserData({
+			type: "html",
+			typeRef: {
+				profile: "jsp",
+				sourceExtension: "jsp",
+				mimeType: "text/x-jsp",
+			},
+			segmentsMeta: [
+				{
+					kind: "text",
+					path: [0, 0],
+					start: 10,
+					end: 15,
+					sourceText: "Hello",
+				},
+			],
+		});
+		project.translationData.skeleton = {
+			schemaVersion: 1,
+			format: "html",
+			source: {
+				name: "page.jsp",
+				mimeType: "text/x-jsp",
+				encoding: "utf-16le",
+				hasBom: true,
+				originalFile: original,
+			},
+			payload: { kind: "text", content: "<p>Hello</p>" },
+			replacements: [],
+		};
+
+		const migrated = migrateProjectData(project);
+		expect(migrated.translationData.typeRef).toMatchObject({
+			profile: "jsp",
+			sourceExtension: "jsp",
+		});
+		expect(migrated.translationData.skeleton?.source).toMatchObject({
+			encoding: "utf-16le",
+			hasBom: true,
+		});
+		expect(
+			new Uint8Array(
+				await migrated.translationData.skeleton!.source.originalFile!.arrayBuffer(),
+			),
+		).toEqual(bytes);
+	});
 });

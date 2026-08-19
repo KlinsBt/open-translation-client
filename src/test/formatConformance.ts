@@ -8,7 +8,7 @@ import type { UserData } from "$lib/types/types";
 import { PROJECT_SCHEMA_VERSION } from "$lib/formats/persistenceMigrations";
 import { buildTextTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationText";
 import { buildJsonTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationJson";
-import { buildHtmlTranslation } from "$lib/functions/outputGeneration/outputGenerationHtml";
+import { buildHtmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationHtml";
 import { buildDocxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationDocx";
 import { buildXlsxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { buildPptxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationPptx";
@@ -243,7 +243,7 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":
-			return new Blob([buildHtmlTranslation(project)], { type: "text/html" });
+			return buildHtmlTranslationBlob(project);
 		case "docx":
 			return buildDocxTranslationPackage(project);
 		case "xlsx":

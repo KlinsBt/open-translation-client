@@ -1211,7 +1211,7 @@ definition of done below before checking them.
       and the IANA [registered OpenDocument media
       types](https://www.iana.org/assignments/media-types/media-types.xhtml).
 
-- [ ] **FF-502 — Server-side and help-system HTML families.** Add deliberate
+- [x] **FF-502 — Server-side and help-system HTML families.** Add deliberate
       profiles for `.shtml`, `.jsp`, `.asp`, `.aspx`, `.ascx`, `.inc`, `.hhc`,
       and `.hhk`, plus mixed PHP/HTML pages distinct from the existing limited
       PHP localization-array adapter. Translate only HTML-visible content and
@@ -1219,6 +1219,33 @@ definition of done below before checking them.
       includes, code blocks, variables, and executable regions byte-for-byte.
       Detection must be content-first because several extensions also contain
       non-HTML source code.
+      Completed 2026-08-19: the loss-minimizing HTML adapter now has explicit
+      SHTML, JSP, classic ASP, ASPX, ASCX, include, HTML Help contents/index,
+      and mixed PHP-template profiles. Extension and MIME metadata only select
+      candidates; recognizable markup, server syntax, or `text/sitemap`
+      structure must validate the actual content. JSP/ASP directives,
+      scriptlets, declarations, expressions, EL `${…}`/`#{…}`, PHP blocks,
+      common template blocks, SSI directives, scripts/styles, and JSP XML code
+      elements remain opaque and are never evaluated. ASP.NET `Text` labels are
+      configurable translatable attributes; HHC/HHK expose display names and
+      keywords while retaining `Local`, image, and navigation parameters.
+      Range patching preserves unknown markup, directives, comments, quote
+      style, CRLF/LF, original extension, UTF-8/UTF-16 encoding, BOM, and exact
+      identity bytes. Static PHP localization arrays still route to their
+      stricter adapter. Tests cover every extension, complex mixed templates,
+      Unicode/RTL/emoji, malformed and extension-only impostors, adversarial
+      quoting/nesting, non-execution, cancellation, a generated 1,500-unit JSP,
+      identity and translated round trips, independent browser-DOM reopening,
+      migration, IndexedDB persistence, upload/export UI, and browser flows.
+      `npm run verify` passes with 915 unit tests (3 skipped), 50 Chromium tests,
+      type checks, formatting, and the production build. Includes are retained
+      but never fetched, dynamic attribute values stay wholly protected, and
+      this browser workflow validates preserved server syntax without claiming
+      to compile it in every server runtime. Syntax policy follows the official
+      [Jakarta Pages specification](https://jakarta.ee/specifications/pages/),
+      [PHP tag rules](https://www.php.net/manual/en/language.basic-syntax.phptags.php),
+      Microsoft [ASP.NET page syntax](https://learn.microsoft.com/en-us/previous-versions/aspnet/k33801s3%28v%3Dvs.100%29),
+      and Microsoft guidance for [HTML Help contents and index entries](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/htmlhelp/to-open-a-compiled-help-file-from-a-contents-or-index-entry).
 
 - [ ] **FF-503 — Extended XLIFF aliases and vendor delivery.** Add `.xlif` and
       memoQ `.mqxlf` aliases, a fixture-led WorldServer WsXLIFF profile, and

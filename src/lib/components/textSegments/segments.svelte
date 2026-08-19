@@ -134,6 +134,17 @@
 				description: `Rebuild the translated ${profile} package while retaining its template, master-document, formula, scripts, embedded objects, and other package resources.`,
 			};
 		}
+		if (data.type === "html") {
+			const extension =
+				typeof data.typeRef === "object" &&
+				typeof data.typeRef.sourceExtension === "string"
+					? data.typeRef.sourceExtension.toUpperCase()
+					: "HTML";
+			return {
+				label: extension,
+				description: `Rebuild the translated ${extension} file while preserving server directives, template expressions, help targets, encoding, and unrelated markup.`,
+			};
+		}
 		if (data.type !== "legacy-office")
 			return {
 				label: getFormatAdapter(data.type).label,

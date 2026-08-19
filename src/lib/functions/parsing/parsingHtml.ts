@@ -5,6 +5,13 @@ import {
 	type SplitPiece,
 } from "./splitWithPreferences";
 import { getActiveTokens } from "./parsingPreferences";
+import {
+	inspectOpaqueTemplateRanges,
+	isHtmlHelpTranslatableAttribute,
+	isServerCodeElement,
+	type OpaqueTemplateRange,
+	type ServerHtmlProfile,
+} from "$lib/formats/serverHtml";
 
 export interface HtmlTextSegment {
 	text: string;
@@ -30,6 +37,7 @@ export interface HtmlFilterOptions {
 	translatableAttributes?: readonly string[];
 	excludedElements?: readonly string[];
 	respectTranslateMetadata?: boolean;
+	profile?: ServerHtmlProfile;
 }
 
 export type HtmlMeta = HtmlSegmentMeta;
@@ -369,6 +377,14 @@ function escapeHtmlAttribute(
 	);
 }
 
+function overlapsOpaqueRange(
+	start: number,
+	end: number,
+	ranges: readonly OpaqueTemplateRange[],
+): boolean {
+	return ranges.some((range) => range.start < end && range.end > start);
+}
+
 export function segmentHtmlContent(
 	htmlContent: string,
 	tokensOverride?: string[],
@@ -387,6 +403,7 @@ export function segmentHtmlContent(
 				"value",
 				"alt",
 				"title",
+				"text",
 			]
 		).map((attribute) => attribute.toLowerCase()),
 	);
@@ -399,9 +416,15 @@ export function segmentHtmlContent(
 	const globalRules = respectTranslate
 		? inlineItsTranslateRules(htmlContent)
 		: [];
+	const opaqueInspection = inspectOpaqueTemplateRanges(
+		htmlContent,
+		filterOptions.profile,
+	);
+	const opaqueRanges = opaqueInspection.ranges;
 	const stack: ElementState[] = [];
 	let textTokenIndex = 0;
 	let elementIndex = 0;
+	let opaqueIndex = 0;
 
 	const addRange = (
 		kind: "text" | "attribute",
@@ -456,6 +479,16 @@ export function segmentHtmlContent(
 
 	let cursor = 0;
 	while (cursor < htmlContent.length) {
+		while (
+			opaqueIndex < opaqueRanges.length &&
+			opaqueRanges[opaqueIndex].end <= cursor
+		)
+			opaqueIndex++;
+		const opaque = opaqueRanges[opaqueIndex];
+		if (opaque?.start === cursor) {
+			cursor = opaque.end;
+			continue;
+		}
 		const parent = stack.at(-1);
 		if (parent && RAW_TEXT_ELEMENTS.has(parent.tag)) {
 			const closing =
@@ -465,7 +498,11 @@ export function segmentHtmlContent(
 			if (closing === cursor) {
 				// Let the normal tag parser consume the raw-text closing tag.
 			} else {
-				const end = closing < 0 ? htmlContent.length : closing;
+				const rawEnd = closing < 0 ? htmlContent.length : closing;
+				const end =
+					opaque && opaque.start > cursor && opaque.start < rawEnd
+						? opaque.start
+						: rawEnd;
 				if (
 					end > cursor &&
 					filterOptions.includeTextNodes !== false &&
@@ -481,13 +518,18 @@ export function segmentHtmlContent(
 						[0, textTokenIndex++],
 					);
 				cursor = end;
+				if (end < rawEnd) continue;
 				if (closing < 0) break;
 				continue;
 			}
 		}
 
 		const nextTag = htmlContent.indexOf("<", cursor);
-		const textEnd = nextTag < 0 ? htmlContent.length : nextTag;
+		const nextMarkup = nextTag < 0 ? htmlContent.length : nextTag;
+		const textEnd =
+			opaque && opaque.start > cursor && opaque.start < nextMarkup
+				? opaque.start
+				: nextMarkup;
 		if (textEnd > cursor) {
 			const state: ElementState = parent ?? {
 				tag: "#document",
@@ -509,6 +551,7 @@ export function segmentHtmlContent(
 				);
 			cursor = textEnd;
 			if (cursor >= htmlContent.length) break;
+			if (opaque?.start === cursor) continue;
 		}
 
 		const tag = parseTag(htmlContent, cursor);
@@ -564,6 +607,7 @@ export function segmentHtmlContent(
 				translate: flag ?? globalFlag ?? inherited?.translate ?? true,
 				excluded:
 					HARD_PROTECTED_ELEMENTS.has(tag.name) ||
+					isServerCodeElement(filterOptions.profile, tag.name) ||
 					excludedElements.has(tag.name) ||
 					(inherited?.excluded ?? false),
 				...(language ? { language } : {}),
@@ -574,7 +618,18 @@ export function segmentHtmlContent(
 				for (const attribute of tag.attributes)
 					if (
 						selectedAttributes.has(attribute.name) &&
-						attribute.end > attribute.start
+						attribute.end > attribute.start &&
+						!overlapsOpaqueRange(
+							attribute.start,
+							attribute.end,
+							opaqueRanges,
+						) &&
+						isHtmlHelpTranslatableAttribute(
+							filterOptions.profile,
+							tag.name,
+							attributes,
+							attribute.name,
+						)
 					)
 						addRange(
 							"attribute",

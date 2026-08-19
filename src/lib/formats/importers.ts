@@ -72,6 +72,10 @@ import {
 } from "./csv";
 import { parseJsonSyntax, type JsonSyntaxDocument } from "./jsonSyntax";
 import { extractJsonProfile, resolveJsonProfile } from "./jsonProfiles";
+import {
+	detectServerHtmlProfile,
+	inspectOpaqueTemplateRanges,
+} from "./serverHtml";
 
 function invalidResult(
 	error: unknown,
@@ -1353,10 +1357,14 @@ export async function validateHtmlFile(
 		const { text } = await readSafeTextFile(file, context);
 		if (!text.trim())
 			return { valid: false, reason: "The HTML file is empty." };
-		if (
-			/\.xhtml$/i.test(file.name) ||
-			/application\/xhtml\+xml/i.test(file.type)
-		) {
+		const typeRef = detectServerHtmlProfile(file.name, file.type, text);
+		if (!typeRef)
+			return {
+				valid: false,
+				reason:
+					"The file does not contain recognizable HTML, server-page markup, or a compiled-help sitemap.",
+			};
+		if (typeRef.profile === "xhtml") {
 			const document = safeParseXml(
 				text.replace(/<!doctype\s+html\s*>/i, ""),
 				context,
@@ -1367,6 +1375,12 @@ export async function validateHtmlFile(
 					reason: "The XHTML document has no html root element.",
 				};
 		}
+		const templateInspection = inspectOpaqueTemplateRanges(
+			text,
+			typeRef.profile,
+		);
+		if (templateInspection.error)
+			return { valid: false, reason: templateInspection.error };
 		return { valid: true };
 	} catch (error) {
 		return invalidResult(error, "The HTML file is not readable text.");
@@ -1381,11 +1395,21 @@ export async function importHtmlFile(
 	const filterOptions = normalizeImportOptions("html", options);
 	const read = await readSafeTextFile(file, context);
 	const html = read.text;
+	const typeRef = detectServerHtmlProfile(file.name, file.type, html);
+	if (!typeRef)
+		throw new SafeInputError(
+			"HTML_INVALID",
+			"The file does not contain recognizable HTML, server-page markup, or a compiled-help sitemap.",
+		);
+	const templateInspection = inspectOpaqueTemplateRanges(html, typeRef.profile);
+	if (templateInspection.error)
+		throw new SafeInputError("HTML_INVALID", templateInspection.error);
 	const { allSegments, meta } = segmentHtmlContent(html, undefined, {
 		includeTextNodes: filterOptions.includeTextNodes === true,
 		translatableAttributes: parseList(filterOptions.translatableAttributes),
 		excludedElements: parseList(filterOptions.excludedElements),
 		respectTranslateMetadata: filterOptions.respectTranslateMetadata === true,
+		profile: typeRef.profile,
 	});
 	const replacements = meta.map((entry, unitIndex) =>
 		entry.kind === "attribute"
@@ -1464,7 +1488,7 @@ export async function importHtmlFile(
 			createSkeletonSource(file, read),
 		),
 		filterOptions,
-		typeRef: html,
+		typeRef: typeRef as unknown as TypeRef,
 		segmentsMeta: meta,
 	};
 }

@@ -25,7 +25,7 @@ import { buildMifTranslationBlob } from "$lib/functions/outputGeneration/outputG
 import { buildWindowsRcTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationWindowsRc";
 import { buildQmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQml";
 import { buildXmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationXml";
-import { buildHtmlTranslation } from "$lib/functions/outputGeneration/outputGenerationHtml";
+import { buildHtmlTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationHtml";
 import { buildDocxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationDocx";
 import { buildXlsxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationXlsx";
 import { buildPptxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationPptx";
@@ -90,7 +90,7 @@ export async function buildRoundTripFormatOutputBlob(
 		case "xml":
 			return buildXmlTranslationBlob(project);
 		case "html":
-			return new Blob([buildHtmlTranslation(project)], { type: "text/html" });
+			return buildHtmlTranslationBlob(project);
 		case "docx":
 			return buildDocxTranslationPackage(project);
 		case "xlsx":

@@ -1218,10 +1218,10 @@ export const FORMAT_IMPORT_OPTIONS = {
 			id: "translatableAttributes",
 			label: "Translatable attributes",
 			type: "text",
-			defaultValue: "placeholder,value,alt,title",
-			placeholder: "placeholder, value, alt, title",
+			defaultValue: "placeholder,value,alt,title,text",
+			placeholder: "placeholder, value, alt, title, text",
 			description:
-				"Comma-separated HTML attribute names; leave empty for none.",
+				"Comma-separated visible labels to import. Dynamic server/template values remain protected even when their attribute name is selected.",
 		},
 		{
 			id: "excludedElements",
@@ -1230,7 +1230,7 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: "script,style,code",
 			placeholder: "script, style, code",
 			description:
-				"Comma-separated element names whose content is never extracted. Script and style always remain protected.",
+				"Comma-separated element names whose content is never extracted. Scripts, styles, server directives, expressions, and executable blocks always remain protected.",
 		},
 		{
 			id: "respectTranslateMetadata",

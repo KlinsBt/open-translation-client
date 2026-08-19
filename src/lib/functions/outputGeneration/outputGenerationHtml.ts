@@ -12,20 +12,25 @@ import {
 } from "$lib/formats/skeleton";
 import { normalizeImportOptions, parseList } from "$lib/formats/options";
 import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
+import { encodeTextBytes } from "./outputGenerationText";
+import {
+	detectServerHtmlProfile,
+	htmlMimeType,
+	htmlSourceExtension,
+	type ServerHtmlExtension,
+	type ServerHtmlProfile,
+	type ServerHtmlTypeRef,
+} from "$lib/formats/serverHtml";
 
 async function generateHtmlFileDownload(
-	htmlContent: string,
+	blob: Blob,
 	name: string,
-	extension: "html" | "htm" | "xhtml",
+	extension: ServerHtmlExtension,
 ) {
-	const blob: Blob = new Blob([htmlContent], {
-		type: extension === "xhtml" ? "application/xhtml+xml" : "text/html",
-	});
-
 	const url: string = URL.createObjectURL(blob);
 	const a: HTMLAnchorElement = document.createElement("a");
 	a.href = url;
-	a.download = `${name.replace(/\.(?:x?html?|htm)$/i, "")}.${extension}`;
+	a.download = `${name.replace(/\.(?:x?html?|htm|shtml|jsp|asp|aspx|ascx|inc|hhc|hhk|php)$/i, "")}.${extension}`;
 
 	document.body.appendChild(a);
 	a.click();
@@ -37,10 +42,16 @@ async function generateHtmlFileDownload(
 export function getHtmlOutputFormat(
 	sourceName: string,
 	sourceMimeType = "",
+	sourceExtension?: ServerHtmlExtension,
 ): {
-	extension: "html" | "htm" | "xhtml";
-	mimeType: "text/html" | "application/xhtml+xml";
+	extension: ServerHtmlExtension;
+	mimeType: string;
 } {
+	if (sourceExtension) {
+		const profile =
+			sourceExtension === "php" ? "php-template" : sourceExtension;
+		return { extension: sourceExtension, mimeType: htmlMimeType(profile) };
+	}
 	if (
 		/\.xhtml$/i.test(sourceName) ||
 		/application\/xhtml\+xml/i.test(sourceMimeType)
@@ -52,18 +63,71 @@ export function getHtmlOutputFormat(
 	};
 }
 
+function resolveHtmlProfile(translation: UserData): ServerHtmlTypeRef {
+	const data = translation.translationData;
+	const source = data.skeleton?.source;
+	if (typeof data.typeRef === "object" && data.typeRef !== null) {
+		const profile = data.typeRef.profile;
+		const sourceExtension = data.typeRef.sourceExtension;
+		if (typeof profile === "string" && typeof sourceExtension === "string")
+			return {
+				profile: profile as ServerHtmlProfile,
+				sourceExtension: sourceExtension as ServerHtmlExtension,
+				mimeType:
+					typeof data.typeRef.mimeType === "string"
+						? data.typeRef.mimeType
+						: (source?.mimeType ?? ""),
+			};
+	}
+	const original =
+		getTextSkeletonContent(data.skeleton, "html") ??
+		(typeof data.typeRef === "string" ? data.typeRef : "");
+	return (
+		detectServerHtmlProfile(
+			source?.name ?? "source.html",
+			source?.mimeType ?? "",
+			original,
+		) ?? {
+			profile: htmlSourceExtension(
+				source?.name ?? "source.html",
+			) as ServerHtmlProfile,
+			sourceExtension: htmlSourceExtension(source?.name ?? "source.html"),
+			mimeType: source?.mimeType ?? "text/html",
+		}
+	);
+}
+
 export async function createHtmlFromModifiedText(translation: UserData) {
 	assertProjectExportQuality(translation);
-	const updatedHtmlContent = buildHtmlTranslation(translation);
 	const source = translation.translationData.skeleton?.source;
+	const profile = resolveHtmlProfile(translation);
 	const { extension } = getHtmlOutputFormat(
 		source?.name ?? "",
 		source?.mimeType,
+		profile.sourceExtension,
 	);
 	await generateHtmlFileDownload(
-		updatedHtmlContent,
+		buildHtmlTranslationBlob(translation),
 		translation.translationData.name,
 		extension,
+	);
+}
+
+export function buildHtmlTranslationBlob(translation: UserData): Blob {
+	assertProjectExportQuality(translation);
+	const data = translation.translationData;
+	const profile = resolveHtmlProfile(translation);
+	const mimeType = htmlMimeType(profile.profile);
+	if (
+		skeletonHasIdentityTargets(data.seg1, data.seg2) &&
+		data.skeleton?.source.originalFile
+	)
+		return data.skeleton.source.originalFile;
+	const content = buildHtmlTranslation(translation);
+	const encoding = data.skeleton?.source.encoding ?? "utf-8";
+	return new Blob(
+		[encodeTextBytes(content, encoding, data.skeleton?.source.hasBom ?? false)],
+		{ type: `${mimeType};charset=${encoding}` },
 	);
 }
 
@@ -76,6 +140,7 @@ export function buildHtmlTranslation(translation: UserData): string {
 	}
 	const tokens = translation.translationData.parsingTokens;
 	const filterOptions = normalizeImportOptions("html", data.filterOptions);
+	const profile = resolveHtmlProfile(translation).profile;
 	let meta: HtmlMeta[] | undefined = data.skeleton?.replacements
 		.filter(
 			(
@@ -126,6 +191,7 @@ export function buildHtmlTranslation(translation: UserData): string {
 					excludedElements: parseList(filterOptions.excludedElements),
 					respectTranslateMetadata:
 						filterOptions.respectTranslateMetadata === true,
+					profile,
 				},
 			);
 			if (allSegments.length === translation.translationData.seg2.length) {
@@ -146,6 +212,7 @@ export function buildHtmlTranslation(translation: UserData): string {
 			translatableAttributes: parseList(filterOptions.translatableAttributes),
 			excludedElements: parseList(filterOptions.excludedElements),
 			respectTranslateMetadata: filterOptions.respectTranslateMetadata === true,
+			profile,
 		},
 	);
 	return updatedHtmlContent;

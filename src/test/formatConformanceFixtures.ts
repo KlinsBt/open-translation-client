@@ -1712,7 +1712,7 @@ const htmlFixture: FormatConformanceFixture = {
 		segments: [CONFORMANCE_UNICODE_SOURCE],
 		filterOptions: {
 			includeTextNodes: true,
-			translatableAttributes: "placeholder,value,alt,title",
+			translatableAttributes: "placeholder,value,alt,title,text",
 			excludedElements: "script,style,code",
 			respectTranslateMetadata: true,
 		},
