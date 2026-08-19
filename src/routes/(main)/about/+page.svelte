@@ -123,6 +123,8 @@
 				"Trados SDLPPX and SDLRPX return packages",
 				"WorldServer WSXZ packages",
 				"memoQ MQOUT, MQBACK and MQXLZ packages",
+				"TTX, ITD and Wordfast/GlobalLink TXML bilingual files",
+				"XLIFF:doc and Workbench bilingual DOC, DOCX, RTF and BAK",
 			],
 		},
 	];
@@ -245,10 +247,12 @@
 					<p>
 						Open TLC imports and exports standard XLIFF 1.2, 2.0 and 2.1
 						projects. SDLXLIFF, MQXLIFF/MQXLF, Phrase MXLIFF, WorldServer
-						WsXLIFF, WPML and recognized CMS/e-learning variants use a dedicated
-						same-profile export that retains vendor namespaces, workflow state,
-						inline codes, skeletons and unknown extensions. The `.xlif` alias is
-						accepted alongside `.xlf` and `.xliff`.
+						WsXLIFF, WPML, XLIFF:doc and recognized CMS/e-learning variants use
+						a dedicated same-profile export that retains vendor namespaces,
+						workflow state, inline codes, skeletons and unknown extensions. TTX,
+						ITD, TXML and Workbench bilingual files use structural detection and
+						protected target-only writers. The `.xlif` alias is accepted
+						alongside `.xlf` and `.xliff`.
 					</p>
 				</div>
 				<ul class="capability-list">
@@ -263,6 +267,11 @@
 					</li>
 					<li>
 						<strong>XLIFF 1.2–2.1</strong><span>Bilingual project exchange</span
+						>
+					</li>
+					<li>
+						<strong>Legacy bilingual CAT</strong><span
+							>TTX, ITD, TXML and Workbench files</span
 						>
 					</li>
 					<li>
@@ -308,6 +317,18 @@
 							conversion; Word variants export to DOCX and PowerPoint binary
 							variants export to HTML as explicit conversions. Standalone SLDX
 							slides retain their OOXML package and unknown resources.
+						</p>
+					</article>
+					<article>
+						<strong
+							>Legacy bilingual formats protect their native structure</strong
+						>
+						<p>
+							TTX, ITD, TXML, XLIFF:doc and RTF/DOCX-based Workbench files
+							retain delimiters, inline tags, IDs, states, hidden styles and
+							unknown content. Edited binary OLE Workbench DOC/BAK files use an
+							explicit bilingual RTF delivery because safely rewriting arbitrary
+							Word binary streams in the browser is not defined.
 						</p>
 					</article>
 					<article>

@@ -76,6 +76,7 @@ const XLIFF_PROJECT_EXTENSIONS = new Set([
 	"mqxlf",
 	"mqxliff",
 	"mxliff",
+	"xliffdoc",
 ]);
 
 export function getFileExtension(fileName: string): string | undefined {
@@ -109,6 +110,31 @@ export async function detectFileFormat(
 	}
 
 	if (hasOleSignature(prefix)) {
+		const bilingual = adapters.find(
+			(candidate) => candidate.id === "legacy-bilingual",
+		);
+		if (
+			bilingual &&
+			extension !== undefined &&
+			bilingual.extensions.includes(extension) &&
+			(await bilingual.validate(file, context)).valid
+		) {
+			const detection = supportedContent(bilingual, extension, mimeType);
+			detection.reason =
+				"The OLE Word streams contain Trados Workbench bilingual delimiters. The file is read locally; edited output is delivered as a safe bilingual RTF.";
+			detection.workflow = {
+				kind: "source-only",
+				primaryAction: "Import Workbench DOC and deliver bilingual RTF",
+				steps: [
+					"Extract the bilingual units locally without running macros or embedded objects.",
+					"Translate protected target units in Open TLC.",
+					"Export an interoperable bilingual RTF containing the original sources and translated targets.",
+				],
+				fidelityWarning:
+					"Unchanged files retain their exact OLE bytes. Edited output uses bilingual RTF because arbitrary Word binary stream rewriting is not safely specified.",
+			};
+			return detection;
+		}
 		const adapter = adapters.find(
 			(candidate) => candidate.id === "legacy-office",
 		);
@@ -232,6 +258,11 @@ export async function detectFileFormat(
 		);
 	}
 	if (textKind === "rtf") {
+		const bilingual = adapters.find(
+			(candidate) => candidate.id === "legacy-bilingual",
+		);
+		if (bilingual && (await bilingual.sniff(file, context)))
+			return supportedContent(bilingual, extension, mimeType);
 		const adapter = adapters.find((candidate) => candidate.id === "rtf");
 		if (adapter) return supportedContent(adapter, extension, mimeType);
 		return unsupported(
@@ -278,15 +309,18 @@ export async function detectFileFormat(
 		(id) =>
 			id === "image-ocr" ||
 			id === "media-transcription" ||
+			id === "legacy-bilingual" ||
 			id === "legacy-office",
 	);
 	if (unverifiedLocalMedia) {
 		return unsupported(
 			unverifiedLocalMedia === "legacy-office"
 				? "Unrecognized legacy Office file"
-				: unverifiedLocalMedia === "image-ocr"
-					? "Unrecognized image"
-					: "Unrecognized media",
+				: unverifiedLocalMedia === "legacy-bilingual"
+					? "Unrecognized legacy bilingual file"
+					: unverifiedLocalMedia === "image-ocr"
+						? "Unrecognized image"
+						: "Unrecognized media",
 			"low",
 			metadataEvidence(
 				extension,
@@ -407,6 +441,20 @@ async function detectZipPackage(
 	const paths = new Set(inspection.entries.map((entry) => entry.path));
 	const packageDetails = await readSmallPackageDetails(inspection, context);
 	if (paths.has("word/document.xml")) {
+		const bilingual = adapters.find(
+			(candidate) => candidate.id === "legacy-bilingual",
+		);
+		if (bilingual) {
+			const candidate = new File([inspection.bytes], fileName, {
+				type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+			});
+			if ((await bilingual.validate(candidate, context)).valid)
+				return supportedPackage(
+					adapters,
+					"legacy-bilingual",
+					"a Workbench bilingual DOCX signature",
+				);
+		}
 		return supportedPackage(adapters, "docx", "word/document.xml");
 	}
 	if (paths.has("xl/workbook.xml")) {

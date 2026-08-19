@@ -116,6 +116,13 @@ import {
 } from "./localTranscription";
 import { generateRtfTranslation, importRtfFile, validateRtfFile } from "./rtf";
 import {
+	generateLegacyBilingualTranslation,
+	importLegacyBilingualFile,
+	LEGACY_BILINGUAL_EXTENSIONS,
+	LEGACY_BILINGUAL_MIME_TYPES,
+	validateLegacyBilingualFile,
+} from "./legacyBilingual";
+import {
 	generateLegacyOfficeTranslation,
 	importLegacyOfficeFile,
 	LEGACY_OFFICE_EXTENSIONS,
@@ -615,6 +622,19 @@ const adapters = [
 		validate: validateRtfFile,
 		importFile: importRtfFile,
 		exportFile: generateRtfTranslation,
+	},
+	{
+		id: "legacy-bilingual",
+		label: "TTX / ITD / TXML / Workbench bilingual",
+		extensions: LEGACY_BILINGUAL_EXTENSIONS,
+		mimeTypes: LEGACY_BILINGUAL_MIME_TYPES,
+		capabilities: READ_WRITE_CAPABILITIES,
+		importOptions: FORMAT_IMPORT_OPTIONS["legacy-bilingual"],
+		sniff: async (file, context) =>
+			(await validateLegacyBilingualFile(file, context)).valid,
+		validate: validateLegacyBilingualFile,
+		importFile: importLegacyBilingualFile,
+		exportFile: generateLegacyBilingualTranslation,
 	},
 	{
 		id: "legacy-office",

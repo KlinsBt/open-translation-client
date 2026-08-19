@@ -1476,6 +1476,52 @@ const rtfFixture: FormatConformanceFixture = {
 		),
 };
 
+function legacyBilingualTtxFile(
+	sources: readonly string[],
+	targets: readonly string[] = sources,
+	name = "unicode.ttx",
+): File {
+	return textFile(
+		`<?xml version="1.0" encoding="UTF-8"?><TRADOStag Version="2.0"><FrontMatter><UserSettings Preserve="opaque"/></FrontMatter><Body>${sources
+			.map(
+				(source, index) =>
+					`<Tu id="u${index + 1}" MatchPercent="100"><Tuv Lang="EN-US">${escapeXml(source)}</Tuv><Tuv Lang="DE-DE">${escapeXml(targets[index] ?? "")}</Tuv></Tu>`,
+			)
+			.join("")}</Body></TRADOStag>`,
+		name,
+		"application/xml",
+	);
+}
+
+const legacyBilingualFixture: FormatConformanceFixture = {
+	id: "legacy-bilingual",
+	fileName: "unicode.ttx",
+	mimeType: "application/xml",
+	createValidFile: async () =>
+		legacyBilingualTtxFile([CONFORMANCE_UNICODE_SOURCE]),
+	createMalformedFile: async () =>
+		textFile(
+			'<TRADOStag><Body><Tu id="broken"><Tuv>source</Tuv></Tu></Body></TRADOStag>',
+			"broken.ttx",
+			"application/xml",
+		),
+	expectMalformedImportFailure: true,
+	extractionSnapshot: {
+		segments: [CONFORMANCE_UNICODE_SOURCE],
+		filterOptions: { includeLocked: true },
+		skeleton: { kind: "text", replacementKinds: ["text-range"] },
+		units: [{ id: "u1", part: "unicode.ttx", path: null }],
+	},
+	translatedSegments: [CONFORMANCE_UNICODE_TARGET],
+	expectTranslatedTargetSegments: true,
+	createPerformanceFile: async (units) =>
+		legacyBilingualTtxFile(
+			Array.from({ length: units }, (_, index) => `Message ${index}`),
+			undefined,
+			"performance.ttx",
+		),
+};
+
 async function legacyXlsFixtureFile(
 	values: readonly string[],
 	name = "unicode.xls",
@@ -1922,6 +1968,7 @@ export const FORMAT_CONFORMANCE_FIXTURES = [
 	imageOcrFixture,
 	mediaTranscriptionFixture,
 	rtfFixture,
+	legacyBilingualFixture,
 	legacyOfficeFixture,
 	catPackageFixture,
 	zipProjectFixture,

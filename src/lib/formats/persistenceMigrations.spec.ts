@@ -325,4 +325,63 @@ describe("persisted data migrations", () => {
 			),
 		).toEqual(bytes);
 	});
+
+	it("retains FF-504 legacy bilingual mappings and protected source bytes", async () => {
+		const original = new Blob(
+			[
+				'<TRADOStag><Body><Tu id="u1"><Tuv>Hello</Tuv><Tuv>Hallo</Tuv></Tu></Body></TRADOStag>',
+			],
+			{ type: "application/xml" },
+		);
+		const project = makeUserData({
+			type: "legacy-bilingual",
+			typeRef: {
+				profile: "ttx",
+				sourceExtension: "ttx",
+				warnings: [],
+			},
+			segmentsMeta: [
+				{
+					profile: "ttx",
+					unitId: "u1",
+					originalSource: "Hello",
+					originalTarget: "Hallo",
+					locked: false,
+					start: 50,
+					end: 55,
+					targetMode: "inner",
+					targetQName: "Tuv",
+					tokens: {},
+					requiredTokens: [],
+				},
+			],
+		});
+		project.translationData.skeleton = {
+			schemaVersion: 1,
+			format: "legacy-bilingual",
+			source: {
+				name: "job.ttx",
+				mimeType: original.type,
+				encoding: "utf-8",
+				hasBom: false,
+				originalFile: original,
+			},
+			payload: { kind: "text", content: await original.text() },
+			replacements: [],
+		};
+
+		const migrated = migrateProjectData(project);
+		expect(migrated.translationData.type).toBe("legacy-bilingual");
+		expect(migrated.translationData.typeRef).toMatchObject({
+			profile: "ttx",
+			sourceExtension: "ttx",
+		});
+		expect(migrated.translationData.segmentsMeta?.[0]).toMatchObject({
+			profile: "ttx",
+			unitId: "u1",
+		});
+		expect(
+			await migrated.translationData.skeleton!.source.originalFile!.text(),
+		).toContain("TRADOStag");
+	});
 });

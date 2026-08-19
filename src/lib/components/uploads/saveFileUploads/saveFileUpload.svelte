@@ -141,7 +141,7 @@
 			<input
 				id="fileInput"
 				type="file"
-				accept="application/json,application/xml,text/xml,.json,.xlf,.xlif,.xliff,.sdlxliff,.mqxlf,.mqxliff,.mxliff"
+				accept="application/json,application/xml,text/xml,.json,.xlf,.xlif,.xliff,.xliffdoc,.sdlxliff,.mqxlf,.mqxliff,.mxliff"
 				oninput={handleTranslationFileUpload}
 			/>
 		</button>

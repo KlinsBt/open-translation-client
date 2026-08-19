@@ -438,6 +438,7 @@ export async function createTextSkeleton(
 		| "windows-rc"
 		| "qml"
 		| "rtf"
+		| "legacy-bilingual"
 		| "xml"
 		| "html",
 	content: string,
@@ -1152,7 +1153,8 @@ export function synchronizeSkeletonReplacements(
 		!skeleton ||
 		skeleton.format === "xlsx" ||
 		skeleton.format === "csv" ||
-		skeleton.format === "odf"
+		skeleton.format === "odf" ||
+		skeleton.format === "legacy-bilingual"
 	)
 		return skeleton;
 	if (skeleton.format === "text" && skeleton.payload.kind === "text") {

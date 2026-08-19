@@ -280,6 +280,57 @@ export interface LegacyOfficeSegmentMeta {
 	separator?: string;
 }
 
+export type LegacyBilingualProfile =
+	| "ttx"
+	| "itd"
+	| "txml"
+	| "workbench-rtf"
+	| "workbench-docx"
+	| "workbench-ole";
+
+interface LegacyBilingualMetaBase {
+	profile: LegacyBilingualProfile;
+	unitId: string;
+	originalSource: string;
+	originalTarget: string;
+	locked: boolean;
+	status?: string;
+	separator?: string;
+}
+
+export interface LegacyBilingualXmlSegmentMeta extends LegacyBilingualMetaBase {
+	profile: "ttx" | "itd" | "txml";
+	start: number;
+	end: number;
+	targetMode: "inner" | "self-closing";
+	targetQName: string;
+	targetStartTag?: string;
+	tokens: Record<string, string>;
+	requiredTokens: string[];
+}
+
+export interface LegacyBilingualRtfSegmentMeta extends LegacyBilingualMetaBase {
+	profile: "workbench-rtf";
+	fragments: Array<{ start: number; end: number }>;
+}
+
+export interface LegacyBilingualDocxSegmentMeta
+	extends LegacyBilingualMetaBase,
+		DocxSegmentMeta {
+	profile: "workbench-docx";
+	part: string;
+}
+
+export interface LegacyBilingualOleSegmentMeta extends LegacyBilingualMetaBase {
+	profile: "workbench-ole";
+}
+
+export type LegacyBilingualSegmentMeta =
+	| LegacyBilingualXmlSegmentMeta
+	| LegacyBilingualRtfSegmentMeta
+	| LegacyBilingualDocxSegmentMeta
+	| LegacyBilingualOleSegmentMeta;
+
 export interface CsvSegmentMeta {
 	row: number;
 	column: number;
@@ -342,6 +393,7 @@ export type SegmentMeta =
 	| TranscriptionSegmentMeta
 	| RtfSegmentMeta
 	| LegacyOfficeSegmentMeta
+	| LegacyBilingualSegmentMeta
 	| XmlSegmentMeta
 	| HtmlSegmentMeta;
 

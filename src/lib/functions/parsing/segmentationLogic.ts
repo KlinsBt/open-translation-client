@@ -81,6 +81,8 @@ const QML_EDIT_ERROR =
 	"QML translation literals cannot be split or joined because function arguments, bindings, and source ranges must remain aligned.";
 const PDF_EDIT_ERROR =
 	"PDF source units cannot be split or joined because page and bounding-box review context must remain aligned.";
+const LEGACY_BILINGUAL_EDIT_ERROR =
+	"Legacy bilingual CAT units cannot be split or joined because native unit IDs, delimiters, inline codes, workflow state, and target ranges must remain aligned.";
 
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
@@ -161,6 +163,8 @@ function validateForStructuralEdit(
 	if (translation.type === "windows-rc") return WINDOWS_RC_EDIT_ERROR;
 	if (translation.type === "qml") return QML_EDIT_ERROR;
 	if (translation.type === "pdf") return PDF_EDIT_ERROR;
+	if (translation.type === "legacy-bilingual")
+		return LEGACY_BILINGUAL_EDIT_ERROR;
 	if (translation.type === "xml") return XML_EDIT_ERROR;
 	if (
 		translation.type === "json" &&

@@ -28,6 +28,7 @@ export const FORMAT_IDS = [
 	"image-ocr",
 	"media-transcription",
 	"rtf",
+	"legacy-bilingual",
 	"legacy-office",
 	"cat-package",
 	"zip-project",

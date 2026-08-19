@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2"
+       xmlns:dx="http://www.interoperability-now.org/schema"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-doc-1_0_extensions.xsd"
+       version="1.2"
+       dx:version="1.4">
+  <file original="manual.docx" source-language="en" target-language="de" datatype="x-undefined">
+    <header>
+      <dx:source-info><dx:tool-data opaque="preserve">XLIFF:doc metadata</dx:tool-data></dx:source-info>
+    </header>
+    <body>
+      <trans-unit id="doc-1" translate="yes">
+        <source>Hello <ph id="1" equiv-text="{name}"/>.</source>
+        <target state="translated">Hallo <ph id="1" equiv-text="{name}"/>.</target>
+        <note from="reviewer">Keep the placeholder.</note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

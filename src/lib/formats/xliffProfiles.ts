@@ -9,6 +9,7 @@ import {
 import { safeParseXml } from "./safeInput";
 
 export type XliffVendorProfileId =
+	| "xliff-doc"
 	| "sdl-trados"
 	| "memoq"
 	| "phrase-mxliff"
@@ -55,6 +56,19 @@ interface ProfileDefinition {
 }
 
 const PROFILE_DEFINITIONS: readonly ProfileDefinition[] = [
+	{
+		id: "xliff-doc",
+		label: "XLIFF:doc",
+		vendor: "Interoperability Now!",
+		extensions: ["xliffdoc"],
+		namespacePatterns: [
+			/xmlns:dx=["']http:\/\/www\.interoperability-now\.org\/schema["']/i,
+		],
+		structurePatterns: [
+			/\bdx:version=["'][^"']+["']/i,
+			/schemaLocation=["'][^"']*xliff-doc[^"']*["']/i,
+		],
+	},
 	{
 		id: "sdl-trados",
 		label: "SDLXLIFF / Trados Studio",

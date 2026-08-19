@@ -31,6 +31,7 @@ import { buildXlsxTranslationPackage } from "$lib/functions/outputGeneration/out
 import { buildPptxTranslationPackage } from "$lib/functions/outputGeneration/outputGenerationPptx";
 import { buildRtfTranslationBlob } from "./rtf";
 import { buildCatReturnPackage } from "./catPackage";
+import { buildLegacyBilingualTranslation } from "./legacyBilingual";
 
 /** Builds only native, same-format round-trip output. */
 export async function buildRoundTripFormatOutputBlob(
@@ -107,6 +108,8 @@ export async function buildRoundTripFormatOutputBlob(
 			);
 		case "rtf":
 			return buildRtfTranslationBlob(project);
+		case "legacy-bilingual":
+			return (await buildLegacyBilingualTranslation(project)).blob;
 		case "cat-package":
 			return (await buildCatReturnPackage(project)).blob;
 	}

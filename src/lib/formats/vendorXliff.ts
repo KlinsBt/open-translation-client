@@ -132,15 +132,19 @@ function normalizedVersion(
 function outputExtension(profile: XliffVendorProfile): string {
 	const extension = profile.sourceExtension?.toLowerCase();
 	const allowed =
-		profile.id === "sdl-trados"
-			? ["sdlxliff"]
-			: profile.id === "memoq"
-				? ["mqxlf", "mqxliff"]
-				: profile.id === "phrase-mxliff"
-					? ["mxliff"]
-					: ["xlf", "xlif", "xliff"];
+		profile.id === "xliff-doc"
+			? ["xliffdoc"]
+			: profile.id === "sdl-trados"
+				? ["sdlxliff"]
+				: profile.id === "memoq"
+					? ["mqxlf", "mqxliff"]
+					: profile.id === "phrase-mxliff"
+						? ["mxliff"]
+						: ["xlf", "xlif", "xliff"];
 	if (extension && allowed.includes(extension)) return extension;
 	switch (profile.id) {
+		case "xliff-doc":
+			return "xliffdoc";
 		case "sdl-trados":
 			return "sdlxliff";
 		case "memoq":

@@ -8,6 +8,7 @@ import wpmlFixture from "../../test/fixtures/xliff-profiles/wpml.xliff?raw";
 import drupalFixture from "../../test/fixtures/xliff-profiles/drupal-tmgmt.xlf?raw";
 import riseFixture from "../../test/fixtures/xliff-profiles/articulate-rise.xlf?raw";
 import storylineFixture from "../../test/fixtures/xliff-profiles/articulate-storyline.xlf?raw";
+import xliffDocFixture from "../../test/fixtures/xliff-profiles/sample.xliffdoc?raw";
 import { importXliffProjectStreaming } from "./streamingImporters";
 import { detectProjectFileFormat } from "./detect";
 import {
@@ -47,6 +48,12 @@ const fixtures: Array<{
 	xml: string;
 	label: string;
 }> = [
+	{
+		id: "xliff-doc",
+		name: "handoff.xliffdoc",
+		xml: xliffDocFixture,
+		label: "XLIFF:doc",
+	},
 	{
 		id: "sdl-trados",
 		name: "manual.sdlxliff",
@@ -431,6 +438,26 @@ describe("vendor XLIFF profiles", () => {
 			getXliffVendorProfile(imported.data.translationData.documentModel),
 		).toBeUndefined();
 		expect(() => buildXliff1_2(imported.data)).not.toThrow();
+	});
+
+	it("round-trips XLIFF:doc with its required dx signature and extension", async () => {
+		const imported = await importXliffProjectStreaming(
+			xliffFile(xliffDocFixture, "handoff.xliffdoc"),
+		);
+		imported.data.translationData.seg2[0] = "Willkommen {name}.";
+		const output = buildVendorXliff(imported.data);
+		expect(output.extension).toBe("xliffdoc");
+		expect(output.contents).toContain(
+			'xmlns:dx="http://www.interoperability-now.org/schema"',
+		);
+		expect(output.contents).toContain("XLIFF:doc metadata");
+		const reopened = await importXliffProjectStreaming(
+			xliffFile(output.contents, output.fileName),
+		);
+		expect(
+			getXliffVendorProfile(reopened.data.translationData.documentModel)?.id,
+		).toBe("xliff-doc");
+		expect(reopened.data.translationData.seg2[0]).toBe("Willkommen {name}.");
 	});
 
 	it("does not classify ordinary Open TLC XLIFF as a vendor profile", () => {

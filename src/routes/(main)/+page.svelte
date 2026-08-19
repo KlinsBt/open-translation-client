@@ -8,7 +8,7 @@
 		},
 		{
 			title: "CAT interoperability",
-			text: "Exchange standard XLIFF projects, preserve and return vendor XLIFF from Trados, memoQ, Phrase, WorldServer and WPML, and work with TMX memories and TBX terminology.",
+			text: "Exchange standard and vendor XLIFF projects, edit TTX, ITD, TXML and Workbench bilingual files, and work with TMX memories and TBX terminology.",
 		},
 		{
 			title: "Translation-focused QA",
@@ -76,7 +76,8 @@
 				"Markdown / AsciiDoc",
 				"SRT / WebVTT / SBV",
 				"XLIFF 1.2 / 2.x",
-				"SDLXLIFF / MQXLIFF / MXLIFF / WsXLIFF / WPML",
+				"SDLXLIFF / MQXLIFF / MXLIFF / WsXLIFF / WPML / XLIFF:doc",
+				"TTX / ITD / TXML / Workbench bilingual",
 				"TMX / TBX",
 			],
 		},

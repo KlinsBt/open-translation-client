@@ -920,6 +920,16 @@ export const FORMAT_IMPORT_OPTIONS = {
 			description: "Include visible text in header and footer groups.",
 		},
 	],
+	"legacy-bilingual": [
+		{
+			id: "includeLocked",
+			label: "Include locked units",
+			type: "boolean",
+			defaultValue: true,
+			description:
+				"Show workflow-locked units for context. Their targets remain protected and cannot be changed during same-family export.",
+		},
+	],
 	"legacy-office": [
 		{
 			id: "includeNumbers",

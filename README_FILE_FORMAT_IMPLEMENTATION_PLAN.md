@@ -1281,13 +1281,67 @@ definition of done below before checking them.
       memoQ, Phrase, WorldServer, or CMS profile from generic XLIFF, and vendor-
       locked targets deliberately remain immutable.
 
-- [ ] **FF-504 — Legacy bilingual CAT documents.** Implement TRADOStag `.ttx`,
+- [x] **FF-504 — Legacy bilingual CAT documents.** Implement TRADOStag `.ttx`,
       SDL Edit `.itd`, Wordfast/GlobalLink `.txml`, XLIFF:doc `.xliffdoc`, and
       Trados Translator's Workbench bilingual `.doc`, `.docx`, `.rtf`, and `.bak`
       profiles. Protect native segment delimiters, inline tags, IDs, workflow
       states, hidden text, styles, and existing targets; distinguish these files
       structurally from ordinary Word/RTF documents; and export to the same
       bilingual family where its structure is sufficiently specified.
+
+      Completed 2026-08-19: a dedicated content-sniffed adapter now handles
+      TRADOStag TTX, SDL Edit ITD, Wordfast/GlobalLink TXML, and structurally
+      recognized Trados Workbench bilingual RTF, DOC, DOCX, and BAK files.
+      XLIFF:doc is implemented as a strict vendor-XLIFF profile identified by
+      its document namespace, `dx` extension namespace/version, or official
+      schema location rather than its filename alone. The active support matrix
+      for this task is:
+
+      | Profile | Extensions | Delivery behavior |
+      | --- | --- | --- |
+      | TRADOStag | `.ttx` | Same-family positional XML round trip |
+      | SDL Edit | `.itd` | Same-family positional XML round trip |
+      | Wordfast/GlobalLink | `.txml` | Same-family positional XML round trip |
+      | XLIFF:doc | `.xliffdoc` | Same-profile XLIFF round trip |
+      | Workbench RTF | `.rtf`, RTF-based `.doc`/`.bak` | Same-family target-only RTF round trip retaining the imported extension |
+      | Workbench DOCX | `.docx` | Same-package OOXML round trip with opaque ZIP members retained |
+      | Workbench binary Word | OLE `.doc`/`.bak` | Exact identity bytes when unchanged; explicit bilingual RTF conversion after edits |
+
+      XML exports patch only mapped target ranges and preserve declarations,
+      namespaces, comments, unit IDs, status/lock attributes, unknown elements,
+      existing targets, encoding, BOM, and protected inline tags represented in
+      the editor as numbered `{utN}` tokens. Workbench RTF and DOCX detection
+      requires both native bilingual delimiters and hidden-text/tw4win evidence;
+      ordinary RTF/DOCX and extension-only impostors continue to their normal
+      adapters or are rejected. DOCX export rewrites only mapped target text
+      runs and retains all other package resources. Macros, scripts, formulas,
+      external entities, embedded objects, and imported code are never run.
+      Locked units may be shown or omitted at import, remain immutable during
+      export, and native unit boundaries cannot be split or joined.
+
+      Tests cover minimal and complex TTX, ITD, TXML, XLIFF:doc, Workbench RTF,
+      RTF-based DOC/BAK and DOCX; Unicode, RTL and emoji; inline-code, ID,
+      workflow-state, unknown XML and opaque ZIP preservation; identity and
+      translated re-imports; ordinary-format and extension-only impostors;
+      malformed XML, DTD/entities, cancellation, protected-boundary edits, a
+      generated 1,500-unit file, migration metadata, IndexedDB persistence,
+      browser download naming and non-execution. Generated XML is reopened with
+      an independent DOM parser, RTF with an independent RTF parser, and DOCX
+      XML/package resources with independent ZIP/XML readers. `npm run verify`
+      passes with 947 unit tests (3 skipped), 55 real-Chromium tests, formatting,
+      type checks, and the production build; no oversized fixture is committed.
+
+      Deliberate limits: an edited binary OLE Workbench DOC/BAK is delivered as
+      bilingual RTF because arbitrary Word binary stream rewriting is not safely
+      specified in the browser. Same-family writers require the imported
+      positional/package skeleton and do not manufacture proprietary files from
+      unrelated input. The implementation follows official RWS documentation
+      for [bilingual file-type support](https://developers.rws.com/studio-api-docs/17.2/apiconcepts/filetypesupport/file_type_support_overview.html),
+      memoQ guidance for [bilingual DOC/RTF](https://docs.memoq.com/current/en/Workspace/bilingual-doc-rtf-documents.html),
+      [TXML](https://docs.memoq.com/current/en/Workspace/txml-wordfast-xml-files.html),
+      and [XLIFF:doc/TIPP](https://docs.memoq.com/current/en/Workspace/xliff-doc-tipp.html),
+      plus the Interoperability Now XLIFF:doc representation namespace and
+      schema signatures.
 
 - [ ] **FF-505 — Additional CAT handoff and package containers.** Add STAR
       Transit `.pxf`/`.ppf`, TIPP packages, COTI `.coti` and COTI ZIP packages,
