@@ -187,7 +187,8 @@ export function runProjectExportQuality(
 			policy,
 			issues,
 			data.type === "android" && unit?.metadata?.formatted === false,
-			data.type === "subtitles",
+			data.type === "subtitles" &&
+				!["ass", "ssa", "stl"].includes(String(data.filterOptions?.profile)),
 		);
 		if (data.type === "json" && model?.metadata?.profile === "chrome")
 			compareChromePlaceholders(source, target, index, unit?.id, issues);

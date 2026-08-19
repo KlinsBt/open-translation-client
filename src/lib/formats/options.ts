@@ -417,7 +417,17 @@ export const FORMAT_IMPORT_OPTIONS = {
 			label: "Subtitle profile",
 			type: "select",
 			defaultValue: "auto",
-			choices: ["auto", "srt", "vtt", "sbv"],
+			choices: ["auto", "srt", "vtt", "sbv", "ass", "ssa", "stl"],
+			description:
+				"Auto detects SRT, WebVTT, SBV, ASS/SSA, or Spruce STL from its content signature. Choose a profile only to enforce it.",
+		},
+		{
+			id: "spruceFrameRate",
+			label: "Spruce STL frame rate",
+			type: "number",
+			defaultValue: 30,
+			description:
+				"Frames per second used to validate and compare Spruce STL frame timecodes. It does not rewrite the original timecodes.",
 		},
 		{
 			id: "overlapPolicy",

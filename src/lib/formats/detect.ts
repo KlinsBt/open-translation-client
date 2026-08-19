@@ -22,6 +22,7 @@ import {
 	detectSpecialistXmlProfile,
 	specialistXmlProfileLabel,
 } from "./specialistXml";
+import { detectSubtitleFileProfile } from "./subtitles";
 import {
 	inspectZipProjectManifest,
 	ZIP_PROJECT_MANIFEST_PATH,
@@ -264,6 +265,56 @@ export async function detectFileFormat(
 	}
 
 	const textKind = sniffTextKind(prefix);
+	const subtitleCandidate = adapters.find(
+		(candidate) => candidate.id === "subtitles",
+	);
+	const subtitlePrefix = decodeTextPrefix(prefix) ?? "";
+	const subtitleClaim =
+		extension !== undefined &&
+		["srt", "vtt", "sbv", "ass", "ssa", "stl"].includes(extension);
+	const subtitleSignature =
+		/^\ufeff?WEBVTT(?:[ \t].*)?(?:\r?\n|$)/.test(subtitlePrefix) ||
+		(/\[Script Info\]/i.test(subtitlePrefix) &&
+			/ScriptType\s*:\s*v4\.00(?:\+\+?)?/i.test(subtitlePrefix)) ||
+		/(?:^|\r?\n)(?:\$[^\r\n]*\r?\n|\/\/[^\r\n]*\r?\n|\s*\r?\n)*\d{2}:\d{2}:\d{2}:\d{2}\s*,\s*\d{2}:\d{2}:\d{2}:\d{2}\s*,/.test(
+			subtitlePrefix,
+		) ||
+		/(?:^|\r?\n)(?:[^\r\n]+\r?\n)?\d{2,}:[0-5]\d:[0-5]\d,\d{3}\s+-->/.test(
+			subtitlePrefix,
+		) ||
+		/(?:^|\r?\n)\d+:[0-5]\d:[0-5]\d\.\d{3},\d+:[0-5]\d:[0-5]\d\.\d{3}/.test(
+			subtitlePrefix,
+		);
+	if (subtitleCandidate && (subtitleClaim || subtitleSignature)) {
+		try {
+			const profile = await detectSubtitleFileProfile(file, context);
+			const validation = await subtitleCandidate.validate(file, context);
+			if (!validation.valid) throw new Error(validation.reason);
+			const detection = supportedContent(
+				subtitleCandidate,
+				extension,
+				mimeType,
+			);
+			detection.label =
+				profile === "stl"
+					? "Spruce STL subtitles"
+					: `${profile.toUpperCase()} subtitles`;
+			detection.reason =
+				"Subtitle timing syntax and format headers match the detected profile; timing, positioning, styles, comments, and protected markup remain inert and are preserved.";
+			return detection;
+		} catch (error) {
+			return unsupported(
+				subtitleClaim && extension === "stl"
+					? "Invalid Spruce STL subtitle"
+					: "Invalid subtitle document",
+				subtitleClaim ? "low" : "medium",
+				subtitleClaim ? ["extension"] : ["content"],
+				error instanceof Error
+					? error.message
+					: "The subtitle content signature or timing structure is invalid.",
+			);
+		}
+	}
 	const quarkCandidate = adapters.find((candidate) => candidate.id === "quark");
 	if (
 		quarkCandidate &&

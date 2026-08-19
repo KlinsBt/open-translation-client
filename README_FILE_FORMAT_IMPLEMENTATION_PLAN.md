@@ -1599,12 +1599,60 @@ definition of done below before checking them.
       Microsoft [Office 2003 XML schema availability](https://news.microsoft.com/source/2003/11/17/microsoft-announces-availability-of-open-and-royalty-free-license-for-office-2003-xml-reference-schemas/),
       and W3C [SGML and HTML introduction](https://www.w3.org/TR/html401/sgml/intro.html).
 
-- [ ] **FF-509 — Additional subtitle formats.** Add Advanced SubStation Alpha
+- [x] **FF-509 — Additional subtitle formats.** Add Advanced SubStation Alpha
       `.ass`/`.ssa` and Spruce `.stl`. Preserve cue timing, IDs, positioning,
       styles, override tags, comments, line breaks, encoding, frame-rate/timebase
       metadata, and format-specific headers. Prevent subtitle markup from being
       flattened into target text and add timing/order/overlap QA plus player-
       independent reopen tests.
+
+      Completed 2026-08-19: the content-sniffed subtitle adapter now recognizes
+      ASS `ScriptType: v4.00+`/`v4.00++`, legacy SSA `ScriptType: v4.00`, and
+      text-based Spruce STL frame timecodes without trusting the filename. ASS
+      and SSA parsing follows each file's ordered `Events` `Format` declaration,
+      exposes only `Dialogue` text, and retains the full Script Info, style,
+      project-garbage/font, comment, unknown-header and event structure as exact
+      source bytes. Style/name, layer or marked state, margins, effect, timing,
+      generated stable cue IDs and centisecond timebase are retained as neutral
+      metadata/context. Vector-drawing events remain protected rather than being
+      mistaken for language. Spruce STL retains `$` commands wherever they occur,
+      `//` comments, exact frame timecodes, visible whitespace, commas, `{...}`
+      style tokens and `|` line separators. Its configurable 1–120 fps timebase
+      defaults to 30 fps and is stored with the project; export never retimes a
+      cue.
+
+      Export patches only mapped dialogue/cue text, keeps identity bytes exact,
+      preserves UTF encodings/BOM and native extension/MIME names, reparses the
+      entire generated file, and retains timing/order/overlap policy plus the
+      existing line-length, line-count, reading-speed and expansion QA. It blocks
+      physical-line injection, missing/reordered ASS/SSA override tags and
+      `\\N`/`\\n`/`\\h` tokens, and changed Spruce style or `|` layout tokens.
+      Subtitle skeleton synchronization was made explicitly positional so an
+      IndexedDB save/reload cannot rebuild and lose cue mappings. The upload
+      picker, detector, import options, export dispatch, registry-backed support
+      labels, conformance fixture, README, landing page and about page now agree
+      on `.ass`, `.ssa` and `.stl`.
+
+      Tests cover minimal and complex ASS/SSA/Spruce input, renamed content and
+      extension impostors, styles/positioning/effects/comments/commas/drawings,
+      Unicode combining text and RTL, identity and translated re-imports,
+      malformed headers/styles/times/frames, binary/adversarial input,
+      cross-profile rejection, markup flattening and line injection,
+      cancellation, generated 2,000-cue input, persistence migration and real-
+      Chromium IndexedDB reload/export. Independently, FFmpeg `ffprobe` reopens
+      the generated outputs as `ass` and `stl` subtitle streams. `npm run verify`
+      passes with 1,029 unit tests (4 intentional/host-dependent skips), 66 real-
+      Chromium tests, formatting, type/accessibility checks and the production
+      build; the optional FFmpeg test also passes with all 8 FF-509 tests enabled.
+
+      Limits are explicit: `.stl` means the text-based Spruce authoring format,
+      not binary EBU Tech 3264 STL, which is rejected with a specific error.
+      Spruce files do not carry a universal frame-rate declaration, so users must
+      select the correct rate when it differs from 30 fps. ASS/SSA vector drawing
+      commands are preserved but intentionally not editable as translation text.
+      References: libass [ASS File Format Guide](https://github.com/libass/libass/wiki/ASS-File-Format-Guide),
+      Apple DVD Studio Pro [basic STL format](https://dvd-studio-pro.helpnox.com/en-us/dvd-studio-pro-4-user-manual/creating-subtitles/creating-an-stl-format-subtitle-file/basic-stl-format/),
+      and FFmpeg's [Spruce STL demuxer](https://ffmpeg.org/doxygen/7.0/stldec_8c.html).
 
 ### Priority C — Secondary media and document ecosystems
 

@@ -14,7 +14,7 @@ import type {
 	FormatValidationResult,
 } from "./types";
 
-export type SubtitleProfile = "srt" | "vtt" | "sbv";
+export type SubtitleProfile = "srt" | "vtt" | "sbv" | "ass" | "ssa" | "stl";
 
 export interface SubtitleCue {
 	profile: SubtitleProfile;
@@ -23,6 +23,12 @@ export interface SubtitleCue {
 	startMs: number;
 	endMs: number;
 	settings?: string;
+	style?: string;
+	actor?: string;
+	layer?: string;
+	effect?: string;
+	frameRate?: number;
+	timebase?: "milliseconds" | "centiseconds" | "frames";
 	line: number;
 	start: number;
 	end: number;
@@ -34,6 +40,13 @@ export interface ParsedSubtitles {
 	cues: SubtitleCue[];
 	warnings: string[];
 	noteBlocks: number;
+	frameRate?: number;
+	headers?: number;
+	protectedCues?: number;
+}
+
+export interface SubtitleParseOptions {
+	frameRate?: number;
 }
 
 interface LineRecord {
@@ -44,17 +57,11 @@ interface LineRecord {
 	line: number;
 }
 
-export function detectSubtitleProfile(
-	name: string,
-	requested = "auto",
-): SubtitleProfile {
-	if (["srt", "vtt", "sbv"].includes(requested))
-		return requested as SubtitleProfile;
-	const extension = name.toLowerCase().split(".").at(-1);
-	if (extension === "vtt") return "vtt";
-	if (extension === "sbv") return "sbv";
-	return "srt";
-}
+const SUBTITLE_PROFILES = ["srt", "vtt", "sbv", "ass", "ssa", "stl"] as const;
+const ASS_SIGNATURE = /^\s*ScriptType\s*:\s*v4\.00\+\+?\s*$/im;
+const SSA_SIGNATURE = /^\s*ScriptType\s*:\s*v4\.00\s*$/im;
+const STL_CUE_SIGNATURE =
+	/^\d{2}:\d{2}:\d{2}:\d{2}\s*,\s*\d{2}:\d{2}:\d{2}:\d{2}\s*,/;
 
 function invalidSubtitle(message: string, line: number): SafeInputError {
 	return new SafeInputError("SUBTITLE_INVALID", `${message} (line ${line}).`, {
@@ -88,6 +95,100 @@ function linesOf(content: string): LineRecord[] {
 	return records;
 }
 
+function substantiveStlLine(content: string): string | undefined {
+	return linesOf(content)
+		.map((record) => record.text.replace(/^\ufeff/, ""))
+		.find((line) => {
+			const trimmed = line.trim();
+			return trimmed && !trimmed.startsWith("$") && !trimmed.startsWith("//");
+		});
+}
+
+export function detectSubtitleProfileFromContent(
+	content: string,
+	name = "",
+	requested = "auto",
+): SubtitleProfile {
+	if (content.includes("\0"))
+		throw invalidSubtitle(
+			"Binary EBU STL is not Spruce STL; import a text-based Spruce STL file",
+			1,
+		);
+	const first = content.replace(/^\ufeff/, "");
+	let detected: SubtitleProfile | undefined;
+	if (/^WEBVTT(?:[ \t].*)?(?:\r?\n|$)/.test(first)) detected = "vtt";
+	else if (
+		/^\s*\[Script Info\]\s*$/im.test(first) &&
+		ASS_SIGNATURE.test(first) &&
+		/^\s*\[Events\]\s*$/im.test(first)
+	)
+		detected = "ass";
+	else if (
+		/^\s*\[Script Info\]\s*$/im.test(first) &&
+		SSA_SIGNATURE.test(first) &&
+		/^\s*\[Events\]\s*$/im.test(first)
+	)
+		detected = "ssa";
+	else if (STL_CUE_SIGNATURE.test(substantiveStlLine(first) ?? ""))
+		detected = "stl";
+	else if (
+		/(?:^|\r?\n)(?:[^\r\n]+\r?\n)?\d{2,}:[0-5]\d:[0-5]\d,\d{3}\s+-->\s+\d{2,}:[0-5]\d:[0-5]\d,\d{3}(?:\s|$)/.test(
+			first,
+		)
+	)
+		detected = "srt";
+	else if (
+		/(?:^|\r?\n)\d+:[0-5]\d:[0-5]\d\.\d{3},\d+:[0-5]\d:[0-5]\d\.\d{3}\s*$/m.test(
+			first,
+		)
+	)
+		detected = "sbv";
+
+	if (!detected) {
+		const extension = name.toLowerCase().split(".").at(-1);
+		const claim = SUBTITLE_PROFILES.includes(extension as SubtitleProfile)
+			? ` The .${extension} extension is not sufficient without a matching content signature.`
+			: "";
+		throw invalidSubtitle(
+			`No supported subtitle content signature was found.${claim}`,
+			1,
+		);
+	}
+	if (
+		requested !== "auto" &&
+		SUBTITLE_PROFILES.includes(requested as SubtitleProfile) &&
+		requested !== detected
+	)
+		throw invalidSubtitle(
+			`The requested ${requested.toUpperCase()} profile does not match the detected ${detected.toUpperCase()} content`,
+			1,
+		);
+	return detected;
+}
+
+export function detectSubtitleProfile(
+	name: string,
+	requested = "auto",
+	content?: string,
+): SubtitleProfile {
+	if (content !== undefined)
+		return detectSubtitleProfileFromContent(content, name, requested);
+	if (SUBTITLE_PROFILES.includes(requested as SubtitleProfile))
+		return requested as SubtitleProfile;
+	const extension = name.toLowerCase().split(".").at(-1);
+	return SUBTITLE_PROFILES.includes(extension as SubtitleProfile)
+		? (extension as SubtitleProfile)
+		: "srt";
+}
+
+export async function detectSubtitleFileProfile(
+	file: File,
+	context?: SafeInputContext,
+): Promise<SubtitleProfile> {
+	const { text } = await readSafeTextFile(file, context);
+	return detectSubtitleProfileFromContent(text, file.name);
+}
+
 function timestampMs(
 	hours: string | undefined,
 	minutes: string,
@@ -104,7 +205,7 @@ function timestampMs(
 
 function parseTiming(
 	line: string,
-	profile: SubtitleProfile,
+	profile: "srt" | "vtt" | "sbv",
 ): { startMs: number; endMs: number; settings?: string } | undefined {
 	if (profile === "sbv") {
 		const match = line.match(
@@ -155,7 +256,7 @@ function blocksFrom(records: LineRecord[], startIndex: number): LineRecord[][] {
 function cueFromBlock(
 	content: string,
 	block: LineRecord[],
-	profile: SubtitleProfile,
+	profile: "srt" | "vtt" | "sbv",
 	cueIndex: number,
 ): SubtitleCue {
 	const direct = parseTiming(block[0].text.replace(/^\ufeff/, ""), profile);
@@ -188,6 +289,7 @@ function cueFromBlock(
 			? { cueId: block[0].text.replace(/^\ufeff/, "") }
 			: {}),
 		...timing,
+		timebase: "milliseconds",
 		line: textRecords[0].line,
 		start,
 		end,
@@ -195,10 +297,298 @@ function cueFromBlock(
 	};
 }
 
+function assTimeMs(value: string, line: number): number {
+	const match = value.trim().match(/^(\d+):([0-5]\d):([0-5]\d)\.(\d{2})$/);
+	if (!match)
+		throw invalidSubtitle(`Invalid ASS/SSA timestamp "${value.trim()}"`, line);
+	return timestampMs(match[1], match[2], match[3], `${match[4]}0`);
+}
+
+function splitAssFields(
+	value: string,
+	fieldCount: number,
+): string[] | undefined {
+	const fields: string[] = [];
+	let cursor = 0;
+	for (let index = 0; index < fieldCount - 1; index++) {
+		const comma = value.indexOf(",", cursor);
+		if (comma < 0) return undefined;
+		fields.push(value.slice(cursor, comma));
+		cursor = comma + 1;
+	}
+	fields.push(value.slice(cursor));
+	return fields;
+}
+
+function parseAss(content: string, profile: "ass" | "ssa"): ParsedSubtitles {
+	const records = linesOf(content);
+	if (!records.length) throw invalidSubtitle("Subtitle file is empty", 1);
+	let section = "";
+	let scriptType = "";
+	let eventsFormat: string[] | undefined;
+	let eventsFormatLine = 1;
+	let headers = 0;
+	let noteBlocks = 0;
+	let protectedCues = 0;
+	const styles = new Set<string>();
+	const cues: SubtitleCue[] = [];
+	for (const record of records) {
+		const lineText =
+			record.line === 1 ? record.text.replace(/^\ufeff/, "") : record.text;
+		const trimmed = lineText.trim();
+		const sectionMatch = trimmed.match(/^\[([^\]]+)\]$/);
+		if (sectionMatch) {
+			section = sectionMatch[1].toLowerCase();
+			headers++;
+			continue;
+		}
+		if (!trimmed || trimmed.startsWith(";") || trimmed.startsWith("!")) {
+			if (trimmed) noteBlocks++;
+			continue;
+		}
+		if (section === "script info") {
+			const type = trimmed.match(/^ScriptType\s*:\s*(.+)$/i);
+			if (type) scriptType = type[1].trim();
+			continue;
+		}
+		const expectedStyleSection =
+			profile === "ass" ? /^v4\+{1,2} styles$/ : /^v4 styles$/;
+		if (expectedStyleSection.test(section)) {
+			const style = lineText.match(/^\s*Style\s*:\s*([^,]+)/i);
+			if (style) styles.add(style[1].trim());
+			continue;
+		}
+		if (section !== "events") continue;
+		const format = lineText.match(/^\s*Format\s*:\s*(.+)$/i);
+		if (format) {
+			eventsFormat = format[1]
+				.split(",")
+				.map((field) => field.trim().toLowerCase());
+			eventsFormatLine = record.line;
+			continue;
+		}
+		const event = lineText.match(/^\s*(Dialogue|Comment)\s*:(.*)$/i);
+		if (!event) continue;
+		if (event[1].toLowerCase() === "comment") {
+			noteBlocks++;
+			continue;
+		}
+		if (!eventsFormat)
+			throw invalidSubtitle(
+				"ASS/SSA Events must declare a Format line before Dialogue",
+				record.line,
+			);
+		const required = ["start", "end", "style", "text"];
+		if (required.some((field) => !eventsFormat!.includes(field)))
+			throw invalidSubtitle(
+				"ASS/SSA Events Format must include Start, End, Style, and Text",
+				eventsFormatLine,
+			);
+		if (eventsFormat.at(-1) !== "text")
+			throw invalidSubtitle(
+				"ASS/SSA Events Text must be the final Format field",
+				eventsFormatLine,
+			);
+		const rawFields = event[2];
+		const fields = splitAssFields(rawFields, eventsFormat.length);
+		if (!fields)
+			throw invalidSubtitle(
+				"Dialogue has fewer values than its Events Format",
+				record.line,
+			);
+		const value = (name: string) => fields[eventsFormat!.indexOf(name)] ?? "";
+		const startMs = assTimeMs(value("start"), record.line);
+		const endMs = assTimeMs(value("end"), record.line);
+		if (endMs <= startMs)
+			throw invalidSubtitle(
+				"Cue end time must be later than its start time",
+				record.line,
+			);
+		const style = value("style").trim();
+		if (!style || !styles.has(style))
+			throw invalidSubtitle(
+				`Dialogue references undefined style "${style || "(empty)"}"`,
+				record.line,
+			);
+		const text = fields.at(-1)!;
+		if (/\{[^}]*\\p(?:bo)?[1-9]\d*[^}]*\}/i.test(text)) {
+			protectedCues++;
+			continue;
+		}
+		const textOffset = rawFields.length - text.length;
+		const rawFieldsOffset = lineText.indexOf(event[2]);
+		const start = record.start + rawFieldsOffset + textOffset;
+		const cueIndex = cues.length;
+		cues.push({
+			profile,
+			cueIndex,
+			cueId: `${profile}-dialogue-${cueIndex + 1}`,
+			startMs,
+			endMs,
+			style,
+			actor: value("name").trim() || undefined,
+			layer: (value("layer") || value("marked")).trim() || undefined,
+			effect: value("effect").trim() || undefined,
+			settings:
+				[value("marginl"), value("marginr"), value("marginv")]
+					.map((entry) => entry.trim())
+					.filter(Boolean)
+					.join(",") || undefined,
+			timebase: "centiseconds",
+			line: record.line,
+			start,
+			end: record.visibleEnd,
+			text,
+		});
+	}
+	const expectedScriptType = profile === "ass" ? /^v4\.00\+\+?$/i : /^v4\.00$/i;
+	if (!expectedScriptType.test(scriptType))
+		throw invalidSubtitle(
+			`${profile.toUpperCase()} requires a matching ScriptType declaration`,
+			1,
+		);
+	if (!styles.size)
+		throw invalidSubtitle("ASS/SSA contains no declared styles", 1);
+	if (!cues.length)
+		throw invalidSubtitle(
+			"Subtitle file contains no translatable dialogue cues",
+			1,
+		);
+	return {
+		profile,
+		cues,
+		warnings: cueWarnings(cues),
+		noteBlocks,
+		headers,
+		protectedCues,
+	};
+}
+
+function stlTimeMs(
+	parts: readonly string[],
+	frameRate: number,
+	line: number,
+): number {
+	const [hours, minutes, seconds, frames] = parts.map(Number);
+	if (minutes > 59 || seconds > 59 || frames >= frameRate)
+		throw invalidSubtitle(
+			`Invalid Spruce STL timecode for ${frameRate} fps`,
+			line,
+		);
+	return Math.round(
+		(hours * 3_600 + minutes * 60 + seconds + frames / frameRate) * 1_000,
+	);
+}
+
+function normalizedFrameRate(value: number | undefined): number {
+	const rate = value ?? 30;
+	if (!Number.isInteger(rate) || rate < 1 || rate > 120)
+		throw invalidSubtitle(
+			"Spruce STL frame rate must be an integer from 1 to 120",
+			1,
+		);
+	return rate;
+}
+
+function parseStl(
+	content: string,
+	options: SubtitleParseOptions,
+): ParsedSubtitles {
+	if (content.includes("\0"))
+		throw invalidSubtitle(
+			"Binary EBU STL is not supported by the text-based Spruce STL profile",
+			1,
+		);
+	const frameRate = normalizedFrameRate(options.frameRate);
+	const cues: SubtitleCue[] = [];
+	let headers = 0;
+	let noteBlocks = 0;
+	for (const record of linesOf(content)) {
+		const text =
+			record.line === 1 ? record.text.replace(/^\ufeff/, "") : record.text;
+		const trimmed = text.trim();
+		if (!trimmed) continue;
+		if (trimmed.startsWith("$")) {
+			headers++;
+			continue;
+		}
+		if (trimmed.startsWith("//")) {
+			noteBlocks++;
+			continue;
+		}
+		const match = text.match(
+			/^(\d{2}):(\d{2}):(\d{2}):(\d{2})\s*,\s*(\d{2}):(\d{2}):(\d{2}):(\d{2})\s*,(.*)$/,
+		);
+		if (!match)
+			throw invalidSubtitle(
+				"Expected a Spruce STL entry with two HH:MM:SS:FF timecodes",
+				record.line,
+			);
+		const startMs = stlTimeMs(match.slice(1, 5), frameRate, record.line);
+		const endMs = stlTimeMs(match.slice(5, 9), frameRate, record.line);
+		if (endMs <= startMs)
+			throw invalidSubtitle(
+				"Cue end time must be later than its start time",
+				record.line,
+			);
+		const cueText = match[9];
+		if (!cueText.length)
+			throw invalidSubtitle("Cue has no text payload", record.line);
+		const start = record.visibleEnd - cueText.length;
+		const cueIndex = cues.length;
+		cues.push({
+			profile: "stl",
+			cueIndex,
+			cueId: `stl-cue-${cueIndex + 1}`,
+			startMs,
+			endMs,
+			frameRate,
+			timebase: "frames",
+			line: record.line,
+			start,
+			end: record.visibleEnd,
+			text: content.slice(start, record.visibleEnd),
+		});
+	}
+	if (!cues.length)
+		throw invalidSubtitle(
+			"Subtitle file contains no translatable Spruce STL cues",
+			1,
+		);
+	return {
+		profile: "stl",
+		cues,
+		warnings: cueWarnings(cues),
+		noteBlocks,
+		headers,
+		frameRate,
+	};
+}
+
+function cueWarnings(cues: readonly SubtitleCue[]): string[] {
+	const warnings: string[] = [];
+	for (let index = 1; index < cues.length; index++) {
+		const previous = cues[index - 1];
+		const current = cues[index];
+		if (current.startMs < previous.startMs)
+			warnings.push(
+				`Cue ${index + 1} starts before cue ${index}; source order was retained.`,
+			);
+		if (current.startMs < previous.endMs)
+			warnings.push(
+				`Cue ${index + 1} overlaps cue ${index} by ${previous.endMs - current.startMs} ms.`,
+			);
+	}
+	return warnings;
+}
+
 export function parseSubtitles(
 	content: string,
 	profile: SubtitleProfile,
+	options: SubtitleParseOptions = {},
 ): ParsedSubtitles {
+	if (profile === "ass" || profile === "ssa") return parseAss(content, profile);
+	if (profile === "stl") return parseStl(content, options);
 	const records = linesOf(content);
 	if (!records.length) throw invalidSubtitle("Subtitle file is empty", 1);
 	let startIndex = 0;
@@ -224,20 +614,7 @@ export function parseSubtitles(
 	}
 	if (!cues.length)
 		throw invalidSubtitle("Subtitle file contains no translatable cues", 1);
-	const warnings: string[] = [];
-	for (let index = 1; index < cues.length; index++) {
-		const previous = cues[index - 1];
-		const current = cues[index];
-		if (current.startMs < previous.startMs)
-			warnings.push(
-				`Cue ${index + 1} starts before cue ${index}; source order was retained.`,
-			);
-		if (current.startMs < previous.endMs)
-			warnings.push(
-				`Cue ${index + 1} overlaps cue ${index} by ${previous.endMs - current.startMs} ms.`,
-			);
-	}
-	return { profile, cues, warnings, noteBlocks };
+	return { profile, cues, warnings: cueWarnings(cues), noteBlocks };
 }
 
 export async function validateSubtitleFile(
@@ -246,7 +623,10 @@ export async function validateSubtitleFile(
 ): Promise<FormatValidationResult> {
 	try {
 		const { text } = await readSafeTextFile(file, context);
-		parseSubtitles(text, detectSubtitleProfile(file.name));
+		const profile = detectSubtitleProfileFromContent(text, file.name);
+		// Spruce STL does not carry a universal frame-rate declaration. Structural
+		// validation accepts the supported ceiling; import applies the user's rate.
+		parseSubtitles(text, profile, profile === "stl" ? { frameRate: 120 } : {});
 		return { valid: true };
 	} catch (error) {
 		return error instanceof SafeInputError
@@ -261,12 +641,14 @@ export async function importSubtitleFile(
 	context?: SafeInputContext,
 ): Promise<FormatImportResult> {
 	const filterOptions = normalizeImportOptions("subtitles", options);
-	const profile = detectSubtitleProfile(
+	const read = await readSafeTextFile(file, context);
+	const profile = detectSubtitleProfileFromContent(
+		read.text,
 		file.name,
 		String(filterOptions.profile),
 	);
-	const read = await readSafeTextFile(file, context);
-	const parsed = parseSubtitles(read.text, profile);
+	const frameRate = normalizedFrameRate(Number(filterOptions.spruceFrameRate));
+	const parsed = parseSubtitles(read.text, profile, { frameRate });
 	const overlapWarnings = parsed.warnings.filter((warning) =>
 		warning.includes("overlaps"),
 	);
@@ -284,13 +666,23 @@ export async function importSubtitleFile(
 		startMs: cue.startMs,
 		endMs: cue.endMs,
 		...(cue.settings ? { settings: cue.settings } : {}),
+		...(cue.style ? { style: cue.style } : {}),
+		...(cue.actor ? { actor: cue.actor } : {}),
+		...(cue.layer ? { layer: cue.layer } : {}),
+		...(cue.effect ? { effect: cue.effect } : {}),
+		...(cue.frameRate ? { frameRate: cue.frameRate } : {}),
+		...(cue.timebase ? { timebase: cue.timebase } : {}),
 		line: cue.line,
 		start: cue.start,
 		end: cue.end,
 		originalValue: cue.text,
 	}));
 	const replacements: SubtitleCueReplacement[] = meta.map(
-		(entry, unitIndex) => ({ kind: "subtitle-cue", unitIndex, ...entry }),
+		(entry, unitIndex) => ({
+			kind: "subtitle-cue",
+			unitIndex,
+			...entry,
+		}),
 	);
 	const document = createNeutralDocument({
 		format: "subtitles",
@@ -307,6 +699,11 @@ export async function importSubtitleFile(
 		profile,
 		warnings,
 		noteBlocks: parsed.noteBlocks,
+		headers: parsed.headers ?? 0,
+		protectedCues: parsed.protectedCues ?? 0,
+		...(parsed.frameRate
+			? { frameRate: parsed.frameRate, timebase: "frames" }
+			: {}),
 		encoding: read.encoding,
 		hasBom: read.hasBom,
 	};
@@ -320,6 +717,10 @@ export async function importSubtitleFile(
 		});
 		if (cue.settings)
 			unit.contexts.push({ type: "subtitle-settings", value: cue.settings });
+		if (cue.style)
+			unit.contexts.push({ type: "subtitle-style", value: cue.style });
+		if (cue.actor)
+			unit.contexts.push({ type: "subtitle-actor", value: cue.actor });
 	}
 	return {
 		kind: "segments",
@@ -332,8 +733,17 @@ export async function importSubtitleFile(
 			replacements,
 			createSkeletonSource(file, read),
 		),
-		filterOptions: { ...filterOptions, profile },
-		typeRef: { profile: `${profile}-cues` } as TypeRef,
+		filterOptions: {
+			...filterOptions,
+			profile,
+			...(profile === "stl" ? { spruceFrameRate: parsed.frameRate } : {}),
+		},
+		typeRef: {
+			profile: `${profile}-cues`,
+			...(parsed.frameRate
+				? { frameRate: String(parsed.frameRate), timebase: "frames" }
+				: {}),
+		} as TypeRef,
 		segmentsMeta: meta,
 	};
 }

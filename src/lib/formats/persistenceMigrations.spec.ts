@@ -435,4 +435,75 @@ describe("persisted data migrations", () => {
 			await migrated.translationData.skeleton!.source.originalFile!.text(),
 		).toBe(content);
 	});
+
+	it("retains FF-509 subtitle profile, frame/timebase metadata, and positional source bytes", async () => {
+		const content = `[Script Info]\nScriptType: v4.00+\n[V4+ Styles]\nStyle: Default,Arial,20\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\nDialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,{\\an8}Hello`;
+		const original = new Blob([content], { type: "text/x-ass" });
+		const project = makeUserData({
+			type: "subtitles",
+			typeRef: { profile: "ass-cues", timebase: "centiseconds" },
+			segmentsMeta: [
+				{
+					profile: "ass",
+					cueIndex: 0,
+					cueId: "ass-dialogue-1",
+					startMs: 1_000,
+					endMs: 2_000,
+					style: "Default",
+					timebase: "centiseconds",
+					line: 7,
+					start: content.indexOf("{\\an8}Hello"),
+					end: content.length,
+					originalValue: "{\\an8}Hello",
+				},
+			],
+		});
+		project.translationData.skeleton = {
+			schemaVersion: 1,
+			format: "subtitles",
+			source: {
+				name: "captions.ass",
+				mimeType: original.type,
+				encoding: "utf-8",
+				hasBom: false,
+				originalFile: original,
+			},
+			payload: { kind: "text", content },
+			replacements: [
+				{
+					kind: "subtitle-cue",
+					unitIndex: 0,
+					profile: "ass",
+					cueIndex: 0,
+					cueId: "ass-dialogue-1",
+					startMs: 1_000,
+					endMs: 2_000,
+					style: "Default",
+					timebase: "centiseconds",
+					line: 7,
+					start: content.indexOf("{\\an8}Hello"),
+					end: content.length,
+					originalValue: "{\\an8}Hello",
+				},
+			],
+		};
+
+		const migrated = migrateProjectData(project);
+		expect(migrated.translationData.typeRef).toMatchObject({
+			profile: "ass-cues",
+			timebase: "centiseconds",
+		});
+		expect(migrated.translationData.segmentsMeta?.[0]).toMatchObject({
+			profile: "ass",
+			style: "Default",
+			timebase: "centiseconds",
+		});
+		expect(migrated.translationData.skeleton?.replacements[0]).toMatchObject({
+			kind: "subtitle-cue",
+			profile: "ass",
+		});
+		expect(
+			await migrated.translationData.skeleton!.source.originalFile!.text(),
+		).toBe(content);
+	});
 });

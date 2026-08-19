@@ -102,7 +102,7 @@
 				"Windows RC resources",
 				"FrameMaker MIF and MIF2 filter-alias files",
 				"Markdown and AsciiDoc",
-				"SRT, WebVTT and SBV subtitles",
+				"SRT, WebVTT, SBV, ASS, SSA and Spruce STL subtitles",
 			],
 		},
 		{

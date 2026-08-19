@@ -187,12 +187,18 @@ export interface MarkupSegmentMeta {
 }
 
 export interface SubtitleSegmentMeta {
-	profile: "srt" | "vtt" | "sbv";
+	profile: "srt" | "vtt" | "sbv" | "ass" | "ssa" | "stl";
 	cueIndex: number;
 	cueId?: string;
 	startMs: number;
 	endMs: number;
 	settings?: string;
+	style?: string;
+	actor?: string;
+	layer?: string;
+	effect?: string;
+	frameRate?: number;
+	timebase?: "milliseconds" | "centiseconds" | "frames";
 	line: number;
 	start: number;
 	end: number;

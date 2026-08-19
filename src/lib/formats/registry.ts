@@ -83,7 +83,11 @@ import {
 	importLightweightMarkupFile,
 	validateLightweightMarkupFile,
 } from "./lightweightMarkup";
-import { importSubtitleFile, validateSubtitleFile } from "./subtitles";
+import {
+	detectSubtitleFileProfile,
+	importSubtitleFile,
+	validateSubtitleFile,
+} from "./subtitles";
 import {
 	importOdfFile,
 	ODF_EXTENSIONS,
@@ -408,15 +412,26 @@ const adapters = [
 	},
 	{
 		id: "subtitles",
-		label: "SRT/WebVTT/SBV subtitles",
-		extensions: ["srt", "vtt", "sbv"],
-		mimeTypes: ["application/x-subrip", "text/vtt", "text/plain"],
+		label: "SRT/WebVTT/SBV/ASS/SSA/Spruce STL subtitles",
+		extensions: ["srt", "vtt", "sbv", "ass", "ssa", "stl"],
+		mimeTypes: [
+			"application/x-subrip",
+			"text/vtt",
+			"text/x-ass",
+			"text/x-ssa",
+			"text/x-stl",
+			"text/plain",
+		],
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.subtitles,
-		sniff: async (file, context) =>
-			["srt", "vtt", "sbv"].includes(
-				file.name.toLowerCase().split(".").at(-1) ?? "",
-			) && (await validateSubtitleFile(file, context)).valid,
+		sniff: async (file, context) => {
+			try {
+				await detectSubtitleFileProfile(file, context);
+				return (await validateSubtitleFile(file, context)).valid;
+			} catch {
+				return false;
+			}
+		},
 		validate: validateSubtitleFile,
 		importFile: importSubtitleFile,
 		exportFile: generateSubtitleTranslation,

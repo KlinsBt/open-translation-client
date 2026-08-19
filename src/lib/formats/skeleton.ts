@@ -200,12 +200,18 @@ export interface MarkupTextReplacement extends ReplacementBase {
 
 export interface SubtitleCueReplacement extends ReplacementBase {
 	kind: "subtitle-cue";
-	profile: "srt" | "vtt" | "sbv";
+	profile: "srt" | "vtt" | "sbv" | "ass" | "ssa" | "stl";
 	cueIndex: number;
 	cueId?: string;
 	startMs: number;
 	endMs: number;
 	settings?: string;
+	style?: string;
+	actor?: string;
+	layer?: string;
+	effect?: string;
+	frameRate?: number;
+	timebase?: "milliseconds" | "centiseconds" | "frames";
 	line: number;
 	start: number;
 	end: number;
@@ -898,7 +904,9 @@ export function validateDocumentSkeleton(skeleton: DocumentSkeleton): {
 		}
 		if (
 			replacement.kind === "subtitle-cue" &&
-			(!["srt", "vtt", "sbv"].includes(replacement.profile) ||
+			(!["srt", "vtt", "sbv", "ass", "ssa", "stl"].includes(
+				replacement.profile,
+			) ||
 				!Number.isInteger(replacement.cueIndex) ||
 				replacement.cueIndex < 0 ||
 				replacement.startMs < 0 ||
@@ -1154,6 +1162,7 @@ export function synchronizeSkeletonReplacements(
 ): DocumentSkeleton | undefined {
 	if (
 		!skeleton ||
+		skeleton.format === "subtitles" ||
 		skeleton.format === "xlsx" ||
 		skeleton.format === "csv" ||
 		skeleton.format === "odf" ||

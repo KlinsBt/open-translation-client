@@ -7,10 +7,56 @@ import {
 import type { UserData } from "$lib/types/types";
 import { encodeTextBytes } from "./outputGenerationText";
 
-function visibleSubtitleText(value: string): string {
-	return value
+function visibleSubtitleText(value: string, profile: SubtitleProfile): string {
+	const profileText =
+		profile === "ass" || profile === "ssa"
+			? value
+					.replace(/\{[^{}\r\n]*\}/g, "")
+					.replace(/\\[Nn]/g, "\n")
+					.replace(/\\h/g, " ")
+			: profile === "stl"
+				? value.replace(/\|/g, "\n").replace(/\{[^{}\r\n]*\}/g, "")
+				: value;
+	return profileText
 		.replace(/<[^>]*>/g, "")
 		.replace(/&(?:#\d+|#x[\dA-Fa-f]+|[A-Za-z][\w-]*);/g, "x");
+}
+
+function tokenSequence(value: string, pattern: RegExp): string[] {
+	return [...value.matchAll(pattern)].map((match) => match[0]);
+}
+
+function validateProfileMarkup(
+	source: string,
+	target: string,
+	profile: SubtitleProfile,
+	cue: string | number,
+): string | undefined {
+	if (profile === "ass" || profile === "ssa") {
+		if (/[\r\n]/.test(target))
+			return `Cue ${cue} contains a physical line break; ASS/SSA line breaks must remain protected \\N or \\n tokens.`;
+		const sourceOverrides = tokenSequence(source, /\{[^{}\r\n]*\}/g);
+		const targetOverrides = tokenSequence(target, /\{[^{}\r\n]*\}/g);
+		if (JSON.stringify(sourceOverrides) !== JSON.stringify(targetOverrides))
+			return `Cue ${cue} changed, removed, or reordered ASS/SSA override tags.`;
+		const sourceBreaks = tokenSequence(source, /\\[Nnh]/g);
+		const targetBreaks = tokenSequence(target, /\\[Nnh]/g);
+		if (JSON.stringify(sourceBreaks) !== JSON.stringify(targetBreaks))
+			return `Cue ${cue} changed, removed, or reordered ASS/SSA line-break or hard-space tokens.`;
+	}
+	if (profile === "stl") {
+		if (/[\r\n]/.test(target))
+			return `Cue ${cue} contains a physical line break; Spruce STL lines must use protected | separators.`;
+		if (
+			(source.match(/\|/g)?.length ?? 0) !== (target.match(/\|/g)?.length ?? 0)
+		)
+			return `Cue ${cue} changed the number of Spruce STL line separators.`;
+		const sourceTags = tokenSequence(source, /\{[^{}\r\n]*\}/g);
+		const targetTags = tokenSequence(target, /\{[^{}\r\n]*\}/g);
+		if (JSON.stringify(sourceTags) !== JSON.stringify(targetTags))
+			return `Cue ${cue} changed, removed, or reordered Spruce STL style tags.`;
+	}
+	return undefined;
 }
 
 function positiveLimit(value: unknown): number {
@@ -33,31 +79,53 @@ export function validateSubtitleTargets(
 	const issues: string[] = [];
 	for (const replacement of replacements) {
 		const target = data.seg2[replacement.unitIndex] ?? "";
-		const lines = target.split(/\r\n|\n|\r/);
+		const cue = replacement.cueId ?? replacement.cueIndex + 1;
+		const markupIssue = validateProfileMarkup(
+			replacement.originalValue,
+			target,
+			replacement.profile,
+			cue,
+		);
+		if (markupIssue) issues.push(markupIssue);
+		const lines =
+			replacement.profile === "ass" || replacement.profile === "ssa"
+				? target.split(/\\[Nn]/)
+				: replacement.profile === "stl"
+					? target.split("|")
+					: target.split(/\r\n|\n|\r/);
 		if (lines.length > maxLines)
 			issues.push(
-				`Cue ${replacement.cueId ?? replacement.cueIndex + 1} has ${lines.length} lines; maximum is ${maxLines}.`,
+				`Cue ${cue} has ${lines.length} lines; maximum is ${maxLines}.`,
 			);
 		const longest = Math.max(
 			0,
-			...lines.map((line) => Array.from(visibleSubtitleText(line)).length),
+			...lines.map(
+				(line) =>
+					Array.from(visibleSubtitleText(line, replacement.profile)).length,
+			),
 		);
 		if (longest > maxCharacters)
 			issues.push(
-				`Cue ${replacement.cueId ?? replacement.cueIndex + 1} has a ${longest}-character line; maximum is ${maxCharacters}.`,
+				`Cue ${cue} has a ${longest}-character line; maximum is ${maxCharacters}.`,
 			);
 		const targetLength = Array.from(
-			visibleSubtitleText(target).replace(/\r\n|\n|\r/g, ""),
+			visibleSubtitleText(target, replacement.profile).replace(
+				/\r\n|\n|\r/g,
+				"",
+			),
 		).length;
 		const durationSeconds = (replacement.endMs - replacement.startMs) / 1_000;
 		const speed =
 			durationSeconds > 0 ? targetLength / durationSeconds : Infinity;
 		if (speed > maxReadingSpeed)
 			issues.push(
-				`Cue ${replacement.cueId ?? replacement.cueIndex + 1} reads at ${speed.toFixed(1)} characters/second; maximum is ${maxReadingSpeed}.`,
+				`Cue ${cue} reads at ${speed.toFixed(1)} characters/second; maximum is ${maxReadingSpeed}.`,
 			);
 		const sourceLength = Array.from(
-			visibleSubtitleText(replacement.originalValue).replace(/\r\n|\n|\r/g, ""),
+			visibleSubtitleText(
+				replacement.originalValue,
+				replacement.profile,
+			).replace(/\r\n|\n|\r/g, ""),
 		).length;
 		const expansion =
 			sourceLength > 0
@@ -65,7 +133,7 @@ export function validateSubtitleTargets(
 				: 0;
 		if (expansion > maxExpansion)
 			issues.push(
-				`Cue ${replacement.cueId ?? replacement.cueIndex + 1} expands by ${expansion.toFixed(1)}%; maximum is ${maxExpansion}%.`,
+				`Cue ${cue} expands by ${expansion.toFixed(1)}%; maximum is ${maxExpansion}%.`,
 			);
 	}
 	if (issues.length)
@@ -112,6 +180,11 @@ export function buildSubtitleTranslation(project: UserData): string {
 		(replacements[0]?.profile ??
 			data.filterOptions?.profile ??
 			"srt") as SubtitleProfile,
+		{
+			frameRate: Number(
+				replacements[0]?.frameRate ?? data.filterOptions?.spruceFrameRate ?? 30,
+			),
+		},
 	);
 	if (
 		data.filterOptions?.overlapPolicy === "error" &&
@@ -128,25 +201,59 @@ export function buildSubtitleTranslationBlob(project: UserData): Blob {
 	if (source === output && data.skeleton?.source.originalFile)
 		return data.skeleton.source.originalFile;
 	const encoding = data.skeleton?.source.encoding ?? "utf-8";
+	const profile = String(
+		data.skeleton?.replacements.find(
+			(replacement) => replacement.kind === "subtitle-cue",
+		)?.profile ??
+			data.filterOptions?.profile ??
+			"srt",
+	) as SubtitleProfile;
+	const mimeType =
+		profile === "vtt"
+			? "text/vtt"
+			: profile === "srt"
+				? "application/x-subrip"
+				: profile === "ass"
+					? "text/x-ass"
+					: profile === "ssa"
+						? "text/x-ssa"
+						: profile === "stl"
+							? "text/x-stl"
+							: "text/plain";
 	return new Blob(
 		[encodeTextBytes(output, encoding, data.skeleton?.source.hasBom ?? false)],
-		{ type: `text/plain;charset=${encoding}` },
+		{ type: `${mimeType};charset=${encoding}` },
 	);
+}
+
+export function subtitleTranslationDownloadName(project: UserData): string {
+	const sourceName =
+		project.translationData.skeleton?.source.name ?? "subtitles.srt";
+	const requested = project.translationData.name || sourceName;
+	const sourceExtension = sourceName.toLowerCase().split(".").at(-1);
+	const profile = String(
+		project.translationData.skeleton?.replacements.find(
+			(replacement) => replacement.kind === "subtitle-cue",
+		)?.profile ??
+			project.translationData.filterOptions?.profile ??
+			"srt",
+	);
+	const extension = ["srt", "vtt", "sbv", "ass", "ssa", "stl"].includes(
+		sourceExtension ?? "",
+	)
+		? sourceExtension!
+		: ["srt", "vtt", "sbv", "ass", "ssa", "stl"].includes(profile)
+			? profile
+			: "srt";
+	return new RegExp(`\\.${extension}$`, "i").test(requested)
+		? requested
+		: `${requested}.${extension}`;
 }
 
 export async function generateSubtitleTranslation(
 	project: UserData,
 ): Promise<void> {
-	const sourceName =
-		project.translationData.skeleton?.source.name ?? "subtitles.srt";
-	const requested = project.translationData.name || sourceName;
-	const sourceExtension = sourceName.toLowerCase().split(".").at(-1);
-	const extension = ["srt", "vtt", "sbv"].includes(sourceExtension ?? "")
-		? sourceExtension!
-		: "srt";
-	const name = new RegExp(`\\.${extension}$`, "i").test(requested)
-		? requested
-		: `${requested}.${extension}`;
+	const name = subtitleTranslationDownloadName(project);
 	const url = URL.createObjectURL(buildSubtitleTranslationBlob(project));
 	const link = document.createElement("a");
 	link.href = url;

@@ -96,6 +96,7 @@ describe("format import options", () => {
 		).toEqual({
 			profile: "auto",
 			overlapPolicy: "warn",
+			spruceFrameRate: 30,
 			maxCharactersPerLine: 42,
 			maxLinesPerCue: 2,
 			maxReadingSpeed: 20,

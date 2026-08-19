@@ -81,7 +81,7 @@
 				"Author-it / MadCap / TYPO3 XML",
 				"Constrained SGML",
 				"Markdown / AsciiDoc",
-				"SRT / WebVTT / SBV",
+				"SRT / WebVTT / SBV / ASS / SSA / Spruce STL",
 				"XLIFF 1.2 / 2.x",
 				"SDLXLIFF / MQXLIFF / MXLIFF / WsXLIFF / WPML / XLIFF:doc",
 				"TTX / ITD / TXML / Workbench bilingual",
