@@ -38,7 +38,7 @@
 				"PPT / PPS / POT",
 				"SpreadsheetML 2003 XML",
 				"RTF",
-				"ODT / ODS / ODP",
+				"ODT / OTT / ODM / ODS / OTS / ODP / OTP / ODF Formula",
 				"HTML / XHTML",
 			],
 		},

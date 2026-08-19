@@ -399,6 +399,23 @@ async function detectZipPackage(
 
 	const odf = odfLabel(packageDetails.mimetype);
 	if (odf) {
+		const adapter = adapters.find((candidate) => candidate.id === "odf");
+		if (!adapter)
+			throw new Error("No adapter is registered for detected ODF packages.");
+		const validation = await adapter.validate(
+			new File([inspection.bytes], fileName, {
+				type: packageDetails.mimetype,
+			}),
+			context,
+		);
+		if (!validation.valid)
+			return unsupported(
+				`Invalid ${odf} package`,
+				"high",
+				["package", "signature"],
+				validation.reason ??
+					`The package declares ${odf}, but its manifest or document structure is invalid.`,
+			);
 		return supportedPackage(adapters, "odf", `the ${odf} mimetype declaration`);
 	}
 	if (
@@ -713,10 +730,19 @@ function legacyOfficeLabel(extension: string | undefined): string | undefined {
 
 function odfLabel(mimetype: string): string | undefined {
 	if (mimetype === "application/vnd.oasis.opendocument.text") return "ODT";
+	if (mimetype === "application/vnd.oasis.opendocument.text-template")
+		return "OTT";
+	if (mimetype === "application/vnd.oasis.opendocument.text-master")
+		return "ODM";
 	if (mimetype === "application/vnd.oasis.opendocument.spreadsheet")
 		return "ODS";
+	if (mimetype === "application/vnd.oasis.opendocument.spreadsheet-template")
+		return "OTS";
 	if (mimetype === "application/vnd.oasis.opendocument.presentation")
 		return "ODP";
+	if (mimetype === "application/vnd.oasis.opendocument.presentation-template")
+		return "OTP";
+	if (mimetype === "application/vnd.oasis.opendocument.formula") return "ODF";
 	return undefined;
 }
 

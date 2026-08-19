@@ -64,4 +64,59 @@ describe("neutral document persistence compatibility", () => {
 			"reviewed",
 		);
 	});
+
+	it("retains ODF package replacement mappings during persistence normalization", () => {
+		const userData = makeUserData({
+			type: "odf",
+			seg1: ["Template"],
+			seg2: ["Vorlage"],
+			checked: [true],
+			typeRef: {
+				profile: "ott",
+				mimeType: "application/vnd.oasis.opendocument.text-template",
+			},
+			segmentsMeta: [
+				{
+					profile: "odf-ott",
+					part: "content.xml",
+					path: ["office:document-content[1]", "text:p[1]", "#text"],
+					location: "text",
+					start: 16,
+					end: 24,
+					originalValue: "Template",
+				},
+			],
+			skeleton: {
+				schemaVersion: 1,
+				format: "odf",
+				source: { name: "template.ott", mimeType: "application/zip" },
+				payload: {
+					kind: "package",
+					parts: { "content.xml": "<text:p>Template</text:p>" },
+				},
+				replacements: [
+					{
+						kind: "package-xml-value",
+						unitIndex: 0,
+						profile: "ott-1.2/1.3",
+						part: "content.xml",
+						path: ["text:p[1]", "#text"],
+						location: "text",
+						start: 8,
+						end: 16,
+						originalValue: "Template",
+					},
+				],
+			},
+		});
+
+		ensureProjectModels(userData);
+		expect(userData.translationData.skeleton?.replacements).toHaveLength(1);
+		expect(userData.translationData.skeleton?.replacements[0]).toMatchObject({
+			kind: "package-xml-value",
+			profile: "ott-1.2/1.3",
+			part: "content.xml",
+			originalValue: "Template",
+		});
+	});
 });

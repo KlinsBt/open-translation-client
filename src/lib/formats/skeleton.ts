@@ -1148,7 +1148,12 @@ export function synchronizeSkeletonReplacements(
 	segments: readonly string[],
 	segmentsMeta?: readonly unknown[],
 ): DocumentSkeleton | undefined {
-	if (!skeleton || skeleton.format === "xlsx" || skeleton.format === "csv")
+	if (
+		!skeleton ||
+		skeleton.format === "xlsx" ||
+		skeleton.format === "csv" ||
+		skeleton.format === "odf"
+	)
 		return skeleton;
 	if (skeleton.format === "text" && skeleton.payload.kind === "text") {
 		let replacements = locateTextRanges(skeleton.payload.content, segments);

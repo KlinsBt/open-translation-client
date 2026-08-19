@@ -65,7 +65,7 @@
 				"DOCX, DOCM, DOTX and DOTM",
 				"XLSX, XLSM, XLTX and XLTM",
 				"PPTX, PPTM, POTX, POTM, PPSX, PPSM and standalone SLDX",
-				"ODT, ODS and ODP",
+				"ODT/OTT/ODM, ODS/OTS, ODP/OTP and ODF Formula",
 				"RTF native round trips",
 				"Legacy DOC, DOT and applicable BAK to DOCX",
 				"Legacy XLS and XLT, plus binary XLSB",
@@ -230,7 +230,9 @@
 				<div class="note">
 					<strong>Office package support:</strong> DOCX, XLSX and PPTX families use
 					platform-independent browser adapters with automated import, edit, export,
-					validation and re-import coverage.
+					validation and re-import coverage. OpenDocument documents, templates, master
+					documents and formulas retain their exact package family; scripts and embedded
+					objects remain inert, unedited resources.
 				</div>
 			</section>
 

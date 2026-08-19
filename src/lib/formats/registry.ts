@@ -84,7 +84,12 @@ import {
 	validateLightweightMarkupFile,
 } from "./lightweightMarkup";
 import { importSubtitleFile, validateSubtitleFile } from "./subtitles";
-import { importOdfFile, ODF_MIME_TYPES, validateOdfFile } from "./odf";
+import {
+	importOdfFile,
+	ODF_EXTENSIONS,
+	ODF_MIME_TYPES,
+	validateOdfFile,
+} from "./odf";
 import { EPUB_MIME_TYPE, importEpubFile, validateEpubFile } from "./epub";
 import { importSvgFile, validateSvgFile } from "./svg";
 import { importDitaFile, validateDitaFile } from "./dita";
@@ -382,8 +387,8 @@ const adapters = [
 	},
 	{
 		id: "odf",
-		label: "OpenDocument ODT/ODS/ODP",
-		extensions: ["odt", "ods", "odp"],
+		label: "OpenDocument documents, templates, masters + formulas",
+		extensions: ODF_EXTENSIONS,
 		mimeTypes: Object.values(ODF_MIME_TYPES),
 		capabilities: READ_WRITE_CAPABILITIES,
 		importOptions: FORMAT_IMPORT_OPTIONS.odf,

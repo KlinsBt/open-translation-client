@@ -123,6 +123,17 @@
 	let lastSelectedSegmentId: number = $state(0);
 	const primaryExportPresentation = $derived.by(() => {
 		const data = $singleUserData.translationData;
+		if (data.type === "odf") {
+			const profile =
+				typeof data.typeRef === "object" &&
+				typeof data.typeRef.profile === "string"
+					? data.typeRef.profile.toUpperCase()
+					: "OpenDocument";
+			return {
+				label: profile,
+				description: `Rebuild the translated ${profile} package while retaining its template, master-document, formula, scripts, embedded objects, and other package resources.`,
+			};
+		}
 		if (data.type !== "legacy-office")
 			return {
 				label: getFormatAdapter(data.type).label,

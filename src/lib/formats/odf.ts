@@ -23,12 +23,41 @@ import {
 	type XmlSyntaxDocument,
 } from "./xmlFamily";
 
-export type OdfProfile = "odt" | "ods" | "odp";
+export type OdfProfile =
+	| "odt"
+	| "ott"
+	| "odm"
+	| "ods"
+	| "ots"
+	| "odp"
+	| "otp"
+	| "odf";
 
 export const ODF_MIME_TYPES: Readonly<Record<OdfProfile, string>> = {
 	odt: "application/vnd.oasis.opendocument.text",
+	ott: "application/vnd.oasis.opendocument.text-template",
+	odm: "application/vnd.oasis.opendocument.text-master",
 	ods: "application/vnd.oasis.opendocument.spreadsheet",
+	ots: "application/vnd.oasis.opendocument.spreadsheet-template",
 	odp: "application/vnd.oasis.opendocument.presentation",
+	otp: "application/vnd.oasis.opendocument.presentation-template",
+	odf: "application/vnd.oasis.opendocument.formula",
+};
+
+export const ODF_EXTENSIONS = Object.freeze(
+	Object.keys(ODF_MIME_TYPES) as OdfProfile[],
+);
+
+const ODF_BODY_TYPES: Readonly<
+	Record<Exclude<OdfProfile, "odf">, "text" | "spreadsheet" | "presentation">
+> = {
+	odt: "text",
+	ott: "text",
+	odm: "text",
+	ods: "spreadsheet",
+	ots: "spreadsheet",
+	odp: "presentation",
+	otp: "presentation",
 };
 
 function invalidOdf(message: string): SafeInputError {
@@ -41,7 +70,8 @@ export function detectOdfProfile(name: string, mimetype = ""): OdfProfile {
 	).find(([, value]) => value === mimetype.trim())?.[0];
 	if (byMime) return byMime;
 	const extension = name.toLowerCase().split(".").at(-1);
-	if (extension === "ods" || extension === "odp") return extension;
+	if (ODF_EXTENSIONS.includes(extension as OdfProfile))
+		return extension as OdfProfile;
 	return "odt";
 }
 
@@ -105,6 +135,7 @@ function selectedOdfValues(
 	part: string,
 	content: string,
 	options: Readonly<FormatOptionValues>,
+	profile: OdfProfile,
 ): Array<PackageXmlSegmentMeta & { line?: number; style?: string }> {
 	const syntax = parseXmlSyntax(content);
 	const tracked = String(options.trackedChanges);
@@ -132,14 +163,14 @@ function selectedOdfValues(
 		if (part === "styles.xml" && !names.has("header") && !names.has("footer"))
 			continue;
 		if (part === "styles.xml" && !options.includeHeadersFooters) continue;
-		const visible = ["p", "h", "span", "a", "list-header"].includes(
-			element.localName,
-		);
+		const visible =
+			(profile === "odf" && element.localName === "mtext") ||
+			["p", "h", "span", "a", "list-header"].includes(element.localName);
 		const accessibility = ["title", "desc"].includes(element.localName);
 		if (!visible && !(accessibility && options.includeAccessibilityText))
 			continue;
 		selected.push({
-			profile: "odf",
+			profile: `odf-${profile}`,
 			part,
 			path: value.path,
 			location: value.location,
@@ -162,7 +193,7 @@ function validateOdfParts(
 	const mimetype = textPart(parts, "mimetype").trim();
 	const profile = detectOdfProfile(name, mimetype);
 	const extension = name.toLowerCase().split(".").at(-1);
-	if (["odt", "ods", "odp"].includes(extension ?? "") && extension !== profile)
+	if (ODF_EXTENSIONS.includes(extension as OdfProfile) && extension !== profile)
 		throw invalidOdf(
 			`ODF mimetype does not match the .${extension} extension.`,
 		);
@@ -170,39 +201,67 @@ function validateOdfParts(
 		throw invalidOdf(`ODF mimetype “${mimetype}” does not match .${profile}.`);
 	const content = textPart(parts, "content.xml");
 	const contentDocument = safeParseXml(content, context);
-	if (contentDocument.documentElement.localName !== "document-content")
-		throw invalidOdf(
-			"content.xml has no office:document-content root element.",
-		);
-	const body = Array.from(contentDocument.getElementsByTagName("*")).find(
-		(element) => element.localName === "body",
-	);
-	const expectedBody = { odt: "text", ods: "spreadsheet", odp: "presentation" }[
-		profile
-	];
-	if (
-		!body ||
-		!Array.from(body.children).some(
-			(element) => element.localName === expectedBody,
+	if (profile === "odf") {
+		if (
+			contentDocument.documentElement.localName !== "math" ||
+			contentDocument.documentElement.namespaceURI !==
+				"http://www.w3.org/1998/Math/MathML"
 		)
-	)
-		throw invalidOdf(
-			`content.xml has no office:${expectedBody} body for .${profile}.`,
+			throw invalidOdf(
+				"An .odf formula package requires a MathML math root in content.xml.",
+			);
+	} else {
+		if (contentDocument.documentElement.localName !== "document-content")
+			throw invalidOdf(
+				"content.xml has no office:document-content root element.",
+			);
+		const body = Array.from(contentDocument.getElementsByTagName("*")).find(
+			(element) => element.localName === "body",
 		);
+		const expectedBody = ODF_BODY_TYPES[profile];
+		if (
+			!body ||
+			!Array.from(body.children).some(
+				(element) => element.localName === expectedBody,
+			)
+		)
+			throw invalidOdf(
+				`content.xml has no office:${expectedBody} body for .${profile}.`,
+			);
+	}
 	const manifest = textPart(parts, "META-INF/manifest.xml");
 	const manifestDocument = safeParseXml(manifest, context);
-	if (manifestDocument.documentElement.localName !== "manifest")
+	if (
+		manifestDocument.documentElement.localName !== "manifest" ||
+		manifestDocument.documentElement.namespaceURI !==
+			"urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"
+	)
 		throw invalidOdf("META-INF/manifest.xml has no manifest root element.");
-	const rootEntry = Array.from(manifestDocument.getElementsByTagName("*")).find(
-		(element) =>
-			element.localName === "file-entry" &&
-			Array.from(element.attributes).some(
-				(entry) =>
-					(entry.localName === "full-path" ||
-						entry.name.endsWith(":full-path")) &&
-					entry.value === "/",
-			),
-	);
+	const manifestEntries = Array.from(
+		manifestDocument.getElementsByTagName("*"),
+	).filter((element) => element.localName === "file-entry");
+	const manifestPaths = new Map<string, Element>();
+	for (const entry of manifestEntries) {
+		const fullPath = Array.from(entry.attributes).find(
+			(attribute) =>
+				attribute.localName === "full-path" ||
+				attribute.name.endsWith(":full-path"),
+		)?.value;
+		if (!fullPath)
+			throw invalidOdf("Every ODF manifest file-entry needs a full-path.");
+		if (
+			fullPath !== "/" &&
+			(/^[a-z]:/i.test(fullPath) ||
+				fullPath.startsWith("/") ||
+				/[\\\u0000-\u001f]/.test(fullPath) ||
+				fullPath.split("/").includes(".."))
+		)
+			throw invalidOdf(`The ODF manifest path “${fullPath}” is unsafe.`);
+		if (manifestPaths.has(fullPath))
+			throw invalidOdf(`The ODF manifest path “${fullPath}” is duplicated.`);
+		manifestPaths.set(fullPath, entry);
+	}
+	const rootEntry = manifestPaths.get("/");
 	if (!rootEntry) throw invalidOdf("The ODF manifest has no root file-entry.");
 	const rootMime = Array.from(rootEntry.attributes).find(
 		(entry) =>
@@ -212,7 +271,23 @@ function validateOdfParts(
 		throw invalidOdf(
 			"The ODF manifest root media type does not match mimetype.",
 		);
-	if (typeof parts["META-INF/documentsignatures.xml"] === "string")
+	const contentEntry = manifestPaths.get("content.xml");
+	if (!contentEntry)
+		throw invalidOdf("The ODF manifest does not declare content.xml.");
+	const contentMime = Array.from(contentEntry.attributes).find(
+		(entry) =>
+			entry.localName === "media-type" || entry.name.endsWith(":media-type"),
+	)?.value;
+	if (contentMime !== "text/xml" && contentMime !== "application/xml")
+		throw invalidOdf(
+			"The ODF manifest must declare content.xml as XML content.",
+		);
+	if (
+		Object.keys(parts).some(
+			(path) =>
+				path.startsWith("META-INF/") && /signatures.*\.xml$/i.test(path),
+		)
+	)
 		throw invalidOdf(
 			"Digitally signed ODF packages must be re-signed after localization and are not exported safely.",
 		);
@@ -270,7 +345,12 @@ export async function importOdfFile(
 	)
 		partsToExtract.push("styles.xml");
 	const meta = partsToExtract.flatMap((part) =>
-		selectedOdfValues(part, textPart(archive.parts, part), filterOptions),
+		selectedOdfValues(
+			part,
+			textPart(archive.parts, part),
+			filterOptions,
+			profile,
+		),
 	);
 	const segments = meta.map((entry) => entry.originalValue);
 	const replacements: PackageXmlValueReplacement[] = meta.map(
@@ -300,6 +380,14 @@ export async function importOdfFile(
 	});
 	document.metadata = {
 		profile,
+		family:
+			profile === "odf"
+				? "formula"
+				: profile === "odm"
+					? "master-document"
+					: profile.startsWith("ot")
+						? "template"
+						: "document",
 		normativeVersion: "ODF 1.2/1.3 package",
 		preservedParts: Object.keys(archive.parts).length,
 		security:

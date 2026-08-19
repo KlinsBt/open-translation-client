@@ -216,4 +216,63 @@ describe("persisted data migrations", () => {
 			),
 		).toEqual(new Uint8Array(await original.arrayBuffer()));
 	});
+
+	it("retains FF-501 ODF family metadata and inert package resources", async () => {
+		const original = new Blob([new Uint8Array([0x50, 0x4b, 3, 4, 1, 2, 3])], {
+			type: "application/vnd.oasis.opendocument.text-master",
+		});
+		const embedded = new Blob([new Uint8Array([0, 255, 128, 1])]);
+		const project = makeUserData({
+			type: "odf",
+			typeRef: {
+				profile: "odm",
+				mimeType: "application/vnd.oasis.opendocument.text-master",
+			},
+			segmentsMeta: [
+				{
+					profile: "odf-odm",
+					part: "content.xml",
+					path: ["office:document-content[1]", "#text"],
+					location: "text",
+					start: 10,
+					end: 14,
+					originalValue: "Text",
+				},
+			],
+		});
+		project.translationData.skeleton = {
+			schemaVersion: 1,
+			format: "odf",
+			source: {
+				name: "master.odm",
+				mimeType: original.type,
+				originalFile: original,
+			},
+			payload: {
+				kind: "package",
+				parts: { "Object 1/data.bin": embedded },
+			},
+			replacements: [],
+		};
+
+		const migrated = migrateProjectData(project);
+		expect(migrated.translationData.typeRef).toMatchObject({
+			profile: "odm",
+			mimeType: "application/vnd.oasis.opendocument.text-master",
+		});
+		expect(migrated.translationData.segmentsMeta?.[0]).toMatchObject({
+			profile: "odf-odm",
+			part: "content.xml",
+		});
+		expect(
+			new Uint8Array(
+				await (
+					migrated.translationData.skeleton!.payload as {
+						kind: "package";
+						parts: Record<string, Blob>;
+					}
+				).parts["Object 1/data.bin"].arrayBuffer(),
+			),
+		).toEqual(new Uint8Array([0, 255, 128, 1]));
+	});
 });

@@ -1159,12 +1159,57 @@ definition of done below before checking them.
       and Microsoft's [Office binary/template format validation
       guidance](https://learn.microsoft.com/en-us/security-updates/securityadvisories/2011/2501584).
 
-- [ ] **FF-501 — OpenDocument templates and master documents.** Extend the ODF
+- [x] **FF-501 — OpenDocument templates and master documents.** Extend the ODF
       adapter to `.ott`, `.odm`, `.otp`, `.ots`, and explicitly detected generic
       `.odf` packages. Detect the package media type and internal manifest, retain
       the exact template/master-document family on export, preserve scripts and
       embedded objects without executing them, and add identity, translated,
       malformed-manifest, MIME-conflict, and independent reopen coverage.
+
+      **Completed 2026-08-19.**
+      The existing ODF adapter now recognizes these families from the stored,
+      first-entry `mimetype`, the matching manifest root media type, the declared
+      `content.xml` XML entry, and the document body/root structure—not from the
+      filename alone:
+
+      | Extension | Required package family | Editable content |
+      | --- | --- | --- |
+      | `.ott` | OpenDocument text template | Text body and selected stories |
+      | `.odm` | OpenDocument text master | Text body and selected stories |
+      | `.ots` | OpenDocument spreadsheet template | Text in spreadsheet cells |
+      | `.otp` | OpenDocument presentation template | Slide text and selected notes |
+      | `.odf` | OpenDocument Formula | MathML `mtext` only |
+
+      Export retains the exact profile, MIME type and extension. Identity output
+      returns the original bytes; translated output patches only mapped XML text
+      and keeps scripts, event listeners, formulas, embedded objects, images and
+      unknown package resources inert and logically byte-identical. Formula
+      identifiers, operators and annotations are protected rather than treated
+      as prose. Unsafe or duplicate manifest paths, missing or incorrectly typed
+      `content.xml`, MIME/extension/body conflicts, DTD/entities, malformed XML,
+      signatures and archive-policy violations fail with actionable errors.
+
+      Focused tests cover every new extension independently, exact identity,
+      translated re-import, Unicode/RTL/emoji, opaque scripts and binary objects,
+      malformed/adversarial manifests, MIME spoofing, cancellation, a generated
+      1,500-row OTS, migration metadata, IndexedDB mapping persistence and two
+      real-Chromium workflows. Generated ODT, OTT, ODM, OTS, OTP and ODF outputs
+      all reopened in an installed headless LibreOffice and produced real PDF
+      conversion artifacts. The final repository gate passed 900 unit tests
+      (three intentional skips), 48 real-browser tests, formatting, type-check
+      and the production build. No oversized binary fixtures are committed.
+
+      Deliberate limits: signed packages are rejected because translation
+      invalidates their signatures; encrypted editable XML cannot be imported;
+      embedded subdocuments remain preserved but are not recursively exposed;
+      and `.odf` formula translation is limited to MathML `mtext` prose so
+      mathematical semantics are never rewritten accidentally.
+
+      Normative references used: OASIS [OpenDocument 1.3 package
+      requirements](https://docs.oasis-open.org/office/OpenDocument/v1.3/OpenDocument-v1.3-part2-packages.html),
+      OASIS [OpenDocument 1.3 document-family conformance](https://docs.oasis-open.org/office/OpenDocument/v1.3/OpenDocument-v1.3-part3-schema.html),
+      and the IANA [registered OpenDocument media
+      types](https://www.iana.org/assignments/media-types/media-types.xhtml).
 
 - [ ] **FF-502 — Server-side and help-system HTML families.** Add deliberate
       profiles for `.shtml`, `.jsp`, `.asp`, `.aspx`, `.ascx`, `.inc`, `.hhc`,

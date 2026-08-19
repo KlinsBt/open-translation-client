@@ -1,9 +1,16 @@
 // @vitest-environment happy-dom
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DOMParser as IndependentDomParser } from "@xmldom/xmldom";
 import JSZip from "jszip";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeUserData } from "../../test/fixtures";
@@ -21,9 +28,17 @@ const namespaces =
 	'xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:presentation="urn:oasis:names:tc:opendocument:xmlns:presentation:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"';
 
 function body(profile: OdfProfile, inner: string): string {
-	const kind = { odt: "text", ods: "spreadsheet", odp: "presentation" }[
-		profile
-	];
+	if (profile === "odf")
+		return `<?xml version="1.0" encoding="UTF-8"?><math:math xmlns:math="http://www.w3.org/1998/Math/MathML"><math:mrow>${inner}</math:mrow></math:math>`;
+	const kind = {
+		odt: "text",
+		ott: "text",
+		odm: "text",
+		ods: "spreadsheet",
+		ots: "spreadsheet",
+		odp: "presentation",
+		otp: "presentation",
+	}[profile];
 	return `<?xml version="1.0" encoding="UTF-8"?><office:document-content ${namespaces} office:version="1.3"><office:body><office:${kind}>${inner}</office:${kind}></office:body></office:document-content>`;
 }
 
@@ -87,7 +102,81 @@ beforeEach(() => {
 	});
 });
 
-describe("OpenDocument ODT/ODS/ODP workflow", () => {
+describe("OpenDocument document, template, master, and formula workflows", () => {
+	it.each([
+		["ott", "<text:p>Template مرحبا 👩🏽‍💻</text:p>", "Vorlage مرحبا 👩🏽‍💻"],
+		["odm", "<text:p>Master document</text:p>", "Masterdokument"],
+		[
+			"ots",
+			'<table:table table:name="Sheet1"><table:table-row><table:table-cell><text:p>Sheet template</text:p></table:table-cell></table:table-row></table:table>',
+			"Tabellenvorlage",
+		],
+		[
+			"otp",
+			'<draw:page draw:name="page1"><draw:frame><draw:text-box><text:p>Slide template</text:p></draw:text-box></draw:frame></draw:page>',
+			"Folienvorlage",
+		],
+		["odf", "<math:mtext>distance مرحبا</math:mtext>", "Abstand مرحبا"],
+	] as const)(
+		"detects, preserves, edits, and independently reopens .%s by package signature",
+		async (profile, content, target) => {
+			const file = await odfFile(
+				profile,
+				body(profile, content),
+				{
+					"Scripts/javascript.js": "globalThis.pwned = true;",
+					"Object 1/data.bin": new Uint8Array([0, 255, 1, 128]),
+				},
+				`specialist.${profile}`,
+			);
+			const { result, project } = await importProject(file);
+			expect(result.segments).toEqual([
+				profile === "odf" ? "distance مرحبا" : content.match(/>([^<>]+)</)?.[1],
+			]);
+			expect(result.typeRef).toMatchObject({
+				profile,
+				mimeType: ODF_MIME_TYPES[profile],
+			});
+			expect(
+				new Uint8Array(
+					await (await buildOdfTranslationPackage(project)).arrayBuffer(),
+				),
+			).toEqual(new Uint8Array(await file.arrayBuffer()));
+
+			project.translationData.seg2 = [target];
+			const output = await buildOdfTranslationPackage(project);
+			expect(output.type).toBe(ODF_MIME_TYPES[profile]);
+			const zip = await JSZip.loadAsync(await output.arrayBuffer());
+			expect(await zip.file("mimetype")!.async("string")).toBe(
+				ODF_MIME_TYPES[profile],
+			);
+			expect(await zip.file("Scripts/javascript.js")!.async("string")).toBe(
+				"globalThis.pwned = true;",
+			);
+			expect(await zip.file("Object 1/data.bin")!.async("uint8array")).toEqual(
+				new Uint8Array([0, 255, 1, 128]),
+			);
+			const contentXml = await zip.file("content.xml")!.async("string");
+			expect(contentXml).toContain(target);
+			const independentlyParsed = new IndependentDomParser().parseFromString(
+				contentXml,
+				"application/xml",
+			);
+			expect(
+				independentlyParsed.getElementsByTagName("parsererror"),
+			).toHaveLength(0);
+			const reopenedFile = new File([output], `translated.${profile}`, {
+				type: ODF_MIME_TYPES[profile],
+			});
+			await expect(validateOdfFile(reopenedFile)).resolves.toEqual({
+				valid: true,
+			});
+			const reopened = await importOdfFile(reopenedFile);
+			if (reopened.kind !== "segments")
+				throw new Error("Expected ODF segments");
+			expect(reopened.segments).toEqual([target]);
+		},
+	);
 	it("extracts styled ODT text and accessibility content while preserving package assets", async () => {
 		const file = await odfFile(
 			"odt",
@@ -242,6 +331,51 @@ describe("OpenDocument ODT/ODS/ODP workflow", () => {
 			valid: false,
 			errorCode: "ODF_INVALID",
 		});
+		const unsafeManifest = await odfFile(
+			"ott",
+			body("ott", "<text:p>Hello</text:p>"),
+			{
+				"META-INF/manifest.xml": `<?xml version="1.0"?><manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="${ODF_MIME_TYPES.ott}"/><manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/><manifest:file-entry manifest:full-path="../script.js" manifest:media-type="text/javascript"/></manifest:manifest>`,
+			},
+		);
+		await expect(validateOdfFile(unsafeManifest)).resolves.toMatchObject({
+			valid: false,
+			reason: expect.stringMatching(/manifest path.*unsafe/i),
+		});
+		const missingContentDeclaration = await odfFile(
+			"odm",
+			body("odm", "<text:p>Hello</text:p>"),
+			{
+				"META-INF/manifest.xml": `<?xml version="1.0"?><manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="${ODF_MIME_TYPES.odm}"/></manifest:manifest>`,
+			},
+		);
+		await expect(
+			validateOdfFile(missingContentDeclaration),
+		).resolves.toMatchObject({
+			valid: false,
+			reason: expect.stringMatching(/does not declare content\.xml/i),
+		});
+		const wrongFormulaStructure = await odfFile(
+			"odf",
+			body("ott", "<text:p>Not a formula</text:p>"),
+		);
+		await expect(validateOdfFile(wrongFormulaStructure)).resolves.toMatchObject(
+			{
+				valid: false,
+				reason: expect.stringMatching(/MathML math root/i),
+			},
+		);
+	});
+
+	it("keeps embedded scripts inert and excludes script text from translation", async () => {
+		const content = `<?xml version="1.0" encoding="UTF-8"?><office:document-content ${namespaces} office:version="1.3"><office:scripts><office:script>globalThis.odfScriptExecuted = true;</office:script><office:event-listeners><script:event-listener xmlns:script="urn:oasis:names:tc:opendocument:xmlns:script:1.0" script:event-name="dom:load" script:macro-name="danger"/></office:event-listeners></office:scripts><office:body><office:text><text:p>Safe text</text:p></office:text></office:body></office:document-content>`;
+		const imported = await importOdfFile(await odfFile("ott", content));
+		if (imported.kind !== "segments") throw new Error("Expected ODF segments");
+		expect(imported.segments).toEqual(["Safe text"]);
+		expect(
+			(globalThis as typeof globalThis & { odfScriptExecuted?: boolean })
+				.odfScriptExecuted,
+		).toBeUndefined();
 	});
 
 	it("blocks placeholders, structural edits, and stale package mappings", async () => {
@@ -283,6 +417,28 @@ describe("OpenDocument ODT/ODS/ODP workflow", () => {
 		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
 	});
 
+	it("handles a generated large OTS and honors cancellation", async () => {
+		const file = await odfFile(
+			"ots",
+			body(
+				"ots",
+				`<table:table table:name="Large">${Array.from(
+					{ length: 1_500 },
+					(_, index) =>
+						`<table:table-row><table:table-cell><text:p>Template row ${index}</text:p></table:table-cell></table:table-row>`,
+				).join("")}</table:table>`,
+			),
+		);
+		const imported = await importOdfFile(file);
+		if (imported.kind !== "segments") throw new Error("Expected ODF segments");
+		expect(imported.segments).toHaveLength(1_500);
+		const controller = new AbortController();
+		controller.abort();
+		await expect(
+			importOdfFile(file, {}, { signal: controller.signal }),
+		).rejects.toThrow(/cancelled|aborted/i);
+	});
+
 	it("produces an ODT LibreOffice can reopen when LibreOffice is available", async () => {
 		if (process.env.OPENTLC_RUN_LIBREOFFICE !== "1") return;
 		const available = spawnSync("libreoffice", ["--version"], {
@@ -320,4 +476,57 @@ describe("OpenDocument ODT/ODS/ODP workflow", () => {
 			rmSync(directory, { recursive: true, force: true });
 		}
 	});
+
+	it.each(["ott", "odm", "ots", "otp", "odf"] as const)(
+		"produces a translated .%s package LibreOffice can reopen when enabled",
+		async (profile) => {
+			if (process.env.OPENTLC_RUN_LIBREOFFICE !== "1") return;
+			const available = spawnSync("libreoffice", ["--version"], {
+				encoding: "utf8",
+			});
+			if (available.status !== 0) return;
+			const inner =
+				profile === "odf"
+					? "<math:mtext>Hello</math:mtext>"
+					: profile === "ots"
+						? "<table:table><table:table-row><table:table-cell><text:p>Hello</text:p></table:table-cell></table:table-row></table:table>"
+						: profile === "otp"
+							? "<draw:page><draw:frame><draw:text-box><text:p>Hello</text:p></draw:text-box></draw:frame></draw:page>"
+							: "<text:p>Hello</text:p>";
+			const file = await odfFile(profile, body(profile, inner));
+			const { project } = await importProject(file, {}, ["Hallo"]);
+			const output = await buildOdfTranslationPackage(project);
+			const directory = mkdtempSync(join(tmpdir(), `opentlc-${profile}-`));
+			try {
+				const input = join(directory, `translated.${profile}`);
+				const target = join(directory, "converted");
+				const userProfile = join(directory, "profile");
+				mkdirSync(target);
+				writeFileSync(input, new Uint8Array(await output.arrayBuffer()));
+				const reopened = spawnSync(
+					"libreoffice",
+					[
+						"--headless",
+						`-env:UserInstallation=file://${userProfile}`,
+						"--convert-to",
+						"pdf",
+						"--outdir",
+						target,
+						input,
+					],
+					{ encoding: "utf8", timeout: 30_000 },
+				);
+				if (reopened.status !== 0)
+					throw new Error(
+						`LibreOffice reopen failed (${reopened.status}): ${reopened.stderr || reopened.stdout}`,
+					);
+				expect(readdirSync(target).some((name) => name.endsWith(".pdf"))).toBe(
+					true,
+				);
+			} finally {
+				rmSync(directory, { recursive: true, force: true });
+			}
+		},
+		40_000,
+	);
 });

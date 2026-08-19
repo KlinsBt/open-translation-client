@@ -17,7 +17,7 @@ import {
 	getFileExtension,
 	normalizeMimeType,
 } from "./detect";
-import { validateOdfFile } from "./odf";
+import { ODF_MIME_TYPES, validateOdfFile, type OdfProfile } from "./odf";
 import { createSyntheticPdf } from "../../test/pdfFixtures";
 
 const storage = new Map<string, string>();
@@ -93,10 +93,10 @@ describe("format adapter registry", () => {
 
 	it("derives upload hints and labels from the registry", () => {
 		expect(getFormatAcceptValue()).toBe(
-			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ods,.odp,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.doc,.dot,.bak,.xls,.xlt,.xlsb,.ppt,.pps,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.sldx,.html,.htm,.xhtml",
+			".txt,.csv,.tsv,.json,.arb,.locjson,.yaml,.yml,.po,.pot,.xml,.strings,.stringsdict,.xcstrings,.properties,.resx,.ts,.ini,.desktop,.lang,.php,.md,.markdown,.adoc,.asciidoc,.srt,.vtt,.sbv,.odt,.ott,.odm,.ods,.ots,.odp,.otp,.odf,.epub,.svg,.dita,.ditamap,.ditazip,.dbk,.idml,.icml,.tex,.ttml,.dfxp,.mif,.rc,.qml,.pdf,.png,.jpg,.jpeg,.tif,.tiff,.wav,.mp3,.m4a,.ogg,.flac,.mp4,.mov,.webm,.rtf,.doc,.dot,.bak,.xls,.xlt,.xlsb,.ppt,.pps,.sdlppx,.sdlrpx,.wsxz,.mqout,.mqback,.mqxlz,.zip,.docx,.docm,.dotx,.dotm,.xlsx,.xlsm,.xltx,.xltm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.sldx,.html,.htm,.xhtml",
 		);
 		expect(getSupportedFormatLabels()).toBe(
-			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument ODT/ODS/ODP, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF → translated PDF, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, Legacy Office + XLSB, Trados/WorldServer/memoQ return packages, Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
+			"TXT, CSV/TSV, JSON families, YAML 1.2, GNU gettext PO/POT, Android resources, Apple localization, Java/Mozilla properties, .NET RESX, Qt Linguist TS, INI/desktop/lang, PHP localization arrays, Markdown/AsciiDoc, SRT/WebVTT/SBV subtitles, OpenDocument documents, templates, masters + formulas, EPUB 2/3, SVG, DITA/DITAMAP, DocBook 4/5, Adobe IDML/ICML, TeX/LaTeX, TTML/DFXP, Adobe FrameMaker MIF, Windows RC, Qt QML source, PDF → translated PDF, PNG/JPEG/TIFF local OCR → bilingual HTML, Audio/video local transcription → WebVTT, RTF, Legacy Office + XLSB, Trados/WorldServer/memoQ return packages, Manifest-driven ZIP projects, XML + ITS 2.0, DOCX, XLSX, PPTX, HTML",
 		);
 	});
 
@@ -231,7 +231,7 @@ describe("format adapter registry", () => {
 				"content.xml":
 					'<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"><office:body><office:text><p>Hello</p></office:text></office:body></office:document-content>',
 				"META-INF/manifest.xml":
-					'<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/></manifest:manifest>',
+					'<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/><manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/></manifest:manifest>',
 			},
 			"DOCUMENT.ODT",
 		);
@@ -536,15 +536,17 @@ describe("format adapter registry", () => {
 		});
 		const odf = await zipFile(
 			{
-				mimetype: "application/vnd.oasis.opendocument.text",
-				"META-INF/manifest.xml": "<manifest/>",
-				"content.xml": "<document/>",
+				mimetype: "application/vnd.oasis.opendocument.text-template",
+				"META-INF/manifest.xml":
+					'<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text-template"/><manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/></manifest:manifest>',
+				"content.xml":
+					'<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"><office:body><office:text><p>Template</p></office:text></office:body></office:document-content>',
 			},
-			"document.odt",
+			"document.ott",
 		);
 		await expect(detectFormatWithConfidence(odf)).resolves.toMatchObject({
 			formatId: "odf",
-			label: "OpenDocument ODT/ODS/ODP",
+			label: "OpenDocument documents, templates, masters + formulas",
 			supported: true,
 		});
 		const epub = await zipFile(
@@ -569,6 +571,45 @@ describe("format adapter registry", () => {
 			supported: false,
 		});
 	});
+
+	it.each([
+		["ott", "text"],
+		["odm", "text"],
+		["ots", "spreadsheet"],
+		["otp", "presentation"],
+		["odf", "formula"],
+	] as const)(
+		"recognizes .%s only when ODF MIME, manifest, and document structure agree",
+		async (profile, bodyKind) => {
+			const content =
+				profile === "odf"
+					? '<math:math xmlns:math="http://www.w3.org/1998/Math/MathML"><math:mtext>Formula label</math:mtext></math:math>'
+					: `<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"><office:body><office:${bodyKind}><p>Text</p></office:${bodyKind}></office:body></office:document-content>`;
+			const file = await zipFile(
+				{
+					mimetype: ODF_MIME_TYPES[profile as OdfProfile],
+					"META-INF/manifest.xml": `<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="${ODF_MIME_TYPES[profile as OdfProfile]}"/><manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/></manifest:manifest>`,
+					"content.xml": content,
+				},
+				`specialist.${profile}`,
+			);
+			await expect(detectFormatWithConfidence(file)).resolves.toMatchObject({
+				formatId: "odf",
+				supported: true,
+				confidence: "high",
+				evidence: ["package", "signature"],
+			});
+
+			const renamed = new File([await file.arrayBuffer()], "spoofed.odt", {
+				type: ODF_MIME_TYPES.odt,
+			});
+			await expect(detectFormatWithConfidence(renamed)).resolves.toMatchObject({
+				formatId: null,
+				supported: false,
+				label: expect.stringMatching(/^Invalid /),
+			});
+		},
+	);
 
 	it("recognizes generic XML MIME types without treating them as HTML", async () => {
 		await expect(

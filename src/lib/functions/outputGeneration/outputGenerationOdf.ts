@@ -26,7 +26,9 @@ function escapeXml(
 function profileFromProject(project: UserData): OdfProfile {
 	const profile = (project.translationData.typeRef as { profile?: string })
 		?.profile;
-	return profile === "ods" || profile === "odp" ? profile : "odt";
+	return Object.hasOwn(ODF_MIME_TYPES, profile ?? "")
+		? (profile as OdfProfile)
+		: "odt";
 }
 
 export async function buildOdfTranslationPackage(
