@@ -1,7 +1,6 @@
 import JSZip from "jszip";
 import type { UserData } from "$lib/types/types";
 import {
-	contentToPlainText,
 	createTextContent,
 	type NeutralDocument,
 	type TranslationUnit,
@@ -10,6 +9,7 @@ import { normalizeImportOptions, parseList } from "./options";
 import {
 	decodeTextBytes,
 	readSafeZipPackage,
+	safeParseXml,
 	SafeInputError,
 	throwIfAborted,
 	type SafeInputContext,
@@ -36,6 +36,13 @@ export const CAT_PACKAGE_EXTENSIONS = [
 	"mqout",
 	"mqback",
 	"mqxlz",
+	"pxf",
+	"ppf",
+	"txf",
+	"tpf",
+	"tipp",
+	"coti",
+	"xlz",
 ] as const;
 
 export const CAT_PACKAGE_MIME_TYPES = [
@@ -44,12 +51,22 @@ export const CAT_PACKAGE_MIME_TYPES = [
 	"application/x-sdl-return-package",
 	"application/x-worldserver-package",
 	"application/x-memoq-package",
+	"application/x-star-transit-package",
+	"application/x-tipp-package",
+	"application/x-coti-package",
 ] as const;
 
 const XLIFF_MEMBER = /\.(?:xlf|xliff|sdlxliff|mqxliff|mxliff)$/i;
 
 export interface CatPackageProfile {
-	id: "trados" | "worldserver" | "memoq";
+	id:
+		| "trados"
+		| "worldserver"
+		| "worldserver-xlz"
+		| "memoq"
+		| "star-transit"
+		| "tipp"
+		| "coti";
 	label: string;
 	vendor: string;
 	extensions: readonly string[];
@@ -82,6 +99,38 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		exportPolicy: "return-package",
 		exportVerification: "assumed-compatible",
 	},
+	{
+		id: "star-transit",
+		label: "STAR Transit project/translation package",
+		vendor: "STAR Transit",
+		extensions: ["pxf", "ppf", "txf", "tpf"],
+		exportPolicy: "return-package",
+		exportVerification: "assumed-compatible",
+	},
+	{
+		id: "tipp",
+		label: "TIPP request/response package",
+		vendor: "TIPP / Interoperability Now",
+		extensions: ["tipp"],
+		exportPolicy: "return-package",
+		exportVerification: "assumed-compatible",
+	},
+	{
+		id: "coti",
+		label: "COTI translation package",
+		vendor: "DERCOM COTI",
+		extensions: ["coti", "zip"],
+		exportPolicy: "return-package",
+		exportVerification: "assumed-compatible",
+	},
+	{
+		id: "worldserver-xlz",
+		label: "WorldServer legacy XLZ package",
+		vendor: "RWS WorldServer",
+		extensions: ["xlz"],
+		exportPolicy: "return-package",
+		exportVerification: "assumed-compatible",
+	},
 ];
 
 function extensionOf(fileName: string): string {
@@ -109,6 +158,27 @@ export function detectCatPackageProfile(
 			path.endsWith("document.mqxliff") ||
 			path.endsWith("packageinfo.xml"),
 	);
+	const hasTransitProject = lowerPaths.some((path) => path.endsWith(".prj"));
+	const hasTransitPair = lowerPaths.some((path) => {
+		const candidate = extensionOf(path);
+		return (
+			/^[a-z]{3}$/.test(candidate) &&
+			!TRANSIT_RESERVED_EXTENSIONS.has(candidate)
+		);
+	});
+	const hasTippEnvelope =
+		lowerPaths.includes("manifest.xml") && lowerPaths.includes("resources.zip");
+	const cotiManifest = lowerPaths.find(
+		(path) => path === "coti.xml" || path.endsWith("/coti.xml"),
+	);
+	const hasCotiTranslationFolder = lowerPaths.some(
+		(path) =>
+			path.includes("translation files/") ||
+			path.includes("translation_files/"),
+	);
+	const hasWorldServerSkeleton = lowerPaths.some((path) =>
+		path.endsWith(".skl"),
+	);
 
 	if (
 		hasSdlXliff &&
@@ -121,6 +191,21 @@ export function detectCatPackageProfile(
 	)
 		return CAT_PROFILES[2];
 	if (extension === "wsxz" && hasXliff) return CAT_PROFILES[1];
+	if (
+		["pxf", "ppf", "txf", "tpf"].includes(extension) &&
+		hasTransitProject &&
+		(hasTransitPair || hasXliff)
+	)
+		return CAT_PROFILES[3];
+	if (extension === "tipp" && hasTippEnvelope) return CAT_PROFILES[4];
+	if (
+		cotiManifest &&
+		hasCotiTranslationFolder &&
+		(extension === "coti" || extension === "zip")
+	)
+		return CAT_PROFILES[5];
+	if (extension === "xlz" && hasXliff && hasWorldServerSkeleton)
+		return CAT_PROFILES[6];
 	return undefined;
 }
 
@@ -174,6 +259,244 @@ function selectMembers(paths: readonly string[], selection: string): string[] {
 	);
 }
 
+const NESTED_MEMBER_SEPARATOR = "!/";
+const TRANSIT_RESERVED_EXTENSIONS = new Set([
+	"prj",
+	"cod",
+	"ffd",
+	"txe",
+	"fck",
+	"pdf",
+	"doc",
+	"docx",
+	"rtf",
+	"xml",
+	"xlf",
+	"xliff",
+]);
+
+interface PackageMember {
+	path: string;
+	outerPath: string;
+	innerPath?: string;
+	kind: "xliff" | "transit";
+	sourcePath?: string;
+}
+
+function xmlRootName(document: Document): string {
+	return document.documentElement?.localName?.toLowerCase() ?? "";
+}
+
+async function validateProfileManifest(
+	profile: CatPackageProfile,
+	parts: Readonly<Record<string, string | Blob>>,
+	context?: SafeInputContext,
+): Promise<void> {
+	if (profile.id === "tipp") {
+		const manifest = parts["manifest.xml"];
+		if (!manifest)
+			throw new SafeInputError(
+				"CAT_PACKAGE_INVALID",
+				"The TIPP package is missing manifest.xml.",
+			);
+		const document = safeParseXml(await partText(manifest), context);
+		const root = document.documentElement;
+		const signature = `${root?.localName ?? ""} ${root?.namespaceURI ?? ""} ${root?.getAttribute("version") ?? ""}`;
+		if (!/tipp|package/i.test(signature))
+			throw new SafeInputError(
+				"CAT_PACKAGE_INVALID",
+				"manifest.xml does not contain a recognized TIPP package signature.",
+			);
+	}
+	if (profile.id === "coti") {
+		const path = Object.keys(parts).find((candidate) =>
+			/(^|\/)coti\.xml$/i.test(candidate),
+		);
+		if (!path)
+			throw new SafeInputError(
+				"CAT_PACKAGE_INVALID",
+				"The COTI package is missing coti.xml.",
+			);
+		const document = safeParseXml(await partText(parts[path]), context);
+		if (xmlRootName(document) !== "coti")
+			throw new SafeInputError(
+				"CAT_PACKAGE_INVALID",
+				"coti.xml does not have the required COTI root element.",
+			);
+		const root = document.documentElement;
+		if (!root.querySelector("project, translation"))
+			throw new SafeInputError(
+				"CAT_PACKAGE_INVALID",
+				"coti.xml contains no project or translation declaration.",
+			);
+	}
+}
+
+async function nestedTippMembers(
+	parts: Readonly<Record<string, string | Blob>>,
+	context?: SafeInputContext,
+): Promise<{ members: PackageMember[]; parts: Record<string, string | Blob> }> {
+	const payload = parts["resources.zip"];
+	if (!payload)
+		throw new SafeInputError(
+			"CAT_PACKAGE_INVALID",
+			"The TIPP package is missing resources.zip.",
+		);
+	const blob = typeof payload === "string" ? new Blob([payload]) : payload;
+	const nested = await readSafeZipPackage(
+		new File([blob], "resources.zip", { type: "application/zip" }),
+		context,
+	);
+	const members = Object.keys(nested.parts)
+		.filter((path) => XLIFF_MEMBER.test(path))
+		.sort()
+		.map((innerPath) => ({
+			path: `resources.zip${NESTED_MEMBER_SEPARATOR}${innerPath}`,
+			outerPath: "resources.zip",
+			innerPath,
+			kind: "xliff" as const,
+		}));
+	return { members, parts: nested.parts };
+}
+
+function transitLanguageMembers(paths: readonly string[]): string[] {
+	return paths.filter((path) => {
+		const extension = extensionOf(path);
+		return (
+			/^[a-z]{3}$/i.test(extension) &&
+			!TRANSIT_RESERVED_EXTENSIONS.has(extension.toLowerCase())
+		);
+	});
+}
+
+function transitDeclaredLanguage(
+	projectText: string,
+	kind: "source" | "target",
+): string | undefined {
+	const expressions = [
+		new RegExp(`${kind}(?:Language|Lang|Lng)\\s*=\\s*["']?([A-Za-z]{3})`, "i"),
+		new RegExp(`<${kind}(?:Language|Lang|Lng)[^>]*>\\s*([A-Za-z]{3})`, "i"),
+	];
+	for (const expression of expressions) {
+		const match = projectText.match(expression)?.[1];
+		if (match) return match.toLowerCase();
+	}
+	return undefined;
+}
+
+async function transitMembers(
+	parts: Readonly<Record<string, string | Blob>>,
+): Promise<PackageMember[]> {
+	const projectPath = Object.keys(parts).find((path) => /\.prj$/i.test(path));
+	if (!projectPath) return [];
+	const projectText = await partText(parts[projectPath]);
+	const sourceExtension = transitDeclaredLanguage(projectText, "source");
+	const targetExtension = transitDeclaredLanguage(projectText, "target");
+	if (
+		!sourceExtension ||
+		!targetExtension ||
+		sourceExtension === targetExtension
+	)
+		throw new SafeInputError(
+			"CAT_PACKAGE_INVALID",
+			"The Transit project does not declare distinct three-letter source and target language files.",
+		);
+	const paths = transitLanguageMembers(Object.keys(parts));
+	const targets = paths.filter(
+		(path) => extensionOf(path).toLowerCase() === targetExtension,
+	);
+	const members: PackageMember[] = [];
+	for (const path of targets) {
+		const stem = path.slice(0, -(targetExtension.length + 1));
+		const sourcePath = paths.find(
+			(candidate) =>
+				candidate.toLowerCase() === `${stem}.${sourceExtension}`.toLowerCase(),
+		);
+		if (sourcePath)
+			members.push({ path, outerPath: path, kind: "transit", sourcePath });
+	}
+	return members.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+function transitSegments(xml: string): Array<{
+	id: string;
+	text: string;
+	start: number;
+	end: number;
+	locked: boolean;
+}> {
+	const syntax = parseTransitXml(xml);
+	return syntax;
+}
+
+function parseTransitXml(xml: string): Array<{
+	id: string;
+	text: string;
+	start: number;
+	end: number;
+	locked: boolean;
+}> {
+	const document = safeParseXml(xml);
+	const nodes = new Map<string, Element>();
+	for (const candidate of document.getElementsByTagName("*")) {
+		if (candidate.localName.toLowerCase() !== "seg") continue;
+		const id = candidate.getAttribute("SegID");
+		if (!id) continue;
+		if (nodes.has(id))
+			throw new SafeInputError(
+				"CAT_PACKAGE_INVALID",
+				`Transit language file contains duplicate SegID “${id}”.`,
+			);
+		nodes.set(id, candidate);
+	}
+	const segments: Array<{
+		id: string;
+		text: string;
+		start: number;
+		end: number;
+		locked: boolean;
+	}> = [];
+	const pattern =
+		/<(?:[\w.-]+:)?Seg\b([^>]*)>([\s\S]*?)<\/(?:[\w.-]+:)?Seg\s*>/gi;
+	let match: RegExpExecArray | null;
+	while ((match = pattern.exec(xml))) {
+		if (/<[^!?]/.test(match[2]))
+			throw new SafeInputError(
+				"CAT_PACKAGE_INVALID",
+				"Transit segments containing nested proprietary markup cannot be edited safely.",
+			);
+		const id = match[1].match(/\bSegID\s*=\s*["']([^"']+)["']/i)?.[1];
+		if (!id)
+			throw new SafeInputError(
+				"CAT_PACKAGE_INVALID",
+				"A Transit segment is missing its SegID.",
+			);
+		const raw = match[2];
+		const leading = raw.match(/^\s*/)?.[0].length ?? 0;
+		const trailing = raw.match(/\s*$/)?.[0].length ?? 0;
+		const contentStart = match.index + match[0].indexOf(">") + 1;
+		const start = contentStart + leading;
+		const end = contentStart + raw.length - trailing;
+		const node = nodes.get(id);
+		const status = `${match[1]} ${node?.getAttribute("Status") ?? ""}`;
+		segments.push({
+			id,
+			text: node?.textContent ?? raw,
+			start,
+			end,
+			locked: /\b(?:locked|protected)\s*=\s*["']?(?:1|true|yes)/i.test(status),
+		});
+	}
+	return segments;
+}
+
+function escapeXmlText(value: string): string {
+	return value
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;");
+}
+
 export async function importCatPackageFile(
 	file: File,
 	options: Readonly<FormatOptionValues> = {},
@@ -186,13 +509,48 @@ export async function importCatPackageFile(
 	if (!profile)
 		throw new SafeInputError(
 			"CAT_PACKAGE_INVALID",
-			"The ZIP does not contain a recognized Trados, WorldServer, or memoQ package structure.",
+			"The ZIP does not contain a recognized Trados, WorldServer, memoQ, Transit, TIPP, or COTI package structure.",
 		);
-	const members = selectMembers(paths, String(normalized.memberPaths));
+	await validateProfileManifest(profile, archive.parts, context);
+	let nestedParts: Record<string, string | Blob> | undefined;
+	let availableMembers: PackageMember[];
+	if (profile.id === "tipp") {
+		const nested = await nestedTippMembers(archive.parts, context);
+		nestedParts = nested.parts;
+		availableMembers = nested.members;
+	} else if (profile.id === "star-transit") {
+		const nativeMembers = await transitMembers(archive.parts);
+		availableMembers = nativeMembers.length
+			? nativeMembers
+			: selectMembers(paths, "").map((path) => ({
+					path,
+					outerPath: path,
+					kind: "xliff" as const,
+				}));
+	} else {
+		const selectedPaths = selectMembers(paths, "").filter(
+			(path) =>
+				profile.id !== "coti" ||
+				/(^|\/)(?:translation[ _-]*files?|translations?)(\/|$)/i.test(path),
+		);
+		availableMembers = selectedPaths.map((path) => ({
+			path,
+			outerPath: path,
+			kind: "xliff" as const,
+		}));
+	}
+	const patterns = parseList(String(normalized.memberPaths)).filter(
+		(pattern) => pattern.toLowerCase() !== "all",
+	);
+	const members = availableMembers.filter(
+		(member) =>
+			patterns.length === 0 ||
+			patterns.some((pattern) => globMatches(member.path, pattern)),
+	);
 	if (members.length === 0)
 		throw new SafeInputError(
 			"CAT_PACKAGE_NO_TRANSLATABLE_MEMBERS",
-			"No supported XLIFF-family member matched the package selection.",
+			"No validated bilingual member matched the package selection. COTI payloads must contain a supported XLIFF-family file; Transit packages must contain aligned declared language-pair XML files.",
 		);
 
 	const includeTargets = Boolean(normalized.includeExistingTargets);
@@ -203,10 +561,73 @@ export async function importCatPackageFile(
 	let sourceLanguage = "";
 	let targetLanguage = "";
 
-	for (const [memberIndex, path] of members.entries()) {
+	for (const [memberIndex, member] of members.entries()) {
 		throwIfAborted(context?.signal);
+		const path = member.path;
 		try {
-			const xml = await partText(archive.parts[path]);
+			if (member.kind === "transit") {
+				const sourceXml = await partText(archive.parts[member.sourcePath!]);
+				const targetXml = await partText(archive.parts[member.outerPath]);
+				const sourceUnits = transitSegments(sourceXml);
+				const targetUnits = transitSegments(targetXml);
+				if (
+					sourceUnits.length === 0 ||
+					sourceUnits.length !== targetUnits.length ||
+					sourceUnits.some((unit, index) => unit.id !== targetUnits[index]?.id)
+				)
+					throw new SafeInputError(
+						"CAT_PACKAGE_INVALID",
+						`Transit language pair “${member.sourcePath}” / “${member.outerPath}” has misaligned segment IDs.`,
+					);
+				for (const [unitIndex, sourceUnit] of sourceUnits.entries()) {
+					const targetUnit = targetUnits[unitIndex];
+					const source = sourceUnit.text;
+					const target = includeTargets ? targetUnit.text : "";
+					sourceSegments.push(source);
+					targetSegments.push(target);
+					units.push({
+						id: `member-${memberIndex + 1}:${sourceUnit.id}`,
+						source: createTextContent(source),
+						target: createTextContent(target),
+						state: target ? "translated" : "initial",
+						translatable: !targetUnit.locked,
+						notes: [],
+						contexts: [
+							{ type: "cat-package-member", value: path },
+							{ type: "star-transit-segment", value: sourceUnit.id },
+						],
+						sourceLocation: {
+							part: member.outerPath,
+							segmentIndex: sourceSegments.length - 1,
+							metadata: {
+								memberKind: "transit",
+								memberUnitId: sourceUnit.id,
+								originalTarget: targetUnit.text,
+								forceRewrite: !includeTargets,
+								targetStart: targetUnit.start,
+								targetEnd: targetUnit.end,
+							},
+						},
+					});
+				}
+				memberReports.push({
+					path,
+					sourcePath: member.sourcePath,
+					status: "imported",
+					units: sourceUnits.length,
+					profile: "star-transit-native-pair",
+				});
+				continue;
+			}
+			const memberPart = member.innerPath
+				? nestedParts?.[member.innerPath]
+				: archive.parts[member.outerPath];
+			if (!memberPart)
+				throw new SafeInputError(
+					"CAT_PACKAGE_INVALID",
+					`Package member “${path}” is missing.`,
+				);
+			const xml = await partText(memberPart);
 			const imported = await importXliffProjectStreaming(
 				new File([xml], path, { type: "application/xliff+xml" }),
 				context,
@@ -243,12 +664,17 @@ export async function importCatPackageFile(
 						metadata: {
 							...unit.sourceLocation?.metadata,
 							memberUnitId: unit.id,
+							originalTarget: project.seg2[unitIndex] ?? "",
+							forceRewrite: !includeTargets,
 						},
 					},
 				});
 			}
 			memberReports.push({
 				path,
+				...(member.innerPath
+					? { outerPath: member.outerPath, innerPath: member.innerPath }
+					: {}),
 				status: "imported",
 				units: model.units.length,
 				xliffProfile: model.metadata?.xliffProfile ?? null,
@@ -281,8 +707,9 @@ export async function importCatPackageFile(
 				profile,
 				members: memberReports,
 				entryCount: paths.length,
-				unknownEntriesPreserved: paths.filter((path) => !members.includes(path))
-					.length,
+				unknownEntriesPreserved: paths.filter(
+					(path) => !members.some((member) => member.outerPath === path),
+				).length,
 				exportPolicy: "return-package",
 			},
 		},
@@ -335,11 +762,45 @@ function returnExtensionFor(fileName: string): string {
 	const extension = extensionOf(fileName);
 	if (extension === "sdlppx") return "sdlrpx";
 	if (extension === "mqout") return "mqback";
+	if (extension === "pxf") return "txf";
+	if (extension === "ppf") return "tpf";
+	if (extension === "zip" && /coti/i.test(fileName)) return "coti";
 	return CAT_PACKAGE_EXTENSIONS.includes(
 		extension as (typeof CAT_PACKAGE_EXTENSIONS)[number],
 	)
 		? extension
-		: "zip";
+		: extension === "zip"
+			? "coti"
+			: "zip";
+}
+
+function patchTransitMember(
+	xml: string,
+	indexes: readonly number[],
+	project: UserData,
+	combined: NeutralDocument,
+): string {
+	const edits = indexes.map((globalIndex) => {
+		const unit = combined.units[globalIndex];
+		const metadata = unit.sourceLocation?.metadata as
+			| { targetStart?: number; targetEnd?: number }
+			| undefined;
+		if (metadata?.targetStart === undefined || metadata.targetEnd === undefined)
+			throw new Error("Transit segment replacement metadata is missing.");
+		const value = unitIsLocked(unit)
+			? xml.slice(metadata.targetStart, metadata.targetEnd)
+			: escapeXmlText(
+					project.translationData.seg2[globalIndex] ??
+						project.translationData.seg1[globalIndex] ??
+						"",
+				);
+		return { start: metadata.targetStart, end: metadata.targetEnd, value };
+	});
+	let output = xml;
+	for (const edit of edits.sort((a, b) => b.start - a.start))
+		output = `${output.slice(0, edit.start)}${edit.value}${output.slice(edit.end)}`;
+	parseTransitXml(output);
+	return output;
 }
 
 function packageSkeleton(
@@ -386,6 +847,22 @@ function unitIsLocked(unit: TranslationUnit | undefined): boolean {
 	return profile?.locked === true || unit?.translatable === false;
 }
 
+function packageTargetsAreIdentity(
+	project: UserData,
+	document: NeutralDocument,
+): boolean {
+	return document.units.every((unit, index) => {
+		const metadata = unit.sourceLocation?.metadata as
+			| { originalTarget?: unknown; forceRewrite?: unknown }
+			| undefined;
+		return (
+			metadata?.forceRewrite !== true &&
+			typeof metadata?.originalTarget === "string" &&
+			project.translationData.seg2[index] === metadata.originalTarget
+		);
+	});
+}
+
 export async function buildCatReturnPackage(project: UserData): Promise<{
 	blob: Blob;
 	extension: string;
@@ -412,13 +889,7 @@ export async function buildCatReturnPackage(project: UserData): Promise<{
 			: undefined;
 	const extension =
 		extensionFromTypeRef ?? returnExtensionFor(project.translationData.name);
-	if (
-		source &&
-		combined.units.every(
-			(unit, index) =>
-				project.translationData.seg2[index] === contentToPlainText(unit.target),
-		)
-	)
+	if (source && packageTargetsAreIdentity(project, combined))
 		return { blob: source, extension };
 	const memberIndexes = new Map<string, number[]>();
 	for (const [index, unit] of combined.units.entries()) {
@@ -429,10 +900,29 @@ export async function buildCatReturnPackage(project: UserData): Promise<{
 		memberIndexes.set(path, indexes);
 	}
 
+	const nestedUpdates = new Map<string, Map<string, string>>();
 	for (const [path, indexes] of memberIndexes) {
-		const part = skeleton.payload.parts[path];
+		const [outerPath, innerPath] = path.split(NESTED_MEMBER_SEPARATOR);
+		const part = skeleton.payload.parts[outerPath];
 		if (!part) throw new Error(`CAT package member “${path}” is missing.`);
-		const xml = await partText(part);
+		const kind =
+			combined.units[indexes[0]]?.sourceLocation?.metadata?.memberKind;
+		if (kind === "transit") {
+			const xml = await partText(part);
+			zip.file(outerPath, patchTransitMember(xml, indexes, project, combined));
+			continue;
+		}
+		let memberPart = part;
+		if (innerPath) {
+			const blob = typeof part === "string" ? new Blob([part]) : part;
+			const nested = await readSafeZipPackage(
+				new File([blob], outerPath, { type: "application/zip" }),
+			);
+			memberPart = nested.parts[innerPath];
+			if (!memberPart)
+				throw new Error(`Nested CAT package member “${path}” is missing.`);
+		}
+		const xml = await partText(memberPart);
 		const imported = await importXliffProjectStreaming(
 			new File([xml], path, { type: "application/xliff+xml" }),
 		);
@@ -451,7 +941,28 @@ export async function buildCatReturnPackage(project: UserData): Promise<{
 		member.translationData.checked = indexes.map(
 			(globalIndex) => project.translationData.checked[globalIndex] ?? false,
 		);
-		zip.file(path, buildMemberXliff(member));
+		const rebuilt = buildMemberXliff(member);
+		if (innerPath) {
+			const updates = nestedUpdates.get(outerPath) ?? new Map<string, string>();
+			updates.set(innerPath, rebuilt);
+			nestedUpdates.set(outerPath, updates);
+		} else zip.file(outerPath, rebuilt);
+	}
+
+	for (const [outerPath, updates] of nestedUpdates) {
+		const part = skeleton.payload.parts[outerPath];
+		if (!part) throw new Error(`Nested package “${outerPath}” is missing.`);
+		const blob = typeof part === "string" ? new Blob([part]) : part;
+		const nested = await JSZip.loadAsync(await blob.arrayBuffer());
+		for (const [innerPath, content] of updates) nested.file(innerPath, content);
+		zip.file(
+			outerPath,
+			await nested.generateAsync({
+				type: "uint8array",
+				compression: "DEFLATE",
+				compressionOptions: { level: 6 },
+			}),
+		);
 	}
 
 	return {
@@ -471,7 +982,7 @@ export async function generateCatReturnPackage(
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement("a");
 	link.href = url;
-	link.download = `${(project.translationData.name || "translation").replace(/\.(?:sdlppx|sdlrpx|wsxz|mqout|mqback|mqxlz)$/i, "")}.translated.${extension}`;
+	link.download = `${(project.translationData.name || "translation").replace(/\.(?:sdlppx|sdlrpx|wsxz|mqout|mqback|mqxlz|pxf|ppf|txf|tpf|tipp|coti|xlz|zip)$/i, "")}.translated.${extension}`;
 	document.body.appendChild(link);
 	link.click();
 	link.remove();

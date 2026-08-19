@@ -1343,13 +1343,53 @@ definition of done below before checking them.
       plus the Interoperability Now XLIFF:doc representation namespace and
       schema signatures.
 
-- [ ] **FF-505 — Additional CAT handoff and package containers.** Add STAR
+- [x] **FF-505 — Additional CAT handoff and package containers.** Add STAR
       Transit `.pxf`/`.ppf`, TIPP packages, COTI `.coti` and COTI ZIP packages,
       and legacy WorldServer `.xlz`. Preserve all opaque resources and manifests,
       update only validated bilingual members, generate the expected return
       package extension, and reuse the archive traversal, collision, encryption,
       entry-count, expansion-ratio, cancellation, and byte-preservation guards.
       Do not route an arbitrary ZIP into any of these profiles.
+
+      Implemented 2026-08-19 with signature-driven return-package profiles for
+      STAR Transit PXF/PPF/TXF/TPF, TIPP, COTI Level 1 `.coti`/`.zip`, and
+      legacy WorldServer XLZ. PPF exports as TPF, PXF exports as TXF, COTI ZIP
+      input exports as `.coti`, and TIPP/XLZ retain their family. Transit
+      detection requires a PRJ plus declared, aligned three-letter source and
+      target language-pair files; TIPP requires a safe TIPP manifest and a
+      separately guarded nested `resources.zip`; COTI requires a valid `coti`
+      manifest root, project/translation metadata, and a translation-files
+      folder; XLZ requires both XLIFF and skeleton members. Ordinary ZIP files
+      and extension-only impostors remain outside these profiles.
+
+      XLIFF-family members are parsed by the existing version/profile-aware
+      XLIFF layer. Native Transit `Seg` pairs are edited only when both files
+      have identical `SegID` order and plain segment bodies; `Data`, workflow
+      attributes, PRJ/COD/FFD resources, and locked targets remain untouched.
+      Transit segments with nested proprietary markup are rejected with a
+      helpful error because safely recalculating STAR's undocumented binary
+      segment state is not possible in-browser. COTI payloads are format-neutral
+      by specification, so this adapter edits only validated XLIFF-family files
+      below declared translation folders and refuses unsupported payloads rather
+      than guessing. Manifests and all opaque outer/nested resources are copied
+      unchanged. Identity export returns the exact original package bytes.
+
+      Tests cover each signature and return-extension mapping, COTI `.coti` and
+      `.zip`, nested TIPP selection/rebuild, WorldServer XLF/SKL, native Transit
+      pairs, Unicode/RTL/emoji, locked and opaque data, exact identity bytes,
+      translated re-import, independent XML/ZIP reopening, malformed/unsafe
+      manifests, DTD/entities, misaligned IDs, nested expansion bombs,
+      cancellation, a generated 1,200-unit package, IndexedDB persistence,
+      browser downloads, and non-execution of imported text. No large binary
+      fixture is committed. `npm run verify` passes with 957 unit tests (3
+      skipped), 57 real-Chromium tests, formatting, type checks, and the
+      production build. The implementation follows STAR's official
+      [PPF/TPF package description](https://www.star-spain.com/en/blog/transittermstar-nxt-tooltips/short-cuts-%E2%80%93-n%C2%BA-17-view-project-package-and-translation-package),
+      XTM's documented [TIPP envelope structure](https://xtm-cloud.atlassian.net/wiki/spaces/EXKB/pages/3273490972),
+      DERCOM's [COTI overview and current version](https://www.dercom.de/projekte),
+      memoQ's [COTI package guidance](https://docs.memoq.com/current/en/Workspace/coti-packages.html),
+      RWS legacy WorldServer XLZ guidance, and the OASIS XLIFF 1.2/2.x
+      specifications.
 
 ### Priority B — Diagram, publishing, XML, and subtitle formats
 

@@ -948,7 +948,7 @@ export const FORMAT_IMPORT_OPTIONS = {
 			defaultValue: "",
 			placeholder: "All, or comma-separated package paths/globs",
 			description:
-				"Leave empty to import every supported XLIFF member, or select exact paths and * / ** wildcard patterns.",
+				"Leave empty to import every validated XLIFF or Transit bilingual member, or select exact paths and * / ** wildcard patterns. Nested TIPP members use resources.zip!/path.xlf.",
 		},
 		{
 			id: "includeExistingTargets",

@@ -123,6 +123,9 @@
 				"Trados SDLPPX and SDLRPX return packages",
 				"WorldServer WSXZ packages",
 				"memoQ MQOUT, MQBACK and MQXLZ packages",
+				"STAR Transit PXF, PPF, TXF and TPF packages",
+				"TIPP request and response packages",
+				"COTI and legacy WorldServer XLZ packages",
 				"TTX, ITD and Wordfast/GlobalLink TXML bilingual files",
 				"XLIFF:doc and Workbench bilingual DOC, DOCX, RTF and BAK",
 			],
@@ -276,7 +279,7 @@
 					</li>
 					<li>
 						<strong>CAT return packages</strong><span
-							>Trados, WorldServer and memoQ handoff</span
+							>Trados, WorldServer, memoQ, Transit, TIPP and COTI handoff</span
 						>
 					</li>
 				</ul>
@@ -301,9 +304,10 @@
 					<article>
 						<strong>CAT packages support return-package export</strong>
 						<p>
-							Trados, WorldServer and memoQ-style packages are inspected safely,
-							their bilingual members are updated, and every other package entry
-							is retained when the return container is rebuilt.
+							Trados, WorldServer, memoQ, Transit, TIPP and COTI packages are
+							inspected safely, their validated bilingual members are updated,
+							and every other entry is retained when the return container is
+							rebuilt.
 						</p>
 					</article>
 					<article>

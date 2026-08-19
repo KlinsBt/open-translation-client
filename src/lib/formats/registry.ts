@@ -651,7 +651,7 @@ const adapters = [
 	},
 	{
 		id: "cat-package",
-		label: "Trados/WorldServer/memoQ return packages",
+		label: "CAT handoff and return packages",
 		extensions: CAT_PACKAGE_EXTENSIONS,
 		mimeTypes: CAT_PACKAGE_MIME_TYPES,
 		capabilities: READ_WRITE_CAPABILITIES,

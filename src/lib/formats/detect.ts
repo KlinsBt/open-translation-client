@@ -506,6 +506,18 @@ async function detectZipPackage(
 		);
 		if (!adapter)
 			throw new Error("No adapter is registered for detected CAT packages.");
+		const candidate = new File([inspection.bytes], fileName, {
+			type: "application/zip",
+		});
+		const validation = await adapter.validate(candidate, context);
+		if (!validation.valid)
+			return unsupported(
+				`Invalid ${catProfile.label}`,
+				"high",
+				["package", "signature"],
+				validation.reason ??
+					"The package signature was recognized, but its manifest or bilingual members are invalid.",
+			);
 		const workflow = catPackageWorkflow(catProfile);
 		return {
 			formatId: adapter.id,
