@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick } from "svelte";
+	import { onDestroy, tick } from "svelte";
 	import Segment from "./segment.svelte";
 	import AutoFill from "../svg/autoFill.svelte";
 	import DocLock from "../svg/docLock.svelte";
@@ -64,6 +64,7 @@
 		getSegmentJoinBoundaryOffsets,
 	} from "$lib/functions/parsing/segmentationLogic";
 	import { getProjectCompletionSummary } from "$lib/formats/qualityAssurance";
+	import { createPersistedEditQueue } from "$lib/functions/saveData/persistedEditQueue";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	const CONVERTED_EXPORTS: ReadonlyArray<{
@@ -238,6 +239,21 @@
 		getProjectCompletionSummary($singleUserData),
 	);
 	let combineSelection: Set<number> = $state(new Set());
+	const projectEditQueue = createPersistedEditQueue(
+		$singleUserData,
+		updateTranslationOnIndexedDB,
+		{
+			onFailure(error, committed) {
+				singleUserData.set(committed);
+				seg2WordCount.set(getTotalWordCount(committed.translationData.seg2));
+				notifyError(
+					error instanceof Error
+						? error.message
+						: "Could not save the latest segment edit.",
+				);
+			},
+		},
+	);
 	let pendingSplitOffsets: Map<number, number> = $state(new Map());
 	let percentage: number = $derived(
 		calcPercentageOfTotalSegmentsChecked(
@@ -338,8 +354,10 @@
 
 	async function persistCandidate(project: typeof $singleUserData) {
 		try {
+			await projectEditQueue.flush();
 			await updateTranslationOnIndexedDB(project);
 			singleUserData.set(project);
+			projectEditQueue.markCommitted(project);
 			return true;
 		} catch (error) {
 			notifyError(
@@ -348,6 +366,33 @@
 			return false;
 		}
 	}
+
+	function editTargetSegment(detail: { index: number; value: string }) {
+		const candidate = structuredClone($singleUserData);
+		candidate.translationData.seg2[detail.index] = detail.value;
+		candidate.translationData.checked[detail.index] = false;
+		singleUserData.set(candidate);
+		seg2WordCount.set(getTotalWordCount(candidate.translationData.seg2));
+		void projectEditQueue.schedule(candidate);
+	}
+
+	function flushProjectEdits() {
+		return projectEditQueue.flush();
+	}
+
+	function handlePageHide() {
+		void projectEditQueue.flush();
+	}
+
+	function handleVisibilityChange() {
+		if (document.visibilityState === "hidden") void projectEditQueue.flush();
+	}
+
+	onDestroy(() => {
+		// Writes start on input and live outside child-segment lifetime. Destruction
+		// merely observes the already-running queue; it is not the save trigger.
+		void projectEditQueue.flush();
+	});
 
 	async function lockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
@@ -701,7 +746,8 @@
 	});
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} on:pagehide={handlePageHide} />
+<svelte:document on:visibilitychange={handleVisibilityChange} />
 
 {#snippet exportMenu()}
 	<div class="modal-stack">
@@ -1293,6 +1339,8 @@
 				}
 				selectedSegmentId.set(detail.index);
 			}}
+			onEditTarget={editTargetSegment}
+			onFlushEdits={flushProjectEdits}
 		/>
 	{/each}
 </div>

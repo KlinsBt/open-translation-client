@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onDestroy } from "svelte";
 	import {
 		updateTmOnIndexedDB,
 		updateTranslationOnIndexedDB,
@@ -38,6 +37,8 @@
 		onSplitSegment,
 		onToggleCombine,
 		onActivateSegment,
+		onEditTarget,
+		onFlushEdits,
 	}: {
 		id: number;
 		textSegment1: string;
@@ -51,6 +52,8 @@
 		onSplitSegment?: (detail: { index: number; offset: number }) => void;
 		onToggleCombine?: (detail: { index: number }) => void;
 		onActivateSegment?: (detail: { index: number }) => void;
+		onEditTarget?: (detail: { index: number; value: string }) => void;
+		onFlushEdits?: () => Promise<void>;
 	} = $props();
 
 	let tmMatchesFound: { segment: string; match: string; percentage: string }[] =
@@ -80,8 +83,6 @@
 				(resource) => resource.id === $singleUserData.translationData.tm?.id,
 			),
 	);
-	let saveTimer: ReturnType<typeof setTimeout> | null = null;
-	let pendingSave: Promise<void> | null = null;
 	type SourceDisplayPart = { text: string; markerOffset: number | null };
 	let sourceDisplayParts: SourceDisplayPart[] = $derived.by(() => {
 		const offsets = new Set(
@@ -147,51 +148,6 @@
 			(project) => (project.translationData.checked[id] = nextConfirmed),
 		);
 		if (updated) confirmed = nextConfirmed;
-	}
-
-	async function persistProject() {
-		try {
-			await updateTranslationOnIndexedDB($singleUserData);
-		} catch (error) {
-			notifyError(
-				error instanceof Error ? error.message : "Could not save this project.",
-			);
-		}
-	}
-
-	function scheduleProjectSave() {
-		if (saveTimer) clearTimeout(saveTimer);
-		saveTimer = setTimeout(() => {
-			saveTimer = null;
-			pendingSave = persistProject().finally(() => (pendingSave = null));
-		}, 300);
-	}
-
-	async function flushProjectSave() {
-		if (saveTimer) {
-			clearTimeout(saveTimer);
-			saveTimer = null;
-			pendingSave = persistProject().finally(() => (pendingSave = null));
-		}
-		await pendingSave;
-	}
-
-	onDestroy(() => {
-		void flushProjectSave();
-	});
-
-	function updateSegmentText() {
-		selectedSegmentId.set(id);
-		if (!$singleUserData) return console.log("Data not found");
-		let newUserData = structuredClone($singleUserData);
-		newUserData.translationData.seg2[id] = textSegment2;
-		if (newUserData.translationData.checked[id]) {
-			newUserData.translationData.checked[id] = false;
-			confirmed = false;
-		}
-		singleUserData.set(newUserData);
-		scheduleProjectSave();
-		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
 
 	async function fillTargetSegmentText() {
@@ -261,7 +217,8 @@
 	function handleInput(event: Event) {
 		const value = (event.target as HTMLTextAreaElement).value;
 		textSegment2 = value;
-		updateSegmentText();
+		selectedSegmentId.set(id);
+		onEditTarget?.({ index: id, value });
 	}
 
 	function useAutoHeight(node: HTMLTextAreaElement) {
@@ -515,7 +472,7 @@
 				checkIfElligibleForTmOrTbSearch(textSegment1);
 			}}
 			oninput={handleInput}
-			onblur={flushProjectSave}
+			onblur={() => void onFlushEdits?.()}
 			class="field right"
 			class:target-field={true}
 			style="

@@ -194,13 +194,43 @@ every reopened task.
   final debounced textarea edit remains explicitly tracked by AUD-027; no other
   limitation is known for the mutation classes closed here.
 
-- [ ] AUD-027 Guarantee the final debounced edit survives navigation and tab exit.
+- [x] AUD-027 Guarantee the final debounced edit survives navigation and tab exit.
 
   - Use a lifecycle-safe queued-write strategy rather than relying on an
     unawaited promise from `onDestroy`.
   - Test blur, Svelte route destruction, immediate project switching,
     `visibilitychange`/`pagehide`, transaction overlap, and a write already in
     flight.
+
+  Completed 2026-08-20; reviewer confirmation: Codex traced the target-editor
+  lifecycle from input through IndexedDB completion and route teardown.
+  Implementation commit: `fix: persist final edits across route teardown` (this
+  task's commit). `persistedEditQueue.ts` replaces child-component timers with a
+  parent-owned queue that starts the first transaction immediately, coalesces
+  overlapping keystrokes to the newest full snapshot, retains its work beyond
+  component destruction, and rolls back to the last confirmed snapshot on
+  failure. Blur, hidden-document, pagehide, and destroy paths flush/observe that
+  already-running queue; other project mutations first drain it and then adopt
+  their successful snapshot as the next rollback baseline.
+
+  Regression evidence: four `persistedEditQueue.spec.ts` tests cover immediate
+  start, an in-flight write, coalescing, exact rollback, recovery baselines, and
+  awaited flush. The real-browser case “persists the final queued edit through
+  blur, page exit, route destruction, and project switching” sends rapid edits
+  including Unicode/RTL text, fires blur, `visibilitychange`, and `pagehide`,
+  switches projects, destroys the Svelte route, and verifies the final target and
+  cleared confirmation after an IndexedDB reload. These tests fail on the old
+  per-segment 300 ms timer because destruction only launched an unawaited late
+  save and overlapping segment timers could commit stale snapshots.
+
+  Commands: `npx vitest --run
+src/lib/functions/saveData/persistedEditQueue.spec.ts` — 1 file and 4 tests
+  passed; `npm run test:browser:smoke` — 1 file and 11 tests passed; `npm run
+lint` — formatting and ESLint passed; `npm run check` — 0 errors and 0
+  warnings; `npm run build` — production build completed. The browser cannot
+  override an operating-system process kill that prevents all IndexedDB work;
+  within supported browser lifecycle events, the final edit is queued before
+  teardown rather than depending on teardown to initiate it.
 
 - [ ] AUD-028 Make every global loading transition exception-safe.
   - Wrap initial project loading, project opening, and TM/TB loading in

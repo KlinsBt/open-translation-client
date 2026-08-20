@@ -534,6 +534,60 @@ describe("real CAT application route", () => {
 		await deleteTranslationFromIndexedDB(project.id);
 	});
 
+	it("persists the final queued edit through blur, page exit, route destruction, and project switching", async () => {
+		const first = makeUserData({
+			name: "Lifecycle source project",
+			seg1: ["Source"],
+			seg2: ["Old target"],
+			checked: [true],
+			locked: [false],
+		});
+		first.id = Date.now();
+		const second = makeUserData({ name: "Switched project" });
+		second.id = first.id + 1;
+		await updateTranslationOnIndexedDB(first);
+		await updateTranslationOnIndexedDB(second);
+		singleUserData.set(first);
+		selectedSegmentId.set(0);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(
+				document.querySelector<HTMLTextAreaElement>("textarea"),
+			).not.toBeNull(),
+		);
+		const textarea = document.querySelector<HTMLTextAreaElement>("textarea")!;
+		for (const value of ["F", "Final", "Final queued target — العربية"]) {
+			enterText(textarea, value);
+		}
+		textarea.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+		Object.defineProperty(document, "visibilityState", {
+			configurable: true,
+			value: "hidden",
+		});
+		document.dispatchEvent(new Event("visibilitychange"));
+		window.dispatchEvent(new PageTransitionEvent("pagehide"));
+		singleUserData.set(second);
+		await unmount(mounted);
+		mounted = null;
+
+		await eventuallyAsync(async () => {
+			const saved = (await loadTranslationsUserDataFromIndexedDB()).find(
+				(candidate) => candidate.id === first.id,
+			);
+			expect(saved?.translationData.seg2).toEqual([
+				"Final queued target — العربية",
+			]);
+			expect(saved?.translationData.checked).toEqual([false]);
+		});
+		Object.defineProperty(document, "visibilityState", {
+			configurable: true,
+			value: "visible",
+		});
+		await deleteTranslationFromIndexedDB(first.id);
+		await deleteTranslationFromIndexedDB(second.id);
+	});
+
 	it("rolls back a failed TM edit and keeps the editor open", async () => {
 		const seed = Date.now();
 		const memory = {
