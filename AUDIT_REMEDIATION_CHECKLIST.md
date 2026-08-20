@@ -3,13 +3,12 @@
 This checklist tracks the repository-wide functional audit performed on
 2026-08-20 and reopened after the independent follow-up audit on 2026-08-20.
 
-> **Current status: REOPENED — not complete.** The first completion pass relied
-> too heavily on broad task wording and tests that still encoded flawed legacy
-> behavior. In particular, `checked[]` was accepted as both the segment-lock and
-> workflow-confirmation state. A task may now be checked only when every explicit
-> acceptance criterion beneath it passes and the cited regression test would
-> fail against the pre-fix implementation. Passing unrelated tests is not
-> completion evidence.
+> **Current status: COMPLETE — independently rechecked 2026-08-20.** The first
+> completion pass relied too heavily on broad task wording and tests that still
+> encoded flawed legacy behavior. Every reopened and follow-up item has now been
+> re-audited against its explicit acceptance criteria, backed by a targeted
+> pre-fix-sensitive regression, and passed through the final clean-worktree,
+> dependency, bundle, browser, and independent-validator gates recorded below.
 
 The final gate is `npm run verify` on a clean worktree, the absence of unexpected
 runtime/build warnings, and a manual review of the evidence recorded beneath
@@ -228,19 +227,72 @@ test:browser:smoke` — 1 file and 18 tests passed.
 
 ## Final verification
 
-- [ ] Every reopened and follow-up item below is complete with recorded evidence.
-- [ ] `npm run verify` passes after the final fix on a clean worktree.
-- [ ] `npm audit --omit=dev` has no unaccepted high/critical production finding,
+- [x] Every reopened and follow-up item below is complete with recorded evidence.
+- [x] `npm run verify` passes after the final fix on a clean worktree.
+- [x] `npm audit --omit=dev` has no unaccepted high/critical production finding,
       and the full development/build audit has no unreviewed critical or high
       finding.
-- [ ] Browser tests complete without unhandled exceptions, stale-reactivity
+- [x] Browser tests complete without unhandled exceptions, stale-reactivity
       warnings, hanging processes, or false-positive tests.
-- [ ] Production build completes without an unreviewed oversized entry chunk or
+- [x] Production build completes without an unreviewed oversized entry chunk or
       unexpectedly eager heavy runtime asset.
-- [ ] Roadmap Definition of Done accurately distinguishes automated, optional
+- [x] Roadmap Definition of Done accurately distinguishes automated, optional
       native-tool, and manual interoperability validation.
-- [ ] Every item is backed by implementation evidence and a regression that
+- [x] Every item is backed by implementation evidence and a regression that
       fails against the pre-fix behavior.
+
+Final gate evidence, 2026-08-20:
+
+- The final `npm run verify` began with `git status --porcelain` empty and
+  passed formatting, ESLint, Svelte check with 0 errors/0 warnings, 90 unit
+  files with 1,120 tests passed and 11 explicit conditional skips, 18 real-
+  browser files with 95 tests passed, coverage thresholds, production build,
+  and bundle budgets. Browser diagnostic enforcement reported no unhandled
+  exception, stale-reactivity warning, hang, or false-positive suite result.
+- Coverage finished at 85.75% statements, 75.16% branches, 92.49% functions,
+  and 87.12% lines, above every enforced floor. The bundle gate measured the
+  landing/about/app/TB/TM route closures at 45,102/48,615/360,040/138,857/
+  139,103 gzip bytes and confirmed PDF.js, OCR, transcription, and ONNX assets
+  remain behind reviewed dynamic boundaries.
+- `npm audit --omit=dev --audit-level=high` and the full `npm audit
+--audit-level=high` both reported 0 vulnerabilities.
+- Strict `npm run test:external` passed 13 files and all 125 tests with no skip.
+  Its report is `strict-release-gate: passed` and records LibreOffice 25.8.2.2,
+  EPUBCheck 5.3.0, DITA-OT 4.4.0, TeX Live 2026, GNU windres 2.46, FFmpeg n8.0,
+  Poppler 25.10.0, qmllint 1.0, libxml2 2.15.1, and gettext 0.26 on CachyOS
+  Linux x86-64. `EXTERNAL_VALIDATION.md` and the roadmap now distinguish the
+  mandatory repository gate, strict/optional native-tool automation, and
+  supplemental manual proprietary-application observations.
+
+Original-item regression index (the detailed reopened/follow-up evidence is
+recorded beneath AUD-003/004/010/011/014 and AUD-024 through AUD-036):
+
+- AUD-001/002: `resourceFiltering.spec.ts` and the filtered TM/TB real-browser
+  edit cases prove displayed stable identities are mutated rather than array
+  positions.
+- AUD-005/006: TMX/TBX format tests, `indexedDb.browser.spec.ts`, and the empty-
+  resource/export browser cases cover empty safety, completed downloads, and
+  atomic repair of deleted project references.
+- AUD-007/008/009: `segmentationLogic.spec.ts`, `workflowState.spec.ts`, and the
+  CAT browser route cover every locked mutation path, native editing shortcuts,
+  and virtual-window keyboard expansion.
+- AUD-012/013: `projectValidation.spec.ts` and modal route tests cover blank/
+  identical-language validation plus keyboard activation and focus behavior for
+  every upload drop zone.
+- AUD-015/016: `pdf.spec.ts`, converted-export tests, `supportCatalog.spec.ts`,
+  and `repositoryConsistency.spec.ts` cover PDF page/overlay constraints and one
+  registry-derived picker/landing/About support catalog.
+- AUD-017/018: modal and CAT route browser cases cover focus trap/restoration,
+  background isolation, scroll lock, keyboard result rows, and the static CSS/
+  interaction consistency rules.
+- AUD-019/020: explicit conditional-validator assertions and all 95 route/
+  conformance browser tests prevent silent native passes and exercise the named
+  user workflows.
+- AUD-021/022/023: ESLint/repository policy tests, both dependency audits,
+  `buildPolicy.spec.ts`, the enforced bundle manifest, `safeInput.spec.ts`, and
+  IndexedDB quota/cancellation browser cases cover static analysis, advisory/
+  eager-load containment, bounded inputs, storage preflight, and actionable
+  cancellation/quota failure.
 
 ## Follow-up audit — explicit unresolved work
 
