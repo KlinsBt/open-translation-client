@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { playwright } from "@vitest/browser-playwright";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { existsSync } from "node:fs";
 
@@ -14,16 +15,15 @@ export default defineConfig({
 		setupFiles: ["src/test/setup.ts"],
 		browser: {
 			enabled: true,
-			name: "chromium",
-			provider: "playwright",
-			headless: true,
-			api: { host: "127.0.0.1", port: 63315 },
-			providerOptions: {
-				launch: {
+			provider: playwright({
+				launchOptions: {
 					...(chromiumPath ? { executablePath: chromiumPath } : {}),
 					args: ["--no-sandbox", "--disable-dev-shm-usage"],
 				},
-			},
+			}),
+			instances: [{ browser: "chromium" }],
+			headless: true,
+			api: { host: "127.0.0.1", port: 63315 },
 		},
 	},
 });

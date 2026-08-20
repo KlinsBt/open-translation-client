@@ -409,12 +409,54 @@ test:browser:smoke` — 1 file and 17 tests passed without the former project-
   remaining Svelte, PDF.js, local-storage, and bundle-size diagnostics are
   separately tracked by AUD-034 and AUD-035.
 
-- [ ] AUD-032 Resolve the full dependency-audit backlog.
+- [x] AUD-032 Resolve the full dependency-audit backlog.
+
   - Review all production, development, browser-test, image/OCR, and transcription
     dependency advisories; upgrade, replace, isolate, or record a time-bounded
     risk acceptance for each one.
   - Do not use `npm audit fix --force` without reviewing breaking migrations.
   - Record separate `npm audit --omit=dev` and full `npm audit` results.
+
+  Completed 2026-08-20; reviewer confirmation: Codex audited the lockfile with
+  the official npm advisory endpoint before and after remediation, inspected
+  package peer/engine metadata, traced runtime imports, and reviewed the Vite 8
+  and Vitest 4 migrations. Implementation commit: `chore: remediate dependency
+audit findings` (this task's commit). The initial production-only audit was
+  clean. The initial full audit reported 16 development-graph findings: 4 low,
+  5 moderate, 5 high, and 2 critical. These covered the Vitest browser command
+  and UI-server advisories, Vite/esbuild development-server paths, SvelteKit's
+  legacy cookie dependency, and optional Node `sharp`/`onnxruntime-node`
+  dependencies pulled by the browser transcription package.
+
+  Vite moved from 5.4 to 8.2, Vitest and its browser runner from 2.1 to 4.1, and
+  the Svelte Vite plugin from 4 to 7. The browser suite now uses the dedicated
+  `@vitest/browser-playwright` provider and `instances` configuration described
+  by the official
+  [Vitest Playwright configuration](https://vitest.dev/config/browser/playwright.html)
+  and [Vitest 4 migration guide](https://vitest.dev/guide/migration). SvelteKit,
+  Svelte, and the static adapter were updated within their supported lines; the
+  unused auto-adapter was removed. This satisfies Vite 8's documented Node
+  floor, already covered by this repository's Node 22.20 engine requirement;
+  see the [Vite 8 release notes](https://vite.dev/blog/announcing-vite8).
+
+  Reviewed overrides pin `cookie` to 0.7.2, `sharp` to the patched 0.35 line,
+  and the Node-only `adm-zip` transitive to 0.6. The latter two are optional
+  server-side branches of Transformers and are not executed by the browser
+  transcription adapter, but remain patched in complete installs. Prettier,
+  its Svelte plugin, and TypeScript are pinned to the repository's previously
+  verified versions to avoid unrelated formatting and 86-file DOM declaration
+  migrations. No `--force`, `--legacy-peer-deps`, or advisory acceptance was
+  used.
+
+  Final `npm audit --omit=dev --json`: 0 vulnerabilities across the production
+  graph. Final `npm audit --json`: 0 vulnerabilities across the complete graph
+  (73 production, 316 development, 67 optional, and 16 peer dependencies as
+  reported by npm). `npm ls` confirmed the intended Vite/Svelte/Vitest versions
+  and patched overrides. `npm run verify` passed: formatting and ESLint, Svelte
+  check with 0 errors and 0 warnings, 88 unit files with 1,116 tests passed and
+  11 skipped, 18 browser files with 94 tests passed, and the Vite 8 static
+  production build. Runtime/build diagnostics exposed by the newer toolchain
+  remain explicitly tracked by AUD-034 and bundle sizing by AUD-035.
 
 ### Test integrity, runtime warnings, and delivery size
 
