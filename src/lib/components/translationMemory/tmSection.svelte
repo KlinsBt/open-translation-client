@@ -58,13 +58,13 @@
 	});
 
 	let searchQuery: string = $state("");
-	let filteredData = $derived(
-		$tmData.filter((tm) =>
+	function getFilteredData() {
+		return $tmData.filter((tm) =>
 			(tm.name !== undefined ? tm.name : "")
 				.toLowerCase()
 				.includes(searchQuery.toLowerCase()),
-		),
-	);
+		);
+	}
 
 	function getFileName(id: number) {
 		tmIdSelected.set(id);
@@ -416,9 +416,9 @@
 				<div>
 					<h2 id="tm-library-title">Memory library</h2>
 					<p>
-						{filteredData.length === $tmData.length
+						{getFilteredData().length === $tmData.length
 							? `${$tmData.length} ${$tmData.length === 1 ? "memory" : "memories"}`
-							: `${filteredData.length} of ${$tmData.length} memories`}
+							: `${getFilteredData().length} of ${$tmData.length} memories`}
 					</p>
 				</div>
 				<label class="resource-search">
@@ -442,7 +442,7 @@
 						Import TMX
 					</button>
 				</div>
-			{:else if filteredData.length === 0}
+			{:else if getFilteredData().length === 0}
 				<div class="resource-empty">
 					<h3>No matching memories</h3>
 					<p>Try a different translation-memory name.</p>
@@ -460,7 +460,7 @@
 							<span>Entries</span>
 							<span>Actions</span>
 						</div>
-						{#each filteredData as tm (tm.id)}
+						{#each getFilteredData() as tm (tm.id)}
 							<div class="resource-table-row">
 								<div class="resource-name">
 									<strong>{tm.name}</strong>

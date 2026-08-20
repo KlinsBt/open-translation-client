@@ -46,8 +46,8 @@
 	let selectedTmTargetId: number = $state(0);
 
 	let searchQuery: string = $state("");
-	let filteredData = $derived(
-		filterWithSourceIndexes(localTmData.terms, (term) => {
+	function getFilteredData() {
+		return filterWithSourceIndexes(localTmData.terms, (term) => {
 			// Check if searchQuery matches source.segment
 			const sourceMatch = term.source.segment
 				.toLowerCase()
@@ -60,8 +60,8 @@
 
 			// Return true if searchQuery matches either source or any target
 			return sourceMatch || targetMatch;
-		}),
-	);
+		});
+	}
 
 	async function toggleEditMode(key: string) {
 		if (!editMode.get(key)) {
@@ -262,7 +262,7 @@
 				bind:value={searchQuery}
 				class="search-input"
 			/>
-			<span class="search-count">{filteredData.length} shown</span>
+			<span class="search-count">{getFilteredData().length} shown</span>
 		</div>
 
 		<div
@@ -270,7 +270,7 @@
 			bind:this={segmentsContainer}
 			onscroll={handleScroll}
 		>
-			{#each filteredData.slice(0, visibleSegmentsCount) as filteredUnit, unitIndex (filteredUnit.sourceIndex)}
+			{#each getFilteredData().slice(0, visibleSegmentsCount) as filteredUnit, unitIndex (filteredUnit.sourceIndex)}
 				{@const unit = filteredUnit.item}
 				{@const sourceIndex = filteredUnit.sourceIndex}
 				<article class="resource-unit-card">
@@ -299,7 +299,9 @@
 								<select
 									class="lang-select"
 									disabled={!editMode.get(`source-${sourceIndex}`)}
-									bind:value={unit.source.lang}
+									value={unit.source.lang}
+									onchange={(event) =>
+										(unit.source.lang = event.currentTarget.value)}
 								>
 									<option disabled selected value=""
 										>{getLangByCode(unit.source.lang)}</option
@@ -328,7 +330,9 @@
 								{:else}
 									<textarea
 										class="field unlocked"
-										bind:value={unit.source.segment}
+										value={unit.source.segment}
+										oninput={(event) =>
+											(unit.source.segment = event.currentTarget.value)}
 										use:useAutoHeight
 										placeholder="Edit source segment"
 									></textarea>
@@ -345,7 +349,8 @@
 										disabled={!editMode.get(
 											`target-${sourceIndex}-${trgIndex}`,
 										)}
-										bind:value={trg.lang}
+										value={trg.lang}
+										onchange={(event) => (trg.lang = event.currentTarget.value)}
 									>
 										<option disabled selected value=""
 											>{getLangByCode(trg.lang)}</option
@@ -384,7 +389,9 @@
 									{:else}
 										<textarea
 											class="field unlocked"
-											bind:value={trg.segment}
+											value={trg.segment}
+											oninput={(event) =>
+												(trg.segment = event.currentTarget.value)}
 											use:useAutoHeight
 											placeholder="Edit target segment"
 										></textarea>
@@ -395,7 +402,7 @@
 					</div>
 				</article>
 			{/each}
-			{#if filteredData.length === 0}
+			{#if getFilteredData().length === 0}
 				<div class="resource-editor-empty">
 					<strong>No translation units found</strong>
 					<span>Try a different search term.</span>

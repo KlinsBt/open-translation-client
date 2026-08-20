@@ -55,13 +55,13 @@
 	});
 
 	let searchQuery: string = $state("");
-	let filteredData = $derived(
-		$tbData.filter((tb) =>
+	function getFilteredData() {
+		return $tbData.filter((tb) =>
 			(tb.name !== undefined ? tb.name : "")
 				.toLowerCase()
 				.includes(searchQuery.toLowerCase()),
-		),
-	);
+		);
+	}
 
 	function getFileName(id: number) {
 		tbIdSelected.set(id);
@@ -417,9 +417,9 @@
 				<div>
 					<h2 id="tb-library-title">Term-base library</h2>
 					<p>
-						{filteredData.length === $tbData.length
+						{getFilteredData().length === $tbData.length
 							? `${$tbData.length} ${$tbData.length === 1 ? "term base" : "term bases"}`
-							: `${filteredData.length} of ${$tbData.length} term bases`}
+							: `${getFilteredData().length} of ${$tbData.length} term bases`}
 					</p>
 				</div>
 				<label class="resource-search">
@@ -441,7 +441,7 @@
 						Import TBX
 					</button>
 				</div>
-			{:else if filteredData.length === 0}
+			{:else if getFilteredData().length === 0}
 				<div class="resource-empty">
 					<h3>No matching term bases</h3>
 					<p>Try a different term-base name.</p>
@@ -459,7 +459,7 @@
 							<span>Terms</span>
 							<span>Actions</span>
 						</div>
-						{#each filteredData as tb (tb.id)}
+						{#each getFilteredData() as tb (tb.id)}
 							<div class="resource-table-row">
 								<div class="resource-name">
 									<strong>{tb.name}</strong>

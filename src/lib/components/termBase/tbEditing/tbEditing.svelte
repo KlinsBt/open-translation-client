@@ -44,8 +44,8 @@
 	let selectedTbTargetId: number = $state(0);
 
 	let searchQuery: string = $state("");
-	let filteredData = $derived(
-		filterWithSourceIndexes(localTbData.entries, (t) => {
+	function getFilteredData() {
+		return filterWithSourceIndexes(localTbData.entries, (t) => {
 			// Check if searchQuery matches source.segment
 			for (let i = 0; i < t.terms.length; i++) {
 				const sourceMatch = t.terms[i].term
@@ -55,8 +55,8 @@
 				if (sourceMatch) return true;
 			}
 			return false;
-		}),
-	);
+		});
+	}
 
 	async function toggleEditMode(key: string) {
 		if (!editMode.get(key)) {
@@ -248,7 +248,7 @@
 				bind:value={searchQuery}
 				class="search-input"
 			/>
-			<span class="search-count">{filteredData.length} shown</span>
+			<span class="search-count">{getFilteredData().length} shown</span>
 		</div>
 
 		<div
@@ -256,7 +256,7 @@
 			bind:this={segmentsContainer}
 			onscroll={handleScroll}
 		>
-			{#each filteredData.slice(0, visibleSegmentsCount) as filteredUnit, unitId (filteredUnit.sourceIndex)}
+			{#each getFilteredData().slice(0, visibleSegmentsCount) as filteredUnit, unitId (filteredUnit.sourceIndex)}
 				{@const unit = filteredUnit.item}
 				{@const sourceIndex = filteredUnit.sourceIndex}
 				<article class="resource-unit-card">
@@ -278,7 +278,9 @@
 									<select
 										class="lang-select"
 										disabled={!editMode.get(`target-${sourceIndex}-${termId}`)}
-										bind:value={term.lang}
+										value={term.lang}
+										onchange={(event) =>
+											(term.lang = event.currentTarget.value)}
 									>
 										<option disabled selected value=""
 											>{getLangByCode(term.lang)}</option
@@ -317,7 +319,9 @@
 									{:else}
 										<textarea
 											class="field unlocked"
-											bind:value={term.term}
+											value={term.term}
+											oninput={(event) =>
+												(term.term = event.currentTarget.value)}
 											use:useAutoHeight
 											placeholder="Add Term Entry"
 										></textarea>
@@ -370,11 +374,15 @@
 													<input
 														class="field"
 														type="text"
-														bind:value={note.type}
+														value={note.type}
+														oninput={(event) =>
+															(note.type = event.currentTarget.value)}
 													/>
 													<textarea
 														class="field unlocked"
-														bind:value={note.text}
+														value={note.text}
+														oninput={(event) =>
+															(note.text = event.currentTarget.value)}
 														use:useAutoHeight
 														placeholder="Add Note"
 													></textarea>
@@ -406,7 +414,7 @@
 					</div>
 				</article>
 			{/each}
-			{#if filteredData.length === 0}
+			{#if getFilteredData().length === 0}
 				<div class="resource-editor-empty">
 					<strong>No term units found</strong>
 					<span>Try a different search term.</span>

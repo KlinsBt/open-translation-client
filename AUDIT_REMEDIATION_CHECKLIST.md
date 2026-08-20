@@ -506,7 +506,7 @@ audit findings` (this task's commit). The initial production-only audit was
   run remain explicitly tracked by AUD-034; delivery-size findings remain tracked
   by AUD-035.
 
-- [ ] AUD-034 Eliminate browser runtime/test warnings.
+- [x] AUD-034 Eliminate browser runtime/test warnings.
 
   - Resolve Svelte's `derived_inert` warning in filtered TM/TB editing rather than
     suppressing it.
@@ -514,6 +514,36 @@ audit findings` (this task's commit). The initial production-only audit was
     local-storage-file warning, test-server shutdown hangs, and all unhandled
     test errors.
   - Treat unexpected stderr and unhandled rejections as test failures.
+
+  Completed 2026-08-20; reviewer confirmation: Codex reproduced the Svelte
+  `derived_inert` warning in the filtered TM editor, converted the warning into
+  an intentional failing trace, and followed it to two-way input bindings on
+  derived each-block row contexts. Implementation commit: `test: fail on browser
+runtime diagnostics` (this task's commit). Filtered TM/TB library and editor
+  views now use ordinary filter functions, and editable row fields use explicit
+  synchronous input/change handlers, so teardown never reads an inert derived
+  binding. Focused TM and TB browser regressions and the full suite now complete
+  without the Svelte warning.
+
+  PDF.js remains an independently exercised browser dependency, but its
+  runtime-configurable local worker URL cannot be statically resolved by Vite.
+  Browser tests therefore exclude only `pdfjs-dist/legacy/build/pdf.mjs` from
+  prebundling and a tested pre-transform adds `@vite-ignore` only to PDF.js's
+  `import(this.workerSrc)` expression. Other variable imports are not hidden.
+  Node 25's warning-producing built-in `localStorage` getter is replaced in the
+  Node test environment with deterministic in-memory Storage. Test setup now
+  records unmocked `console.warn`/`console.error` and fails after the responsible
+  test; an injected temporary `console.error` was verified to fail. Ignoring
+  unhandled errors is explicitly disabled, and the browser runner has a bounded
+  teardown timeout. Multiple focused and complete browser runs exited normally
+  without shutdown hangs or unhandled rejections.
+
+  Verification: `npm run verify` passed formatting, ESLint, Svelte diagnostics
+  (0 errors/warnings), 89 covered unit files with 1,118 tests passed and 11
+  skipped, 18 browser files with 95 tests passed and no runtime/test diagnostics,
+  all coverage gates, and the production build. The build's dependency and chunk-
+  size notices are not browser runtime/test failures; they remain explicitly
+  assigned to the immediately following bundle remediation task, AUD-035.
 
 - [ ] AUD-035 Set and enforce a production bundle budget.
 

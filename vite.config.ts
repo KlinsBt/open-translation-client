@@ -8,6 +8,7 @@ export default defineConfig({
 		include: ["src/**/*.{test,spec}.{js,ts}"],
 		exclude: ["src/**/*.browser.spec.ts"],
 		setupFiles: ["src/test/setup.ts"],
+		dangerouslyIgnoreUnhandledErrors: false,
 		coverage: {
 			provider: "v8",
 			reporter: ["text", "json-summary"],
