@@ -103,12 +103,39 @@ run test:browser:smoke` — 1 file and 18 tests passed; `npm run check` — 0
       and preserve standard browser shortcuts such as Find and the address bar.
 - [x] AUD-009 Make keyboard navigation expand the virtualized segment window
       before focusing an off-screen segment.
-- [ ] AUD-010 **REOPENED:** Replace unbounded per-candidate TM matching with
+- [x] AUD-010 Replace unbounded per-candidate TM matching with
       normalized, bounded matching that preserves order and token frequency for
       long segments. Canonicalize BCP 47 language tags and define intentional
       base-language fallback (`en`/`en-US`) for both TM and TB lookup. Add
       reordered-long-text, repeated-token, Unicode, RTL, locale-variant, and
       performance regressions.
+
+  Closed 2026-08-20 after re-auditing follow-up AUD-030 (`4d392e9`). TM queries
+  and candidates are NFKC-normalized once per comparison, case/whitespace
+  normalized, length-pruned before scoring, sorted, and capped at 50 results.
+  Short segments use a two-row Unicode-code-point Levenshtein implementation;
+  long segments use fixed 2,048-bucket unigram-multiset and ordered-bigram
+  sketches. Working memory per comparison is bounded, token repetition and
+  order affect the result, and only normalized-identical strings can score
+  100%. A generated 10,000-entry test avoids committed large fixtures and
+  enforces the five-second regression budget.
+
+  `languageMatching.ts` accepts UI labels and underscore variants, canonicalizes
+  valid tags through `Intl.getCanonicalLocales`, ranks exact locale matches
+  before same-base matches, and limits invalid legacy labels to case-insensitive
+  exact matching. TM applies that policy across source entries and then target
+  variants; TB applies it within each terminology concept. README documentation
+  states these scopes explicitly.
+
+  Regression evidence covers reordered 320-token input, changed token
+  multiplicity, punctuation, CJK, combining marks, RTL Arabic, exact 100%
+  Unicode normalization, canonical/underscored/invalid locale tags, exact-first
+  TM/TB lookup, and base fallback. These cases fail against the former unordered
+  set-Dice and raw-string language filtering. Closure command: `npm run
+test:unit -- --run src/lib/components/resources/catMatching.spec.ts
+src/lib/functions/utilities.spec.ts` — 2 files and 16 tests passed, including
+  the generated 10,000-entry performance case.
+
 - [ ] AUD-011 **REOPENED:** Warn before translated-document export when target
       segments are empty or unconfirmed, while retaining an explicit user
       override. Confirmation must use workflow state and must never be inferred
