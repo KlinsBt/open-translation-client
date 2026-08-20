@@ -165,6 +165,18 @@ export async function extractPdf(
 	const bytes = await readSafeFileBytes(file, context);
 	if (bytes.length < 8 || String.fromCharCode(...bytes.slice(0, 5)) !== "%PDF-")
 		throw invalidPdf("PDF_INVALID", "PDF must begin with a %PDF- signature.");
+	const header = new TextDecoder("iso-8859-1").decode(bytes.slice(0, 16));
+	const trailer = new TextDecoder("iso-8859-1").decode(
+		bytes.slice(Math.max(0, bytes.length - 4_096)),
+	);
+	if (
+		!/^%PDF-\d\.\d(?:\r?\n|\r)/.test(header) ||
+		!/(?:^|[\r\n])startxref\s+\d+\s+%%EOF\s*$/s.test(trailer)
+	)
+		throw invalidPdf(
+			"PDF_INVALID",
+			"PDF must contain a valid version header and a final startxref/%%EOF trailer before structural parsing.",
+		);
 	throwIfAborted(context?.signal);
 	const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
 	if (

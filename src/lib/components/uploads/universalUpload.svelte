@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from "svelte";
 	import { saveAndOpenNewFileWithStringArray } from "$lib/functions/saveTranslationOnIndexedDb";
 	import { saveAndOpenNewFileWithTextString } from "$lib/functions/saveTranslationOnIndexedDb";
 	import { LANGUAGES } from "$lib/components/data/languages";
@@ -51,6 +52,7 @@
 	let detectionComplete: boolean = $state(false);
 	let isProcessing: boolean = $state(false);
 	let importOptionValues: FormatOptionValues = $state({});
+	let detectionController: AbortController | null = $state(null);
 	let importController: AbortController | null = $state(null);
 	let importProgress: SafeInputProgress | null = $state(null);
 	let fileInput: HTMLInputElement | null = $state(null);
@@ -77,11 +79,20 @@
 	}
 
 	async function selectFile(file: File) {
+		detectionController?.abort();
+		importController?.abort();
+		const controller = new AbortController();
+		detectionController = controller;
 		uploadedFile = file;
+		detectedFormatId = null;
+		formatDetection = null;
 		detectionComplete = false;
+		importOptionValues = {};
 		try {
-			const detected = await detectFormatWithConfidence(file);
-			if (uploadedFile !== file) return;
+			const detected = await detectFormatWithConfidence(file, {
+				signal: controller.signal,
+			});
+			if (detectionController !== controller || uploadedFile !== file) return;
 			formatDetection = detected ?? null;
 			detectedFormatId = detected?.formatId ?? null;
 			importOptionValues = detected?.formatId
@@ -89,16 +100,26 @@
 				: {};
 			temporarySaveName = file.name.replace(/\.[^/.]+$/, "");
 		} catch (error) {
-			if (uploadedFile !== file) return;
+			if (
+				detectionController !== controller ||
+				uploadedFile !== file ||
+				controller.signal.aborted
+			)
+				return;
 			detectedFormatId = null;
 			formatDetection = null;
 			notifyError(safeInputMessage(error));
 		} finally {
-			if (uploadedFile === file) detectionComplete = true;
+			if (detectionController === controller) {
+				detectionController = null;
+				if (uploadedFile === file) detectionComplete = true;
+			}
 		}
 	}
 
 	function clearSelectedFile() {
+		detectionController?.abort();
+		detectionController = null;
 		importController?.abort();
 		uploadedFile = null;
 		detectedFormatId = null;
@@ -112,6 +133,8 @@
 	}
 
 	function closeModal() {
+		detectionController?.abort();
+		detectionController = null;
 		importController?.abort();
 		show = false;
 	}
@@ -269,6 +292,8 @@
 	}
 
 	function resetForm() {
+		detectionController?.abort();
+		detectionController = null;
 		uploadedFile = null;
 		temporarySaveName = "";
 		sourceLanguage = "";
@@ -279,6 +304,11 @@
 		importOptionValues = {};
 		importProgress = null;
 	}
+
+	onDestroy(() => {
+		detectionController?.abort();
+		importController?.abort();
+	});
 </script>
 
 {#snippet uploadContent()}
@@ -336,9 +366,21 @@
 							{(uploadedFile.size / 1024).toFixed(2)} KB
 						</p>
 					</div>
-					<button class="btn-remove" onclick={clearSelectedFile}>
-						Remove
-					</button>
+					<div class="file-actions">
+						<label class="btn-replace" for="replacement-file-input">
+							Replace
+							<input
+								id="replacement-file-input"
+								type="file"
+								accept={acceptedFormats}
+								onchange={handleFileSelect}
+								style="display: none;"
+							/>
+						</label>
+						<button class="btn-remove" onclick={clearSelectedFile}>
+							Remove
+						</button>
+					</div>
 				</div>
 				{#if detectionComplete && formatDetection}
 					<div
@@ -638,10 +680,18 @@
 		margin: 0;
 	}
 
+	.file-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		flex-shrink: 0;
+	}
+
+	.btn-replace,
 	.btn-remove {
-		background: #fff7f7;
-		color: #a33e3e;
-		border: 1px solid #e5baba;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		border-radius: 0.5rem;
 		padding: 0.55rem 0.8rem;
 		font: inherit;
@@ -650,6 +700,23 @@
 		cursor: pointer;
 		transition: filter 0.2s linear;
 		flex-shrink: 0;
+	}
+
+	.btn-replace {
+		border: 1px solid #b9d5dc;
+		background: #f4fafb;
+		color: #246779;
+	}
+
+	.btn-replace:hover {
+		border-color: #78adba;
+		background: #eaf6f8;
+	}
+
+	.btn-remove {
+		background: #fff7f7;
+		color: #a33e3e;
+		border: 1px solid #e5baba;
 	}
 
 	.btn-remove:hover {

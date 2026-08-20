@@ -175,6 +175,27 @@ describe("safe ZIP inspection and extraction", () => {
 		).rejects.toMatchObject({ code: "ABORTED" });
 	});
 
+	it("cancels a reader when abort fires during stream construction", async () => {
+		const controller = new AbortController();
+		const file = new File(["slow content"], "slow.txt");
+		let cancelled = false;
+		Object.defineProperty(file, "stream", {
+			value: () =>
+				new ReadableStream<Uint8Array>({
+					start() {
+						controller.abort();
+					},
+					cancel() {
+						cancelled = true;
+					},
+				}),
+		});
+		await expect(
+			readSafeFileBytes(file, { signal: controller.signal }),
+		).rejects.toMatchObject({ code: "ABORTED" });
+		expect(cancelled).toBe(true);
+	});
+
 	it("returns typed safety failures from Office validators", async () => {
 		const bytes = await zipBytes({ "word/document.xml": "<document/>" });
 		const result = await getFormatAdapter("docx").validate(

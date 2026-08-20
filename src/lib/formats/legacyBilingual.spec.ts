@@ -318,7 +318,14 @@ describe("legacy bilingual CAT documents", () => {
 			"word/document.xml",
 			'<w:document xmlns:w="urn:test"><w:body><w:p><w:r><w:t>Ordinary</w:t></w:r></w:p></w:body></w:document>',
 		);
-		ordinary.file("[Content_Types].xml", "<Types/>");
+		ordinary.file(
+			"[Content_Types].xml",
+			'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>',
+		);
+		ordinary.file(
+			"_rels/.rels",
+			'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
+		);
 		await expect(
 			detectFormatWithConfidence(
 				new File(

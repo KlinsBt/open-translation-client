@@ -54,6 +54,13 @@ async function zipFile(
 	return new File([bytes], name, { type });
 }
 
+function opcDeclarations(mainPart: string, contentType: string) {
+	return {
+		"[Content_Types].xml": `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/${mainPart}" ContentType="${contentType}"/></Types>`,
+		"_rels/.rels": `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="${mainPart}"/></Relationships>`,
+	};
+}
+
 describe("format adapter registry", () => {
 	it("registers every format ID exactly once with complete capabilities", () => {
 		expect(FORMAT_ADAPTERS.map((adapter) => adapter.id)).toEqual(FORMAT_IDS);
@@ -301,8 +308,20 @@ describe("format adapter registry", () => {
 			),
 		).resolves.toMatchObject({ id: "html" });
 
+		const markerOnlyDocx = await zipFile(
+			{
+				"word/document.xml":
+					'<w:document xmlns:w="urn:test"><w:body/></w:document>',
+			},
+			"package",
+		);
+		await expect(detectFormat(markerOnlyDocx)).resolves.toBeUndefined();
 		const docx = await zipFile(
 			{
+				...opcDeclarations(
+					"word/document.xml",
+					"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml",
+				),
 				"word/document.xml":
 					'<w:document xmlns:w="urn:test"><w:body/></w:document>',
 			},
@@ -315,6 +334,104 @@ describe("format adapter registry", () => {
 		await expect(
 			detectFormat(textFile("not a known structured format", "payload.bin")),
 		).resolves.toBeUndefined();
+	});
+
+	it("rejects forged PDF signatures and single-marker ZIP packages", async () => {
+		await expect(
+			detectFormatWithConfidence(
+				textFile("%PDF-1.7\nnot a PDF body", "forged.pdf", "application/pdf"),
+			),
+		).resolves.toMatchObject({
+			formatId: null,
+			label: "Invalid PDF document",
+			supported: false,
+			confidence: "high",
+		});
+
+		const markerPackages = [
+			await zipFile(
+				{ "word/document.xml": '<w:document xmlns:w="urn:test"/>' },
+				"forged.docx",
+			),
+			await zipFile(
+				{ "xl/workbook.xml": '<workbook xmlns="urn:test"/>' },
+				"forged.xlsx",
+			),
+			await zipFile(
+				{
+					"ppt/presentation.xml":
+						'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>',
+				},
+				"forged.pptx",
+			),
+			await zipFile(
+				{
+					mimetype: "application/epub+zip",
+					"META-INF/container.xml": "<container/>",
+				},
+				"forged.epub",
+			),
+		];
+		for (const file of markerPackages)
+			await expect(detectFormatWithConfidence(file)).resolves.toMatchObject({
+				formatId: null,
+				supported: false,
+			});
+
+		const manifest = JSON.stringify({
+			schemaVersion: 1,
+			kind: "open-tlc-format-batch",
+			members: [{ path: "broken.docx", format: "docx" }],
+		});
+		await expect(
+			detectFormatWithConfidence(
+				await zipFile(
+					{
+						"opentlc-project.json": manifest,
+						"broken.docx": "not a DOCX package",
+					},
+					"forged-batch.zip",
+				),
+			),
+		).resolves.toMatchObject({
+			formatId: null,
+			label: "Invalid Manifest-driven ZIP projects",
+			supported: false,
+		});
+	});
+
+	it("cancels bounded package detection", async () => {
+		const source = await zipFile(
+			{ "word/document.xml": '<w:document xmlns:w="urn:test"/>' },
+			"slow.docx",
+		);
+		const bytes = new Uint8Array(await source.arrayBuffer());
+		const slow = new File([bytes], source.name, { type: source.type });
+		let streamStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			streamStarted = resolve;
+		});
+		let streamCancelled = false;
+		Object.defineProperty(slow, "stream", {
+			value: () =>
+				new ReadableStream<Uint8Array>({
+					start(controller) {
+						controller.enqueue(bytes.slice(0, 2));
+						streamStarted();
+					},
+					cancel() {
+						streamCancelled = true;
+					},
+				}),
+		});
+		const controller = new AbortController();
+		const detection = detectFormatWithConfidence(slow, {
+			signal: controller.signal,
+		});
+		await started;
+		controller.abort();
+		await expect(detection).rejects.toMatchObject({ code: "ABORTED" });
+		expect(streamCancelled).toBe(true);
 	});
 
 	it.each(["doc", "dot", "bak", "xls", "xlt", "ppt", "pps", "pot"])(
@@ -408,7 +525,10 @@ describe("format adapter registry", () => {
 	it("lets OOXML package structure override misleading names and MIME types", async () => {
 		const renamedDocx = await zipFile(
 			{
-				"[Content_Types].xml": "<Types/>",
+				...opcDeclarations(
+					"word/document.xml",
+					"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml",
+				),
 				"word/document.xml": "<document/>",
 			},
 			"renamed.XLSX",
@@ -424,7 +544,13 @@ describe("format adapter registry", () => {
 		});
 
 		const renamedXlsx = await zipFile(
-			{ "xl/workbook.xml": "<workbook/>" },
+			{
+				...opcDeclarations(
+					"xl/workbook.xml",
+					"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml",
+				),
+				"xl/workbook.xml": "<workbook/>",
+			},
 			"renamed.docx",
 		);
 		await expect(
@@ -487,7 +613,10 @@ describe("format adapter registry", () => {
 		async (extension) => {
 			const file = await zipFile(
 				{
-					"[Content_Types].xml": `<Types><Override ContentType="application/vnd.ms-word.${extension.includes("m") ? "macroEnabled" : "template"}.main+xml"/></Types>`,
+					...opcDeclarations(
+						"word/document.xml",
+						`application/vnd.ms-word.${extension.includes("m") ? "macroEnabled" : "template"}.main+xml`,
+					),
 					"word/document.xml": "<document/>",
 					...(extension.includes("m")
 						? { "word/vbaProject.bin": "opaque macro bytes" }
@@ -509,7 +638,10 @@ describe("format adapter registry", () => {
 		async (extension) => {
 			const file = await zipFile(
 				{
-					"[Content_Types].xml": `<Types><Override ContentType="application/vnd.ms-excel.${extension.includes("m") ? "macroEnabled" : "template"}.main+xml"/></Types>`,
+					...opcDeclarations(
+						"xl/workbook.xml",
+						`application/vnd.ms-excel.${extension.includes("m") ? "macroEnabled" : "template"}.main+xml`,
+					),
 					"xl/workbook.xml": "<workbook/>",
 					...(extension.includes("m")
 						? { "xl/vbaProject.bin": "opaque macro bytes" }
@@ -528,7 +660,18 @@ describe("format adapter registry", () => {
 
 	it("distinguishes supported PPTX/OpenDocument/EPUB from generic ZIP packages", async () => {
 		const pptx = await zipFile(
-			{ "ppt/presentation.xml": "<presentation/>" },
+			{
+				...opcDeclarations(
+					"ppt/presentation.xml",
+					"application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml",
+				),
+				"ppt/presentation.xml":
+					'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldIdLst><p:sldId id="256" r:id="rSlide1"/></p:sldIdLst></p:presentation>',
+				"ppt/_rels/presentation.xml.rels":
+					'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rSlide1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>',
+				"ppt/slides/slide1.xml":
+					'<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>',
+			},
 			"slides.pptx",
 		);
 		await expect(detectFormatWithConfidence(pptx)).resolves.toMatchObject({
@@ -554,11 +697,19 @@ describe("format adapter registry", () => {
 		const epub = await zipFile(
 			{
 				mimetype: "application/epub+zip",
-				"META-INF/container.xml": "<container/>",
+				"META-INF/container.xml":
+					'<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+				"EPUB/package.opf":
+					'<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="book-id"><metadata><dc:identifier id="book-id">urn:uuid:test</dc:identifier><dc:title>Test</dc:title><dc:language>en</dc:language></metadata><manifest><item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine><itemref idref="chapter"/></spine></package>',
+				"EPUB/chapter.xhtml":
+					'<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter</title></head><body><p>Hello</p></body></html>',
+				"EPUB/nav.xhtml":
+					'<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Navigation</title></head><body><nav><ol><li><a href="chapter.xhtml">Chapter</a></li></ol></nav></body></html>',
 			},
 			"book.epub",
 		);
-		await expect(detectFormatWithConfidence(epub)).resolves.toMatchObject({
+		const epubDetection = await detectFormatWithConfidence(epub);
+		expect(epubDetection, epubDetection?.reason).toMatchObject({
 			formatId: "epub",
 			label: "EPUB 2/3",
 			supported: true,

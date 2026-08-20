@@ -190,6 +190,7 @@ export async function readSafeFileBytes(
 		let offset = 0;
 		const cancelReader = () => void reader.cancel("Import cancelled");
 		context?.signal?.addEventListener("abort", cancelReader, { once: true });
+		if (context?.signal?.aborted) cancelReader();
 		try {
 			while (true) {
 				throwIfAborted(context?.signal);

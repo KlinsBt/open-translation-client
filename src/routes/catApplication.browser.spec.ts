@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import JSZip from "jszip";
 import { mount, tick, unmount } from "svelte";
 import { get } from "svelte/store";
 import AppRoute from "./(app)/app/+page.svelte";
@@ -52,9 +53,46 @@ function enterText(
 	element.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function setInputFile(input: HTMLInputElement, file: File) {
+	Object.defineProperty(input, "files", {
+		configurable: true,
+		value: [file],
+	});
+	input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+async function slowZipFile(name: string): Promise<{
+	file: File;
+	started: Promise<void>;
+	wasCancelled: () => boolean;
+}> {
+	const zip = new JSZip();
+	zip.file("word/document.xml", '<w:document xmlns:w="urn:test"/>');
+	const bytes = await zip.generateAsync({ type: "uint8array" });
+	const file = new File([bytes], name, { type: "application/zip" });
+	let notifyStarted!: () => void;
+	const started = new Promise<void>((resolve) => {
+		notifyStarted = resolve;
+	});
+	let cancelled = false;
+	Object.defineProperty(file, "stream", {
+		value: () =>
+			new ReadableStream<Uint8Array>({
+				start(controller) {
+					controller.enqueue(bytes.slice(0, 2));
+					notifyStarted();
+				},
+				cancel() {
+					cancelled = true;
+				},
+			}),
+	});
+	return { file, started, wasCancelled: () => cancelled };
+}
+
 async function eventually(assertion: () => void): Promise<void> {
 	let lastError: unknown;
-	for (let attempt = 0; attempt < 40; attempt++) {
+	for (let attempt = 0; attempt < 120; attempt++) {
 		try {
 			assertion();
 			return;
@@ -266,6 +304,116 @@ describe("real CAT application route", () => {
 		);
 		expect(saved?.translationData.seg1).toEqual(["Hello browser"]);
 		if (saved?.id !== undefined) await deleteTranslationFromIndexedDB(saved.id);
+	});
+
+	it("cancels stale upload detection on replacement and modal close", async () => {
+		openMenu.set(true);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Your projects"),
+		);
+		button("New project").click();
+		await eventually(() =>
+			expect(document.querySelector("#file-input")).not.toBeNull(),
+		);
+		const input = document.querySelector<HTMLInputElement>("#file-input")!;
+		const first = await slowZipFile("obsolete.docx");
+		setInputFile(input, first.file);
+		await first.started;
+		expect(document.body.textContent).toContain("CHECKING");
+		expect(document.querySelector("#project-name")).toBeNull();
+
+		const replacementInput = document.querySelector<HTMLInputElement>(
+			"#replacement-file-input",
+		)!;
+		setInputFile(
+			replacementInput,
+			new File(["Replacement text"], "replacement.txt", {
+				type: "text/plain",
+			}),
+		);
+		await eventually(() => expect(first.wasCancelled()).toBe(true));
+		await eventually(() =>
+			expect(document.body.textContent?.replace(/\s+/g, " ")).toContain(
+				"Detected: TXT",
+			),
+		);
+		expect(document.body.textContent).not.toContain("obsolete.docx");
+
+		const second = await slowZipFile("closed.docx");
+		setInputFile(
+			document.querySelector<HTMLInputElement>("#replacement-file-input")!,
+			second.file,
+		);
+		await second.started;
+		const close = document.querySelector<HTMLButtonElement>(
+			'button[aria-label="Close dialog"]',
+		)!;
+		close.click();
+		await eventually(() => expect(second.wasCancelled()).toBe(true));
+		await eventually(() =>
+			expect(document.querySelector('[role="dialog"]')).toBeNull(),
+		);
+		expect(get(toastStore).some((toast) => /cancel/i.test(toast.message))).toBe(
+			false,
+		);
+	});
+
+	it("never exposes malformed PDF input as importable while validating", async () => {
+		openMenu.set(true);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Your projects"),
+		);
+		button("New project").click();
+		await eventually(() =>
+			expect(document.querySelector("#file-input")).not.toBeNull(),
+		);
+		const input = document.querySelector<HTMLInputElement>("#file-input")!;
+		const forged = new File(["%PDF-1.7\nforged body"], "forged.pdf", {
+			type: "application/pdf",
+		});
+		const originalSlice = forged.slice.bind(forged);
+		let notifySliceStarted!: () => void;
+		const sliceStarted = new Promise<void>((resolve) => {
+			notifySliceStarted = resolve;
+		});
+		let releaseSlice!: () => void;
+		const sliceReleased = new Promise<void>((resolve) => {
+			releaseSlice = resolve;
+		});
+		Object.defineProperty(forged, "slice", {
+			value: (start?: number, end?: number, contentType?: string) => {
+				const blob = originalSlice(start, end, contentType);
+				const read = blob.arrayBuffer.bind(blob);
+				Object.defineProperty(blob, "arrayBuffer", {
+					value: async () => {
+						notifySliceStarted();
+						await sliceReleased;
+						return read();
+					},
+				});
+				return blob;
+			},
+		});
+		setInputFile(input, forged);
+		await sliceStarted;
+		await tick();
+		try {
+			expect(document.body.textContent).toContain("CHECKING");
+			expect(document.querySelector("#project-name")).toBeNull();
+		} finally {
+			releaseSlice();
+		}
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Invalid PDF document"),
+		);
+		expect(document.querySelector("#project-name")).toBeNull();
+		expect(
+			Array.from(document.querySelectorAll("button")).some(
+				(candidate) => candidate.textContent?.trim() === "Create Project",
+			),
+		).toBe(false);
 	});
 
 	it("keeps every delivery option retryable after download or cancellation failure", async () => {

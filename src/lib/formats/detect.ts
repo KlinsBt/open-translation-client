@@ -4,6 +4,7 @@ import {
 	assertSafeFileSize,
 	decodeTextBytes,
 	inspectSafeZipFile,
+	safeParseXml,
 	throwIfAborted,
 	type SafeArchiveInspection,
 	type SafeInputContext,
@@ -228,7 +229,27 @@ export async function detectFileFormat(
 
 	if (hasPdfSignature(prefix)) {
 		const adapter = adapters.find((candidate) => candidate.id === "pdf");
-		if (adapter) return supportedContent(adapter, extension, mimeType);
+		if (adapter) {
+			const validation = await adapter.validate(file, context);
+			throwIfAborted(context?.signal);
+			if (validation.valid)
+				return supportedContent(adapter, extension, mimeType);
+			return unsupported(
+				"Invalid PDF document",
+				"high",
+				[
+					"signature",
+					...metadataEvidence(
+						extension,
+						mimeType,
+						adapter.extensions,
+						adapter.mimeTypes,
+					),
+				],
+				validation.reason ??
+					"The PDF header is present, but the document structure is unreadable or unsafe.",
+			);
+		}
 	}
 
 	const psdCandidate = adapters.find((candidate) => candidate.id === "psd");
@@ -698,23 +719,65 @@ async function detectZipPackage(
 			const candidate = new File([inspection.bytes], fileName, {
 				type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 			});
-			if ((await bilingual.validate(candidate, context)).valid)
+			const validation = await bilingual.validate(candidate, context);
+			throwIfAborted(context?.signal);
+			if (validation.valid)
 				return supportedPackage(
 					adapters,
 					"legacy-bilingual",
 					"a Workbench bilingual DOCX signature",
 				);
 		}
-		return supportedPackage(adapters, "docx", "word/document.xml");
+		return validateDetectedOpcPackage(
+			inspection,
+			packageDetails,
+			adapters,
+			"docx",
+			"word/document.xml and a valid WordprocessingML package structure",
+			"word/document.xml",
+			/(?:wordprocessingml|ms-word)/i,
+			fileName,
+			context,
+		);
 	}
 	if (paths.has("xl/workbook.xml")) {
-		return supportedPackage(adapters, "xlsx", "xl/workbook.xml");
+		return validateDetectedOpcPackage(
+			inspection,
+			packageDetails,
+			adapters,
+			"xlsx",
+			"xl/workbook.xml and a valid SpreadsheetML package structure",
+			"xl/workbook.xml",
+			/(?:spreadsheetml|ms-excel)/i,
+			fileName,
+			context,
+		);
 	}
 	if (paths.has("xl/workbook.bin")) {
-		return supportedPackage(adapters, "legacy-office", "xl/workbook.bin");
+		return validateDetectedOpcPackage(
+			inspection,
+			packageDetails,
+			adapters,
+			"legacy-office",
+			"xl/workbook.bin and a valid binary workbook package structure",
+			"xl/workbook.bin",
+			/(?:ms-excel|spreadsheetml)/i,
+			fileName,
+			context,
+		);
 	}
 	if (paths.has("ppt/presentation.xml")) {
-		return supportedPackage(adapters, "pptx", "ppt/presentation.xml");
+		return validateDetectedOpcPackage(
+			inspection,
+			packageDetails,
+			adapters,
+			"pptx",
+			"ppt/presentation.xml and a valid PresentationML package structure",
+			"ppt/presentation.xml",
+			/(?:presentationml|ms-powerpoint)/i,
+			fileName,
+			context,
+		);
 	}
 	if (paths.has("visio/document.xml")) {
 		const adapter = adapters.find((candidate) => candidate.id === "visio");
@@ -742,7 +805,17 @@ async function detectZipPackage(
 		/<(?:[\w.-]+:)?Relationship\b(?=[^>]*\bType=["'][^"']*\/officeDocument["'])(?=[^>]*\bTarget=["']\/?(ppt\/slides\/[^"']+\.xml)["'])[^>]*\/?>/i,
 	)?.[1];
 	if (standaloneSlide && paths.has(standaloneSlide))
-		return supportedPackage(adapters, "pptx", standaloneSlide);
+		return validateDetectedOpcPackage(
+			inspection,
+			packageDetails,
+			adapters,
+			"pptx",
+			`${standaloneSlide} and a valid standalone PresentationML relationship`,
+			standaloneSlide,
+			/(?:presentationml|ms-powerpoint)/i,
+			fileName,
+			context,
+		);
 
 	const odf = odfLabel(packageDetails.mimetype);
 	if (odf) {
@@ -769,7 +842,15 @@ async function detectZipPackage(
 		packageDetails.mimetype === "application/epub+zip" ||
 		paths.has("META-INF/container.xml")
 	) {
-		return supportedPackage(adapters, "epub", "the EPUB container declaration");
+		return validateDetectedPackage(
+			inspection,
+			adapters,
+			"epub",
+			"a valid EPUB mimetype, container, package document, manifest, and spine",
+			fileName,
+			context,
+			"application/epub+zip",
+		);
 	}
 	const catProfile = detectCatPackageProfile(fileName, [...paths]);
 	if (catProfile) {
@@ -818,15 +899,14 @@ async function detectZipPackage(
 			);
 			if (!adapter)
 				throw new Error("No adapter is registered for manifest ZIP projects.");
-			return {
-				formatId: adapter.id,
-				label: adapter.label,
-				supported: true,
-				confidence: "high",
-				evidence: ["package", "signature", "content"],
-				reason: `The safe ZIP contains a valid ${ZIP_PROJECT_MANIFEST_PATH}; every member format is declared explicitly.`,
-				adapter,
-			};
+			return validateDetectedPackage(
+				inspection,
+				adapters,
+				"zip-project",
+				`a valid ${ZIP_PROJECT_MANIFEST_PATH} and validated declared members`,
+				fileName,
+				context,
+			);
 		}
 		return unsupported(
 			"Invalid manifest ZIP project",
@@ -876,6 +956,7 @@ async function readSmallPackageDetails(
 	for (const entry of readable) {
 		throwIfAborted(context?.signal);
 		values.set(entry.path, (await zip.file(entry.path)?.async("string")) ?? "");
+		throwIfAborted(context?.signal);
 	}
 	return {
 		mimetype: values.get("mimetype")?.trim() ?? "",
@@ -883,6 +964,132 @@ async function readSmallPackageDetails(
 		rootRelationships: values.get("_rels/.rels") ?? "",
 		openTlcManifest: values.get(ZIP_PROJECT_MANIFEST_PATH) ?? "",
 	};
+}
+
+async function validateDetectedPackage(
+	inspection: SafeArchiveInspection,
+	adapters: readonly FormatAdapter[],
+	id: FormatId,
+	marker: string,
+	fileName: string,
+	context?: SafeInputContext,
+	mimeType = "application/zip",
+): Promise<FormatDetection> {
+	const adapter = adapters.find((candidate) => candidate.id === id);
+	if (!adapter) throw new Error(`No adapter is registered for detected ${id}.`);
+	const candidate = new File([inspection.bytes], fileName, { type: mimeType });
+	const validation = await adapter.validate(candidate, context);
+	throwIfAborted(context?.signal);
+	if (!validation.valid)
+		return unsupported(
+			`Invalid ${adapter.label}`,
+			"high",
+			["package", "signature"],
+			validation.reason ??
+				`The ZIP marker resembles ${adapter.label}, but the package structure is invalid.`,
+		);
+	const detection = supportedPackage(adapters, id, marker);
+	return id === "zip-project"
+		? { ...detection, evidence: ["package", "signature", "content"] }
+		: detection;
+}
+
+async function validateDetectedOpcPackage(
+	inspection: SafeArchiveInspection,
+	packageDetails: Awaited<ReturnType<typeof readSmallPackageDetails>>,
+	adapters: readonly FormatAdapter[],
+	id: FormatId,
+	marker: string,
+	mainPart: string,
+	contentTypePattern: RegExp,
+	fileName: string,
+	context?: SafeInputContext,
+): Promise<FormatDetection> {
+	const adapter = adapters.find((candidate) => candidate.id === id);
+	if (!adapter) throw new Error(`No adapter is registered for detected ${id}.`);
+	const declarationError = validateOpcDeclarations(
+		packageDetails,
+		mainPart,
+		contentTypePattern,
+		context,
+	);
+	throwIfAborted(context?.signal);
+	if (declarationError)
+		return unsupported(
+			`Invalid ${adapter.label}`,
+			"high",
+			["package", "signature"],
+			declarationError,
+		);
+	return validateDetectedPackage(
+		inspection,
+		adapters,
+		id,
+		marker,
+		fileName,
+		context,
+	);
+}
+
+function validateOpcDeclarations(
+	packageDetails: Awaited<ReturnType<typeof readSmallPackageDetails>>,
+	mainPart: string,
+	contentTypePattern: RegExp,
+	context?: SafeInputContext,
+): string | undefined {
+	if (!packageDetails.contentTypes)
+		return "The package has a main document marker but no [Content_Types].xml declaration.";
+	if (!packageDetails.rootRelationships)
+		return "The package has a main document marker but no root office-document relationship.";
+	try {
+		const contentTypes = safeParseXml(packageDetails.contentTypes, context);
+		if (contentTypes.documentElement.localName !== "Types")
+			return "[Content_Types].xml has no package Types root element.";
+		const normalizedPart = `/${mainPart.replace(/^\/+/, "")}`;
+		const declared = Array.from(contentTypes.getElementsByTagName("*")).some(
+			(element) => {
+				if (element.localName === "Override")
+					return (
+						`/${(element.getAttribute("PartName") ?? "").replace(/^\/+/, "")}` ===
+							normalizedPart &&
+						contentTypePattern.test(element.getAttribute("ContentType") ?? "")
+					);
+				if (element.localName !== "Default") return false;
+				const extension = mainPart.split(".").at(-1) ?? "";
+				return (
+					(element.getAttribute("Extension") ?? "").toLowerCase() ===
+						extension.toLowerCase() &&
+					contentTypePattern.test(element.getAttribute("ContentType") ?? "")
+				);
+			},
+		);
+		if (!declared)
+			return `The package does not declare a matching content type for ${normalizedPart}.`;
+
+		const relationships = safeParseXml(
+			packageDetails.rootRelationships,
+			context,
+		);
+		if (relationships.documentElement.localName !== "Relationships")
+			return "_rels/.rels has no package Relationships root element.";
+		const linked = Array.from(relationships.getElementsByTagName("*")).some(
+			(element) =>
+				element.localName === "Relationship" &&
+				/\/officeDocument$/i.test(element.getAttribute("Type") ?? "") &&
+				(element.getAttribute("TargetMode") ?? "").toLowerCase() !==
+					"external" &&
+				(element.getAttribute("Target") ?? "")
+					.replaceAll("\\", "/")
+					.replace(/^\/+/, "") === mainPart,
+		);
+		if (!linked)
+			return `The root relationships do not link to the declared main part ${mainPart}.`;
+	} catch (error) {
+		return error instanceof Error
+			? `The OPC package declarations are invalid: ${error.message}`
+			: "The OPC package declarations are invalid.";
+	}
+	return undefined;
 }
 
 function manifestRequiredWorkflow(): ConstrainedFormatWorkflow {

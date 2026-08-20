@@ -270,13 +270,55 @@ run build` — production build completed. No remaining loading-state limitation
 
 ### Detection, matching, and security
 
-- [ ] AUD-029 Strengthen PDF and package detection before advertising support.
+- [x] AUD-029 Strengthen PDF and package detection before advertising support.
 
   - `%PDF-`, ZIP magic, a filename, MIME type, or one internal marker is not
     sufficient by itself for a supported/high-confidence result.
   - Reuse bounded adapter validation during detection and support cancellation
     when a selected file is replaced or the modal closes.
   - Verify that malformed files never briefly appear importable.
+
+  Completed 2026-08-20; reviewer confirmation: Codex traced source detection
+  through the registry, safe-input limits, every package adapter, and the real
+  new-project modal. Implementation commit: `fix: validate advertised PDF and
+package formats` (this task's commit). PDF detection now requires a versioned
+  header and final `startxref`/`%%EOF` envelope before bounded PDF.js parsing.
+  OOXML detection requires matching content-type and root office-document
+  declarations, then invokes the DOCX/XLSX/PPTX or XLSB adapter validator.
+  EPUB, CAT, and manifest ZIP candidates likewise pass their full bounded
+  adapter validation—including declared manifest members—before the UI receives
+  a supported result. This follows the package/relationship model in
+  [ECMA-376](https://www.ecma-international.org/publications-and-standards/standards/ecma-376/),
+  the OCF container/package requirements in
+  [EPUB 3.3](https://www.w3.org/TR/epub-33/), and the PDF header/trailer model
+  summarized by the
+  [PDF Association specification errata](https://pdf-issues.pdfa.org/32000-2-2020/clause07.html).
+
+  The upload component now owns a detection `AbortController`, resets all prior
+  detection state synchronously, and cancels on direct replacement, removal,
+  close, destruction, or import takeover. The selected-file card exposes a
+  keyboard-accessible Replace action. Safe streaming also closes the race where
+  cancellation occurred during stream construction, before its abort listener
+  was attached. Stale or cancelled detections cannot publish a format, form
+  fields, or an error toast.
+
+  Regression evidence: registry tests reject forged `%PDF-` data, marker-only
+  DOCX/XLSX/PPTX/EPUB archives, and a valid-looking manifest with a malformed
+  declared member; they also prove bounded detection cancellation. Safe-input
+  tests reproduce the stream-construction abort race. The real-browser tests
+  hold detection in flight, replace the file, close a second in-flight modal,
+  and verify reader cancellation, latest-file ownership, no cancellation toast,
+  and no briefly importable project form for a malformed PDF. Existing minimal
+  office fixtures were upgraded to valid OPC declarations rather than weakening
+  the gate.
+
+  Commands: focused format/safety run — 6 files, 102 tests passed and 1 skipped;
+  `npm run test:browser:smoke` — 1 file and 17 tests passed; `npm run verify` —
+  lint passed, Svelte check reported 0 errors and 0 warnings, 87 unit files with
+  1,107 tests passed and 11 skipped, 18 browser files with 94 tests passed, and
+  the static production build completed. The already-tracked PDF.js dynamic-
+  import diagnostic and bundle-size budget remain under AUD-034 and AUD-035;
+  they do not weaken detection validation.
 
 - [ ] AUD-030 Replace long-segment set-Dice matching and normalize language tags.
 
