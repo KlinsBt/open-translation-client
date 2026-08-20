@@ -170,11 +170,39 @@ test:browser:smoke` — 1 file and 18 tests passed.
 - [x] AUD-012 Require a non-empty project name, reject identical source/target
       languages, and expose clear validation messages.
 - [x] AUD-013 Make upload drop zones keyboard-operable.
-- [ ] AUD-014 **REOPENED:** Remove extension/MIME-only or shallow-signature
+- [x] AUD-014 Remove extension/MIME-only or shallow-signature
       supported detection. PDF and ZIP-package families must pass their adapter
       content/structure validator before the UI reports them as supported or
       high confidence. Add truncated, forged-signature, renamed, adversarial,
       and cancellation regressions.
+
+  Closed 2026-08-20 after re-auditing follow-up AUD-029 (`af83ee5`). PDF
+  candidates require a versioned `%PDF-` header, terminal `startxref`/`%%EOF`
+  envelope, and successful bounded PDF.js structural parse. ZIP-family
+  candidates first pass central-directory/path/size safety inspection, then
+  their registered adapter validator. OOXML additionally requires matching
+  `[Content_Types].xml` and a non-external root office-document relationship;
+  EPUB, CAT packages, and manifest batches must satisfy their own container and
+  declared-member structures. Extension and MIME metadata can contribute
+  evidence but cannot produce supported/high-confidence status by themselves.
+
+  The upload UI clears prior support state synchronously and gives every
+  detection an `AbortController`. Replacement, removal, modal close, component
+  destruction, and import takeover cancel the current read; stale completions
+  cannot publish a format, enable project fields, or raise a cancellation toast.
+  Safe streaming attaches cancellation during stream construction and all
+  package validation uses the repository's bounded archive/XML limits.
+
+  Regression evidence rejects truncated/forged PDF data, ZIP magic or a single
+  document marker, mismatched/renamed OOXML, malformed OPC declarations,
+  incomplete EPUB/CAT packages, unsafe archives, and a valid-looking manifest
+  with an invalid declared member. Unit and browser cases cancel an in-progress
+  stream, replace the selected file, close the modal, and hold malformed PDF
+  detection long enough to prove it never appears importable. These cases fail
+  against the former signature/marker-only detection. Closure commands: focused
+  format run — 9 files, 146 tests passed and 1 conditional test skipped; the
+  post-change `npm run test:browser:smoke` run — 1 file and 18 tests passed.
+
 - [x] AUD-015 Improve PDF delivery fidelity by preserving original PDF pages
       where possible and by wrapping/clipping translated text predictably in its
       source box; document unavoidable limitations.
