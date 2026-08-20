@@ -835,6 +835,7 @@ function renderOpenTlcMetadata(userData: UserData, depth: number): string[] {
 		segmentsMeta: data.segmentsMeta,
 		segmentJoinStates: data.segmentJoinStates,
 		parsingTokens: data.parsingTokens,
+		locked: data.locked,
 		skeleton: data.skeleton,
 		filterOptions: data.filterOptions,
 	};

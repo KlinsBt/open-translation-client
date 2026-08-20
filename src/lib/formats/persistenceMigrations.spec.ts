@@ -15,6 +15,7 @@ import {
 	splitSegmentData,
 } from "$lib/functions/parsing/segmentationLogic";
 import { buildJsonSaveFile } from "$lib/functions/saveFileGeneration/generateJsonSaveFile";
+import { createNeutralDocument } from "./documentModel";
 
 describe("persisted data migrations", () => {
 	it("upgrades an unversioned project without losing rich format state", () => {
@@ -31,6 +32,7 @@ describe("persisted data migrations", () => {
 			],
 			parsingTokens: [".", "!"],
 		});
+		delete legacy.schemaVersion;
 		(legacy as unknown as Record<string, unknown>).pluginMetadata = {
 			owner: "extension",
 		};
@@ -39,6 +41,7 @@ describe("persisted data migrations", () => {
 
 		expect(migrated.schemaVersion).toBe(PROJECT_SCHEMA_VERSION);
 		expect(migrated.translationData.checked).toEqual([false]);
+		expect(migrated.translationData.locked).toEqual([false]);
 		expect(
 			(migrated.translationData.typeRef as Record<string, Blob>)[
 				"word/media/image.png"
@@ -74,8 +77,33 @@ describe("persisted data migrations", () => {
 				creationDate: "123",
 				seg1: ["Source"],
 				seg2: ["Target"],
+				checked: [false],
+				locked: [true],
 			},
 		});
+	});
+
+	it("migrates legacy padlocks without inventing review confirmation", () => {
+		const legacy = makeUserData({
+			seg1: ["One", "Two"],
+			seg2: ["Eins", ""],
+			checked: [true, false],
+		});
+		legacy.schemaVersion = 1;
+		legacy.translationData.documentModel = createNeutralDocument({
+			format: "text",
+			sourceSegments: legacy.translationData.seg1,
+			targetSegments: legacy.translationData.seg2,
+			checked: legacy.translationData.checked,
+		});
+
+		const migrated = migrateProjectData(legacy);
+
+		expect(migrated.translationData.locked).toEqual([true, false]);
+		expect(migrated.translationData.checked).toEqual([false, false]);
+		expect(
+			migrated.translationData.documentModel?.units.map((unit) => unit.state),
+		).toEqual(["translated", "initial"]);
 	});
 
 	it("is deterministic and idempotent for current project data", () => {
@@ -88,14 +116,18 @@ describe("persisted data migrations", () => {
 	});
 
 	it.each([
-		["project", () => migrateProjectData({ schemaVersion: 2 })],
-		["translation memory", () => migrateTmData({ schemaVersion: 2 })],
-		["termbase", () => migrateTbData({ schemaVersion: 2 })],
-	])("rejects unsupported future %s versions", (_kind, migrate) => {
+		[
+			"project",
+			() => migrateProjectData({ schemaVersion: PROJECT_SCHEMA_VERSION + 1 }),
+			PROJECT_SCHEMA_VERSION + 1,
+		],
+		["translation memory", () => migrateTmData({ schemaVersion: 2 }), 2],
+		["termbase", () => migrateTbData({ schemaVersion: 2 }), 2],
+	])("rejects unsupported future %s versions", (_kind, migrate, version) => {
 		expect(migrate).toThrowError(
 			expect.objectContaining({
 				code: "FUTURE_VERSION",
-				version: 2,
+				version,
 			}),
 		);
 	});
@@ -165,6 +197,7 @@ describe("persisted data migrations", () => {
 		expect(split.data.seg1).toEqual(["One ", "two"]);
 		expect(split.data.seg2).toEqual(["Eins ", "zwei"]);
 		expect(split.data.checked).toEqual([true, false]);
+		expect(split.data.locked).toEqual([false, false]);
 	});
 
 	it("retains FF-500 Office profile metadata and original binary resources", async () => {

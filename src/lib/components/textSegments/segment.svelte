@@ -28,7 +28,8 @@
 		id,
 		textSegment1,
 		textSegment2,
-		checked,
+		locked,
+		confirmed,
 		combineSelected = false,
 		joinBoundaries = [],
 		splitOffset = null,
@@ -40,7 +41,8 @@
 		id: number;
 		textSegment1: string;
 		textSegment2: string;
-		checked: boolean;
+		locked: boolean;
+		confirmed: boolean;
 		combineSelected?: boolean;
 		joinBoundaries?: number[];
 		splitOffset?: number | null;
@@ -108,13 +110,25 @@
 	});
 
 	function toggleLockSegment() {
-		if (checked) {
-			checked = false;
+		if (locked) {
+			locked = false;
 			return updateSegmentLock();
 		} else {
-			checked = true;
+			locked = true;
 			return updateSegmentLock();
 		}
+	}
+
+	async function toggleSegmentConfirmation() {
+		if (!confirmed && !textSegment2.trim()) {
+			notifyError("Add a target translation before confirming this segment.");
+			return;
+		}
+		confirmed = !confirmed;
+		const newUserData = $singleUserData;
+		newUserData.translationData.checked[id] = confirmed;
+		singleUserData.set(newUserData);
+		await persistProject();
 	}
 
 	async function persistProject() {
@@ -151,7 +165,7 @@
 	async function updateSegmentLock() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
-		newUserData.translationData.checked[id] = checked;
+		newUserData.translationData.locked[id] = locked;
 		singleUserData.set(newUserData);
 		await persistProject();
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
@@ -162,6 +176,10 @@
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
 		newUserData.translationData.seg2[id] = textSegment2;
+		if (newUserData.translationData.checked[id]) {
+			newUserData.translationData.checked[id] = false;
+			confirmed = false;
+		}
 		singleUserData.set(newUserData);
 		scheduleProjectSave();
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
@@ -169,7 +187,7 @@
 
 	async function fillTargetSegmentText() {
 		if (!$singleUserData) return console.log("Data not found");
-		if (checked) return notifyError("Unlock this segment before changing it.");
+		if (locked) return notifyError("Unlock this segment before changing it.");
 		if (textSegment1 === "") return console.log("No text to add");
 		if (textSegment2 !== "") return console.log("Target segment is not empty");
 		let newUserData = $singleUserData;
@@ -205,7 +223,7 @@
 	}
 
 	function splitAtCaret() {
-		if (checked || splitOffset === null) return;
+		if (locked || splitOffset === null) return;
 		onSplitSegment?.({ index: id, offset: splitOffset });
 	}
 
@@ -220,7 +238,7 @@
 	}
 
 	function toggleCombineSelect() {
-		if (checked) return;
+		if (locked) return;
 		onToggleCombine?.({ index: id });
 	}
 
@@ -325,7 +343,7 @@
 		sourceSentence: string,
 		targetSentence: string,
 	) {
-		if (checked) return notifyError("Unlock this segment before changing it.");
+		if (locked) return notifyError("Unlock this segment before changing it.");
 		if (!validTmActive || !$singleTmData?.terms)
 			return notifyError("Choose an available translation memory first.");
 		let localTmData = $singleTmData;
@@ -367,10 +385,11 @@
 	onfocus={activateSegment}
 >
 	<button
-		class="toggle-container {checked ? 'locked' : 'unlocked'}"
+		class="toggle-container {locked ? 'locked' : 'unlocked'}"
 		onclick={toggleLockSegment}
+		aria-label={locked ? "Unlock segment" : "Lock segment"}
 	>
-		{#if checked}
+		{#if locked}
 			<!-- Locked Icon -->
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 				<path
@@ -392,7 +411,7 @@
 		class="combine-toggle-checkbox"
 		checked={combineSelected}
 		onchange={toggleCombineSelect}
-		disabled={checked}
+		disabled={locked}
 		title="Select for combining"
 	/>
 
@@ -403,7 +422,7 @@
 			<button
 				class="translate-btn"
 				onclick={() => fillTargetSegmentText()}
-				disabled={checked}
+				disabled={locked}
 			>
 				Fill
 				<span>→</span>
@@ -414,17 +433,27 @@
 					event.stopPropagation();
 					splitAtCaret();
 				}}
-				disabled={checked || splitOffset === null}
+				disabled={locked || splitOffset === null}
 				title="Place the caret inside the source text to enable split"
 			>
 				Split
 			</button>
 			<button
 				class="tm-btn save"
-				disabled={checked || !validTmActive}
+				disabled={locked || !validTmActive}
 				onclick={() => addTranslationUnit(textSegment1, textSegment2)}
 			>
 				TM<span>+</span>
+			</button>
+			<button
+				class="tm-btn save"
+				class:confirmed
+				onclick={toggleSegmentConfirmation}
+				title={confirmed
+					? "Mark this segment as needing review"
+					: "Confirm this translated segment"}
+			>
+				{confirmed ? "Confirmed" : "Confirm"}
 			</button>
 		</div>
 		<span class="segment-number-inner">{id + 1}.</span>
@@ -456,7 +485,7 @@
 		</p>
 	</div>
 
-	{#if checked}
+	{#if locked}
 		<p class="field left target-field">
 			{textSegment2}
 		</p>

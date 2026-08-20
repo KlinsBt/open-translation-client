@@ -86,6 +86,7 @@ function projectFrom(
 			seg1: [...result.segments],
 			seg2: [...targets],
 			checked: result.segments.map(() => false),
+			locked: result.segments.map(() => false),
 			type: "zip-project",
 			typeRef: result.typeRef ?? {},
 			documentModel: result.document,

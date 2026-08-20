@@ -370,6 +370,18 @@ export function projectNeutralDocument(
 	return { seg1, seg2, checked };
 }
 
+/** Project edit locks derived from immutable/non-translatable document units. */
+export function projectNeutralDocumentLocks(
+	document: NeutralDocument,
+): boolean[] {
+	return document.units.map((unit) => {
+		const profile = unit.metadata?.xliffProfile as
+			| { locked?: boolean }
+			| undefined;
+		return unit.translatable === false || profile?.locked === true;
+	});
+}
+
 export function synchronizeNeutralDocument(
 	document: NeutralDocument,
 	projection: LegacyProjection,

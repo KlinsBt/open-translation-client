@@ -14,6 +14,7 @@ const project: UserData = {
 		seg1: ["Hello, world", "Use <safe> & sound"],
 		seg2: ["Hallo, Welt", "Sicher <gut> & schön"],
 		checked: [true, false],
+		locked: [false, true],
 		type: "docx",
 		typeRef: {},
 		tm: null,

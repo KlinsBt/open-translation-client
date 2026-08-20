@@ -164,6 +164,12 @@ export function projectFromConformanceImport(
 			seg1: segments,
 			seg2: [...targetSegments],
 			checked: segments.map(() => false),
+			locked: result.document.units.map(
+				(unit) =>
+					unit.translatable === false ||
+					(unit.metadata?.xliffProfile as { locked?: boolean } | undefined)
+						?.locked === true,
+			),
 			type: fixture.id,
 			typeRef: result.typeRef ?? fallbackTypeRef,
 			segmentsMeta:

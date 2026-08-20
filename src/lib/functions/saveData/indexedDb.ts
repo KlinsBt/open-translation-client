@@ -271,6 +271,7 @@ export async function saveNewTranslationToIndexedDB(
 					seg1: textSegments1,
 					seg2: textSegments2,
 					checked: checkedSegments,
+					locked: checkedSegments.map(() => false),
 					type: fileType,
 					typeRef: fileTypeRef,
 					parsingTokens: getDefaultTokens(),

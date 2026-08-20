@@ -97,7 +97,8 @@ const PSD_EDIT_ERROR =
 function arraysAreAligned(translation: TranslationData): boolean {
 	return (
 		translation.seg1.length === translation.seg2.length &&
-		translation.seg1.length === translation.checked.length
+		translation.seg1.length === translation.checked.length &&
+		translation.seg1.length === translation.locked.length
 	);
 }
 
@@ -144,7 +145,7 @@ function validateForStructuralEdit(
 	translation: TranslationData,
 ): string | undefined {
 	if (!arraysAreAligned(translation)) {
-		return "Segment source, target, and confirmation arrays are out of sync.";
+		return "Segment source, target, confirmation, and lock arrays are out of sync.";
 	}
 
 	if (translation.type === "xlsx") return XLSX_EDIT_ERROR;
@@ -593,6 +594,12 @@ export function splitSegmentData(
 	if (!Number.isInteger(idx) || idx < 0 || idx >= translation.seg1.length) {
 		return { data: translation, error: "Invalid segment index." };
 	}
+	if (translation.locked[idx]) {
+		return {
+			data: translation,
+			error: "Unlock this segment before splitting it.",
+		};
+	}
 
 	const source = translation.seg1[idx];
 	if (!Number.isInteger(splitAt) || splitAt <= 0 || splitAt >= source.length) {
@@ -616,6 +623,7 @@ export function splitSegmentData(
 	const newSeg1 = [...translation.seg1];
 	const newSeg2 = [...translation.seg2];
 	const newChecked = [...translation.checked];
+	const newLocked = [...translation.locked];
 	const newMeta = translation.segmentsMeta
 		? [...translation.segmentsMeta]
 		: undefined;
@@ -661,6 +669,12 @@ export function splitSegmentData(
 		typeof matchingJoinBoundary.secondChecked === "boolean"
 			? [matchingJoinBoundary.firstChecked, matchingJoinBoundary.secondChecked]
 			: [false, false];
+	const restoredLocks =
+		canRestoreJoinedTargets &&
+		typeof matchingJoinBoundary?.firstLocked === "boolean" &&
+		typeof matchingJoinBoundary.secondLocked === "boolean"
+			? [matchingJoinBoundary.firstLocked, matchingJoinBoundary.secondLocked]
+			: [false, false];
 	const splitDocument = translation.documentModel
 		? splitNeutralDocumentUnit(translation.documentModel, idx, splitAt, {
 				firstTarget,
@@ -681,6 +695,7 @@ export function splitSegmentData(
 	// owned by metadata and moves to the second half.
 	newSeg2.splice(idx, 1, firstTarget, secondTarget);
 	newChecked.splice(idx, 1, ...restoredChecks);
+	newLocked.splice(idx, 1, ...restoredLocks);
 	if (newMeta && effectiveSplitMeta) {
 		newMeta.splice(idx, 1, effectiveSplitMeta.first, effectiveSplitMeta.second);
 	}
@@ -704,6 +719,7 @@ export function splitSegmentData(
 			seg1: newSeg1,
 			seg2: newSeg2,
 			checked: newChecked,
+			locked: newLocked,
 			segmentsMeta: newMeta,
 			segmentJoinStates: newJoinStates,
 			documentModel: splitDocument?.document,
@@ -727,6 +743,12 @@ export function combineSegmentData(
 	if (!Number.isInteger(idx) || idx < 0 || idx >= translation.seg1.length - 1) {
 		return { data: translation, error: "Invalid segment index." };
 	}
+	if (translation.locked[idx] || translation.locked[idx + 1]) {
+		return {
+			data: translation,
+			error: "Unlock both segments before joining them.",
+		};
+	}
 	const combinedMeta = combineMetaEntries(translation, idx);
 	if (combinedMeta.error) {
 		return { data: translation, error: combinedMeta.error };
@@ -735,6 +757,7 @@ export function combineSegmentData(
 	const newSeg1 = [...translation.seg1];
 	const newSeg2 = [...translation.seg2];
 	const newChecked = [...translation.checked];
+	const newLocked = [...translation.locked];
 	const newMeta = translation.segmentsMeta
 		? [...translation.segmentsMeta]
 		: undefined;
@@ -765,6 +788,8 @@ export function combineSegmentData(
 				...(secondMeta ? { secondMeta } : {}),
 				firstChecked: newChecked[idx],
 				secondChecked: newChecked[idx + 1],
+				firstLocked: newLocked[idx],
+				secondLocked: newLocked[idx + 1],
 			},
 			...shiftedJoinBoundaries(
 				newJoinStates[idx + 1],
@@ -778,6 +803,7 @@ export function combineSegmentData(
 	newSeg1.splice(idx, 2, newSeg1[idx] + newSeg1[idx + 1]);
 	newSeg2.splice(idx, 2, joinedTarget);
 	newChecked.splice(idx, 2, newChecked[idx] && newChecked[idx + 1]);
+	newLocked.splice(idx, 2, false);
 	newJoinStates.splice(idx, 2, joinedState);
 	if (newMeta && combinedMeta.entry) {
 		newMeta.splice(idx, 2, combinedMeta.entry);
@@ -797,6 +823,7 @@ export function combineSegmentData(
 			seg1: newSeg1,
 			seg2: newSeg2,
 			checked: newChecked,
+			locked: newLocked,
 			segmentsMeta: newMeta,
 			segmentJoinStates: newJoinStates,
 			documentModel: synchronizedDocument,

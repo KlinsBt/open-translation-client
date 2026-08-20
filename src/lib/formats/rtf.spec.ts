@@ -28,6 +28,7 @@ function projectFromImport(
 			seg1: result.segments,
 			seg2: targets,
 			checked: result.segments.map(() => true),
+			locked: result.segments.map(() => false),
 			type: "rtf",
 			typeRef: result.typeRef ?? {},
 			segmentsMeta: result.segmentsMeta,

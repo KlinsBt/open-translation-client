@@ -1,7 +1,7 @@
 import { FORMAT_IDS, type FormatId } from "./formatIds";
 import type { TbData, TmData, UserData } from "$lib/types/types";
 
-export const PROJECT_SCHEMA_VERSION = 1;
+export const PROJECT_SCHEMA_VERSION = 2;
 export const TM_SCHEMA_VERSION = 1;
 export const TB_SCHEMA_VERSION = 1;
 
@@ -34,6 +34,7 @@ type Migration = (record: UnknownRecord) => UnknownRecord;
 
 const PROJECT_MIGRATIONS: Readonly<Record<number, Migration>> = {
 	0: migrateProjectV0ToV1,
+	1: migrateProjectV1ToV2,
 };
 
 const TM_MIGRATIONS: Readonly<Record<number, Migration>> = {
@@ -70,6 +71,12 @@ export function migrateProjectData(input: unknown): UserData {
 			"project",
 			`The checked-state count differs from the segment count (${checked.length} vs ${seg1.length}).`,
 		);
+	const locked = booleanArrayOrDefault(translation.locked, seg1.length);
+	if (locked.length !== seg1.length)
+		throw invalid(
+			"project",
+			`The locked-state count differs from the segment count (${locked.length} vs ${seg1.length}).`,
+		);
 	const type = translation.type;
 	if (typeof type !== "string" || !FORMAT_IDS.includes(type as FormatId))
 		throw invalid(
@@ -93,6 +100,7 @@ export function migrateProjectData(input: unknown): UserData {
 			seg1,
 			seg2,
 			checked,
+			locked,
 			type: type as FormatId,
 			typeRef:
 				typeof translation.typeRef === "string" || isRecord(translation.typeRef)
@@ -281,6 +289,66 @@ function migrateProjectV0ToV1(record: UnknownRecord): UnknownRecord {
 		"project",
 		"The legacy project has no recognizable translation data.",
 	);
+}
+
+/**
+ * Version 1 exposed one `checked[]` array as both the padlock state and the
+ * reviewed/confirmed workflow state. There is no reliable way to infer that a
+ * historical padlock click was a linguistic review decision. Preserve the
+ * user's edit protection in `locked[]` and fail conservatively by resetting
+ * confirmation. Existing targets remain translated, never silently reviewed.
+ */
+function migrateProjectV1ToV2(record: UnknownRecord): UnknownRecord {
+	const translation = requireRecord(
+		record.translationData,
+		"project",
+		"The project has no translationData object.",
+	);
+	const segmentCount = Array.isArray(translation.seg1)
+		? translation.seg1.length
+		: 0;
+	const legacyChecked = booleanArrayOrDefault(
+		translation.checked,
+		segmentCount,
+	);
+	const locked =
+		legacyChecked.length === segmentCount
+			? legacyChecked
+			: Array.from({ length: segmentCount }, () => false);
+	const documentModel = resetLegacyReviewStates(translation.documentModel);
+	return {
+		...record,
+		schemaVersion: 2,
+		translationData: {
+			...translation,
+			checked: Array.from({ length: segmentCount }, () => false),
+			locked,
+			...(documentModel ? { documentModel } : {}),
+		},
+	};
+}
+
+function resetLegacyReviewStates(value: unknown): UnknownRecord | undefined {
+	if (!isRecord(value) || !Array.isArray(value.units)) return undefined;
+	return {
+		...value,
+		units: value.units.map((unit) => {
+			if (!isRecord(unit)) return unit;
+			if (unit.state !== "reviewed" && unit.state !== "final") return unit;
+			const target = isRecord(unit.target) ? unit.target : undefined;
+			const fragments = Array.isArray(target?.fragments)
+				? target.fragments
+				: [];
+			const hasTarget = fragments.some(
+				(fragment) =>
+					isRecord(fragment) &&
+					fragment.kind === "text" &&
+					typeof fragment.text === "string" &&
+					fragment.text.length > 0,
+			);
+			return { ...unit, state: hasTarget ? "translated" : "initial" };
+		}),
+	};
 }
 
 function normalizeResourceReference(

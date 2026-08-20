@@ -336,6 +336,20 @@ export async function importXliffProjectStreaming(
 							(unit) => unit.state === "reviewed" || unit.state === "final",
 						)
 					: seg1.map(() => false);
+	const persistedLocked = state.editingState.locked;
+	const locked =
+		Array.isArray(persistedLocked) &&
+		persistedLocked.length === seg1.length &&
+		persistedLocked.every((value) => typeof value === "boolean")
+			? [...persistedLocked]
+			: documentModel
+				? documentModel.units.map(
+						(unit) =>
+							unit.translatable === false ||
+							(unit.metadata?.xliffProfile as { locked?: boolean } | undefined)
+								?.locked === true,
+					)
+				: seg1.map(() => false);
 	const numericId = Number(state.id);
 	const projectName =
 		vendorProfile &&
@@ -356,6 +370,7 @@ export async function importXliffProjectStreaming(
 				seg1,
 				seg2,
 				checked,
+				locked,
 				type: normalizedType,
 				typeRef: state.typeRef,
 				segmentsMeta: state.editingState.segmentsMeta,

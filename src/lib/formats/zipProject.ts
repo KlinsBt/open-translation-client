@@ -544,6 +544,10 @@ function childProject(
 			seg1: [...member.sourceSegments],
 			seg2: targets,
 			checked,
+			locked: parent.translationData.locked.slice(
+				member.segmentStart,
+				member.segmentStart + member.segmentCount,
+			),
 			type: member.format,
 			typeRef: member.typeRef,
 			segmentsMeta: member.segmentsMeta,

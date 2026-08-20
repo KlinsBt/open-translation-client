@@ -739,6 +739,7 @@ function createOpenTlcMetadata(
 			segmentsMeta: data.segmentsMeta,
 			segmentJoinStates: data.segmentJoinStates,
 			parsingTokens: data.parsingTokens,
+			locked: data.locked,
 			...(data.documentModel && !getDocumentMetadata(data.documentModel)
 				? { documentModel: data.documentModel }
 				: {}),

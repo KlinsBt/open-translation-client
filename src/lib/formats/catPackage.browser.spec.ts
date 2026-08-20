@@ -50,6 +50,7 @@ function project(imported: FormatImportResult, name: string): UserData {
 			seg1: imported.segments,
 			seg2: ["مرحبا 👩🏽‍💻"],
 			checked: [true],
+			locked: [false],
 			type: "cat-package",
 			typeRef: imported.typeRef ?? {},
 			documentModel: imported.document,

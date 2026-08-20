@@ -23,6 +23,7 @@ function project(
 			seg1: [],
 			seg2: [],
 			checked: [],
+			locked: [],
 			tm: null,
 			tb: { id: null, name: null, active: false },
 		},

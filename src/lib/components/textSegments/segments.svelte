@@ -243,8 +243,8 @@
 		),
 	);
 	let allSegmentsLocked = $derived(
-		$singleUserData.translationData.checked.length > 0 &&
-			$singleUserData.translationData.checked.every(Boolean),
+		$singleUserData.translationData.locked.length > 0 &&
+			$singleUserData.translationData.locked.every(Boolean),
 	);
 	let translationExportAvailable: boolean = $derived(
 		getFormatAdapter($singleUserData.translationData.type).capabilities.export,
@@ -370,8 +370,9 @@
 	async function lockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
-		newUserData.translationData.checked =
-			newUserData.translationData.checked.map(() => true);
+		newUserData.translationData.locked = newUserData.translationData.locked.map(
+			() => true,
+		);
 		singleUserData.set(newUserData);
 		await persistProject(newUserData);
 	}
@@ -379,8 +380,9 @@
 	async function unlockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
-		newUserData.translationData.checked =
-			newUserData.translationData.checked.map(() => false);
+		newUserData.translationData.locked = newUserData.translationData.locked.map(
+			() => false,
+		);
 		singleUserData.set(newUserData);
 		await persistProject(newUserData);
 	}
@@ -425,19 +427,30 @@
 	async function toggleLockCurrentSegment() {
 		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 		if (!$singleUserData) return;
-		const total = $singleUserData.translationData.checked.length;
+		const total = $singleUserData.translationData.locked.length;
 		if (idx < 0 || idx >= total) return;
 		const newUserData = { ...$singleUserData };
-		newUserData.translationData.checked = [
-			...newUserData.translationData.checked,
+		newUserData.translationData.locked = [
+			...newUserData.translationData.locked,
 		];
-		newUserData.translationData.checked[idx] =
-			!newUserData.translationData.checked[idx];
+		newUserData.translationData.locked[idx] =
+			!newUserData.translationData.locked[idx];
 		singleUserData.set(newUserData);
 		await persistProject(newUserData);
 		notifyInfo(
-			`Segment ${idx + 1} ${newUserData.translationData.checked[idx] ? "locked" : "unlocked"}`,
+			`Segment ${idx + 1} ${newUserData.translationData.locked[idx] ? "locked" : "unlocked"}`,
 		);
+	}
+
+	async function confirmAllTranslatedSegments() {
+		if (!$singleUserData) return;
+		const newUserData = { ...$singleUserData };
+		newUserData.translationData.checked = newUserData.translationData.seg2.map(
+			(target) => target.trim().length > 0,
+		);
+		singleUserData.set(newUserData);
+		await persistProject(newUserData);
+		notifySuccess("All translated segments confirmed");
 	}
 
 	async function fillCurrentSegment() {
@@ -445,7 +458,7 @@
 		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 		const total = $singleUserData.translationData.seg1.length;
 		if (idx < 0 || idx >= total) return;
-		if ($singleUserData.translationData.checked[idx]) {
+		if ($singleUserData.translationData.locked[idx]) {
 			notifyError("Unlock this segment before changing it.");
 			return;
 		}
@@ -477,7 +490,7 @@
 		if (!$singleUserData) return;
 		const idx = customIdx ?? $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 		if (idx < 0 || idx >= $singleUserData.translationData.seg1.length) return;
-		if ($singleUserData.translationData.checked[idx]) {
+		if ($singleUserData.translationData.locked[idx]) {
 			notifyError("Unlock this segment before splitting it.");
 			return;
 		}
@@ -525,7 +538,7 @@
 		}
 		if (
 			selected.some(
-				(index) => $singleUserData.translationData.checked[index] === true,
+				(index) => $singleUserData.translationData.locked[index] === true,
 			)
 		) {
 			notifyError("Unlock every selected segment before joining them.");
@@ -600,7 +613,7 @@
 		let newUserData = $singleUserData;
 		newUserData.translationData.seg2 = newUserData.translationData.seg2.map(
 			(segment, i) => {
-				if (segment === "" && !newUserData.translationData.checked[i])
+				if (segment === "" && !newUserData.translationData.locked[i])
 					return newUserData.translationData.seg1[i];
 				return segment;
 			},
@@ -1220,6 +1233,13 @@
 			</button>
 			<button
 				class="bulk-action"
+				onclick={confirmAllTranslatedSegments}
+				title="Confirm every segment that currently has target text"
+			>
+				Confirm translated
+			</button>
+			<button
+				class="bulk-action"
 				onclick={combineWithNextSegment}
 				title="Join selected segments or current + next (Ctrl/Cmd+Alt+J)"
 				disabled={$singleUserData.translationData.seg1.length < 2}
@@ -1252,7 +1272,8 @@
 			id={i}
 			textSegment1={$singleUserData.translationData.seg1[i]}
 			textSegment2={$singleUserData.translationData.seg2[i]}
-			checked={$singleUserData.translationData.checked[i]}
+			locked={$singleUserData.translationData.locked[i]}
+			confirmed={$singleUserData.translationData.checked[i]}
 			combineSelected={combineSelection.has(i)}
 			joinBoundaries={getSegmentJoinBoundaryOffsets(
 				$singleUserData.translationData,

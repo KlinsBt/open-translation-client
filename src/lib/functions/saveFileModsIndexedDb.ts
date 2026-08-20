@@ -8,6 +8,7 @@ import {
 } from "./parsing/parsingPreferences";
 import {
 	createNeutralDocument,
+	projectNeutralDocumentLocks,
 	synchronizeNeutralDocument,
 	withDocumentLanguages,
 	type NeutralDocument,
@@ -79,6 +80,7 @@ export async function saveNewTranslationToUserDataFromText(
 		generatedText[1],
 		generatedText[2],
 	);
+	const lockedSegments = projectNeutralDocumentLocks(model);
 	let data: UserData = {
 		schemaVersion: PROJECT_SCHEMA_VERSION,
 		translationData: {
@@ -89,6 +91,7 @@ export async function saveNewTranslationToUserDataFromText(
 			seg1: generatedText[0],
 			seg2: generatedText[1],
 			checked: generatedText[2],
+			locked: lockedSegments,
 			type: fileType,
 			typeRef: fileTypeRef || {},
 			segmentsMeta: [],
@@ -133,6 +136,16 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 			? [...initialTargetSegments]
 			: new Array<string>(stringArray.length).fill("");
 	const checkedSegments = new Array(stringArray.length).fill(false);
+	const model = prepareDocumentModel(
+		documentModel,
+		fileType,
+		creationDate,
+		sourceLang,
+		targetLang,
+		stringArray,
+		targetSegments,
+		checkedSegments,
+	);
 	let data: UserData = {
 		schemaVersion: PROJECT_SCHEMA_VERSION,
 		translationData: {
@@ -143,19 +156,11 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 			seg1: stringArray,
 			seg2: targetSegments,
 			checked: checkedSegments,
+			locked: projectNeutralDocumentLocks(model),
 			type: fileType,
 			typeRef: fileTypeRef || {},
 			segmentsMeta: segmentsMeta || [],
-			documentModel: prepareDocumentModel(
-				documentModel,
-				fileType,
-				creationDate,
-				sourceLang,
-				targetLang,
-				stringArray,
-				targetSegments,
-				checkedSegments,
-			),
+			documentModel: model,
 			skeleton,
 			filterOptions: normalizeImportOptions(fileType, filterOptions),
 			parsingTokens: getActiveTokens() || getDefaultTokens(),

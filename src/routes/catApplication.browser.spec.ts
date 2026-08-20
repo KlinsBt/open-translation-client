@@ -134,7 +134,8 @@ describe("real CAT application route", () => {
 		const project = makeUserData({
 			seg1: Array.from({ length: count }, (_, index) => `Source ${index + 1}`),
 			seg2: Array.from({ length: count }, () => ""),
-			checked: Array.from({ length: count }, (_, index) => index === 0),
+			checked: Array.from({ length: count }, () => false),
+			locked: Array.from({ length: count }, (_, index) => index === 0),
 		});
 		project.id = 9401;
 		singleUserData.set(project);
@@ -153,6 +154,8 @@ describe("real CAT application route", () => {
 			(element) => element.textContent?.trim().startsWith("Fill"),
 		) as HTMLButtonElement;
 		expect(fill.disabled).toBe(true);
+		expect(document.body.textContent).toContain("0% complete");
+		expect(firstSegment.textContent).toContain("Confirm");
 
 		const textarea = document.querySelector("textarea")!;
 		const browserFind = new KeyboardEvent("keydown", {

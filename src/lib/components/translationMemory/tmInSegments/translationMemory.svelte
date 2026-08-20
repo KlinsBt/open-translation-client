@@ -18,7 +18,7 @@
 
 	async function fillTargetText(tm: string) {
 		if (!$singleUserData) return console.log("Data not found");
-		if ($singleUserData.translationData.checked[$selectedSegmentId])
+		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a TM match.");
 		let newUserData = $singleUserData;
 		newUserData.translationData.seg2[$selectedSegmentId] = tm;
@@ -32,7 +32,7 @@
 	async function checkIfConfirmationIsNeeded(tm: string) {
 		tempTargetText = tm;
 		if (!$singleUserData) return console.log("Data not found");
-		if ($singleUserData.translationData.checked[$selectedSegmentId])
+		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a TM match.");
 		let newUserData = $singleUserData;
 		if (newUserData.translationData.seg2[$selectedSegmentId] === "") {

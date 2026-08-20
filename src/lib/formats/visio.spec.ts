@@ -42,6 +42,7 @@ function project(
 			seg1: segments,
 			seg2: [...targets],
 			checked: segments.map(() => false),
+			locked: segments.map(() => false),
 			type: "visio",
 			typeRef: result.typeRef ?? {},
 			documentModel: result.document,

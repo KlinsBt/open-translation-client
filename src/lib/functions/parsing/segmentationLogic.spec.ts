@@ -36,6 +36,7 @@ describe("segment splitting", () => {
 		expect(result.data.seg1).toEqual(["Hello ", "world"]);
 		expect(result.data.seg2).toEqual(["Hallo Welt", ""]);
 		expect(result.data.checked).toEqual([false, false]);
+		expect(result.data.locked).toEqual([false, false]);
 		expect(data.seg1).toEqual(["Hello world"]);
 	});
 
@@ -224,6 +225,26 @@ describe("segment joining", () => {
 		expect(result.data.seg1).toEqual(["One two"]);
 		expect(result.data.seg2).toEqual(["Eins zwei"]);
 		expect(result.data.checked).toEqual([false]);
+		expect(result.data.locked).toEqual([false]);
+	});
+
+	it("keeps edit locks independent from workflow confirmation", () => {
+		const locked = makeUserData({
+			seg1: ["One", "Two"],
+			seg2: ["Eins", "Zwei"],
+			checked: [false, true],
+			locked: [true, false],
+		}).translationData;
+
+		expect(splitSegmentData(locked, 0, 2).error).toMatch(/unlock/i);
+		expect(combineSegmentData(locked, 0).error).toMatch(/unlock/i);
+		expect(locked.checked).toEqual([false, true]);
+
+		const editable = { ...locked, locked: [false, false] };
+		const joined = combineSegmentData(editable, 0);
+		expect(joined.error).toBeUndefined();
+		expect(joined.data.checked).toEqual([false]);
+		expect(joined.data.locked).toEqual([false]);
 	});
 
 	it("restores both source and target halves when splitting at a join boundary", () => {
@@ -243,6 +264,8 @@ describe("segment joining", () => {
 						targetOffset: 5,
 						firstChecked: true,
 						secondChecked: false,
+						firstLocked: false,
+						secondLocked: false,
 					},
 				],
 			},
@@ -560,8 +583,12 @@ describe("segment joining", () => {
 					{
 						sourceOffset: 2,
 						targetOffset: 2,
+						firstMeta: undefined,
+						secondMeta: undefined,
 						firstChecked: false,
 						secondChecked: false,
+						firstLocked: false,
+						secondLocked: false,
 					},
 				],
 			},

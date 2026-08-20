@@ -11,7 +11,7 @@
 
 	async function fillTargetText(term: string) {
 		if (!$singleUserData) return console.log("Data not found");
-		if ($singleUserData.translationData.checked[$selectedSegmentId])
+		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a term.");
 		let newUserData = $singleUserData;
 		if (newUserData.translationData.seg2[$selectedSegmentId] === "") {

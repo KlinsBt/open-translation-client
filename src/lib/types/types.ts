@@ -449,6 +449,8 @@ export interface SegmentJoinBoundary {
 	secondMeta?: SegmentMeta;
 	firstChecked?: boolean;
 	secondChecked?: boolean;
+	firstLocked?: boolean;
+	secondLocked?: boolean;
 }
 
 export interface SegmentJoinState {
@@ -466,7 +468,10 @@ export interface UserData {
 		creationDate: string;
 		seg1: string[];
 		seg2: string[];
+		/** Workflow confirmation state. This is independent from edit locking. */
 		checked: boolean[];
+		/** Prevents segment mutation without changing workflow confirmation. */
+		locked: boolean[];
 		type: Type;
 		typeRef: TypeRef;
 		segmentsMeta?: SegmentMeta[];

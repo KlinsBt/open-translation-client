@@ -108,7 +108,7 @@ every reopened task.
 
 ### CAT state model and delivery correctness
 
-- [ ] AUD-024 Separate segment locking from translation workflow state.
+- [x] AUD-024 Separate segment locking from translation workflow state.
 
   - Add an independently persisted `locked[]` state (or equivalent per-unit
     field) while retaining `initial`, `translated`, `reviewed`, and `final`
@@ -121,6 +121,15 @@ every reopened task.
     explicitly chooses a combined action.
   - Add migration, statistics, QA, XLIFF, converted-export, and real-browser
     regressions proving the states remain independent after reload.
+
+  Completed 2026-08-20. Project schema v2 persists `locked[]` independently
+  from workflow `checked[]`. The v1 migration preserves legacy edit protection
+  as locks while conservatively resetting review confirmation and reviewed/final
+  neutral-unit states. Native non-translatable/vendor-locked units initialize
+  as locked, Open TLC XLIFF metadata round-trips both arrays, segment editing
+  exposes separate lock and confirm actions, and split/join retains both states.
+  Evidence: `persistenceMigrations.spec.ts`, `segmentationLogic.spec.ts`,
+  `workflowState.spec.ts`, and the real-browser CAT route lock regression.
 
 - [ ] AUD-025 Make translated-source export failure retryable.
   - Export functions must return success or throw; they may not swallow a failure

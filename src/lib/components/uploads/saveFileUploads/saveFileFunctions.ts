@@ -1,6 +1,27 @@
 import { validateXliff12Xml } from "$lib/formats/xliff12";
 import { validateXliff2Xml } from "$lib/formats/xliff2";
 import { FORMAT_IDS } from "$lib/formats/formatIds";
+import { PROJECT_SCHEMA_VERSION } from "$lib/formats/persistenceMigrations";
+
+function locksFromEditingState(
+	editingState: Record<string, any>,
+	segmentCount: number,
+): boolean[] {
+	if (
+		Array.isArray(editingState.locked) &&
+		editingState.locked.length === segmentCount &&
+		editingState.locked.every((value: unknown) => typeof value === "boolean")
+	)
+		return [...editingState.locked];
+	const units = editingState.documentModel?.units;
+	if (!Array.isArray(units) || units.length !== segmentCount)
+		return Array.from({ length: segmentCount }, () => false);
+	return units.map(
+		(unit: any) =>
+			unit?.translatable === false ||
+			unit?.metadata?.xliffProfile?.locked === true,
+	);
+}
 
 export function getXliffVersion(xliff: Document): number {
 	const xliffElement = xliff.getElementsByTagName("xliff")[0];
@@ -129,6 +150,7 @@ export function extractXliff2_0Data(
 	}
 
 	return {
+		schemaVersion: PROJECT_SCHEMA_VERSION,
 		...(isNaN(id) ? {} : { id: id }), // Only include the id field if it's not NaN
 		translationData: {
 			name: name,
@@ -138,6 +160,7 @@ export function extractXliff2_0Data(
 			seg1: seg1,
 			seg2: seg2,
 			checked: checked.length !== seg1.length ? seg1.map(() => false) : checked,
+			locked: locksFromEditingState(editingState, seg1.length),
 			type: type,
 			typeRef: typeRef,
 			segmentsMeta: editingState.segmentsMeta,
@@ -306,6 +329,7 @@ export function extractXliff1_2Data(
 	id = id === null ? Date.now() : parseInt(id);
 
 	return {
+		schemaVersion: PROJECT_SCHEMA_VERSION,
 		id: id,
 		translationData: {
 			name: name,
@@ -315,6 +339,7 @@ export function extractXliff1_2Data(
 			seg1: seg1,
 			seg2: seg2,
 			checked: checked.length != seg1.length ? seg1.map(() => false) : checked,
+			locked: locksFromEditingState(editingState, seg1.length),
 			type: type,
 			typeRef: typeRef,
 			segmentsMeta: editingState.segmentsMeta,

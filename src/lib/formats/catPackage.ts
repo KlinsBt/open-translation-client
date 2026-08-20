@@ -941,6 +941,9 @@ export async function buildCatReturnPackage(project: UserData): Promise<{
 		member.translationData.checked = indexes.map(
 			(globalIndex) => project.translationData.checked[globalIndex] ?? false,
 		);
+		member.translationData.locked = indexes.map(
+			(globalIndex) => project.translationData.locked[globalIndex] ?? false,
+		);
 		const rebuilt = buildMemberXliff(member);
 		if (innerPath) {
 			const updates = nestedUpdates.get(outerPath) ?? new Map<string, string>();

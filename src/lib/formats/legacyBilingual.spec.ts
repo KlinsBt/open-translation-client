@@ -38,6 +38,7 @@ function project(
 			seg1: imported.segments,
 			seg2: [...targets],
 			checked: imported.segments.map(() => false),
+			locked: imported.segments.map(() => false),
 			type: "legacy-bilingual",
 			typeRef: imported.typeRef ?? {},
 			segmentsMeta: imported.segmentsMeta,
