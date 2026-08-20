@@ -1,0 +1,17 @@
+{
+	"routes": {
+		"landing": { "maxRawBytes": 140000, "maxGzipBytes": 55000 },
+		"about": { "maxRawBytes": 150000, "maxGzipBytes": 60000 },
+		"app": { "maxRawBytes": 1320000, "maxGzipBytes": 400000 },
+		"translationMemory": { "maxRawBytes": 480000, "maxGzipBytes": 160000 },
+		"termBase": { "maxRawBytes": 480000, "maxGzipBytes": 160000 }
+	},
+	"files": {
+		"maxStaticChunkRawBytes": 750000,
+		"maxStaticChunkGzipBytes": 230000,
+		"maxDynamicChunkRawBytes": 1300000,
+		"maxDynamicChunkGzipBytes": 410000,
+		"maxAssetRawBytes": 24000000,
+		"maxAssetGzipBytes": 6000000
+	}
+}

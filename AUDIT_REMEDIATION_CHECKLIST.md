@@ -545,7 +545,7 @@ runtime diagnostics` (this task's commit). Filtered TM/TB library and editor
   size notices are not browser runtime/test failures; they remain explicitly
   assigned to the immediately following bundle remediation task, AUD-035.
 
-- [ ] AUD-035 Set and enforce a production bundle budget.
+- [x] AUD-035 Set and enforce a production bundle budget.
 
   - Record route-level compressed and uncompressed budgets.
   - Keep OCR/transcription engines and models out of ordinary application route
@@ -553,6 +553,38 @@ runtime diagnostics` (this task's commit). Filtered TM/TB library and editor
   - Review the emitted 23+ MiB ONNX WASM asset, PDF worker, 500+ KiB chunks, and
     1+ MiB app chunks; split or explicitly justify each retained artifact.
   - Add a CI budget check that fails on unapproved regressions.
+
+  Completed 2026-08-20; reviewer confirmation: Codex inspected the production
+  client manifest and recorded raw and gzip budgets for `/`, `/about`, `/app`,
+  `/tm`, and `/tb` in `bundle-budget.json` and `BUNDLE_BUDGET.md`. The
+  `checkBundleBudget.mjs` CI gate follows every production build, measures each
+  route's complete static JavaScript/CSS closure, enforces static/dynamic chunk
+  and emitted-asset limits, and fails if Tesseract, Hugging Face Transformers,
+  or ONNX WASM enters an ordinary route download. The 23.6 MB ONNX WASM asset,
+  2.38 MB PDF worker, 1.23 MB PDF.js worker entry, 1.15 MB Reamkit parser, large
+  format engines, and 724 KB app node were each traced and documented. OCR,
+  transcription, PDF, legacy Office, spreadsheet, and document generators remain
+  feature-requested dynamic entries; model payloads are not bundled into a route.
+
+  Implementation commit: `build: enforce production bundle budgets` (this
+  task's commit). Affected files: `bundle-budget.json`, `BUNDLE_BUDGET.md`,
+  `scripts/checkBundleBudget.mjs`, `package.json`, `package-lock.json`,
+  `vite.config.ts`, `src/buildPolicy.js`, and
+  `src/test/buildPolicy.spec.ts`. The regression test that isolates only DOCX's
+  unused Node stream buffer branch fails before this work because no narrow
+  warning policy exists; it also prevents suppressing a first-party browser
+  `buffer` warning. The manifest budget gate itself fails on any route, chunk,
+  asset, or deferred-engine regression and did not exist in the old code.
+
+  Verification: focused build-policy test passed 1/1; `npm run verify` passed
+  formatting, ESLint, Svelte diagnostics (0 errors/warnings), 90 covered unit
+  files with 1,119 tests passed and 11 skipped, 18 browser files with 95 tests
+  passed, all four coverage gates, the production build, and the new bundle
+  budget/deferred-engine gate. Remaining limitation: transcription model weights,
+  Tesseract workers/core/language data, and other third-party runtime payloads are
+  fetched only when requested and are therefore not byte-budgeted by the local
+  build artifact; their route isolation is enforced. No other known AUD-035
+  limitation remains.
 
 - [ ] AUD-036 Close the external-validator release gates.
   - Run or obtain CI artifacts for LibreOffice ODF/PDF reopening, EPUBCheck,

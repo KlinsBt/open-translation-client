@@ -1,8 +1,22 @@
 import { defineConfig } from "vitest/config";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { createLogger } from "vite";
+import { isReviewedDocxBufferWarning } from "./src/buildPolicy.js";
+
+const buildLogger = createLogger();
+const warn = buildLogger.warn.bind(buildLogger);
+buildLogger.warn = (message, options) => {
+	if (isReviewedDocxBufferWarning(message)) return;
+	warn(message, options);
+};
 
 export default defineConfig({
+	customLogger: buildLogger,
 	plugins: [sveltekit()],
+	build: {
+		// File and route limits are enforced with gzip-aware checks after build.
+		chunkSizeWarningLimit: 1_300,
+	},
 
 	test: {
 		include: ["src/**/*.{test,spec}.{js,ts}"],
