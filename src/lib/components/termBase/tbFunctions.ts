@@ -1,5 +1,6 @@
 import { tbMatches } from "$lib/functions/saveData/stores.svelte";
 import type { TbData } from "$lib/types/types";
+import { bestLanguageMatches } from "$lib/components/resources/languageMatching";
 
 export function getTermMatches(
 	tbData: TbData,
@@ -29,15 +30,16 @@ export function getTermMatches(
 	for (const entry of tbData.entries) {
 		if (!entry || !entry.terms) continue; // Skip undefined or invalid entries
 
-		// Find terms in the source language
-		for (const sourceTerm of entry.terms) {
-			if (
-				sourceTerm.lang === sourceLanguage &&
-				containsWholeTerm(normalizedSentence, sourceTerm.term)
-			) {
-				// Find the corresponding term in the target language
-				const targetTerm = entry.terms.filter(
-					(term) => term.lang === targetLanguage,
+		for (const sourceTerm of bestLanguageMatches(
+			entry.terms,
+			sourceLanguage,
+			(term) => term.lang,
+		)) {
+			if (containsWholeTerm(normalizedSentence, sourceTerm.term)) {
+				const targetTerm = bestLanguageMatches(
+					entry.terms,
+					targetLanguage,
+					(term) => term.lang,
 				);
 
 				for (const term of targetTerm) {

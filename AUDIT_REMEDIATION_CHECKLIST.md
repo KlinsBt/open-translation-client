@@ -320,7 +320,7 @@ package formats` (this task's commit). PDF detection now requires a versioned
   import diagnostic and bundle-size budget remain under AUD-034 and AUD-035;
   they do not weaken detection validation.
 
-- [ ] AUD-030 Replace long-segment set-Dice matching and normalize language tags.
+- [x] AUD-030 Replace long-segment set-Dice matching and normalize language tags.
 
   - Preserve token order and multiplicity, cap time/memory predictably, and never
     report 100% for a reordered non-identical long segment.
@@ -328,6 +328,41 @@ package formats` (this task's commit). PDF detection now requires a versioned
     fallback behavior for TM and TB.
   - Add adversarial repeated-token, reordered-token, CJK, combining-mark, RTL,
     punctuation, and 10,000-entry performance tests.
+
+  Completed 2026-08-20; reviewer confirmation: Codex traced TM and TB language
+  filtering, fuzzy scoring, persistence consumers, and the resource UI before
+  changing the shared matchers. Implementation commit: `fix: preserve order in
+  CAT resource matching` (this task's commit). Valid language identifiers are
+  normalized with `Intl.getCanonicalLocales` after accepting the underscore and
+  display-label forms already stored by the application. Matching now prefers
+  an exact canonical locale and uses the same base language only when that
+  resource has no exact candidate. Invalid legacy labels remain available only
+  through case-insensitive exact matching. This behavior follows the language-
+  tag syntax in [RFC 5646](https://www.rfc-editor.org/info/rfc5646/) and the
+  exact-before-broader lookup principle in
+  [RFC 4647](https://www.rfc-editor.org/info/rfc4647/).
+
+  Long non-identical segments no longer use unordered token sets. They use
+  Unicode-aware token multisets plus directional token bigrams in fixed 2,048-
+  bucket sketches, preserving repetition and order evidence with linear scan
+  time and bounded working memory per candidate. Exact strings are the only
+  100% result; every approximate long result is capped below 100%. Short
+  segments retain Unicode-code-point Levenshtein matching, and each TM query is
+  prepared once rather than rebuilt for every entry. The README documents the
+  exact/base fallback and invalid-label behavior.
+
+  Regression evidence covers reordered unique tokens, repeated-token count
+  changes, CJK, combining marks, RTL, punctuation, Unicode normalization,
+  invalid/canonical/underscored BCP 47 tags, TM/TB exact-first behavior, base
+  fallback, and a generated 10,000-entry memory performance boundary without a
+  committed large fixture. Commands: `npx vitest --run
+src/lib/components/resources/catMatching.spec.ts
+src/lib/functions/utilities.spec.ts` — 2 files and 16 tests passed; `npm run
+verify` — lint passed, Svelte check reported 0 errors and 0 warnings, 87 unit
+  files with 1,112 tests passed and 11 skipped, 18 browser files with 94 tests
+  passed, and the static production build completed. Approximate long matching is
+  deliberately bounded and collision-tolerant below 100%; it is a ranking signal,
+  not an identity claim.
 
 - [ ] AUD-031 Remove sensitive and obsolete debug logging from production paths.
 

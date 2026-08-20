@@ -51,6 +51,17 @@ No formal guidelines are implemented yet, but ontributions are always welcomed. 
 See the [file-format implementation plan](./README_FILE_FORMAT_IMPLEMENTATION_PLAN.md)
 for the prioritized import/export roadmap and its completion criteria.
 
+#### TM and term-base language matching
+
+Open TLC canonicalizes valid BCP 47 language tags before matching (for example,
+`EN_us` becomes `en-US`). Translation memories prefer an exact source or target
+locale. Only when no exact locale exists do they fall back to entries with the
+same base language; term bases apply the same exact-first rule within each
+concept. Invalid legacy language labels can match the same label
+case-insensitively, but never receive base-language fallback. Long fuzzy matches
+use ordered token evidence with multiplicity, so reordered non-identical text is
+never reported as a 100% match.
+
 ---
 
 #### Prerequisites

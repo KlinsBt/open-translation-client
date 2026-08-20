@@ -1,5 +1,22 @@
 import { tmMatches } from "$lib/functions/saveData/stores.svelte";
 import type { TmData } from "$lib/types/types";
+import { bestLanguageMatches } from "$lib/components/resources/languageMatching";
+
+const LONG_SEGMENT_THRESHOLD = 500;
+const SKETCH_BUCKETS = 2_048;
+
+interface PreparedSegment {
+	text: string;
+	characterLength: number;
+	sketch?: OrderedTokenSketch;
+}
+
+interface OrderedTokenSketch {
+	unigrams: Uint32Array;
+	bigrams: Uint32Array;
+	unigramCount: number;
+	bigramCount: number;
+}
 
 export function getTranslationMemoryMatches(
 	sourceSegments: string[],
@@ -10,13 +27,22 @@ export function getTranslationMemoryMatches(
 	const matches: { segment: string; match: string; percentage: string }[] = [];
 
 	const normalizedQuery = normalizeForMatch(segment);
+	const preparedQuery = prepareSegment(normalizedQuery);
 	for (let i = 0; i < sourceSegments.length; i++) {
 		const candidate = normalizeForMatch(sourceSegments[i]);
-		const maxLength = Math.max(normalizedQuery.length, candidate.length);
+		const preparedCandidate = prepareSegment(candidate);
+		const maxLength = Math.max(
+			preparedQuery.characterLength,
+			preparedCandidate.characterLength,
+		);
 		const maximumDistance = Math.floor(maxLength * (1 - threshold / 100));
-		if (Math.abs(normalizedQuery.length - candidate.length) > maximumDistance)
+		if (
+			Math.abs(
+				preparedQuery.characterLength - preparedCandidate.characterLength,
+			) > maximumDistance
+		)
 			continue;
-		const similarity = similarityPercentage(normalizedQuery, candidate);
+		const similarity = preparedSimilarity(preparedQuery, preparedCandidate);
 		if (similarity >= threshold) {
 			matches.push({
 				segment: sourceSegments[i],
@@ -59,21 +85,90 @@ function levenshteinDistance(a: string, b: string): number {
 	return previous[second.length];
 }
 
-function tokenDiceSimilarity(a: string, b: string): number {
-	const tokensA = new Set(a.split(/\s+/u).filter(Boolean));
-	const tokensB = new Set(b.split(/\s+/u).filter(Boolean));
-	if (tokensA.size === 0 && tokensB.size === 0) return 100;
+function hashToken(token: string): number {
+	let hash = 0x811c9dc5;
+	for (const character of token) {
+		hash ^= character.codePointAt(0) ?? 0;
+		hash = Math.imul(hash, 0x01000193);
+	}
+	return hash >>> 0;
+}
+
+function orderedTokenSketch(value: string): OrderedTokenSketch {
+	const unigrams = new Uint32Array(SKETCH_BUCKETS);
+	const bigrams = new Uint32Array(SKETCH_BUCKETS);
+	let previous: number | undefined;
+	let unigramCount = 0;
+	let bigramCount = 0;
+	for (const match of value.matchAll(/[\p{L}\p{N}\p{M}_]+|[^\s]/gu)) {
+		const current = hashToken(match[0]);
+		unigrams[current % SKETCH_BUCKETS]++;
+		unigramCount++;
+		if (previous !== undefined) {
+			const pair = Math.imul(previous ^ 0x9e3779b9, 33) ^ current;
+			bigrams[(pair >>> 0) % SKETCH_BUCKETS]++;
+			bigramCount++;
+		}
+		previous = current;
+	}
+	return { unigrams, bigrams, unigramCount, bigramCount };
+}
+
+function multisetDice(
+	first: Uint32Array,
+	second: Uint32Array,
+	firstCount: number,
+	secondCount: number,
+): number {
+	if (firstCount + secondCount === 0) return 100;
 	let intersection = 0;
-	for (const token of tokensA) if (tokensB.has(token)) intersection++;
-	return (2 * intersection * 100) / (tokensA.size + tokensB.size);
+	for (let index = 0; index < first.length; index++)
+		intersection += Math.min(first[index], second[index]);
+	return (2 * intersection * 100) / (firstCount + secondCount);
+}
+
+function prepareSegment(text: string): PreparedSegment {
+	let characterLength = 0;
+	for (const _character of text) characterLength++;
+	return {
+		text,
+		characterLength,
+		...(characterLength > LONG_SEGMENT_THRESHOLD
+			? { sketch: orderedTokenSketch(text) }
+			: {}),
+	};
+}
+
+function preparedSimilarity(
+	first: PreparedSegment,
+	second: PreparedSegment,
+): number {
+	if (first.text === second.text) return 100;
+	const maxLength = Math.max(first.characterLength, second.characterLength);
+	if (maxLength === 0) return 100;
+	if (maxLength <= LONG_SEGMENT_THRESHOLD) {
+		const distance = levenshteinDistance(first.text, second.text);
+		return ((maxLength - distance) / maxLength) * 100;
+	}
+	const firstSketch = first.sketch ?? orderedTokenSketch(first.text);
+	const secondSketch = second.sketch ?? orderedTokenSketch(second.text);
+	const unigram = multisetDice(
+		firstSketch.unigrams,
+		secondSketch.unigrams,
+		firstSketch.unigramCount,
+		secondSketch.unigramCount,
+	);
+	const bigram = multisetDice(
+		firstSketch.bigrams,
+		secondSketch.bigrams,
+		firstSketch.bigramCount,
+		secondSketch.bigramCount,
+	);
+	return Math.min(99.99, unigram * 0.35 + bigram * 0.65);
 }
 
 export function similarityPercentage(a: string, b: string): number {
-	const maxLen = Math.max(Array.from(a).length, Array.from(b).length);
-	if (maxLen === 0) return 100; // If both strings are empty, consider 100% match
-	if (maxLen > 500) return tokenDiceSimilarity(a, b);
-	const distance = levenshteinDistance(a, b);
-	return ((maxLen - distance) / maxLen) * 100;
+	return preparedSimilarity(prepareSegment(a), prepareSegment(b));
 }
 
 function tmDataToLangFilteredArrays(
@@ -84,20 +179,20 @@ function tmDataToLangFilteredArrays(
 	const sourceTextArray: string[] = [];
 	const targetTextArray: string[] = [];
 
-	// Iterate over each entry in the translation memory
-	for (const term of tmData.terms) {
-		// Check if the source language matches
-		if (term.source.lang === sourceLang) {
-			const sourceSegment = term.source.segment;
+	for (const term of bestLanguageMatches(
+		tmData.terms,
+		sourceLang,
+		(entry) => entry.source.lang,
+	)) {
+		const sourceSegment = term.source.segment;
 
-			// Iterate over all target segments
-			for (const target of term.target) {
-				if (target.lang === targetLang) {
-					// Add matching source and target segments to the arrays
-					sourceTextArray.push(sourceSegment);
-					targetTextArray.push(target.segment);
-				}
-			}
+		for (const target of bestLanguageMatches(
+			term.target,
+			targetLang,
+			(entry) => entry.lang,
+		)) {
+			sourceTextArray.push(sourceSegment);
+			targetTextArray.push(target.segment);
 		}
 	}
 
