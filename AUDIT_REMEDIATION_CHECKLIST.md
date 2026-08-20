@@ -136,10 +136,34 @@ test:unit -- --run src/lib/components/resources/catMatching.spec.ts
 src/lib/functions/utilities.spec.ts` — 2 files and 16 tests passed, including
   the generated 10,000-entry performance case.
 
-- [ ] AUD-011 **REOPENED:** Warn before translated-document export when target
+- [x] AUD-011 Warn before translated-document export when target
       segments are empty or unconfirmed, while retaining an explicit user
       override. Confirmation must use workflow state and must never be inferred
       from the independent segment-lock state.
+
+  Completed 2026-08-20. `getProjectCompletionSummary` reports empty targets and
+  unconfirmed workflow units independently from `locked[]`. Every translated
+  delivery action—original-format and converted PDF/DOCX/RTF/HTML/TXT/CSV—passes
+  through the same completion gate. An incomplete project opens a dedicated QA
+  warning with both counts and offers “Review project” or the explicit “Export
+  anyway” override; bilingual project/backup formats remain available without a
+  delivery warning because they preserve editable workflow state. Export
+  execution retains AUD-025's retryable success-or-throw contract.
+
+  Regression evidence: `qualityAssurance.spec.ts` verifies empty and
+  unconfirmed indexes separately. `workflowState.spec.ts` proves a locked draft
+  remains unconfirmed in statistics, QA, XLIFF approval, and converted CSV. The
+  real-browser CAT regression opens a 151-unit project whose first draft is
+  locked, observes 0% completion and both 151-unit warning counts, verifies the
+  lock did not alter confirmation, explicitly chooses “Export anyway”, observes
+  exactly one download, and confirms modal completion. It fails against the
+  pre-fix behavior that treated `checked[]` as both lock and review state or
+  exported delivery files without warning.
+
+  Closure commands: `npm run test:unit -- --run
+src/lib/formats/qualityAssurance.spec.ts
+src/lib/formats/workflowState.spec.ts` — 2 files and 15 tests passed; `npm run
+test:browser:smoke` — 1 file and 18 tests passed.
 
 ## Import, detection, export, and project validation
 

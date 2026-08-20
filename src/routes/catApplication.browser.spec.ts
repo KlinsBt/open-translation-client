@@ -190,6 +190,9 @@ describe("real CAT application route", () => {
 		tbData.set([]);
 		selectedSegmentId.set(0);
 		openMenu.set(false);
+		const download = vi
+			.spyOn(HTMLAnchorElement.prototype, "click")
+			.mockImplementation(() => undefined);
 		mounted = mount(AppRoute, { target: document.body });
 		await eventually(() =>
 			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
@@ -244,6 +247,17 @@ describe("real CAT application route", () => {
 		);
 		expect(document.body.textContent?.replace(/\s+/g, " ")).toContain(
 			"151 target segments are empty",
+		);
+		expect(document.body.textContent?.replace(/\s+/g, " ")).toContain(
+			"151 segments are not confirmed",
+		);
+		expect(get(singleUserData).translationData.locked[0]).toBe(true);
+		expect(get(singleUserData).translationData.checked[0]).toBe(false);
+
+		button("Export anyway").click();
+		await eventually(() => expect(download).toHaveBeenCalledTimes(1));
+		await eventually(() =>
+			expect(document.body.textContent).not.toContain("Export files"),
 		);
 	});
 
