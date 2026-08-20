@@ -23,7 +23,7 @@
 	import Delete from "$lib/components/svg/delete2.svelte";
 	import Export from "$lib/components/svg/export2.svelte";
 	import Edit from "$lib/components/svg/edit.svelte";
-	import { setLoadingAndRender } from "$lib/functions/uiHelpers";
+	import { setLoadingAndRender, withLoading } from "$lib/functions/uiHelpers";
 	import {
 		notifySuccess,
 		notifyInfo,
@@ -44,14 +44,13 @@
 
 	onMount(async () => {
 		try {
-			if ($tbData.length === 0) {
-				await setLoadingAndRender();
-			}
-			await loadTbDataFromIndexedDB();
-			console.log("Loaded TB Data:", $tbData);
-			showLoading.set(false);
+			await withLoading(() => loadTbDataFromIndexedDB());
 		} catch (error) {
-			console.error("Error loading TB Data:", error);
+			notifyError(
+				error instanceof Error
+					? `Term bases could not be loaded: ${error.message}`
+					: "Term bases could not be loaded from this browser.",
+			);
 		}
 	});
 
@@ -156,17 +155,28 @@
 
 	async function selectTbToEdit(id: number) {
 		if (id === undefined) return;
-		await setLoadingAndRender();
-		tbSelected = $tbData.find((tb) => tb.id === id) as TbData;
-		tbIdSelected.set(id);
-		singleTbData.set(tbSelected);
-		showDeletionConfirmationModal = false;
-		showTbUploadModal = false;
-		showSelectModal = false;
-		mergeTbModal = false;
-		showTbxModal.set(false);
-		editTb.set(true);
-		showLoading.set(false);
+		try {
+			await withLoading(async () => {
+				const selected = $tbData.find((tb) => tb.id === id);
+				if (!selected)
+					throw new Error("That term base is no longer available.");
+				tbSelected = selected;
+				tbIdSelected.set(id);
+				singleTbData.set(selected);
+				showDeletionConfirmationModal = false;
+				showTbUploadModal = false;
+				showSelectModal = false;
+				mergeTbModal = false;
+				showTbxModal.set(false);
+				editTb.set(true);
+			});
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "The term base could not be opened.",
+			);
+		}
 	}
 
 	async function updateFileName(newName: string) {

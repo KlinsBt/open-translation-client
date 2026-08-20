@@ -66,7 +66,7 @@ export function storageError(error: unknown): Error {
 		);
 	if (error instanceof DOMException && error.name === "AbortError")
 		return new Error(
-			"The browser cancelled the local save. Your previous data is unchanged; please try again.",
+			"The browser cancelled the local storage operation. Your previous data is unchanged; please try again.",
 		);
 	return error instanceof Error
 		? error
@@ -139,7 +139,7 @@ export function ensureProjectModels(userData: UserData): UserData {
 function openDatabase(): Promise<IDBDatabase> {
 	if (db) return Promise.resolve(db);
 	if (databasePromise) return databasePromise;
-	databasePromise = new Promise((resolve, reject) => {
+	const attempt = new Promise<IDBDatabase>((resolve, reject) => {
 		const request = indexedDB.open(DB_NAME, DB_VERSION);
 
 		request.onupgradeneeded = (event) => {
@@ -179,11 +179,20 @@ function openDatabase(): Promise<IDBDatabase> {
 				"IndexedDB error:",
 				(event.target as IDBOpenDBRequest).error,
 			);
-			databasePromise = null;
 			reject((event.target as IDBOpenDBRequest).error);
 		};
 	});
+	databasePromise = attempt.catch((error) => {
+		databasePromise = null;
+		throw storageError(error);
+	});
 	return databasePromise;
+}
+
+export function closeIndexedDbConnection(): void {
+	db?.close();
+	db = null;
+	databasePromise = null;
 }
 
 // Load translations from IndexedDB

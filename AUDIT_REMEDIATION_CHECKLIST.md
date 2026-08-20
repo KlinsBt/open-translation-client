@@ -232,12 +232,41 @@ lint` — formatting and ESLint passed; `npm run check` — 0 errors and 0
   within supported browser lifecycle events, the final edit is queued before
   teardown rather than depending on teardown to initiate it.
 
-- [ ] AUD-028 Make every global loading transition exception-safe.
+- [x] AUD-028 Make every global loading transition exception-safe.
+
   - Wrap initial project loading, project opening, and TM/TB loading in
     `try/catch/finally` or a shared reference-counted loading helper.
   - A failed nested load must clear the overlay, preserve navigation, and show an
     actionable message.
   - Add IndexedDB-open, read, migration, and missing-resource browser failures.
+
+  Completed 2026-08-20; reviewer confirmation: Codex audited every reachable
+  `showLoading` activation and the initial project, project-open, project-
+  resource, TM-library, and TB-library paths. Implementation commit: `fix: make
+loading failures recoverable` (this task's commit). `withLoading` now owns a
+  reference-counted begin/finally/end lifecycle, so a failed or nested operation
+  cannot leave the overlay active or hide it while another operation remains.
+  Initial libraries and project/resource opening use that contract, retain the
+  current route on failure, and report an actionable error. IndexedDB open
+  failures reset the cached connection promise so a retry can succeed. Active
+  projects now reject missing TM/TB references before leaving the library.
+
+  Regression evidence: `uiHelpers.spec.ts` proves exception cleanup and nested
+  reference counting. Real-browser route tests inject a synchronous IndexedDB
+  open failure, a read-transaction failure, a raw future-schema record that
+  fails migration, missing active TM metadata, and TM/TB library read failures;
+  every case verifies `showLoading === false`, error notification text, retained
+  navigation, and recovery/retry where applicable. These regressions fail on the
+  old code because several awaits had no `finally`, the rejected open promise was
+  cached, and nested project resource loading could strand the global overlay.
+
+  Commands: `npx vitest --run src/lib/functions/uiHelpers.spec.ts
+src/lib/functions/saveData/indexedDb.spec.ts` — 2 files and 6 tests passed;
+  `npm run test:browser:smoke` — 1 file and 15 tests passed; `npm run lint` —
+  formatting and ESLint passed; `npm run check` — 0 errors and 0 warnings; `npm
+run build` — production build completed. No remaining loading-state limitation
+  is known; stale-reactivity and production logging diagnostics remain separately
+  tracked by AUD-034 and AUD-031.
 
 ### Detection, matching, and security
 

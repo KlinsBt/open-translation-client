@@ -10,7 +10,6 @@
 		seg2WordCount,
 		singleUserData,
 		translationIdSelected,
-		showLoading,
 		userData,
 		tmData,
 		tbData,
@@ -31,6 +30,7 @@
 	} from "$lib/components/notifications/toastStore";
 	import type { ProjectViewMode } from "../projectDashboard";
 	import { commitPersistedMutation } from "$lib/functions/saveData/persistenceContract";
+	import { withLoading } from "$lib/functions/uiHelpers";
 
 	function publishProject(project: UserData) {
 		singleUserData.set(project);
@@ -51,70 +51,52 @@
 	let newTargetLang: string = $state("");
 
 	async function loadFile(id: number) {
-		// Set loading state immediately
-		showLoading.set(true);
-		// Small timeout to ensure loading state is updated before proceeding
-		await new Promise((resolve) => {
-			setTimeout(resolve, 0);
-		});
-		let data = $userData.find((d) => d.id === id);
-		console.log(data);
-		if (!data) {
-			console.log("Data not found");
-			showLoading.set(false);
-			return;
+		try {
+			await withLoading(async () => {
+				const data = $userData.find((candidate) => candidate.id === id);
+				if (!data) throw new Error("The selected project no longer exists.");
+				const tmReference = data.translationData.tm;
+				if (typeof tmReference?.id === "number" && tmReference.active) {
+					await getAllTmDataFromIndexedDB();
+					if (!$tmData.some((memory) => memory.id === tmReference.id))
+						throw new Error(
+							`Translation memory “${tmReference.name ?? tmReference.id}” is no longer available. Choose another memory in project resources.`,
+						);
+				}
+				const tbReference = data.translationData.tb;
+				if (typeof tbReference?.id === "number" && tbReference.active) {
+					await getAllTbDataFromIndexedDB();
+					if (!$tbData.some((termBase) => termBase.id === tbReference.id))
+						throw new Error(
+							`Term base “${tbReference.name ?? tbReference.id}” is no longer available. Choose another term base in project resources.`,
+						);
+				}
+				singleUserData.set(data);
+				translationIdSelected.set(id);
+				seg1WordCount.set(getTotalWordCount(data.translationData.seg1));
+				seg2WordCount.set(getTotalWordCount(data.translationData.seg2));
+				openMenu.set(false);
+			});
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "The project could not be opened.",
+			);
 		}
-		if (data.translationData.tm) {
-			if (
-				typeof data.translationData.tm.id === "number" &&
-				data.translationData.tm.active
-			) {
-				console.log("Loading TM data");
-				// await loadTmDataOfProject(data.translationData.tm.id);
-				await getAllTmDataFromIndexedDB();
-			}
-		}
-		if (data.translationData.tb) {
-			if (
-				typeof data.translationData.tb.id === "number" &&
-				data.translationData.tb.active
-			) {
-				console.log("Loading TB data");
-				// await loadTbDataOfProject(data.translationData.tb.id);
-				await getAllTbDataFromIndexedDB();
-			}
-		}
-		singleUserData.set(data);
-		translationIdSelected.set(id);
-		seg1WordCount.set(getTotalWordCount(data.translationData.seg1));
-		seg2WordCount.set(getTotalWordCount(data.translationData.seg2));
-		openMenu.set(false);
-		showLoading.set(false);
 	}
 
 	async function getAllTmDataFromIndexedDB() {
-		showLoading.set(true);
-		if ($tmData.length > 0) {
-			showLoading.set(false);
-			return;
-		} else {
-			let data = await loadTmDataFromIndexedDB();
+		if ($tmData.length === 0) {
+			const data = await loadTmDataFromIndexedDB();
 			tmData.set(data as TmData[]);
-			showLoading.set(false);
-			console.log(tmData);
 		}
 	}
 
 	async function getAllTbDataFromIndexedDB() {
-		showLoading.set(true);
-		if ($tbData.length > 0) {
-			showLoading.set(false);
-			return;
-		} else {
-			let data = await loadTbDataFromIndexedDB();
+		if ($tbData.length === 0) {
+			const data = await loadTbDataFromIndexedDB();
 			tbData.set(data as TbData[]);
-			showLoading.set(false);
-			console.log(tbData);
 		}
 	}
 
@@ -258,7 +240,6 @@
 		console.log(data);
 		if (!data) {
 			console.log("Data not found");
-			showLoading.set(false);
 			return;
 		}
 		singleUserData.set(data);

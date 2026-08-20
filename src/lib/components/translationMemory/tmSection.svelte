@@ -26,7 +26,7 @@
 	import Delete from "$lib/components/svg/delete2.svelte";
 	import Export from "$lib/components/svg/export2.svelte";
 	import Edit from "$lib/components/svg/edit.svelte";
-	import { setLoadingAndRender } from "$lib/functions/uiHelpers";
+	import { setLoadingAndRender, withLoading } from "$lib/functions/uiHelpers";
 	import {
 		notifySuccess,
 		notifyInfo,
@@ -47,14 +47,13 @@
 
 	onMount(async () => {
 		try {
-			if ($tmData.length === 0) {
-				await setLoadingAndRender();
-			}
-			await loadTmDataFromIndexedDB();
-			console.log("Loaded TM Data:", $tmData);
-			showLoading.set(false);
+			await withLoading(() => loadTmDataFromIndexedDB());
 		} catch (error) {
-			console.error("Error loading TM Data:", error);
+			notifyError(
+				error instanceof Error
+					? `Translation memories could not be loaded: ${error.message}`
+					: "Translation memories could not be loaded from this browser.",
+			);
 		}
 	});
 
@@ -158,17 +157,28 @@
 
 	async function selectTmToEdit(id: number) {
 		if (id === undefined) return;
-		await setLoadingAndRender();
-		tmSelected = $tmData.find((tm) => tm.id === id) as TmData;
-		tmIdSelected.set(id);
-		singleTmData.set(tmSelected);
-		showDeletionConfirmationModal = false;
-		showTmUploadModal = false;
-		showSelectModal = false;
-		mergeTmModal = false;
-		showTmxModal.set(false);
-		editTm.set(true);
-		showLoading.set(false);
+		try {
+			await withLoading(async () => {
+				const selected = $tmData.find((tm) => tm.id === id);
+				if (!selected)
+					throw new Error("That translation memory is no longer available.");
+				tmSelected = selected;
+				tmIdSelected.set(id);
+				singleTmData.set(selected);
+				showDeletionConfirmationModal = false;
+				showTmUploadModal = false;
+				showSelectModal = false;
+				mergeTmModal = false;
+				showTmxModal.set(false);
+				editTm.set(true);
+			});
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "The memory could not be opened.",
+			);
+		}
 	}
 
 	async function updateFileName(newName: string) {

@@ -13,7 +13,7 @@
 		sortUserDataByNameDescending,
 	} from "$lib/functions/sorting";
 	import { loadTranslationsUserDataFromIndexedDB } from "$lib/functions/saveData/indexedDb";
-	import { showLoading, userData } from "$lib/functions/saveData/stores.svelte";
+	import { userData } from "$lib/functions/saveData/stores.svelte";
 	import { onMount } from "svelte";
 	import Modal from "../modal.svelte";
 	import { goto } from "$app/navigation";
@@ -30,6 +30,8 @@
 		type ProjectSortState,
 		type ProjectViewMode,
 	} from "./projectDashboard";
+	import { withLoading } from "$lib/functions/uiHelpers";
+	import { notifyError } from "$lib/components/notifications/toastStore";
 
 	let sortState: ProjectSortState = $state({
 		field: "date",
@@ -45,15 +47,18 @@
 	let parsingPreferences: ParsingPreference[] = $state([]);
 
 	onMount(async () => {
-		if ($userData.length === 0) {
-			showLoading.set(true);
-			await new Promise((resolve) => {
-				setTimeout(resolve, 0);
+		try {
+			await withLoading(async () => {
+				await loadTranslationsUserDataFromIndexedDB();
+				applySort();
 			});
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? `Projects could not be loaded: ${error.message}`
+					: "Projects could not be loaded from this browser.",
+			);
 		}
-		await loadTranslationsUserDataFromIndexedDB();
-		applySort();
-		showLoading.set(false);
 		parsingPreferences = loadParsingPreferences();
 
 		viewMode = parseProjectViewMode(

@@ -4,6 +4,8 @@ import { get } from "svelte/store";
 import AppRoute from "./(app)/app/+page.svelte";
 import TmEditing from "$lib/components/translationMemory/tmEditing/tmEditing.svelte";
 import TbEditing from "$lib/components/termBase/tbEditing/tbEditing.svelte";
+import TmSection from "$lib/components/translationMemory/tmSection.svelte";
+import TbSection from "$lib/components/termBase/tbSection.svelte";
 import {
 	openMenu,
 	selectedSegmentId,
@@ -12,8 +14,11 @@ import {
 	singleUserData,
 	tbData,
 	tmData,
+	showLoading,
+	userData,
 } from "$lib/functions/saveData/stores.svelte";
 import {
+	closeIndexedDbConnection,
 	deleteTbFromIndexedDB,
 	deleteTmFromIndexedDB,
 	deleteTranslationFromIndexedDB,
@@ -84,6 +89,7 @@ afterEach(async () => {
 	mounted = null;
 	document.body.replaceChildren();
 	for (const toast of get(toastStore)) toastStore.remove(toast.id);
+	vi.restoreAllMocks();
 });
 
 describe("real CAT application route", () => {
@@ -679,5 +685,170 @@ describe("real CAT application route", () => {
 		).toBe(false);
 		failedPut.mockRestore();
 		await deleteTbFromIndexedDB(seed);
+	});
+
+	it("clears loading and remains navigable after an IndexedDB open failure", async () => {
+		closeIndexedDbConnection();
+		userData.set([]);
+		openMenu.set(true);
+		const failedOpen = vi
+			.spyOn(IDBFactory.prototype, "open")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Database blocked", "InvalidStateError");
+			});
+		mounted = mount(AppRoute, { target: document.body });
+
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) =>
+					toast.message.includes("Projects could not be loaded"),
+				),
+			).toBe(true),
+		);
+		expect(get(showLoading)).toBe(false);
+		expect(get(openMenu)).toBe(true);
+		expect(document.body.textContent).toContain("Your projects");
+		failedOpen.mockRestore();
+		await expect(
+			loadTranslationsUserDataFromIndexedDB(),
+		).resolves.toBeDefined();
+	});
+
+	it("clears loading after project read and migration failures", async () => {
+		await loadTranslationsUserDataFromIndexedDB();
+		userData.set([]);
+		openMenu.set(true);
+		const failedRead = vi
+			.spyOn(IDBDatabase.prototype, "transaction")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Read transaction failed", "InvalidStateError");
+			});
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) =>
+					toast.message.includes("Projects could not be loaded"),
+				),
+			).toBe(true),
+		);
+		expect(get(showLoading)).toBe(false);
+		expect(get(openMenu)).toBe(true);
+		failedRead.mockRestore();
+		await unmount(mounted);
+		mounted = null;
+		for (const toast of get(toastStore)) toastStore.remove(toast.id);
+
+		const rawId = Date.now();
+		const request = indexedDB.open("OPEN_TLC_5432_DB", 3);
+		const database = await new Promise<IDBDatabase>((resolve, reject) => {
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+		});
+		const transaction = database.transaction("UserData", "readwrite");
+		transaction.objectStore("UserData").put({
+			id: rawId,
+			schemaVersion: 999,
+			translationData: {},
+		});
+		await new Promise<void>((resolve, reject) => {
+			transaction.oncomplete = () => resolve();
+			transaction.onerror = () => reject(transaction.error);
+		});
+		database.close();
+		userData.set([]);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) =>
+					toast.message.includes("schema version 999"),
+				),
+			).toBe(true),
+		);
+		expect(get(showLoading)).toBe(false);
+		expect(get(openMenu)).toBe(true);
+		const cleanupRequest = indexedDB.open("OPEN_TLC_5432_DB", 3);
+		const cleanupDatabase = await new Promise<IDBDatabase>(
+			(resolve, reject) => {
+				cleanupRequest.onsuccess = () => resolve(cleanupRequest.result);
+				cleanupRequest.onerror = () => reject(cleanupRequest.error);
+			},
+		);
+		const cleanup = cleanupDatabase.transaction("UserData", "readwrite");
+		cleanup.objectStore("UserData").delete(rawId);
+		await new Promise<void>((resolve, reject) => {
+			cleanup.oncomplete = () => resolve();
+			cleanup.onerror = () => reject(cleanup.error);
+		});
+		cleanupDatabase.close();
+	});
+
+	it("keeps the project library open when an active TM resource is missing", async () => {
+		const project = makeUserData({ name: "Missing resource project" });
+		project.id = Date.now();
+		project.translationData.tm = {
+			id: project.id + 50_000,
+			name: "Removed memory",
+			active: true,
+		};
+		await updateTranslationOnIndexedDB(project);
+		tmData.set([]);
+		userData.set([]);
+		openMenu.set(true);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Missing resource project"),
+		);
+		button("Project options").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Continue translating"),
+		);
+		button("Open project").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("no longer available"),
+		);
+		expect(get(showLoading)).toBe(false);
+		expect(get(openMenu)).toBe(true);
+		expect(document.body.textContent).toContain("Your projects");
+		await deleteTranslationFromIndexedDB(project.id);
+	});
+
+	it("clears loading when TM and TB library reads fail", async () => {
+		await loadTranslationsUserDataFromIndexedDB();
+		tmData.set([]);
+		let failedRead = vi
+			.spyOn(IDBDatabase.prototype, "transaction")
+			.mockImplementationOnce(() => {
+				throw new DOMException("TM read failed", "InvalidStateError");
+			});
+		mounted = mount(TmSection, { target: document.body });
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) =>
+					toast.message.includes("Translation memories could not be loaded"),
+				),
+			).toBe(true),
+		);
+		expect(get(showLoading)).toBe(false);
+		failedRead.mockRestore();
+		await unmount(mounted);
+		mounted = null;
+		for (const toast of get(toastStore)) toastStore.remove(toast.id);
+
+		tbData.set([]);
+		failedRead = vi
+			.spyOn(IDBDatabase.prototype, "transaction")
+			.mockImplementationOnce(() => {
+				throw new DOMException("TB read failed", "InvalidStateError");
+			});
+		mounted = mount(TbSection, { target: document.body });
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) =>
+					toast.message.includes("Term bases could not be loaded"),
+				),
+			).toBe(true),
+		);
+		expect(get(showLoading)).toBe(false);
+		failedRead.mockRestore();
 	});
 });

@@ -12,7 +12,6 @@
 		openMenu,
 		seg1WordCount,
 		seg2WordCount,
-		showLoading,
 		tmData,
 		tbData,
 		singleTmData,
@@ -65,6 +64,7 @@
 	} from "$lib/functions/parsing/segmentationLogic";
 	import { getProjectCompletionSummary } from "$lib/formats/qualityAssurance";
 	import { createPersistedEditQueue } from "$lib/functions/saveData/persistedEditQueue";
+	import { withLoading } from "$lib/functions/uiHelpers";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	const CONVERTED_EXPORTS: ReadonlyArray<{
@@ -663,29 +663,15 @@
 	}
 
 	async function getAllTmDataFromIndexedDB() {
-		showLoading.set(true);
-		if ($tmData.length > 0) {
-			showLoading.set(false);
-			return;
-		} else {
-			let data = await loadTmDataFromIndexedDB();
-			tmData.set(data as TmData[]);
-			showLoading.set(false);
-			console.log(tmData);
-		}
+		if ($tmData.length > 0) return;
+		const data = await loadTmDataFromIndexedDB();
+		tmData.set(data as TmData[]);
 	}
 
 	async function getAllTbDataFromIndexedDB() {
-		showLoading.set(true);
-		if ($tbData.length > 0) {
-			showLoading.set(false);
-			return;
-		} else {
-			let data = await loadTbDataFromIndexedDB();
-			tbData.set(data as TbData[]);
-			showLoading.set(false);
-			console.log(tmData);
-		}
+		if ($tbData.length > 0) return;
+		const data = await loadTbDataFromIndexedDB();
+		tbData.set(data as TbData[]);
 	}
 
 	async function toggleSaveFileModal() {
@@ -695,11 +681,18 @@
 	}
 
 	async function toggleTmTbModal() {
-		await Promise.all([
-			getAllTmDataFromIndexedDB(),
-			getAllTbDataFromIndexedDB(),
-		]);
-		showTmTbModal = true;
+		try {
+			await withLoading(() =>
+				Promise.all([getAllTmDataFromIndexedDB(), getAllTbDataFromIndexedDB()]),
+			);
+			showTmTbModal = true;
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? `Project resources could not be loaded: ${error.message}`
+					: "Project resources could not be loaded.",
+			);
+		}
 	}
 
 	function closeTmAddModal() {
