@@ -1881,6 +1881,31 @@ explicitly separated.
   matrix and user-facing format list. Record remaining caveats next to the
   checked task rather than hiding them.
 
+### Validation evidence levels
+
+Roadmap completion distinguishes these evidence levels; one must never be
+reported as another:
+
+1. **Automated repository gate:** `npm run verify` is mandatory for every task
+   and runs deterministic unit, browser, coverage, static-analysis, build, and
+   bundle-budget checks without proprietary desktop software.
+2. **Independent/native-tool automation:** validator tests are explicit skips in
+   an ordinary workstation run when their executable is unavailable. The strict
+   `npm run test:external` release gate and its CI workflow require every listed
+   tool, enable every conditional test, reopen or compile generated fixtures,
+   and fail on a missing tool or skipped/failed test. The local
+   `test:external:available` command is diagnostic only and cannot establish a
+   release pass.
+3. **Manual interoperability observation:** testing in a proprietary authoring
+   or CAT application is supplemental evidence. When performed, record the
+   application/version, operating system, fixture, workflow, date, and observed
+   result. A manual observation cannot replace an available automated validator,
+   and automated output must not imply that an unlisted proprietary application
+   was exercised.
+
+The currently enforced independent-tool matrix and its recorded results are in
+[`EXTERNAL_VALIDATION.md`](./EXTERNAL_VALIDATION.md).
+
 ## Test corpus and automation layout
 
 Use a predictable structure when the first adapter is implemented:
