@@ -56,11 +56,40 @@ src/lib/functions/saveData/persistedEditQueue.spec.ts` — 3 files and 11 tests
   passed; `npm run test:browser:smoke` — 1 file and 18 tests passed. Final-edit
   lifecycle durability is independently closed and evidenced by AUD-004/027.
 
-- [ ] AUD-004 **REOPENED:** Debounce segment autosaves and remove full-library
+- [x] AUD-004 Debounce segment autosaves and remove full-library
       reloads from the per-keystroke persistence path. Additionally flush or
       durably queue the last edit during blur, route navigation, `pagehide`, and
       component destruction, with a browser regression for an immediate exit
       inside the debounce window.
+
+  Completed 2026-08-20. Follow-up AUD-027 (`7f036a3`) moved target edits into a
+  route-owned persisted queue whose work survives child and route teardown. The
+  closure review found that its first version only coalesced edits while an
+  IndexedDB transaction happened to remain in flight; a fast transaction could
+  therefore still produce a write per keystroke. This task now starts the first
+  write immediately, holds a 250 ms quiet window, and collapses the remainder of
+  each input burst into one trailing snapshot. `flush()` cancels that delay and
+  drains the newest snapshot immediately. The input path writes the selected
+  project record directly and never reloads the full project library.
+
+  Blur, hidden-document `visibilitychange`, `pagehide`, parent mutations, and
+  component destruction all flush or await the same queue. An in-flight write
+  remains owned by the queue rather than the component; overlapping edits are
+  serialized, and a failed write drops dependent drafts and restores the exact
+  last committed snapshot. The route browser regression enters rapid
+  Unicode/RTL text, exits inside the quiet window through all lifecycle signals,
+  switches projects, destroys the route, and verifies the final value after an
+  IndexedDB reload.
+
+  Regression evidence: the five `persistedEditQueue.spec.ts` cases prove
+  immediate first-write durability, debounce of a fast-write burst, trailing-
+  value coalescing, flush of an in-flight/final write, exact failure rollback,
+  and baseline adoption. The fast-write regression fails against the prior
+  queue because its second and third inputs start new writes without a quiet
+  window. Closure commands: focused unit run — 1 file and 5 tests passed; `npm
+run test:browser:smoke` — 1 file and 18 tests passed; `npm run check` — 0
+  errors and 0 warnings; `npm run lint:logic` passed.
+
 - [x] AUD-005 Prevent empty TM/TB structures from crashing editors or exports,
       and never announce an export that did not complete.
 - [x] AUD-006 Clear or repair project references when a TM or TB is deleted and

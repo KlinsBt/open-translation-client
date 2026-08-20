@@ -32,6 +32,32 @@ describe("lifecycle-safe persisted edit queue", () => {
 		expect(queue.committedSnapshot()).toEqual({ text: "final" });
 	});
 
+	it("debounces the rest of a rapid burst after a fast initial write", async () => {
+		const writes: Array<{ text: string }> = [];
+		const queue = createPersistedEditQueue(
+			{ text: "old" },
+			async (value) => {
+				writes.push(value);
+			},
+			{},
+			{ debounceMs: 10_000 },
+		);
+
+		void queue.schedule({ text: "a" });
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(writes).toEqual([{ text: "a" }]);
+
+		void queue.schedule({ text: "ab" });
+		void queue.schedule({ text: "final" });
+		await Promise.resolve();
+		expect(writes).toEqual([{ text: "a" }]);
+
+		await queue.flush();
+		expect(writes).toEqual([{ text: "a" }, { text: "final" }]);
+		expect(queue.committedSnapshot()).toEqual({ text: "final" });
+	});
+
 	it("flush waits for an already-running final write", async () => {
 		const write = deferred();
 		const queue = createPersistedEditQueue({ text: "old" }, async () => {
