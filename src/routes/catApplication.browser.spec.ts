@@ -247,6 +247,93 @@ describe("real CAT application route", () => {
 		);
 	});
 
+	it("keeps confirmation, editing, and locking as independent persisted segment states", async () => {
+		const project = makeUserData({
+			name: "Segment state transitions",
+			seg1: ["Source segment"],
+			seg2: [""],
+			checked: [false],
+			locked: [false],
+		});
+		project.id = Date.now();
+		await updateTranslationOnIndexedDB(project);
+		singleUserData.set(project);
+		selectedSegmentId.set(0);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+
+		const segment = document.querySelector<HTMLElement>(
+			'[data-segment-id="0"]',
+		)!;
+		const segmentButton = (label: string) => {
+			const candidate = Array.from(segment.querySelectorAll("button")).find(
+				(element) => element.textContent?.trim() === label,
+			);
+			if (!(candidate instanceof HTMLButtonElement))
+				throw new Error(`Segment button ${label} was not found.`);
+			return candidate;
+		};
+
+		segmentButton("Confirm").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain(
+				"Add a target translation before confirming this segment.",
+			),
+		);
+		expect(get(singleUserData).translationData.checked).toEqual([false]);
+
+		enterText(
+			segment.querySelector<HTMLTextAreaElement>("textarea")!,
+			"Target",
+		);
+		segmentButton("Confirm").click();
+		await eventually(() =>
+			expect(get(singleUserData).translationData.checked).toEqual([true]),
+		);
+		expect(segmentButton("Confirmed")).not.toBeDisabled();
+
+		segment
+			.querySelector<HTMLButtonElement>('[aria-label="Lock segment"]')!
+			.click();
+		await eventually(() => {
+			expect(get(singleUserData).translationData.locked).toEqual([true]);
+			expect(get(singleUserData).translationData.checked).toEqual([true]);
+		});
+		expect(segment.querySelector("textarea")).toBeNull();
+
+		segment
+			.querySelector<HTMLButtonElement>('[aria-label="Unlock segment"]')!
+			.click();
+		await eventually(() =>
+			expect(get(singleUserData).translationData.locked).toEqual([false]),
+		);
+		segmentButton("Confirmed").click();
+		await eventually(() =>
+			expect(get(singleUserData).translationData.checked).toEqual([false]),
+		);
+
+		segmentButton("Confirm").click();
+		await eventually(() =>
+			expect(get(singleUserData).translationData.checked).toEqual([true]),
+		);
+		enterText(
+			segment.querySelector<HTMLTextAreaElement>("textarea")!,
+			"Edited target",
+		);
+		await eventuallyAsync(async () => {
+			const saved = (await loadTranslationsUserDataFromIndexedDB()).find(
+				(candidate) => candidate.id === project.id,
+			);
+			expect(saved?.translationData.seg2).toEqual(["Edited target"]);
+			expect(saved?.translationData.checked).toEqual([false]);
+		});
+
+		await deleteTranslationFromIndexedDB(project.id);
+	});
+
 	it("creates a validated text project through the real upload modal", async () => {
 		const projectName = `browser-project-${Date.now()}`;
 		openMenu.set(true);

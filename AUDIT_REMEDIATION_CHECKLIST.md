@@ -460,7 +460,7 @@ audit findings` (this task's commit). The initial production-only audit was
 
 ### Test integrity, runtime warnings, and delivery size
 
-- [ ] AUD-033 Add enforceable coverage and mutation-sensitive regressions.
+- [x] AUD-033 Add enforceable coverage and mutation-sensitive regressions.
 
   - Add line, branch, function, and statement thresholds with justified scoped
     exclusions.
@@ -468,6 +468,43 @@ audit findings` (this task's commit). The initial production-only audit was
     state transition through unit or browser tests.
   - Explicitly prove that the lock/confirmation, failed-save, failed-export,
     long-TM-match, loading-overlay, and forged-PDF tests fail on commit `14830b5`.
+
+  Completed 2026-08-20; reviewer confirmation: Codex inspected the registry,
+  conformance harness, segment editor, persistence queue, export controller,
+  loading controller, PDF detection, and their unit/browser suites. Implementation
+  commit: `test: enforce CAT regression coverage` (this task's commit). Vitest V8
+  coverage is now part of `npm run verify`, with enforced aggregate floors of 84%
+  statements, 74% branches, 91% functions, and 86% lines. The measured completion
+  baseline is 85.76% statements, 75.16% branches, 92.47% functions, and 87.12%
+  lines. Svelte views and routes are intentionally measured by the separate real-
+  Chromium suite; declarations, generated fixtures, and test modules are excluded
+  because they contain no shipped executable behavior.
+
+  Adapter and state evidence: `conformance.spec.ts` requires exactly one fixture
+  for every registered adapter and exercises validation, malformed input,
+  identity/derived output, translated reimport, Unicode/RTL, generated large input,
+  and declared ZIP-part changes. `segmentationLogic.spec.ts`,
+  `workflowState.spec.ts`, persistence tests, and the real CAT route suite cover
+  selection, split, join, edit, confirm, unconfirm, lock, unlock, bulk operations,
+  save rollback, lifecycle flushing, and export recovery. A new browser regression
+  explicitly proves that an empty segment cannot be confirmed, confirmation and
+  locking remain independent, unconfirmation persists, and a later edit clears
+  confirmation in both the live store and IndexedDB.
+
+  Mutation/baseline proof: the current focused regressions were run against a
+  temporary detached worktree at `14830b5` using the current Vitest runner (the
+  obsolete `closeIndexedDbConnection` import/call was removed only from the
+  temporary compatibility harness). All six failed for the intended historical
+  defects: no independent Confirm control; an aborted fill lacked rollback-safe
+  behavior; failed delivery closed the export UI; project-read failure produced an
+  unhandled rejection/loading recovery failure; malformed `%PDF-` input appeared
+  as high-confidence importable PDF; and a reversed 320-token segment scored 100%
+  instead of below 70%. Verification: `npm run verify` passed formatting, ESLint,
+  Svelte diagnostics (0 errors/warnings), 88 covered unit files with 1,116 tests
+  passed and 11 skipped, 18 browser files with 95 tests passed, all four coverage
+  gates, and the production build. Runtime warnings emitted during that successful
+  run remain explicitly tracked by AUD-034; delivery-size findings remain tracked
+  by AUD-035.
 
 - [ ] AUD-034 Eliminate browser runtime/test warnings.
 

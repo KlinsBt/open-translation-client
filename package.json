@@ -15,10 +15,11 @@
 		"lint:logic": "eslint .",
 		"format": "prettier --write .",
 		"test:unit": "vitest",
+		"test:coverage": "vitest --run --coverage --testTimeout=20000",
 		"test:browser": "vitest --config vite.browser.config.ts --run",
 		"test:browser:smoke": "vitest --config vite.browser.config.ts --run src/routes/catApplication.browser.spec.ts",
 		"test": "npm run test:unit -- --run && npm run test:browser",
-		"verify": "npm run lint && npm run check && npm test && npm run build"
+		"verify": "npm run lint && npm run check && npm run test:coverage && npm run test:browser && npm run build"
 	},
 	"devDependencies": {
 		"@fontsource/fira-mono": "^5.0.0",
@@ -29,6 +30,7 @@
 		"@sveltejs/vite-plugin-svelte": "^7.3.0",
 		"@typescript-eslint/parser": "^8.46.3",
 		"@vitest/browser-playwright": "^4.1.11",
+		"@vitest/coverage-v8": "^4.1.11",
 		"@xmldom/xmldom": "^0.8.10",
 		"eslint": "^9.39.1",
 		"eslint-plugin-svelte": "^3.12.4",
