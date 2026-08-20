@@ -279,7 +279,6 @@
 			show = false;
 			resetForm();
 		} catch (error) {
-			console.error("Error processing file:", error);
 			if (!(error instanceof SafeInputError && error.code === "ABORTED")) {
 				notifyError(safeInputMessage(error));
 			}

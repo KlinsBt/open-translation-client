@@ -2,6 +2,7 @@ import { validateXliff12Xml } from "$lib/formats/xliff12";
 import { validateXliff2Xml } from "$lib/formats/xliff2";
 import { FORMAT_IDS } from "$lib/formats/formatIds";
 import { PROJECT_SCHEMA_VERSION } from "$lib/formats/persistenceMigrations";
+import { reportProductionError } from "$lib/functions/productionDiagnostics";
 
 function locksFromEditingState(
 	editingState: Record<string, any>,
@@ -93,14 +94,14 @@ export function extractXliff2_0Data(
 						try {
 							typeRef = JSON.parse(content);
 						} catch (e) {
-							console.error("Invalid JSON in type_ref", e);
+							reportProductionError("Invalid project type metadata", e);
 							typeRef = null;
 						}
 					} else if (typeAttr === "tm") {
 						try {
 							tm = JSON.parse(content);
 						} catch (e) {
-							console.error("Invalid JSON in tm", e);
+							reportProductionError("Invalid project TM metadata", e);
 							tm = {
 								id: null,
 								name: null,
@@ -111,7 +112,7 @@ export function extractXliff2_0Data(
 						try {
 							tb = JSON.parse(content);
 						} catch (e) {
-							console.error("Invalid JSON in tb", e);
+							reportProductionError("Invalid project TB metadata", e);
 							tb = {
 								id: null,
 								name: null,
@@ -122,7 +123,7 @@ export function extractXliff2_0Data(
 						try {
 							editingState = JSON.parse(content);
 						} catch (e) {
-							console.error("Invalid JSON in editing_state", e);
+							reportProductionError("Invalid project editing metadata", e);
 							editingState = {};
 						}
 					}
@@ -273,14 +274,14 @@ export function extractXliff1_2Data(
 			try {
 				typeRef = JSON.parse(typeRefContent);
 			} catch (e) {
-				console.error("Invalid JSON in TypeRef", e);
+				reportProductionError("Invalid legacy project type metadata", e);
 				typeRef = {};
 			}
 			const supTmContent = (supTm?.textContent || "{}").replace(/&quot;/g, '"');
 			try {
 				tm = JSON.parse(supTmContent);
 			} catch (e) {
-				console.error("Invalid JSON in Tm", e);
+				reportProductionError("Invalid legacy project TM metadata", e);
 				tm = {
 					id: null,
 					name: null,
@@ -291,7 +292,7 @@ export function extractXliff1_2Data(
 			try {
 				tb = JSON.parse(supTbContent);
 			} catch (e) {
-				console.error("Invalid JSON in Tb", e);
+				reportProductionError("Invalid legacy project TB metadata", e);
 				tb = {
 					id: null,
 					name: null,
@@ -304,7 +305,7 @@ export function extractXliff1_2Data(
 			try {
 				editingState = JSON.parse(editingStateContent);
 			} catch (e) {
-				console.error("Invalid JSON in EditingState", e);
+				reportProductionError("Invalid legacy project editing metadata", e);
 				editingState = {};
 			}
 		}

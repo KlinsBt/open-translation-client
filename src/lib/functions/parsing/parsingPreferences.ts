@@ -1,4 +1,5 @@
 import { serializeSrx20, type SrxDocument } from "$lib/formats/srx20";
+import { reportProductionWarning } from "$lib/functions/productionDiagnostics";
 
 export interface ParsingPreference {
 	id: string;
@@ -75,7 +76,7 @@ function readStore(): ParsingPreference[] {
 		if (Array.isArray(parsed)) return ensureDefaultPref(parsed);
 		return [DEFAULT_PREF];
 	} catch (e) {
-		console.warn("Failed to parse parsing preferences", e);
+		reportProductionWarning("Parsing preferences reset", e);
 		return [DEFAULT_PREF];
 	}
 }

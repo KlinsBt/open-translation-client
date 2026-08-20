@@ -151,10 +151,9 @@
 	}
 
 	async function fillTargetSegmentText() {
-		if (!$singleUserData) return console.log("Data not found");
+		if (!$singleUserData) return;
 		if (locked) return notifyError("Unlock this segment before changing it.");
-		if (textSegment1 === "") return console.log("No text to add");
-		if (textSegment2 !== "") return console.log("Target segment is not empty");
+		if (textSegment1 === "" || textSegment2 !== "") return;
 		const updated = await commitProjectMutation(
 			(project) => (project.translationData.seg2[id] = textSegment1),
 		);
@@ -163,21 +162,6 @@
 			seg2WordCount.set(getTotalWordCount(updated.translationData.seg2));
 		}
 	}
-
-	// function fillAllEmptySegments() {
-	// 	if (!$singleUserData) return console.log("Data not found");
-	// 	let newUserData = $singleUserData;
-	// 	newUserData.translationData.seg2 = newUserData.translationData.seg2.map(
-	// 		(segment, i) => {
-	// 			if (segment === "") return newUserData.translationData.seg1[i];
-	// 			return segment;
-	// 		},
-	// 	);
-	// 	console.log(newUserData.translationData.seg2);
-	// 	singleUserData.set(newUserData);
-	// 	updateTranslationOnIndexedDB($singleUserData);
-	// 	seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
-	// }
 
 	function handleSourceMouseUp(event: MouseEvent) {
 		const container = event.currentTarget as HTMLElement;
@@ -244,11 +228,8 @@
 	}
 
 	function updateTmMatches(textSegment1: string) {
-		// console.log("TM Data: ", $tmData);
 		let id = $singleUserData.translationData.tm?.id;
-		// console.log("ID: ", id);
 		singleTmData.set($tmData.find((data) => data.id === id) as TmData);
-		// console.log("Single TM Data: ", $singleTmData);
 		tmMatchesFound = searchForMatches(
 			$singleTmData,
 			textSegment1,
@@ -258,18 +239,14 @@
 	}
 
 	function updateTbMatches(textSegment1: string) {
-		// console.log("TB Data: ", $tbData);
 		let id = $singleUserData.translationData.tb?.id;
-		// console.log("ID: ", id);
 		singleTbData.set($tbData.find((data) => data.id === id) as TbData);
-		// console.log("Single TB Data: ", $singleTbData);
 		tbMatchesFound = getTermMatches(
 			$singleTbData,
 			textSegment1,
 			sourceLang,
 			targetLang,
 		);
-		// console.log("TB Matches: ", tbMatchesFound);
 	}
 
 	function getLanguageCode(lang?: string): string {
@@ -315,10 +292,6 @@
 		if (!validTmActive || !$singleTmData?.terms)
 			return notifyError("Choose an available translation memory first.");
 		let localTmData = structuredClone($singleTmData);
-		console.log("Local TM Data: ", localTmData);
-		console.log("sourceLang: ", sourceLang);
-		console.log("targetLang: ", targetLang);
-
 		localTmData.terms.push({
 			// id: localTmData.terms.length + 1,
 			source: {

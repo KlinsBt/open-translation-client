@@ -62,6 +62,15 @@ case-insensitively, but never receive base-language fallback. Long fuzzy matches
 use ordered token evidence with multiplicity, so reordered non-identical text is
 never reported as a 100% match.
 
+#### Production diagnostics
+
+Shipped code does not log project records, source or target segments, imported
+documents, TM/TB entries, language selections, or remote-service responses.
+ESLint rejects `console.log`, `console.info`, and `console.debug` in production
+source. `console.warn` and `console.error` are reserved for actionable technical
+failures and must not include user content; tests may emit diagnostics when a
+failure needs additional context.
+
 ---
 
 #### Prerequisites

@@ -12,6 +12,7 @@ import {
 } from "$lib/formats/skeleton";
 import { normalizeImportOptions, parseList } from "$lib/formats/options";
 import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
+import { reportProductionError } from "$lib/functions/productionDiagnostics";
 import { encodeTextBytes } from "./outputGenerationText";
 import {
 	detectServerHtmlProfile,
@@ -198,7 +199,7 @@ export function buildHtmlTranslation(translation: UserData): string {
 				meta = regenMeta;
 			}
 		} catch (e) {
-			console.error("Failed to regenerate HTML meta", e);
+			reportProductionError("HTML metadata regeneration failed", e);
 		}
 	}
 

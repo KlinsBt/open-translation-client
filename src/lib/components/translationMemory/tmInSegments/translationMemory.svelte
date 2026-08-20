@@ -17,7 +17,7 @@
 	let tempTargetText: string = "";
 
 	async function fillTargetText(tm: string) {
-		if (!$singleUserData) return console.log("Data not found");
+		if (!$singleUserData) return;
 		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a TM match.");
 		let newUserData = structuredClone($singleUserData);
@@ -39,7 +39,7 @@
 
 	async function checkIfConfirmationIsNeeded(tm: string) {
 		tempTargetText = tm;
-		if (!$singleUserData) return console.log("Data not found");
+		if (!$singleUserData) return;
 		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a TM match.");
 		let newUserData = structuredClone($singleUserData);

@@ -1,9 +1,4 @@
 <script lang="ts">
-	// import IndexedDB from "../../IndexedDbExample.svelte";
-	// import TextInput from "$lib/old/textInput.svelte";
-	// import PdfUpload from "$lib/components/uploads/pdfInput.svelte";
-	// import Compr from "$lib/components/uploads/compression/msgPackUpload.svelte";
-	// import { loadTranslationsUserData } from "$lib/functions/saveData/localStorage";
 	import SaveFileUpload from "$lib/components/uploads/saveFileUploads/saveFileUpload.svelte";
 	import ProjectCard from "./components/projectCards.svelte";
 	import {

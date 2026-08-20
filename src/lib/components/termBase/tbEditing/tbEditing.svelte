@@ -32,7 +32,6 @@
 				visibleSegmentsCount + AMOUNT_OF_SEGMENTS_TO_LOAD,
 				$singleTbData.entries.length,
 			);
-			console.log(`Loaded ${visibleSegmentsCount} segments`);
 		}
 	}
 
@@ -123,8 +122,6 @@
 	}
 
 	async function addNewNote(unitId: number, termId: number) {
-		console.log("Adding new note to unitId:", unitId, "termId:", termId);
-
 		const term = localTbData.entries[unitId].terms[termId];
 
 		// Check if notes is an array of strings (legacy format)
@@ -147,15 +144,6 @@
 	}
 
 	async function deleteNote(unitId: number, termId: number, noteIndex: number) {
-		console.log(
-			"Deleting note at unitId:",
-			unitId,
-			"termId:",
-			termId,
-			"noteId:",
-			noteIndex,
-		);
-
 		const term = localTbData.entries[unitId].terms[termId];
 
 		if (term.notes.length > noteIndex) {

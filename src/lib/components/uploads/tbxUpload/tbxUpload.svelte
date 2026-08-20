@@ -48,7 +48,6 @@
 			await createNewProjectWithTbxFile();
 		} catch (error) {
 			notifyError(safeInputMessage(error));
-			console.error("Invalid TBX file", error);
 		} finally {
 			showLoading.set(false);
 		}
@@ -63,7 +62,6 @@
 	function checkIfIdExists(id: number | undefined): boolean {
 		if (!id) return false;
 		const singleData: TbData | undefined = $tbData.find((d) => d.id === id);
-		console.log("singleData: ", singleData);
 		sameIdTbData = singleData || null;
 		return !!singleData;
 	}
@@ -157,7 +155,6 @@
 			const updatedTbData = await loadTbDataFromIndexedDB();
 			const newTb = updatedTbData[updatedTbData.length - 1];
 			singleTbData.set(newTb);
-			console.log("Newly saved TB:", newTb);
 			tbIdSelected.set(newTb.id!);
 			editTb.set(true);
 			showTbxModal.set(false);

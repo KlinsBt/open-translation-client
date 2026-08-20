@@ -58,4 +58,17 @@ export default [
 		},
 		rules: correctnessRules,
 	},
+	{
+		files: ["src/**/*.{js,mjs,ts,svelte}"],
+		ignores: ["src/**/*.{spec,test}.{js,mjs,ts}", "src/**/*.browser.spec.ts"],
+		rules: {
+			// Production diagnostics may report actionable failures, but must never
+			// emit imported content or application state through log/debug/info.
+			"no-console": ["error", { allow: ["warn", "error"] }],
+		},
+	},
+	{
+		files: ["src/**/*.{spec,test}.{js,mjs,ts}", "src/**/*.browser.spec.ts"],
+		rules: { "no-console": "off" },
+	},
 ];

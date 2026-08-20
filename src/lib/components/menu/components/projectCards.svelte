@@ -100,23 +100,8 @@
 		}
 	}
 
-	// async function loadTmDataOfProject(tmId: number) {
-	// 	let tm = await getTmDataById(tmId);
-	// 	if (!tm) return console.log("TM data not found");
-	// 	singleTmData.set(tm);
-	// 	console.log($singleTmData);
-	// }
-
-	// async function loadTbDataOfProject(tbId: number) {
-	// 	let tb = await getTbDataById(tbId);
-	// 	if (!tb) return console.log("TB data not found");
-	// 	singleTbData.set(tb);
-	// 	console.log($singleTbData);
-	// }
-
 	async function updateFileName(newName: string) {
-		console.log("Updating file name to: ", newName);
-		if (!$singleUserData) return console.log("Data not found");
+		if (!$singleUserData) return;
 		if (!newName.trim()) return notifyError("Enter a project name.");
 		try {
 			const updated = await commitPersistedMutation(
@@ -134,7 +119,7 @@
 	}
 
 	async function updateFileLanguages() {
-		if (!$singleUserData) return console.log("Data not found");
+		if (!$singleUserData) return;
 		if (newTargetLang === "" || newSourceLang === "") {
 			notifyError("Please select both source and target languages");
 			return;
@@ -162,8 +147,7 @@
 	}
 
 	async function handleSaveFileDeletion(id: number) {
-		if (typeof id !== "number") return console.log("Invalid ID");
-		console.log("Deleting file with ID: ", id);
+		if (typeof id !== "number") return;
 		try {
 			await deleteTranslationFromIndexedDB(id);
 			confirmDeletionWindow = false;
@@ -223,13 +207,9 @@
 
 	function check(opt: number, lang: string) {
 		if (opt === 1) {
-			console.log("source");
 			newSourceLang = lang;
-			console.log(newSourceLang);
 		} else {
-			console.log("target");
 			newTargetLang = lang;
-			console.log(newTargetLang);
 		}
 	}
 
@@ -237,11 +217,7 @@
 		optionsOpen = false;
 		show = true;
 		let data = $userData.find((d) => d.id === id);
-		console.log(data);
-		if (!data) {
-			console.log("Data not found");
-			return;
-		}
+		if (!data) return;
 		singleUserData.set(data);
 		translationIdSelected.set(id);
 		seg1WordCount.set(getTotalWordCount(data.translationData.seg1));

@@ -32,7 +32,6 @@
 				visibleSegmentsCount + AMOUNT_OF_SEGMENTS_TO_LOAD,
 				$singleTmData.terms.length,
 			);
-			// console.log(`Loaded ${visibleSegmentsCount} segments`);
 		}
 	}
 

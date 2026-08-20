@@ -63,7 +63,6 @@
 			await createNewProjectWithSaveFile();
 		} catch (error) {
 			notifyError(safeInputMessage(error));
-			console.error("Invalid project file", error);
 		} finally {
 			showLoading.set(false);
 		}

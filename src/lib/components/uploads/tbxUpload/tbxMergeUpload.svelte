@@ -37,7 +37,6 @@
 			if (!extractedTbxData) throw new Error("No TBX data was found.");
 		} catch (error) {
 			notifyError(safeInputMessage(error));
-			console.error("Invalid TBX file", error);
 		} finally {
 			showLoading.set(false);
 		}

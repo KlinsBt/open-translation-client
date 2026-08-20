@@ -40,7 +40,6 @@
 				throw new Error("The TMX file needs at least two language pairs.");
 		} catch (error) {
 			notifyError(safeInputMessage(error));
-			console.error("Invalid TMX file", error);
 		} finally {
 			showLoading.set(false);
 		}

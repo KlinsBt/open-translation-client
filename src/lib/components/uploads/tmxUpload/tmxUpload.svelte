@@ -51,7 +51,6 @@
 			await createNewProjectWithTmxFile();
 		} catch (error) {
 			notifyError(safeInputMessage(error));
-			console.error("Invalid TMX file", error);
 		} finally {
 			showLoading.set(false);
 		}

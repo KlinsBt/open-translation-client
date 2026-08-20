@@ -35,12 +35,10 @@ export function calcPercentageOfTotalSegmentsChecked(
 	let total: number = checked.length;
 	try {
 		let done = checked.filter((x) => x === true);
-		// console.log("Checked Segments", done);
 		let sum: number = (done.length / total) * 100;
 		if (isNaN(sum)) {
 			sum = 0;
 		}
-		// console.log(sum);
 		return parseInt(sum.toFixed(0));
 	} catch (error) {
 		return 0;

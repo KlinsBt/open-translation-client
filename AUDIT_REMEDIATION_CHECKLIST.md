@@ -364,7 +364,7 @@ verify` — lint passed, Svelte check reported 0 errors and 0 warnings, 87 unit
   deliberately bounded and collision-tolerant below 100%; it is a ranking signal,
   not an identity claim.
 
-- [ ] AUD-031 Remove sensitive and obsolete debug logging from production paths.
+- [x] AUD-031 Remove sensitive and obsolete debug logging from production paths.
 
   - Remove or gate logs containing project objects, source/target segments,
     TM/TB content, language selections, API responses, and imported text.
@@ -372,6 +372,42 @@ verify` — lint passed, Svelte check reported 0 errors and 0 warnings, 87 unit
     or bring them under the same validation and logging policy.
   - Add an ESLint rule that rejects `console.log` in shipped source while allowing
     intentional `console.error`/test diagnostics under a documented policy.
+
+  Completed 2026-08-20; reviewer confirmation: Codex searched every shipped
+  TypeScript, JavaScript, and Svelte source plus the import graph before making
+  changes. Implementation commit: `fix: remove production content logging`
+  (this task's commit). Project rename/open/delete flows, segment loading and TM
+  insertion, language selection, TM/TB library/editor actions, and TBX creation
+  no longer log records, source/target segments, resource contents, identifiers,
+  or language values. Import failures still show the existing sanitized UI
+  message without forwarding parser objects to the console.
+
+  Seventeen unreachable prototype files were removed after repository-wide
+  fixed-string and import searches found no callers: the obsolete direct
+  DeepL/LibreTranslate request module, standalone media IndexedDB helper, six
+  pre-registry document uploaders, and nine OCR/MessagePack upload blueprints.
+  The active universal, portable-project, TMX, and TBX upload paths remain. The
+  stale TypeScript exclusion and repository-test exemption for the former
+  `uploads/unused` tree were removed, so all shipped source is checked equally.
+
+  ESLint now rejects `console.log`, `console.info`, and `console.debug` throughout
+  production source while permitting warnings/errors and test diagnostics.
+  Intentional failures route through a shared diagnostic helper that emits only
+  a fixed operation label and error category, never the error message, thrown
+  object, imported content, or application state. README documents this policy.
+  Repository consistency tests independently reject content-bearing production
+  logging and resurrection of the deleted prototype trees; diagnostic tests use
+  adversarial secret-bearing errors and arbitrary objects to prove redaction.
+
+  Commands: repository-wide `rg` import/log/fetch audits found no remaining
+  production `log`/`info`/`debug`, prototype reference, or direct network helper;
+  focused verification — 4 files and 17 tests passed; `npm run
+test:browser:smoke` — 1 file and 17 tests passed without the former project-
+  object stdout; `npm run verify` — lint passed, Svelte check reported 0 errors
+  and 0 warnings, 88 unit files with 1,116 tests passed and 11 skipped, 18 browser
+  files with 94 tests passed, and the static production build completed. The
+  remaining Svelte, PDF.js, local-storage, and bundle-size diagnostics are
+  separately tracked by AUD-034 and AUD-035.
 
 - [ ] AUD-032 Resolve the full dependency-audit backlog.
   - Review all production, development, browser-test, image/OCR, and transcription

@@ -19,7 +19,7 @@ function sourceFiles(): string[] {
 		}
 	};
 	walk(resolve(root, "src"));
-	return files.filter((file) => !file.includes("/uploads/unused/"));
+	return files;
 }
 
 describe("repository consistency", () => {
@@ -38,6 +38,30 @@ describe("repository consistency", () => {
 			);
 		});
 		expect(conflicts).toEqual([]);
+	});
+
+	it("does not ship content-bearing debug logging", () => {
+		const loggingCalls = sourceFiles()
+			.filter(
+				(file) =>
+					/\.(?:ts|js|svelte)$/.test(file) &&
+					!/(?:\.spec\.|\.test\.)/.test(file),
+			)
+			.filter((file) =>
+				/console\.(?:log|info|debug)\s*\(/.test(
+					readFileSync(resolve(root, file), "utf8"),
+				),
+			);
+		expect(loggingCalls).toEqual([]);
+	});
+
+	it("keeps disconnected uploader and remote-API prototypes out of source", () => {
+		const obsolete = sourceFiles().filter(
+			(file) =>
+				file.includes("/uploads/unused/") ||
+				/(?:machineTranslationsAPI|indexedDbHelpers)\.ts$/.test(file),
+		);
+		expect(obsolete).toEqual([]);
 	});
 
 	it("has route modules for every page component", () => {

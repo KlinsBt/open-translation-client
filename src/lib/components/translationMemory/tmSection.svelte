@@ -107,7 +107,6 @@
 
 	function handleOpenDeletionConfirmationModal(id: number) {
 		if (id === undefined) return;
-		console.log("Deleting TM with ID:", id);
 		tmIdSelected.set(id);
 		getFileName(id);
 		showDeletionConfirmationModal = true;
@@ -184,7 +183,6 @@
 	async function updateFileName(newName: string) {
 		if ($tmIdSelected === undefined || $tmData === undefined) return;
 		await setLoadingAndRender();
-		console.log("Updating File Name to:", newName);
 		let tempTm = { ...$tmData.find((tm) => tm.id === $tmIdSelected)! };
 		tempTm.name = newName;
 		try {

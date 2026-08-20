@@ -287,7 +287,6 @@
 				visibleSegmentsCount + AMOUNT_OF_SEGMENTS_TO_LOAD,
 				$singleUserData.translationData.seg2.length,
 			);
-			console.log(`Loaded ${visibleSegmentsCount} segments`);
 		}
 	}
 
@@ -395,7 +394,7 @@
 	});
 
 	async function lockAllSegments() {
-		if (!$singleUserData) return console.log("Data not found");
+		if (!$singleUserData) return;
 		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData.locked = newUserData.translationData.locked.map(
 			() => true,
@@ -404,7 +403,7 @@
 	}
 
 	async function unlockAllSegments() {
-		if (!$singleUserData) return console.log("Data not found");
+		if (!$singleUserData) return;
 		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData.locked = newUserData.translationData.locked.map(
 			() => false,
@@ -625,7 +624,7 @@
 	}
 
 	async function fillAllEmptySegments() {
-		if (!$singleUserData) return console.log("Data not found");
+		if (!$singleUserData) return;
 		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData.seg2 = newUserData.translationData.seg2.map(
 			(segment, i) => {

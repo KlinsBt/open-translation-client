@@ -28,6 +28,7 @@ import {
 	tmData,
 	userData,
 } from "$lib/functions/saveData/stores.svelte";
+import { reportProductionError } from "$lib/functions/productionDiagnostics";
 
 const DB_NAME = "OPEN_TLC_5432_DB";
 const DB_VERSION = 3; // No floats
@@ -175,8 +176,8 @@ function openDatabase(): Promise<IDBDatabase> {
 		};
 
 		request.onerror = (event) => {
-			console.error(
-				"IndexedDB error:",
+			reportProductionError(
+				"IndexedDB open failed",
 				(event.target as IDBOpenDBRequest).error,
 			);
 			reject((event.target as IDBOpenDBRequest).error);
@@ -236,7 +237,7 @@ export async function loadTranslationsUserDataFromIndexedDB(): Promise<
 								item.translationData.segmentsMeta = meta;
 							}
 						} catch (e) {
-							console.error("Failed to regenerate docx meta", e);
+							reportProductionError("DOCX metadata regeneration failed", e);
 						}
 					}
 					return ensureProjectModels(item);
@@ -249,7 +250,10 @@ export async function loadTranslationsUserDataFromIndexedDB(): Promise<
 		};
 
 		request.onerror = (event) => {
-			console.error("Request error:", (event.target as IDBRequest).error);
+			reportProductionError(
+				"Project storage request failed",
+				(event.target as IDBRequest).error,
+			);
 			reject((event.target as IDBRequest).error);
 		};
 	});
@@ -411,7 +415,10 @@ export async function loadTmDataFromIndexedDB(): Promise<TmData[]> {
 		};
 
 		request.onerror = (event) => {
-			console.error("Request error:", (event.target as IDBRequest).error);
+			reportProductionError(
+				"Translation-memory storage request failed",
+				(event.target as IDBRequest).error,
+			);
 			reject((event.target as IDBRequest).error);
 		};
 	});
@@ -432,7 +439,7 @@ export async function getTmNamesAndIds(): Promise<
 
 		return namesAndIds;
 	} catch (error) {
-		console.error("Error fetching TM Names and IDs:", error);
+		reportProductionError("Translation-memory index read failed", error);
 		return [];
 	}
 }
@@ -454,8 +461,8 @@ export async function getTmDataById(id: number): Promise<TmData | null> {
 		};
 
 		request.onerror = (event) => {
-			console.error(
-				"Error fetching TMData by ID:",
+			reportProductionError(
+				"Translation-memory record read failed",
 				(event.target as IDBRequest).error,
 			);
 			reject((event.target as IDBRequest).error);
@@ -560,7 +567,10 @@ export async function loadTbDataFromIndexedDB(): Promise<TbData[]> {
 		};
 
 		request.onerror = (event) => {
-			console.error("Request error:", (event.target as IDBRequest).error);
+			reportProductionError(
+				"Term-base storage request failed",
+				(event.target as IDBRequest).error,
+			);
 			reject((event.target as IDBRequest).error);
 		};
 	});
@@ -581,7 +591,7 @@ export async function getTbNamesAndIds(): Promise<
 
 		return namesAndIds;
 	} catch (error) {
-		console.error("Error fetching TB Names and IDs:", error);
+		reportProductionError("Term-base index read failed", error);
 		return [];
 	}
 }
@@ -603,8 +613,8 @@ export async function getTbDataById(id: number): Promise<TbData | null> {
 		};
 
 		request.onerror = (event) => {
-			console.error(
-				"Error fetching TBData by ID:",
+			reportProductionError(
+				"Term-base record read failed",
 				(event.target as IDBRequest).error,
 			);
 			reject((event.target as IDBRequest).error);

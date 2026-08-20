@@ -212,9 +212,6 @@ export function searchForMatches(
 		targetLang,
 	);
 
-	// console.log("Filtered Source Terms: ", sourceTextArray);
-	// console.log("Filtered Target Terms: ", targetTextArray);
-
 	// Perform fuzzy matching with the specified threshold
 	const tmMatchesFound = getTranslationMemoryMatches(
 		sourceTextArray,
@@ -222,8 +219,6 @@ export function searchForMatches(
 		textSegment1,
 		55,
 	);
-
-	// console.log("Matches Found: ", tmMatchesFound);
 
 	// Update the store and return the results
 	tmMatches.set(tmMatchesFound);
