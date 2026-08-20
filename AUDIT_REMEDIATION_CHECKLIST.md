@@ -151,7 +151,7 @@ every reopened task.
 
 ### Persistence and lifecycle reliability
 
-- [ ] AUD-026 Establish one persistence error contract across projects, segments,
+- [x] AUD-026 Establish one persistence error contract across projects, segments,
       TM, and TB.
 
   - Do not mutate shared stores permanently before a write succeeds unless a
@@ -161,6 +161,38 @@ every reopened task.
     split/join, fill, and TM/TB edits must all follow the same contract.
   - Inject transaction aborts and quota failures into route-level tests and
     verify UI state, modal state, notifications, and reload behavior.
+
+  Completed 2026-08-20; reviewer confirmation: Codex re-inspected every project,
+  segment, TM, and TB IndexedDB mutation caller before closure. Implementation
+  commit: `fix: make persisted mutations failure-atomic` (this task's commit).
+  Affected code includes `persistenceContract.ts`, `indexedDb.ts`, project and
+  segment mutation components, TM/TB libraries and editors, import/merge flows,
+  and new-project persistence. Candidate snapshots are now cloned, committed,
+  and only then published; failed transactions retain the previous store and
+  database value, keep retryable UI open, clear loading state, show one helpful
+  error, and never emit the corresponding success/info notification. Multi-
+  project writes now use one IndexedDB transaction instead of independently
+  committed batches.
+
+  Regression evidence: `persistenceContract.spec.ts` proves isolation and exact
+  rollback for quota and abort failures; `saveFileModsIndexedDb.spec.ts` proves a
+  failed project creation cannot mutate or publish the caller's collection; the
+  CAT route cases “keeps the project rename modal and snapshots unchanged after
+  a quota failure”, “does not publish a segment fill when its transaction
+  aborts”, and the failed TM/TB edit cases inject real object-store failures and
+  verify modal/editor state, stores, notifications, and an IndexedDB reload.
+  These tests fail against the pre-fix code because it published/mutated data
+  before transaction completion, closed retry UI, or emitted success after
+  failure.
+
+  Commands: `npm run test:unit -- --run` — 85 files passed, 1,098 tests passed,
+  11 conditional tests skipped; `npm run test:browser:smoke` — 1 file and 10
+  tests passed; `npm run lint` — formatting and ESLint passed; `npm run check` —
+  0 errors and 0 warnings; `npm run build` — production build completed. The
+  known Svelte `derived_inert` browser warning is outside this persistence item
+  and remains explicitly tracked by AUD-034. Lifecycle-safe flushing of the
+  final debounced textarea edit remains explicitly tracked by AUD-027; no other
+  limitation is known for the mutation classes closed here.
 
 - [ ] AUD-027 Guarantee the final debounced edit survives navigation and tab exit.
 

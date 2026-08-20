@@ -67,28 +67,37 @@
 		await processTbxFile(file);
 	}
 
-	async function mergeTbxFiles() {
-		let part1 = JSON.parse(JSON.stringify($singleTbData));
-		let part2 = JSON.parse(JSON.stringify(extractedTbxData));
-		combinedTbxData.entries.push(...part1.entries, ...part2.entries);
-		console.log("Merged data: ", combinedTbxData);
+	function mergeTbxFiles() {
+		if (!extractedTbxData) return;
+		const part1 = structuredClone($singleTbData);
+		const part2 = structuredClone(extractedTbxData);
+		combinedTbxData = {
+			name: "Merged TBX",
+			entries: [...part1.entries, ...part2.entries],
+		};
 	}
 
 	async function createNewProjectWithTbxFile() {
-		await mergeTbxFiles();
 		showLoading.set(true);
-		if (combinedTbxData.entries.length === 0) return;
-		// console.log("new tb: ", combinedTbxData);
-		await saveNewTbToIndexedDB(combinedTbxData);
-		const updatedTbData = await loadTbDataFromIndexedDB();
-		const newTb = updatedTbData[updatedTbData.length - 1];
-		// console.log("Newly saved TB:", newTb);
-		singleTbData.set(newTb);
-		tbIdSelected.set(newTb.id!);
-		editTb.set(true);
-		showTbxModal.set(false);
-		showLoading.set(false);
-		notifySuccess("Term Base merged successfully");
+		try {
+			mergeTbxFiles();
+			if (combinedTbxData.entries.length === 0)
+				throw new Error("The merged term base has no terminology entries.");
+			await saveNewTbToIndexedDB(combinedTbxData);
+			const updatedTbData = await loadTbDataFromIndexedDB();
+			const newTb = updatedTbData[updatedTbData.length - 1];
+			if (!newTb)
+				throw new Error("The merged term base could not be reopened.");
+			singleTbData.set(newTb);
+			tbIdSelected.set(newTb.id!);
+			editTb.set(true);
+			showTbxModal.set(false);
+			notifySuccess("Term base merged successfully");
+		} catch (error) {
+			notifyError(safeInputMessage(error));
+		} finally {
+			showLoading.set(false);
+		}
 	}
 </script>
 

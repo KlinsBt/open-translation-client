@@ -303,6 +303,7 @@ items:
 			seg1: ["One", "Two"],
 			seg2: ["Eins", "Zwei"],
 			checked: [false, false],
+			locked: [false, false],
 		}).translationData;
 		expect(combineSegmentData(duplicated, 0).error).toMatch(
 			/cannot be split or joined/,

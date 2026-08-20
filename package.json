@@ -16,6 +16,7 @@
 		"format": "prettier --write .",
 		"test:unit": "vitest",
 		"test:browser": "vitest --config vite.browser.config.ts --run",
+		"test:browser:smoke": "vitest --config vite.browser.config.ts --run src/routes/catApplication.browser.spec.ts",
 		"test": "npm run test:unit -- --run && npm run test:browser",
 		"verify": "npm run lint && npm run check && npm test && npm run build"
 	},

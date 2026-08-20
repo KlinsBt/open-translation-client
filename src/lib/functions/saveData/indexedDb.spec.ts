@@ -5,6 +5,7 @@ import {
 	createNeutralDocument,
 } from "$lib/formats/documentModel";
 import { assertLocalStorageCapacity, ensureProjectModels } from "./indexedDb";
+import { PROJECT_SCHEMA_VERSION } from "$lib/formats/persistenceMigrations";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -20,7 +21,7 @@ describe("neutral document persistence compatibility", () => {
 
 		ensureProjectModels(userData);
 		const document = userData.translationData.documentModel!;
-		expect(userData.schemaVersion).toBe(1);
+		expect(userData.schemaVersion).toBe(PROJECT_SCHEMA_VERSION);
 		expect(document.id).toBe("project-123");
 		expect(document.units.map((unit) => unit.id)).toEqual(["unit-1", "unit-2"]);
 		expect(

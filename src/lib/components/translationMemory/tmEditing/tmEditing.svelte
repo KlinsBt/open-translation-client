@@ -13,6 +13,7 @@
 		notifyError,
 	} from "$lib/components/notifications/toastStore";
 	import { filterWithSourceIndexes } from "$lib/components/resources/resourceFiltering";
+	import { persistedSnapshot } from "$lib/functions/saveData/persistenceContract";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -36,7 +37,8 @@
 	}
 
 	let editMode = $state(new Map());
-	let localTmData = $state({ ...$singleTmData });
+	let lastPersistedTm = $state(persistedSnapshot($singleTmData));
+	let localTmData = $state(persistedSnapshot($singleTmData));
 
 	let showModal: boolean = $state(false);
 	let showTuDeletionModal: boolean = $state(false);
@@ -63,12 +65,14 @@
 	);
 
 	async function toggleEditMode(key: string) {
-		const isEditing = !editMode.get(key);
-		editMode.set(key, isEditing);
-		editMode = new Map(editMode);
-
-		if (!isEditing) {
-			await persistTm("Entry saved", "info");
+		if (!editMode.get(key)) {
+			editMode.set(key, true);
+			editMode = new Map(editMode);
+			return;
+		}
+		if (await persistTm("Entry saved", "info")) {
+			editMode.set(key, false);
+			editMode = new Map(editMode);
 		}
 	}
 
@@ -80,19 +84,23 @@
 	async function persistTm(
 		message: string,
 		tone: "success" | "info" = "success",
-	) {
+	): Promise<boolean> {
 		const snapshot = $state.snapshot(localTmData);
-		singleTmData.set(snapshot);
 		try {
 			await updateTmOnIndexedDB(snapshot);
+			lastPersistedTm = persistedSnapshot(snapshot);
+			singleTmData.set(persistedSnapshot(snapshot));
 			if (tone === "info") notifyInfo(message);
 			else notifySuccess(message);
+			return true;
 		} catch (error) {
+			localTmData = persistedSnapshot($state.snapshot(lastPersistedTm));
 			notifyError(
 				error instanceof Error
 					? error.message
 					: "Could not save the translation memory.",
 			);
+			return false;
 		}
 	}
 
@@ -123,16 +131,18 @@
 
 	async function deleteTu(tuId: number) {
 		localTmData.terms.splice(tuId, 1);
-		showSegmentDeletionModal = false;
-		showModal = false;
-		await persistTm("Translation unit deleted", "info");
+		if (await persistTm("Translation unit deleted", "info")) {
+			showSegmentDeletionModal = false;
+			showModal = false;
+		}
 	}
 
 	async function deleteSegment(termId: number, segId: number) {
 		localTmData.terms[termId].target.splice(segId, 1);
-		showSegmentDeletionModal = false;
-		showModal = false;
-		await persistTm("Segment deleted", "info");
+		if (await persistTm("Segment deleted", "info")) {
+			showSegmentDeletionModal = false;
+			showModal = false;
+		}
 	}
 
 	function showTuDelModal(tuId: number) {

@@ -7,22 +7,32 @@
 		tbMatches,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { getTotalWordCount } from "$lib/functions/statistics";
-	import { notifyError } from "$lib/components/notifications/toastStore";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	async function fillTargetText(term: string) {
 		if (!$singleUserData) return console.log("Data not found");
 		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a term.");
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		if (newUserData.translationData.seg2[$selectedSegmentId] === "") {
 			newUserData.translationData.seg2[$selectedSegmentId] += term;
 		} else {
 			newUserData.translationData.seg2[$selectedSegmentId] += " " + term;
 		}
 
-		singleUserData.set(newUserData);
-		await updateTranslationOnIndexedDB($singleUserData);
-		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
+		try {
+			await updateTranslationOnIndexedDB(newUserData);
+			singleUserData.set(newUserData);
+			seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+			notifySuccess("Term inserted");
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "Could not insert this term.",
+			);
+		}
 	}
 
 	type RawNote = string | { type: string; text: string };

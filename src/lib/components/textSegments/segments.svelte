@@ -336,34 +336,35 @@
 		if (action) await action();
 	}
 
-	async function persistProject(project = $singleUserData) {
+	async function persistCandidate(project: typeof $singleUserData) {
 		try {
 			await updateTranslationOnIndexedDB(project);
+			singleUserData.set(project);
+			return true;
 		} catch (error) {
 			notifyError(
 				error instanceof Error ? error.message : "Could not save this project.",
 			);
+			return false;
 		}
 	}
 
 	async function lockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData.locked = newUserData.translationData.locked.map(
 			() => true,
 		);
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
+		await persistCandidate(newUserData);
 	}
 
 	async function unlockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData.locked = newUserData.translationData.locked.map(
 			() => false,
 		);
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
+		await persistCandidate(newUserData);
 	}
 
 	async function focusSegment(idx: number) {
@@ -408,14 +409,10 @@
 		if (!$singleUserData) return;
 		const total = $singleUserData.translationData.locked.length;
 		if (idx < 0 || idx >= total) return;
-		const newUserData = { ...$singleUserData };
-		newUserData.translationData.locked = [
-			...newUserData.translationData.locked,
-		];
+		const newUserData = structuredClone($singleUserData);
 		newUserData.translationData.locked[idx] =
 			!newUserData.translationData.locked[idx];
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
+		if (!(await persistCandidate(newUserData))) return;
 		notifyInfo(
 			`Segment ${idx + 1} ${newUserData.translationData.locked[idx] ? "locked" : "unlocked"}`,
 		);
@@ -423,12 +420,11 @@
 
 	async function confirmAllTranslatedSegments() {
 		if (!$singleUserData) return;
-		const newUserData = { ...$singleUserData };
+		const newUserData = structuredClone($singleUserData);
 		newUserData.translationData.checked = newUserData.translationData.seg2.map(
 			(target) => target.trim().length > 0,
 		);
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
+		if (!(await persistCandidate(newUserData))) return;
 		notifySuccess("All translated segments confirmed");
 	}
 
@@ -445,12 +441,10 @@
 		// Only fill if target is empty
 		if ($singleUserData.translationData.seg2[idx] !== "") return;
 
-		const newUserData = { ...$singleUserData };
-		newUserData.translationData.seg2 = [...newUserData.translationData.seg2];
+		const newUserData = structuredClone($singleUserData);
 		newUserData.translationData.seg2[idx] =
 			newUserData.translationData.seg1[idx];
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
+		if (!(await persistCandidate(newUserData))) return;
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 		notifySuccess(`Filled segment ${idx + 1}`);
 	}
@@ -492,8 +486,7 @@
 			return;
 		}
 		const newUserData = { ...$singleUserData, translationData: result.data };
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
+		if (!(await persistCandidate(newUserData))) return;
 		selectedSegmentId.set(idx + 1);
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
@@ -534,8 +527,7 @@
 		}
 
 		const newUserData = { ...$singleUserData, translationData: result.data };
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
+		if (!(await persistCandidate(newUserData))) return;
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 		combineSelection = new Set();
@@ -589,7 +581,7 @@
 
 	async function fillAllEmptySegments() {
 		if (!$singleUserData) return console.log("Data not found");
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData.seg2 = newUserData.translationData.seg2.map(
 			(segment, i) => {
 				if (segment === "" && !newUserData.translationData.locked[i])
@@ -597,24 +589,19 @@
 				return segment;
 			},
 		);
-		console.log(newUserData.translationData.seg2);
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
-		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
+		if (!(await persistCandidate(newUserData))) return;
+		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 	}
 
 	async function selectTmId(id: number | string, name: string) {
 		if (typeof id === "string") {
 			id = parseInt(id);
 		}
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData!.tm!.id = id;
 		newUserData.translationData!.tm!.name = name;
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
+		if (!(await persistCandidate(newUserData))) return;
 		singleTmData.set($tmData.find((data) => data.id === id) as TmData);
-		console.log(`Selected TM Name: ${name}`);
-		console.log(`Selected TM Id: ${id}`);
 		notifyInfo(`Translation Memory selected: ${name}`);
 	}
 
@@ -622,13 +609,11 @@
 		if (typeof id === "string") {
 			id = parseInt(id);
 		}
-		tbSelected = id;
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData!.tb!.id = id;
 		newUserData.translationData!.tb!.name = name;
-		singleUserData.set(newUserData);
-		await persistProject(newUserData);
-		console.log(`Selected TB Id: ${id}`);
+		if (!(await persistCandidate(newUserData))) return;
+		tbSelected = id;
 		notifyInfo(`Term Base selected: ${name}`);
 	}
 
@@ -686,35 +671,32 @@
 		openMenu.set(!$openMenu);
 	}
 
+	async function changeTmActive(active: boolean) {
+		const previous = $singleUserData.translationData.tm?.active ?? false;
+		const candidate = structuredClone($singleUserData);
+		if (candidate.translationData.tm)
+			candidate.translationData.tm.active = active;
+		if (!(await persistCandidate(candidate))) {
+			tmActive = previous;
+			return;
+		}
+		notifyInfo(`Translation Memory ${active ? "activated" : "deactivated"}`);
+	}
+
+	async function changeTbActive(active: boolean) {
+		const previous = $singleUserData.translationData.tb?.active ?? false;
+		const candidate = structuredClone($singleUserData);
+		candidate.translationData.tb.active = active;
+		if (!(await persistCandidate(candidate))) {
+			tbActive = previous;
+			return;
+		}
+		notifyInfo(`Term Base ${active ? "activated" : "deactivated"}`);
+	}
+
 	$effect(() => {
 		if ($selectedSegmentId !== null && $selectedSegmentId !== undefined) {
 			lastSelectedSegmentId = $selectedSegmentId;
-		}
-
-		if (tmActive !== $singleUserData.translationData.tm?.active) {
-			console.log("TM Active changed: ", tmActive);
-			let newUserData = { ...$singleUserData };
-			newUserData.translationData!.tm!.active = tmActive;
-			singleUserData.set(newUserData);
-			void persistProject(newUserData);
-			if (tmActive) {
-				notifySuccess(`Translation Memory activated`);
-			} else {
-				notifyError(`Translation Memory deactivated`);
-			}
-		}
-
-		if (tbActive !== $singleUserData.translationData.tb?.active) {
-			console.log("TB Active changed: ", tbActive);
-			let newUserData = { ...$singleUserData };
-			newUserData.translationData!.tb!.active = tbActive;
-			singleUserData.set(newUserData);
-			void persistProject(newUserData);
-			if (tbActive) {
-				notifySuccess(`Term Base activated`);
-			} else {
-				notifyError(`Term Base deactivated`);
-			}
 		}
 	});
 </script>
@@ -916,6 +898,7 @@
 					type="checkbox"
 					class="tm-checkbox"
 					bind:checked={tmActive}
+					onchange={() => changeTmActive(tmActive)}
 					title="Enable Translation Memory"
 				/>
 			</div>
@@ -974,6 +957,7 @@
 					type="checkbox"
 					class="tm-checkbox"
 					bind:checked={tbActive}
+					onchange={() => changeTbActive(tbActive)}
 					title="Enable Term Base"
 				/>
 			</div>

@@ -17,6 +17,7 @@ import {
 	importTmxStreaming,
 	importXliffProjectStreaming,
 } from "./streamingImporters";
+import { PROJECT_SCHEMA_VERSION } from "./persistenceMigrations";
 
 function textFile(text: string, name: string): File {
 	return new File([text], name, { type: "application/xml" });
@@ -249,7 +250,7 @@ describe("streaming CAT interchange importers", () => {
 			["project-2.0.xliff", buildXliff2_0(project)],
 		] as const) {
 			const result = await importXliffProjectStreaming(textFile(xml, name));
-			expect(result.data.schemaVersion).toBe(1);
+			expect(result.data.schemaVersion).toBe(PROJECT_SCHEMA_VERSION);
 			expect(result.data.id).toBe(42);
 			expect(result.data.translationData.seg1).toEqual(["Hello", "World"]);
 			expect(result.data.translationData.seg2).toEqual(["Hallo", "Welt"]);
@@ -261,17 +262,24 @@ describe("streaming CAT interchange importers", () => {
 		["project-1.2.xliff", buildXliff1_2(makeUserData())],
 		["project-2.0.xliff", buildXliff2_0(makeUserData())],
 	])("rejects a future Open TLC schema in %s", async (name, xml) => {
+		const futureVersion = PROJECT_SCHEMA_VERSION + 1;
 		const futureXml = xml
 			.replace(
-				"<sup:SchemaVersion>1</sup:SchemaVersion>",
-				"<sup:SchemaVersion>2</sup:SchemaVersion>",
+				`<sup:SchemaVersion>${PROJECT_SCHEMA_VERSION}</sup:SchemaVersion>`,
+				`<sup:SchemaVersion>${futureVersion}</sup:SchemaVersion>`,
 			)
-			.replace("&quot;schemaVersion&quot;:1", "&quot;schemaVersion&quot;:2")
-			.replace('type="schema_version">1<', 'type="schema_version">2<');
+			.replace(
+				`&quot;schemaVersion&quot;:${PROJECT_SCHEMA_VERSION}`,
+				`&quot;schemaVersion&quot;:${futureVersion}`,
+			)
+			.replace(
+				`type="schema_version">${PROJECT_SCHEMA_VERSION}<`,
+				`type="schema_version">${futureVersion}<`,
+			);
 
 		await expect(
 			importXliffProjectStreaming(textFile(futureXml, name)),
-		).rejects.toMatchObject({ code: "FUTURE_VERSION", version: 2 });
+		).rejects.toMatchObject({ code: "FUTURE_VERSION", version: futureVersion });
 	});
 
 	it("upgrades an older XLIFF backup that has no schema marker", async () => {
@@ -283,7 +291,7 @@ describe("streaming CAT interchange importers", () => {
 			textFile(legacyXml, "legacy.xliff"),
 		);
 
-		expect(result.data.schemaVersion).toBe(1);
+		expect(result.data.schemaVersion).toBe(PROJECT_SCHEMA_VERSION);
 		expect(result.data.translationData.seg1).toEqual(["Hello & welcome."]);
 	});
 });

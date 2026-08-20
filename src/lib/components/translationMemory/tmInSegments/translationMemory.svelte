@@ -20,13 +20,21 @@
 		if (!$singleUserData) return console.log("Data not found");
 		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a TM match.");
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData.seg2[$selectedSegmentId] = tm;
-		singleUserData.set(newUserData);
-		await updateTranslationOnIndexedDB($singleUserData);
-		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
-		showConfirmationModal = false;
-		notifySuccess("Segment filled from TM");
+		try {
+			await updateTranslationOnIndexedDB(newUserData);
+			singleUserData.set(newUserData);
+			seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+			showConfirmationModal = false;
+			notifySuccess("Segment filled from TM");
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not apply this TM match.",
+			);
+		}
 	}
 
 	async function checkIfConfirmationIsNeeded(tm: string) {
@@ -34,14 +42,21 @@
 		if (!$singleUserData) return console.log("Data not found");
 		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a TM match.");
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		if (newUserData.translationData.seg2[$selectedSegmentId] === "") {
 			newUserData.translationData.seg2[$selectedSegmentId] = tm;
-			singleUserData.set(newUserData);
-			await updateTranslationOnIndexedDB($singleUserData);
-			seg2WordCount.set(
-				getTotalWordCount($singleUserData.translationData.seg2),
-			);
+			try {
+				await updateTranslationOnIndexedDB(newUserData);
+				singleUserData.set(newUserData);
+				seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+				notifySuccess("Segment filled from TM");
+			} catch (error) {
+				notifyError(
+					error instanceof Error
+						? error.message
+						: "Could not apply this TM match.",
+				);
+			}
 		} else {
 			showConfirmationModal = true;
 		}

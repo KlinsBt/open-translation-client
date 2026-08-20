@@ -22,8 +22,10 @@ import {
 	loadTranslationsUserDataFromIndexedDB,
 	saveNewTbToIndexedDB,
 	saveNewTmToIndexedDB,
+	updateTranslationOnIndexedDB,
 } from "$lib/functions/saveData/indexedDb";
 import { makeUserData } from "../test/fixtures";
+import { toastStore } from "$lib/components/notifications/toastStore";
 
 let mounted: ReturnType<typeof mount> | null = null;
 
@@ -81,6 +83,7 @@ afterEach(async () => {
 	if (mounted) await unmount(mounted);
 	mounted = null;
 	document.body.replaceChildren();
+	for (const toast of get(toastStore)) toastStore.remove(toast.id);
 });
 
 describe("real CAT application route", () => {
@@ -310,7 +313,9 @@ describe("real CAT application route", () => {
 		]) {
 			const card = exportCard(label);
 			card.click();
-			await new Promise((resolve) => setTimeout(resolve, 75));
+			await new Promise((resolve) => {
+				setTimeout(resolve, 75);
+			});
 			await eventually(() =>
 				expect(document.body.textContent).toContain(
 					"Download permission was denied",
@@ -324,7 +329,9 @@ describe("real CAT application route", () => {
 			".modal-action-card.primary",
 		)!;
 		primary.click();
-		await new Promise((resolve) => setTimeout(resolve, 75));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 75);
+		});
 		await eventually(() =>
 			expect(document.body.textContent).toContain(
 				"Download permission was denied",
@@ -337,7 +344,9 @@ describe("real CAT application route", () => {
 			throw new DOMException("The operation was aborted.", "AbortError");
 		});
 		exportCard("Plain text").click();
-		await new Promise((resolve) => setTimeout(resolve, 75));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 75);
+		});
 		await eventually(() =>
 			expect(document.body.textContent).toContain("Export was cancelled"),
 		);
@@ -424,6 +433,197 @@ describe("real CAT application route", () => {
 			expect(document.querySelector("textarea")).toBeNull(),
 		);
 		expect(get(singleTbData).entries[0].terms[0].term).toBe("First term");
+		await deleteTbFromIndexedDB(seed);
+	});
+
+	it("keeps the project rename modal and snapshots unchanged after a quota failure", async () => {
+		const project = makeUserData({ name: "Persisted project" });
+		project.id = Date.now();
+		await updateTranslationOnIndexedDB(project);
+		openMenu.set(true);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Persisted project"),
+		);
+
+		button("Project options").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Continue translating"),
+		);
+		button("Project settings").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Rename project"),
+		);
+		button("Rename project").click();
+		await eventually(() =>
+			expect(
+				document.querySelector('.modal-field input[type="text"]'),
+			).not.toBeNull(),
+		);
+		const nameInput = document.querySelector<HTMLInputElement>(
+			'.modal-field input[type="text"]',
+		)!;
+		enterText(nameInput, "Unsaved project name");
+		const failedPut = vi
+			.spyOn(IDBObjectStore.prototype, "put")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Quota reached", "QuotaExceededError");
+			});
+		button("Save name").click();
+
+		await eventually(() =>
+			expect(document.body.textContent).toContain("available local storage"),
+		);
+		expect(document.body.textContent).toContain("Rename project");
+		expect(get(singleUserData).translationData.name).toBe("Persisted project");
+		expect(
+			(await loadTranslationsUserDataFromIndexedDB()).find(
+				(candidate) => candidate.id === project.id,
+			)?.translationData.name,
+		).toBe("Persisted project");
+		expect(
+			get(toastStore).some((toast) => toast.message.includes("updated")),
+		).toBe(false);
+		failedPut.mockRestore();
+		await deleteTranslationFromIndexedDB(project.id);
+	});
+
+	it("does not publish a segment fill when its transaction aborts", async () => {
+		const project = makeUserData({
+			name: "Abort-safe segment",
+			seg1: ["Source remains"],
+			seg2: [""],
+			checked: [false],
+			locked: [false],
+		});
+		project.id = Date.now();
+		await updateTranslationOnIndexedDB(project);
+		singleUserData.set(project);
+		selectedSegmentId.set(0);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+		const failedPut = vi
+			.spyOn(IDBObjectStore.prototype, "put")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Injected abort", "AbortError");
+			});
+		const segment = document.querySelector<HTMLElement>(
+			'[data-segment-id="0"]',
+		)!;
+		const fill = Array.from(segment.querySelectorAll("button")).find(
+			(element) => element.textContent?.trim().startsWith("Fill"),
+		) as HTMLButtonElement;
+		fill.click();
+
+		await eventually(() =>
+			expect(document.body.textContent).toContain("previous data is unchanged"),
+		);
+		expect(get(singleUserData).translationData.seg2).toEqual([""]);
+		expect(
+			(await loadTranslationsUserDataFromIndexedDB()).find(
+				(candidate) => candidate.id === project.id,
+			)?.translationData.seg2,
+		).toEqual([""]);
+		expect(
+			get(toastStore).some((toast) => toast.message.includes("Filled")),
+		).toBe(false);
+		failedPut.mockRestore();
+		await deleteTranslationFromIndexedDB(project.id);
+	});
+
+	it("rolls back a failed TM edit and keeps the editor open", async () => {
+		const seed = Date.now();
+		const memory = {
+			id: seed,
+			name: "Failure-safe memory",
+			terms: [
+				{
+					source: { lang: "en", segment: "Persisted source" },
+					target: [{ lang: "de", segment: "Persisted target" }],
+				},
+			],
+		};
+		await saveNewTmToIndexedDB(memory);
+		singleTmData.set(memory);
+		mounted = mount(TmEditing, { target: document.body });
+		button("Edit").click();
+		await tick();
+		enterText(
+			document.querySelector<HTMLTextAreaElement>("textarea")!,
+			"Lost edit",
+		);
+		const failedPut = vi
+			.spyOn(IDBObjectStore.prototype, "put")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Quota reached", "QuotaExceededError");
+			});
+		button("Save").click();
+
+		await eventually(() =>
+			expect(get(toastStore).some((toast) => toast.type === "error")).toBe(
+				true,
+			),
+		);
+		await eventually(() =>
+			expect(
+				document.querySelector<HTMLTextAreaElement>("textarea")?.value,
+			).toBe("Persisted source"),
+		);
+		expect(get(singleTmData).terms[0].source.segment).toBe("Persisted source");
+		expect((await getTmDataById(seed))?.terms[0].source.segment).toBe(
+			"Persisted source",
+		);
+		expect(
+			get(toastStore).some((toast) => toast.message === "Entry saved"),
+		).toBe(false);
+		failedPut.mockRestore();
+		await deleteTmFromIndexedDB(seed);
+	});
+
+	it("rolls back a failed TB edit and keeps the editor open", async () => {
+		const seed = Date.now();
+		const termBase = {
+			id: seed,
+			name: "Failure-safe terminology",
+			entries: [{ terms: [{ lang: "en", term: "Persisted term", notes: [] }] }],
+		};
+		await saveNewTbToIndexedDB(termBase);
+		singleTbData.set(termBase);
+		mounted = mount(TbEditing, { target: document.body });
+		button("Edit").click();
+		await tick();
+		enterText(
+			document.querySelector<HTMLTextAreaElement>("textarea")!,
+			"Lost term",
+		);
+		const failedPut = vi
+			.spyOn(IDBObjectStore.prototype, "put")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Injected abort", "AbortError");
+			});
+		button("Save").click();
+
+		await eventually(() =>
+			expect(get(toastStore).some((toast) => toast.type === "error")).toBe(
+				true,
+			),
+		);
+		await eventually(() =>
+			expect(
+				document.querySelector<HTMLTextAreaElement>("textarea")?.value,
+			).toBe("Persisted term"),
+		);
+		expect(get(singleTbData).entries[0].terms[0].term).toBe("Persisted term");
+		expect((await getTbDataById(seed))?.entries[0].terms[0].term).toBe(
+			"Persisted term",
+		);
+		expect(
+			get(toastStore).some((toast) => toast.message === "Entry saved"),
+		).toBe(false);
+		failedPut.mockRestore();
 		await deleteTbFromIndexedDB(seed);
 	});
 });

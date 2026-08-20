@@ -78,20 +78,28 @@
 	}
 
 	async function createNewProjectWithTmxFile() {
-		mergeTmxFiles();
 		showLoading.set(true);
-		if (combinedTmxData.terms.length === 0) return;
-		// console.log("new tm: ", combinedTmxData);
-		await saveNewTmToIndexedDB(combinedTmxData);
-		const updatedTmData = await loadTmDataFromIndexedDB();
-		const newTm = updatedTmData[updatedTmData.length - 1];
-		// console.log("Newly saved TM:", newTm);
-		singleTmData.set(newTm);
-		tmIdSelected.set(newTm.id!);
-		editTm.set(true);
-		showTmxModal.set(false);
-		showLoading.set(false);
-		notifySuccess("TMX files merged successfully");
+		try {
+			mergeTmxFiles();
+			if (combinedTmxData.terms.length === 0)
+				throw new Error(
+					"The merged translation memory has no translation units.",
+				);
+			await saveNewTmToIndexedDB(combinedTmxData);
+			const updatedTmData = await loadTmDataFromIndexedDB();
+			const newTm = updatedTmData[updatedTmData.length - 1];
+			if (!newTm)
+				throw new Error("The merged translation memory could not be reopened.");
+			singleTmData.set(newTm);
+			tmIdSelected.set(newTm.id!);
+			editTm.set(true);
+			showTmxModal.set(false);
+			notifySuccess("TMX files merged successfully");
+		} catch (error) {
+			notifyError(safeInputMessage(error));
+		} finally {
+			showLoading.set(false);
+		}
 	}
 </script>
 

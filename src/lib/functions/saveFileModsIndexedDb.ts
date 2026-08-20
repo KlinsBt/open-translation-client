@@ -111,9 +111,8 @@ export async function saveNewTranslationToUserDataFromText(
 			},
 		},
 	};
-	fullData.push(data);
 	await updateTranslationOnIndexedDB(data);
-	userData.set(fullData);
+	userData.set([...fullData, data]);
 }
 
 export async function saveNewTranslationToUserDataFromArrayOfStrings(
@@ -176,25 +175,24 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 			},
 		},
 	};
-	fullData.push(data);
 	await updateTranslationOnIndexedDB(data);
-	userData.set(fullData);
+	userData.set([...fullData, data]);
 }
 
 export async function saveNewTranslationToUserDataFromSaveFile(
 	fullData: UserData[],
 	data: UserData,
 ) {
-	Object.assign(data, migrateProjectData(data));
-	data.translationData.filterOptions = normalizeImportOptions(
-		data.translationData.type,
-		data.translationData.filterOptions,
+	const savedData = structuredClone(migrateProjectData(data));
+	savedData.translationData.filterOptions = normalizeImportOptions(
+		savedData.translationData.type,
+		savedData.translationData.filterOptions,
 	);
-	if (!data.translationData.parsingTokens) {
-		data.translationData.parsingTokens = getDefaultTokens();
+	if (!savedData.translationData.parsingTokens) {
+		savedData.translationData.parsingTokens = getDefaultTokens();
 	}
-	if (!data.translationData.documentModel) {
-		const translation = data.translationData;
+	if (!savedData.translationData.documentModel) {
+		const translation = savedData.translationData;
 		translation.documentModel = createNeutralDocument({
 			format: translation.type,
 			documentId: `project-${translation.creationDate}`,
@@ -205,7 +203,6 @@ export async function saveNewTranslationToUserDataFromSaveFile(
 			targetLanguage: translation.targetLang,
 		});
 	}
-	fullData.push(data);
-	await updateTranslationOnIndexedDB(data);
-	userData.set(fullData);
+	await updateTranslationOnIndexedDB(savedData);
+	userData.set([...fullData, savedData]);
 }

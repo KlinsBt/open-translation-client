@@ -88,28 +88,46 @@
 
 	async function createNewProjectWithTmxFile() {
 		showLoading.set(true);
-		if (!extractedTmxData) return;
-		let tm: TmData = JSON.parse(JSON.stringify(extractedTmxData));
-		delete tm.id;
-		await saveNewTmToIndexedDB(tm);
-		const updatedTmData = await loadTmDataFromIndexedDB();
-		const newTm = updatedTmData[updatedTmData.length - 1];
-		singleTmData.set(newTm);
-		tmIdSelected.set(newTm.id!);
-		editTm.set(true);
-		showTmxModal.set(false);
-		// showLoading.set(false);
+		try {
+			if (!extractedTmxData) throw new Error("Choose a TMX file first.");
+			let tm: TmData = structuredClone(extractedTmxData);
+			delete tm.id;
+			await saveNewTmToIndexedDB(tm);
+			const updatedTmData = await loadTmDataFromIndexedDB();
+			const newTm = updatedTmData[updatedTmData.length - 1];
+			singleTmData.set(newTm);
+			tmIdSelected.set(newTm.id!);
+			editTm.set(true);
+			showTmxModal.set(false);
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not import the TMX file.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
-	function updateExistingProjectWithTmxFile() {
+	async function updateExistingProjectWithTmxFile() {
 		showLoading.set(true);
-		if (!extractedTmxData) return;
-		updateTmOnIndexedDB(extractedTmxData);
-		singleTmData.set(extractedTmxData);
-		editTm.set(true);
-		showTmxModal.set(false);
-		tmxDataIdExists = false;
-		showLoading.set(false);
+		try {
+			if (!extractedTmxData) throw new Error("Choose a TMX file first.");
+			await updateTmOnIndexedDB(extractedTmxData);
+			singleTmData.set(structuredClone(extractedTmxData));
+			editTm.set(true);
+			showTmxModal.set(false);
+			tmxDataIdExists = false;
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not replace this memory.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	function cancelOverwrite() {
@@ -148,7 +166,11 @@
 			editTm.set(true);
 			showTmxModal.set(false);
 		} catch (error) {
-			console.error("Error saving TM:", error);
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not create this memory.",
+			);
 		} finally {
 			showLoading.set(false);
 			temporarySaveName = "";

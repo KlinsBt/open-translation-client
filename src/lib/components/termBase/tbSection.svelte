@@ -118,11 +118,20 @@
 	async function handleTbDeletion() {
 		if ($tbIdSelected === undefined) return;
 		await setLoadingAndRender();
-		await deleteTbFromIndexedDB($tbIdSelected);
-		showDeletionConfirmationModal = false;
-		showTbxModal.set(false);
-		showLoading.set(false);
-		notifyError("Term Base deleted");
+		try {
+			await deleteTbFromIndexedDB($tbIdSelected);
+			showDeletionConfirmationModal = false;
+			showTbxModal.set(false);
+			notifyInfo("Term Base deleted");
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not delete this term base.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	async function downloadTbx(id: number) {
@@ -166,15 +175,24 @@
 		console.log("Updating File Name to:", newName);
 		let tempTb = { ...$tbData.find((tb) => tb.id === $tbIdSelected)! };
 		tempTb.name = newName;
-		await updateTbOnIndexedDB(tempTb).then(() => {
-			showLoading.update((v) => false);
-		});
-		newFileName = "";
-		renameFileWindow = false;
-		showSelectModal = false;
-		mergeTbModal = false;
-		showTbxModal.set(false);
-		notifyInfo("Term Base name updated");
+		try {
+			await updateTbOnIndexedDB(tempTb);
+			await loadTbDataFromIndexedDB();
+			newFileName = "";
+			renameFileWindow = false;
+			showSelectModal = false;
+			mergeTbModal = false;
+			showTbxModal.set(false);
+			notifyInfo("Term Base name updated");
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not rename this term base.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	function getUniqueTargetLanguages(tb: TbData) {

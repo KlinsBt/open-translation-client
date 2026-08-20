@@ -17,11 +17,11 @@ import {
 	validateDocumentSkeleton,
 } from "$lib/formats/skeleton";
 import { normalizeImportOptions } from "$lib/formats/options";
-import { processInBatches } from "$lib/formats/streaming";
 import {
 	migrateProjectData,
 	migrateTbData,
 	migrateTmData,
+	PROJECT_SCHEMA_VERSION,
 } from "$lib/formats/persistenceMigrations";
 import {
 	tbData,
@@ -59,10 +59,14 @@ function completeTransaction(transaction: IDBTransaction): Promise<void> {
 	});
 }
 
-function storageError(error: unknown): Error {
+export function storageError(error: unknown): Error {
 	if (error instanceof DOMException && error.name === "QuotaExceededError")
 		return new Error(
 			"This project exceeds the browser's available local storage. Free browser storage or import a smaller file, then try again.",
+		);
+	if (error instanceof DOMException && error.name === "AbortError")
+		return new Error(
+			"The browser cancelled the local save. Your previous data is unchanged; please try again.",
 		);
 	return error instanceof Error
 		? error
@@ -256,32 +260,37 @@ export async function saveNewTranslationToIndexedDB(
 	fileTypeRef: TypeRef,
 ): Promise<void> {
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(DB_USER_STORE_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_USER_STORE_NAME);
-		const newUserData = ensureProjectModels(
-			migrateProjectData({
-				translationData: {
-					name: tempSaveName,
-					targetLang,
-					sourceLang,
-					creationDate,
-					seg1: textSegments1,
-					seg2: textSegments2,
-					checked: checkedSegments,
-					locked: checkedSegments.map(() => false),
-					type: fileType,
-					typeRef: fileTypeRef,
-					parsingTokens: getDefaultTokens(),
-					tm: { id: null, name: null, active: false },
-					tb: { id: null, name: null, active: false },
-				},
-			}),
-		);
-		store.add(newUserData);
 		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(
+				DB_USER_STORE_NAME,
+				"readwrite",
+				{
+					durability: DURABILITY,
+				},
+			);
+			const store = transaction.objectStore(DB_USER_STORE_NAME);
+			const newUserData = ensureProjectModels(
+				migrateProjectData({
+					schemaVersion: PROJECT_SCHEMA_VERSION,
+					translationData: {
+						name: tempSaveName,
+						targetLang,
+						sourceLang,
+						creationDate,
+						seg1: textSegments1,
+						seg2: textSegments2,
+						checked: checkedSegments,
+						locked: checkedSegments.map(() => false),
+						type: fileType,
+						typeRef: fileTypeRef,
+						parsingTokens: getDefaultTokens(),
+						tm: { id: null, name: null, active: false },
+						tb: { id: null, name: null, active: false },
+					},
+				}),
+			);
+			store.add(newUserData);
 			await completeTransaction(transaction);
 			await loadTranslationsUserDataFromIndexedDB();
 		} catch (error) {
@@ -296,16 +305,10 @@ export async function updateAllTranslationsOnIndexedDB(
 ): Promise<void> {
 	const snapshot = structuredClone(fullUserData);
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
 		try {
-			await processInBatches(
-				snapshot,
-				async (batch) => {
-					for (const data of batch) ensureProjectModels(data);
-					await writeTranslationBatch(database, batch);
-				},
-				{ batchSize: INDEXED_DB_WRITE_BATCH_SIZE },
-			);
+			const database = await openDatabase();
+			for (const data of snapshot) ensureProjectModels(data);
+			await writeTranslationBatch(database, snapshot);
 			await loadTranslationsUserDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
@@ -334,13 +337,17 @@ export async function updateTranslationOnIndexedDB(
 	const snapshot = structuredClone(userData);
 	ensureProjectModels(snapshot);
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(DB_USER_STORE_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_USER_STORE_NAME);
-		store.put(snapshot);
 		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(
+				DB_USER_STORE_NAME,
+				"readwrite",
+				{
+					durability: DURABILITY,
+				},
+			);
+			const store = transaction.objectStore(DB_USER_STORE_NAME);
+			store.put(snapshot);
 			await completeTransaction(transaction);
 		} catch (error) {
 			throw storageError(error);
@@ -352,14 +359,21 @@ export async function deleteTranslationFromIndexedDB(
 	id: number,
 ): Promise<void> {
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(DB_USER_STORE_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_USER_STORE_NAME);
-		store.delete(id);
-		await completeTransaction(transaction);
-		await loadTranslationsUserDataFromIndexedDB();
+		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(
+				DB_USER_STORE_NAME,
+				"readwrite",
+				{
+					durability: DURABILITY,
+				},
+			);
+			transaction.objectStore(DB_USER_STORE_NAME).delete(id);
+			await completeTransaction(transaction);
+			await loadTranslationsUserDataFromIndexedDB();
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 
@@ -441,59 +455,69 @@ export async function getTmDataById(id: number): Promise<TmData | null> {
 }
 
 export async function saveNewTmToIndexedDB(tm: TmData): Promise<void> {
-	Object.assign(tm, migrateTmData(tm));
-	const cleanTm = structuredClone(tm);
+	const cleanTm = structuredClone(migrateTmData(tm));
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(DB_TM_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_TM_NAME);
-		store.add(cleanTm);
-		await completeTransaction(transaction);
-		await loadTmDataFromIndexedDB();
+		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(DB_TM_NAME, "readwrite", {
+				durability: DURABILITY,
+			});
+			const store = transaction.objectStore(DB_TM_NAME);
+			store.add(cleanTm);
+			await completeTransaction(transaction);
+			await loadTmDataFromIndexedDB();
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 
 export async function updateTmOnIndexedDB(tm: TmData): Promise<void> {
-	Object.assign(tm, migrateTmData(tm));
-	const cleanTm = structuredClone(tm);
+	const cleanTm = structuredClone(migrateTmData(tm));
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(DB_TM_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_TM_NAME);
-		store.put(cleanTm);
-		await completeTransaction(transaction);
+		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(DB_TM_NAME, "readwrite", {
+				durability: DURABILITY,
+			});
+			const store = transaction.objectStore(DB_TM_NAME);
+			store.put(cleanTm);
+			await completeTransaction(transaction);
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 
 export async function deleteTmFromIndexedDB(id: number): Promise<void> {
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(
-			[DB_TM_NAME, DB_USER_STORE_NAME],
-			"readwrite",
-			{
-				durability: DURABILITY,
-			},
-		);
-		transaction.objectStore(DB_TM_NAME).delete(id);
-		const projects = transaction.objectStore(DB_USER_STORE_NAME);
-		const request = projects.getAll();
-		request.onsuccess = () => {
-			for (const project of request.result as UserData[]) {
-				if (project.translationData.tm?.id !== id) continue;
-				project.translationData.tm = { id: null, name: null, active: false };
-				projects.put(project);
-			}
-		};
-		await completeTransaction(transaction);
-		await Promise.all([
-			loadTmDataFromIndexedDB(),
-			loadTranslationsUserDataFromIndexedDB(),
-		]);
+		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(
+				[DB_TM_NAME, DB_USER_STORE_NAME],
+				"readwrite",
+				{
+					durability: DURABILITY,
+				},
+			);
+			transaction.objectStore(DB_TM_NAME).delete(id);
+			const projects = transaction.objectStore(DB_USER_STORE_NAME);
+			const request = projects.getAll();
+			request.onsuccess = () => {
+				for (const project of request.result as UserData[]) {
+					if (project.translationData.tm?.id !== id) continue;
+					project.translationData.tm = { id: null, name: null, active: false };
+					projects.put(project);
+				}
+			};
+			await completeTransaction(transaction);
+			await Promise.all([
+				loadTmDataFromIndexedDB(),
+				loadTranslationsUserDataFromIndexedDB(),
+			]);
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 ////////////////////////////////////////////////////////////////////////////////////
@@ -580,59 +604,69 @@ export async function getTbDataById(id: number): Promise<TbData | null> {
 }
 
 export async function saveNewTbToIndexedDB(tb: TbData): Promise<void> {
-	Object.assign(tb, migrateTbData(tb));
-	const cleanTb = structuredClone(tb);
+	const cleanTb = structuredClone(migrateTbData(tb));
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(DB_TB_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_TB_NAME);
-		store.add(cleanTb);
-		await completeTransaction(transaction);
-		await loadTbDataFromIndexedDB();
+		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(DB_TB_NAME, "readwrite", {
+				durability: DURABILITY,
+			});
+			const store = transaction.objectStore(DB_TB_NAME);
+			store.add(cleanTb);
+			await completeTransaction(transaction);
+			await loadTbDataFromIndexedDB();
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 
 export async function updateTbOnIndexedDB(tb: TbData): Promise<void> {
-	Object.assign(tb, migrateTbData(tb));
-	const cleanTb = structuredClone(tb);
+	const cleanTb = structuredClone(migrateTbData(tb));
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(DB_TB_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_TB_NAME);
-		store.put(cleanTb);
-		await completeTransaction(transaction);
+		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(DB_TB_NAME, "readwrite", {
+				durability: DURABILITY,
+			});
+			const store = transaction.objectStore(DB_TB_NAME);
+			store.put(cleanTb);
+			await completeTransaction(transaction);
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 
 export async function deleteTbFromIndexedDB(id: number): Promise<void> {
 	return enqueueWrite(async () => {
-		const database = await openDatabase();
-		const transaction = database.transaction(
-			[DB_TB_NAME, DB_USER_STORE_NAME],
-			"readwrite",
-			{
-				durability: DURABILITY,
-			},
-		);
-		transaction.objectStore(DB_TB_NAME).delete(id);
-		const projects = transaction.objectStore(DB_USER_STORE_NAME);
-		const request = projects.getAll();
-		request.onsuccess = () => {
-			for (const project of request.result as UserData[]) {
-				if (project.translationData.tb?.id !== id) continue;
-				project.translationData.tb = { id: null, name: null, active: false };
-				projects.put(project);
-			}
-		};
-		await completeTransaction(transaction);
-		await Promise.all([
-			loadTbDataFromIndexedDB(),
-			loadTranslationsUserDataFromIndexedDB(),
-		]);
+		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(
+				[DB_TB_NAME, DB_USER_STORE_NAME],
+				"readwrite",
+				{
+					durability: DURABILITY,
+				},
+			);
+			transaction.objectStore(DB_TB_NAME).delete(id);
+			const projects = transaction.objectStore(DB_USER_STORE_NAME);
+			const request = projects.getAll();
+			request.onsuccess = () => {
+				for (const project of request.result as UserData[]) {
+					if (project.translationData.tb?.id !== id) continue;
+					project.translationData.tb = { id: null, name: null, active: false };
+					projects.put(project);
+				}
+			};
+			await completeTransaction(transaction);
+			await Promise.all([
+				loadTbDataFromIndexedDB(),
+				loadTranslationsUserDataFromIndexedDB(),
+			]);
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 ////////////////////////////////////////////////////////////////////////////////////

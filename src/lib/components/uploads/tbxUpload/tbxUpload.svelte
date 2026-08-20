@@ -86,30 +86,46 @@
 
 	async function createNewProjectWithTbxFile() {
 		showLoading.set(true);
-		if (!extractedTbxData) return;
-		let tb: TbData = JSON.parse(JSON.stringify(extractedTbxData));
-		console.log("New TB: ", tb);
-		delete tb.id;
-		await saveNewTbToIndexedDB(tb);
-		const updatedTbData = await loadTbDataFromIndexedDB();
-		const newTb = updatedTbData[updatedTbData.length - 1];
-		console.log("Newly saved TB:", newTb);
-		singleTbData.set(newTb);
-		tbIdSelected.set(newTb.id!);
-		editTb.set(true);
-		showTbxModal.set(false);
-		// showLoading.set(false);
+		try {
+			if (!extractedTbxData) throw new Error("Choose a TBX file first.");
+			let tb: TbData = structuredClone(extractedTbxData);
+			delete tb.id;
+			await saveNewTbToIndexedDB(tb);
+			const updatedTbData = await loadTbDataFromIndexedDB();
+			const newTb = updatedTbData[updatedTbData.length - 1];
+			singleTbData.set(newTb);
+			tbIdSelected.set(newTb.id!);
+			editTb.set(true);
+			showTbxModal.set(false);
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not import the TBX file.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
-	function updateExistingProjectWithTbxFile() {
+	async function updateExistingProjectWithTbxFile() {
 		showLoading.set(true);
-		if (!extractedTbxData) return;
-		updateTbOnIndexedDB(extractedTbxData);
-		singleTbData.set(extractedTbxData);
-		editTb.set(true);
-		showTbxModal.set(false);
-		tbxDataIdExists = false;
-		showLoading.set(false);
+		try {
+			if (!extractedTbxData) throw new Error("Choose a TBX file first.");
+			await updateTbOnIndexedDB(extractedTbxData);
+			singleTbData.set(structuredClone(extractedTbxData));
+			editTb.set(true);
+			showTbxModal.set(false);
+			tbxDataIdExists = false;
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not replace this term base.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	function cancelOverwrite() {
@@ -146,7 +162,11 @@
 			editTb.set(true);
 			showTbxModal.set(false);
 		} catch (error) {
-			console.error("Error saving TB:", error);
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not create this term base.",
+			);
 		} finally {
 			showLoading.set(false);
 			temporarySaveName = "";

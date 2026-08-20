@@ -30,6 +30,16 @@
 		notifyError,
 	} from "$lib/components/notifications/toastStore";
 	import type { ProjectViewMode } from "../projectDashboard";
+	import { commitPersistedMutation } from "$lib/functions/saveData/persistenceContract";
+
+	function publishProject(project: UserData) {
+		singleUserData.set(project);
+		userData.update((projects) =>
+			projects.map((candidate) =>
+				candidate.id === project.id ? project : candidate,
+			),
+		);
+	}
 
 	let optionsOpen: boolean = $state(false);
 	let editNameWindow: boolean = $state(false);
@@ -126,11 +136,13 @@
 		console.log("Updating file name to: ", newName);
 		if (!$singleUserData) return console.log("Data not found");
 		if (!newName.trim()) return notifyError("Enter a project name.");
-		let newUserData = $singleUserData;
-		newUserData.translationData.name = newName.trim();
-		singleUserData.set(newUserData);
 		try {
-			await updateTranslationOnIndexedDB($singleUserData);
+			const updated = await commitPersistedMutation(
+				$singleUserData,
+				(candidate) => (candidate.translationData.name = newName.trim()),
+				updateTranslationOnIndexedDB,
+			);
+			publishProject(updated);
 			editNameWindow = false;
 			show = false;
 			notifyInfo("Project name updated");
@@ -149,12 +161,16 @@
 			notifyError("Source and target languages must be different");
 			return;
 		}
-		let newUserData = $singleUserData;
-		newUserData.translationData.sourceLang = newSourceLang;
-		newUserData.translationData.targetLang = newTargetLang;
-		singleUserData.set(newUserData);
 		try {
-			await updateTranslationOnIndexedDB($singleUserData);
+			const updated = await commitPersistedMutation(
+				$singleUserData,
+				(candidate) => {
+					candidate.translationData.sourceLang = newSourceLang;
+					candidate.translationData.targetLang = newTargetLang;
+				},
+				updateTranslationOnIndexedDB,
+			);
+			publishProject(updated);
 			editLanguagesWindow = false;
 			show = false;
 			notifyInfo("Project languages updated");

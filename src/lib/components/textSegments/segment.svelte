@@ -23,6 +23,7 @@
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
 	import { getSplitOffsetFromSelection } from "$lib/functions/parsing/segmentSelection";
+	import { commitPersistedMutation } from "$lib/functions/saveData/persistenceContract";
 
 	let {
 		id,
@@ -109,14 +110,31 @@
 		return parts;
 	});
 
-	function toggleLockSegment() {
-		if (locked) {
-			locked = false;
-			return updateSegmentLock();
-		} else {
-			locked = true;
-			return updateSegmentLock();
+	async function commitProjectMutation(
+		mutate: (project: typeof $singleUserData) => void,
+	) {
+		try {
+			const updated = await commitPersistedMutation(
+				$singleUserData,
+				mutate,
+				updateTranslationOnIndexedDB,
+			);
+			singleUserData.set(updated);
+			return updated;
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "Could not save this project.",
+			);
+			return undefined;
 		}
+	}
+
+	async function toggleLockSegment() {
+		const nextLocked = !locked;
+		const updated = await commitProjectMutation(
+			(project) => (project.translationData.locked[id] = nextLocked),
+		);
+		if (updated) locked = nextLocked;
 	}
 
 	async function toggleSegmentConfirmation() {
@@ -124,11 +142,11 @@
 			notifyError("Add a target translation before confirming this segment.");
 			return;
 		}
-		confirmed = !confirmed;
-		const newUserData = $singleUserData;
-		newUserData.translationData.checked[id] = confirmed;
-		singleUserData.set(newUserData);
-		await persistProject();
+		const nextConfirmed = !confirmed;
+		const updated = await commitProjectMutation(
+			(project) => (project.translationData.checked[id] = nextConfirmed),
+		);
+		if (updated) confirmed = nextConfirmed;
 	}
 
 	async function persistProject() {
@@ -162,19 +180,10 @@
 		void flushProjectSave();
 	});
 
-	async function updateSegmentLock() {
-		if (!$singleUserData) return console.log("Data not found");
-		let newUserData = $singleUserData;
-		newUserData.translationData.locked[id] = locked;
-		singleUserData.set(newUserData);
-		await persistProject();
-		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
-	}
-
 	function updateSegmentText() {
 		selectedSegmentId.set(id);
 		if (!$singleUserData) return console.log("Data not found");
-		let newUserData = $singleUserData;
+		let newUserData = structuredClone($singleUserData);
 		newUserData.translationData.seg2[id] = textSegment2;
 		if (newUserData.translationData.checked[id]) {
 			newUserData.translationData.checked[id] = false;
@@ -190,11 +199,13 @@
 		if (locked) return notifyError("Unlock this segment before changing it.");
 		if (textSegment1 === "") return console.log("No text to add");
 		if (textSegment2 !== "") return console.log("Target segment is not empty");
-		let newUserData = $singleUserData;
-		newUserData.translationData.seg2[id] = textSegment1;
-		singleUserData.set(newUserData);
-		await persistProject();
-		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
+		const updated = await commitProjectMutation(
+			(project) => (project.translationData.seg2[id] = textSegment1),
+		);
+		if (updated) {
+			textSegment2 = textSegment1;
+			seg2WordCount.set(getTotalWordCount(updated.translationData.seg2));
+		}
 	}
 
 	// function fillAllEmptySegments() {
@@ -346,7 +357,7 @@
 		if (locked) return notifyError("Unlock this segment before changing it.");
 		if (!validTmActive || !$singleTmData?.terms)
 			return notifyError("Choose an available translation memory first.");
-		let localTmData = $singleTmData;
+		let localTmData = structuredClone($singleTmData);
 		console.log("Local TM Data: ", localTmData);
 		console.log("sourceLang: ", sourceLang);
 		console.log("targetLang: ", targetLang);
@@ -364,10 +375,17 @@
 				},
 			],
 		});
-		singleTmData.set(localTmData);
-		console.log("SingleTmData: ", $singleTmData);
-		await updateTmOnIndexedDB($singleTmData);
-		notifySuccess("Translation unit added to TM successfully!");
+		try {
+			await updateTmOnIndexedDB(localTmData);
+			singleTmData.set(localTmData);
+			notifySuccess("Translation unit added to TM successfully!");
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not add this translation unit.",
+			);
+		}
 	}
 </script>
 

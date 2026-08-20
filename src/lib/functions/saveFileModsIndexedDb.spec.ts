@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { get } from "svelte/store";
 import { createNeutralDocument } from "$lib/formats/documentModel";
 import { createSkeletonFromLegacy } from "$lib/formats/skeleton";
 
@@ -12,6 +13,7 @@ import {
 	saveNewTranslationToUserDataFromArrayOfStrings,
 	saveNewTranslationToUserDataFromText,
 } from "./saveFileModsIndexedDb";
+import { userData } from "./saveData/stores.svelte";
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -126,5 +128,30 @@ describe("new-project neutral model persistence", () => {
 			fragments: [{ kind: "text", text: "Hallo" }],
 			language: "de",
 		});
+	});
+
+	it("does not mutate or publish the project collection when persistence fails", async () => {
+		const existing = { id: 7, translationData: { name: "Existing" } } as any;
+		const projects = [existing];
+		const original = structuredClone(projects);
+		userData.set(projects);
+		mocks.update.mockRejectedValueOnce(
+			new DOMException("Quota reached", "QuotaExceededError"),
+		);
+
+		await expect(
+			saveNewTranslationToUserDataFromArrayOfStrings(
+				projects,
+				"Unsaved",
+				"en",
+				"de",
+				"999",
+				["Never published"],
+				"text",
+			),
+		).rejects.toThrow("Quota reached");
+
+		expect(projects).toEqual(original);
+		expect(get(userData)).toEqual(original);
 	});
 });

@@ -121,11 +121,20 @@
 	async function handleTmDeletion() {
 		if ($tmIdSelected === undefined) return;
 		await setLoadingAndRender();
-		await deleteTmFromIndexedDB($tmIdSelected);
-		showDeletionConfirmationModal = false;
-		showTmxModal.set(false);
-		showLoading.set(false);
-		notifyError("Translation Memory deleted");
+		try {
+			await deleteTmFromIndexedDB($tmIdSelected);
+			showDeletionConfirmationModal = false;
+			showTmxModal.set(false);
+			notifyInfo("Translation Memory deleted");
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not delete this memory.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	async function downloadTmx(id: number) {
@@ -168,15 +177,24 @@
 		console.log("Updating File Name to:", newName);
 		let tempTm = { ...$tmData.find((tm) => tm.id === $tmIdSelected)! };
 		tempTm.name = newName;
-		await updateTmOnIndexedDB(tempTm).then(() => {
-			showLoading.update((v) => false);
-		});
-		newFileName = "";
-		renameFileWindow = false;
-		showSelectModal = false;
-		mergeTmModal = false;
-		showTmxModal.set(false);
-		notifyInfo("Translation Memory name updated");
+		try {
+			await updateTmOnIndexedDB(tempTm);
+			await loadTmDataFromIndexedDB();
+			newFileName = "";
+			renameFileWindow = false;
+			showSelectModal = false;
+			mergeTmModal = false;
+			showTmxModal.set(false);
+			notifyInfo("Translation Memory name updated");
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not rename this memory.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	function getUniqueTargetLanguages(tm: TmData) {

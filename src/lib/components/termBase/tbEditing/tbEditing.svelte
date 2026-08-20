@@ -13,6 +13,7 @@
 		notifyError,
 	} from "$lib/components/notifications/toastStore";
 	import { filterWithSourceIndexes } from "$lib/components/resources/resourceFiltering";
+	import { persistedSnapshot } from "$lib/functions/saveData/persistenceContract";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -36,7 +37,8 @@
 	}
 
 	let editMode = $state(new Map());
-	let localTbData = $state({ ...$singleTbData });
+	let lastPersistedTb = $state(persistedSnapshot($singleTbData));
+	let localTbData = $state(persistedSnapshot($singleTbData));
 
 	let showModal: boolean = $state(false);
 	let selectedTbId: number = $state(0);
@@ -58,12 +60,14 @@
 	);
 
 	async function toggleEditMode(key: string) {
-		const isEditing = !editMode.get(key);
-		editMode.set(key, isEditing);
-		editMode = new Map(editMode);
-
-		if (!isEditing) {
-			await persistTb("Entry saved", "info");
+		if (!editMode.get(key)) {
+			editMode.set(key, true);
+			editMode = new Map(editMode);
+			return;
+		}
+		if (await persistTb("Entry saved", "info")) {
+			editMode.set(key, false);
+			editMode = new Map(editMode);
 		}
 	}
 
@@ -75,19 +79,23 @@
 	async function persistTb(
 		message: string,
 		tone: "success" | "info" = "success",
-	) {
+	): Promise<boolean> {
 		const snapshot = $state.snapshot(localTbData);
-		singleTbData.set(snapshot);
 		try {
 			await updateTbOnIndexedDB(snapshot);
+			lastPersistedTb = persistedSnapshot(snapshot);
+			singleTbData.set(persistedSnapshot(snapshot));
 			if (tone === "info") notifyInfo(message);
 			else notifySuccess(message);
+			return true;
 		} catch (error) {
+			localTbData = persistedSnapshot($state.snapshot(lastPersistedTb));
 			notifyError(
 				error instanceof Error
 					? error.message
 					: "Could not save the term base.",
 			);
+			return false;
 		}
 	}
 
@@ -160,8 +168,7 @@
 
 	async function deleteTermUnit(unitId: number) {
 		localTbData.entries.splice(unitId, 1);
-		showModal = false;
-		await persistTb("Term unit deleted", "info");
+		if (await persistTb("Term unit deleted", "info")) showModal = false;
 	}
 
 	async function deleteEntry(unitId: number, termId: number) {
@@ -169,8 +176,7 @@
 		if (localTbData.entries[unitId].terms.length === 0) {
 			return deleteTermUnit(unitId);
 		}
-		showModal = false;
-		await persistTb("Entry deleted", "info");
+		if (await persistTb("Entry deleted", "info")) showModal = false;
 	}
 
 	function ShowModal(termId: number, trgId: number) {
