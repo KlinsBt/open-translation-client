@@ -102,10 +102,13 @@ export function downloadVendorXliff(userData: UserData): VendorXliffOutput {
 	const anchor = document.createElement("a");
 	anchor.href = url;
 	anchor.download = output.fileName;
-	document.body.appendChild(anchor);
-	anchor.click();
-	anchor.remove();
-	URL.revokeObjectURL(url);
+	try {
+		document.body.appendChild(anchor);
+		anchor.click();
+	} finally {
+		anchor.remove();
+		URL.revokeObjectURL(url);
+	}
 	return output;
 }
 

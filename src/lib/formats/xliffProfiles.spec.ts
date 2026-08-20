@@ -308,7 +308,8 @@ describe("vendor XLIFF profiles", () => {
 		expect(uploadUi).toContain(".xlif");
 		expect(uploadUi).toContain(".mqxlf");
 		expect(uploadUi).toContain("same-profile export");
-		expect(exportUi).toContain("handleVendorXliffSaveFileDownload");
+		expect(exportUi).toContain("downloadVendorXliff");
+		expect(exportUi).toContain("completeExport");
 		expect(exportUi).toContain("vendorXliffProfile.label");
 		expect(landingPage).toContain("SUPPORT_FORMAT_GROUPS");
 		expect(supportCatalog).toContain('"legacy-bilingual"');

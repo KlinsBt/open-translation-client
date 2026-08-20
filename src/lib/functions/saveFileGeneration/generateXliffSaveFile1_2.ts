@@ -1,7 +1,6 @@
 import type { UserData } from "$lib/types/types";
 import { migrateProjectData } from "$lib/formats/persistenceMigrations";
 import { buildXliff12 } from "$lib/formats/xliff12";
-import { notifyError } from "$lib/components/notifications/toastStore";
 
 export function buildXliff1_2(userData: UserData): string {
 	return buildXliff12(migrateProjectData(userData));
@@ -13,23 +12,16 @@ async function generateXliffFileDownload(xliffData: string, name: string) {
 	const anchor = document.createElement("a");
 	anchor.href = url;
 	anchor.download = `${name}.xliff`;
-	document.body.appendChild(anchor);
-	anchor.click();
-	document.body.removeChild(anchor);
-	URL.revokeObjectURL(url);
+	try {
+		document.body.appendChild(anchor);
+		anchor.click();
+	} finally {
+		anchor.remove();
+		URL.revokeObjectURL(url);
+	}
 }
 
 export async function generateXliffSaveFile1_2(userData: UserData) {
-	try {
-		const xliffContent = buildXliff1_2(userData);
-		await generateXliffFileDownload(
-			xliffContent,
-			userData.translationData.name,
-		);
-	} catch (error) {
-		notifyError(
-			error instanceof Error ? error.message : "Failed to export XLIFF 1.2.",
-		);
-		console.error("Failed to generate XLIFF save file:", error);
-	}
+	const xliffContent = buildXliff1_2(userData);
+	await generateXliffFileDownload(xliffContent, userData.translationData.name);
 }

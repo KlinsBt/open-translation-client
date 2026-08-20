@@ -43,6 +43,7 @@ import {
 	migrateProjectData,
 	migrateTbData,
 	migrateTmData,
+	PROJECT_SCHEMA_VERSION,
 } from "./persistenceMigrations";
 
 export interface StreamingImportResult<T> {
@@ -358,9 +359,11 @@ export async function importXliffProjectStreaming(
 			: state.name;
 	return {
 		data: migrateProjectData({
-			...(state.schemaVersion === undefined
+			...(state.schemaVersion === undefined && state.hasOpenTlcMetadata
 				? {}
-				: { schemaVersion: state.schemaVersion }),
+				: {
+						schemaVersion: state.schemaVersion ?? PROJECT_SCHEMA_VERSION,
+					}),
 			...(Number.isFinite(numericId) ? { id: numericId } : {}),
 			translationData: {
 				name: projectName,
@@ -394,6 +397,7 @@ interface XliffHeaderState {
 	sourceLang: string;
 	targetLang: string;
 	checked: boolean[];
+	hasOpenTlcMetadata: boolean;
 	type: string;
 	typeRef: UserData["translationData"]["typeRef"];
 	tm: UserData["translationData"]["tm"];
@@ -407,6 +411,7 @@ function extractXliff2Header(
 	metrics: XmlRecordScanResult,
 ): XliffHeaderState {
 	const values = new Map<string, string>();
+	let hasOpenTlcMetadata = false;
 	const metadataXml = findClosedElement(metrics.header, "metadata");
 	if (metadataXml) {
 		const metadata = parseXmlRecord(metadataXml, metrics.namespaceDeclarations);
@@ -416,6 +421,7 @@ function extractXliff2Header(
 					"metaGroup" &&
 				element.getAttribute("category") === "open_tlc_metadata",
 		);
+		hasOpenTlcMetadata = openTlcGroup !== undefined;
 		for (const meta of Array.from(
 			openTlcGroup?.getElementsByTagName("*") ?? [],
 		).filter(
@@ -432,6 +438,7 @@ function extractXliff2Header(
 		sourceLang: root.getAttribute("srcLang") ?? "",
 		targetLang: root.getAttribute("trgLang") ?? "",
 		checked: parseJsonOr(values.get("checked"), []),
+		hasOpenTlcMetadata,
 		type: values.get("type") || "text",
 		typeRef: parseJsonOr(values.get("type_ref"), {}),
 		tm: parseJsonOr(values.get("tm"), inactiveResource()),
@@ -481,6 +488,7 @@ function extractXliff12Header(
 		sourceLang: file.getAttribute("source-language") ?? "",
 		targetLang: file.getAttribute("target-language") ?? "",
 		checked: parseJsonOr(value("Checked", "checked"), []),
+		hasOpenTlcMetadata: projectNote !== undefined || info !== undefined,
 		type: value("Type", "type") || "text",
 		typeRef: parseJsonOr(value("TypeRef", "typeRef"), {}),
 		tm: parseJsonOr(value("Tm", "tm"), inactiveResource()),

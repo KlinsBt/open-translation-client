@@ -141,8 +141,13 @@ export async function downloadConvertedTranslation(
 	const { blob, fileName } = await buildConvertedTranslation(project, format);
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement("a");
-	link.href = url;
-	link.download = fileName;
-	link.click();
-	setTimeout(() => URL.revokeObjectURL(url), 0);
+	try {
+		link.href = url;
+		link.download = fileName;
+		document.body.appendChild(link);
+		link.click();
+	} finally {
+		link.remove();
+		URL.revokeObjectURL(url);
+	}
 }

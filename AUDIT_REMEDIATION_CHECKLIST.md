@@ -131,13 +131,23 @@ every reopened task.
   Evidence: `persistenceMigrations.spec.ts`, `segmentationLogic.spec.ts`,
   `workflowState.spec.ts`, and the real-browser CAT route lock regression.
 
-- [ ] AUD-025 Make translated-source export failure retryable.
+- [x] AUD-025 Make translated-source export failure retryable.
+
   - Export functions must return success or throw; they may not swallow a failure
     that callers interpret as success.
   - Keep the export modal open after failure, show one actionable error, and only
     close it after a download is successfully created.
   - Cover original-format, converted PDF/DOCX/RTF/HTML/TXT/CSV, vendor XLIFF, and
     cancellation failures in browser tests.
+
+  Completed 2026-08-20. All export-modal actions now share a single success-or-
+  failure contract: failures and cancellations leave the modal open with one
+  actionable inline alert, while the modal closes only after the download
+  trigger succeeds. JSON and XLIFF download helpers no longer swallow errors,
+  download URLs/anchors are cleaned in `finally`, and original-format and
+  converted writers propagate failures. Browser regressions exercise the
+  original writer, PDF/DOCX/RTF/HTML/TXT/CSV conversions, XLIFF 1.2/2.0/2.1,
+  same-profile vendor XLIFF, cancellation, and a successful retry.
 
 ### Persistence and lifecycle reliability
 

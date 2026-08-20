@@ -16,12 +16,13 @@ async function generateJsonFileDownload(jsonData: string, name: string) {
 	a.download = `${name}.json`;
 
 	// Appends the element, triggers the download, and removes the element
-	document.body.appendChild(a);
-	a.click();
-	document.body.removeChild(a);
-
-	// Revokes the URL to release memory
-	URL.revokeObjectURL(url);
+	try {
+		document.body.appendChild(a);
+		a.click();
+	} finally {
+		a.remove();
+		URL.revokeObjectURL(url);
+	}
 }
 
 export function buildJsonSaveFile(userData: UserData): string {
@@ -29,13 +30,9 @@ export function buildJsonSaveFile(userData: UserData): string {
 }
 
 export async function generateJsonSaveFile(userData: UserData) {
-	try {
-		const stringifiedData = buildJsonSaveFile(userData);
-		await generateJsonFileDownload(
-			stringifiedData,
-			userData.translationData.name,
-		);
-	} catch (error) {
-		console.error("Failed to generate JSON save file:", error);
-	}
+	const stringifiedData = buildJsonSaveFile(userData);
+	await generateJsonFileDownload(
+		stringifiedData,
+		userData.translationData.name,
+	);
 }

@@ -232,6 +232,8 @@
 	let showTmAddModal: boolean = $state(false);
 	let showTbAddModal: boolean = $state(false);
 	let pendingDeliveryExport: (() => Promise<void>) | null = $state(null);
+	let exportInProgress = $state(false);
+	let exportError: string | null = $state(null);
 	let completionWarning = $derived(
 		getProjectCompletionSummary($singleUserData),
 	);
@@ -273,70 +275,47 @@
 		}
 	}
 
-	function handleJsonSaveFileDownload() {
-		if (!$singleUserData) return console.log("Data not found");
-		generateJsonSaveFile($singleUserData);
+	function exportFailureMessage(error: unknown): string {
+		if (error instanceof DOMException && error.name === "AbortError")
+			return "Export was cancelled. Your project is unchanged; choose a format to try again.";
+		const detail = error instanceof Error ? error.message.trim() : "";
+		return detail
+			? `${detail} Your project is unchanged; correct the problem and retry.`
+			: "The file could not be exported. Your project is unchanged; try again.";
 	}
 
-	function handleXliff2_0SaveFileDownload() {
-		if (!$singleUserData) return console.log("Data not found");
-		generateXliffSaveFile2_0($singleUserData);
-	}
-
-	function handleXliff2_1SaveFileDownload() {
-		if (!$singleUserData) return console.log("Data not found");
-		generateXliffSaveFile2_1($singleUserData);
-	}
-
-	function handleXliff1_2SaveFileDownload() {
-		if (!$singleUserData) return console.log("Data not found");
-		generateXliffSaveFile1_2($singleUserData);
-	}
-
-	function handleVendorXliffSaveFileDownload() {
+	async function completeExport(
+		action: () => Promise<unknown> | unknown,
+		successMessage: string,
+	) {
+		if (exportInProgress) return;
+		exportError = null;
+		exportInProgress = true;
 		try {
-			const output = downloadVendorXliff($singleUserData);
+			await action();
+			pendingDeliveryExport = null;
 			showSaveFileModal = false;
-			notifySuccess(`${output.profile.label} exported`);
+			notifySuccess(successMessage);
 		} catch (error) {
-			notifyError(
-				error instanceof Error
-					? error.message
-					: "The vendor XLIFF file could not be exported.",
-			);
-		}
-	}
-
-	async function handleTranslationFileExport() {
-		try {
-			await functionCreateExportFile($singleUserData);
-			notifySuccess("Translation file exported");
-		} catch (error) {
-			notifyError(
-				error instanceof Error
-					? error.message
-					: "The translation file could not be exported.",
-			);
+			pendingDeliveryExport = null;
+			exportError = exportFailureMessage(error);
+		} finally {
+			exportInProgress = false;
 		}
 	}
 
 	async function exportTranslatedSourceAndClose() {
-		await handleTranslationFileExport();
-		showSaveFileModal = false;
+		await completeExport(
+			() => functionCreateExportFile($singleUserData),
+			"Translation file exported",
+		);
 	}
 
 	async function exportConvertedFile(format: ConvertedExportFormat) {
-		try {
-			await downloadConvertedTranslation($singleUserData, format);
-			showSaveFileModal = false;
-			notifySuccess(`${format.toUpperCase()} file exported`);
-		} catch (error) {
-			notifyError(
-				error instanceof Error
-					? error.message
-					: `The ${format.toUpperCase()} file could not be exported.`,
-			);
-		}
+		await completeExport(
+			() => downloadConvertedTranslation($singleUserData, format),
+			`${format.toUpperCase()} file exported`,
+		);
 	}
 
 	async function requestDeliveryExport(action: () => Promise<void>) {
@@ -680,6 +659,8 @@
 	}
 
 	async function toggleSaveFileModal() {
+		exportError = null;
+		pendingDeliveryExport = null;
 		showSaveFileModal = true;
 	}
 
@@ -742,6 +723,12 @@
 
 {#snippet exportMenu()}
 	<div class="modal-stack">
+		{#if exportError}
+			<div class="export-error" role="alert">
+				<strong>Export did not finish</strong>
+				<span>{exportError}</span>
+			</div>
+		{/if}
 		<div class="export-group-heading">
 			<strong>Translated document</strong>
 			<span>Export the completed translation for delivery.</span>
@@ -749,6 +736,7 @@
 		{#if translationExportAvailable}
 			<button
 				class="modal-action-card primary"
+				disabled={exportInProgress}
 				onclick={() => requestDeliveryExport(exportTranslatedSourceAndClose)}
 			>
 				<span class="modal-action-icon">FILE</span>
@@ -775,6 +763,7 @@
 			{#each CONVERTED_EXPORTS as exportOption}
 				<button
 					class="modal-action-card converted-export-card"
+					disabled={exportInProgress}
 					onclick={() =>
 						requestDeliveryExport(() =>
 							exportConvertedFile(exportOption.format),
@@ -799,10 +788,12 @@
 		</div>
 		<button
 			class="modal-action-card"
-			onclick={() => {
-				handleJsonSaveFileDownload();
-				showSaveFileModal = false;
-			}}
+			disabled={exportInProgress}
+			onclick={() =>
+				completeExport(
+					() => generateJsonSaveFile($singleUserData),
+					"Open TLC project exported",
+				)}
 		>
 			<span class="modal-action-icon">JSON</span>
 			<span class="modal-action-text"
@@ -815,7 +806,12 @@
 		{#if vendorXliffProfile}
 			<button
 				class="modal-action-card primary"
-				onclick={handleVendorXliffSaveFileDownload}
+				disabled={exportInProgress}
+				onclick={() =>
+					completeExport(
+						() => downloadVendorXliff($singleUserData),
+						`${vendorXliffProfile.label} exported`,
+					)}
 			>
 				<span class="modal-action-icon"
 					>{vendorXliffProfile.sourceExtension?.toUpperCase() ?? "XLF"}</span
@@ -831,10 +827,12 @@
 		{:else}
 			<button
 				class="modal-action-card"
-				onclick={() => {
-					handleXliff1_2SaveFileDownload();
-					showSaveFileModal = false;
-				}}
+				disabled={exportInProgress}
+				onclick={() =>
+					completeExport(
+						() => generateXliffSaveFile1_2($singleUserData),
+						"XLIFF 1.2 project exported",
+					)}
 			>
 				<span class="modal-action-icon">1.2</span>
 				<span class="modal-action-text"
@@ -846,10 +844,12 @@
 			</button>
 			<button
 				class="modal-action-card"
-				onclick={() => {
-					handleXliff2_0SaveFileDownload();
-					showSaveFileModal = false;
-				}}
+				disabled={exportInProgress}
+				onclick={() =>
+					completeExport(
+						() => generateXliffSaveFile2_0($singleUserData),
+						"XLIFF 2.0 project exported",
+					)}
 			>
 				<span class="modal-action-icon">2.0</span>
 				<span class="modal-action-text"
@@ -861,10 +861,12 @@
 			</button>
 			<button
 				class="modal-action-card"
-				onclick={() => {
-					handleXliff2_1SaveFileDownload();
-					showSaveFileModal = false;
-				}}
+				disabled={exportInProgress}
+				onclick={() =>
+					completeExport(
+						() => generateXliffSaveFile2_1($singleUserData),
+						"XLIFF 2.1 project exported",
+					)}
 			>
 				<span class="modal-action-icon">2.1</span>
 				<span class="modal-action-text"
@@ -1330,6 +1332,23 @@
 </div>
 
 <style>
+	.export-error {
+		display: grid;
+		gap: 0.2rem;
+		border: 1px solid #e9a9a9;
+		border-left: 4px solid #bf3434;
+		border-radius: 0.65rem;
+		padding: 0.75rem 0.85rem;
+		background: #fff5f5;
+		color: #7d2424;
+		font-size: 0.74rem;
+		line-height: 1.45;
+	}
+
+	.export-error strong {
+		font-size: 0.8rem;
+	}
+
 	.export-group-heading {
 		display: grid;
 		gap: 0.2rem;

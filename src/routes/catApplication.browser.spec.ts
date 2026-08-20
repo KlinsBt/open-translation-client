@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount, tick, unmount } from "svelte";
 import { get } from "svelte/store";
 import AppRoute from "./(app)/app/+page.svelte";
@@ -257,6 +257,96 @@ describe("real CAT application route", () => {
 		);
 		expect(saved?.translationData.seg1).toEqual(["Hello browser"]);
 		if (saved?.id !== undefined) await deleteTranslationFromIndexedDB(saved.id);
+	});
+
+	it("keeps every delivery option retryable after download or cancellation failure", async () => {
+		const project = makeUserData({
+			name: "retryable-export",
+			seg1: ["Source"],
+			seg2: ["Target"],
+			checked: [true],
+			locked: [false],
+			type: "text",
+			typeRef: "Source",
+		});
+		project.id = 9402;
+		singleUserData.set(project);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+
+		const clickFailure = vi
+			.spyOn(HTMLAnchorElement.prototype, "click")
+			.mockImplementation(() => {
+				throw new Error("Download permission was denied.");
+			});
+		button("Export translation").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Export files"),
+		);
+
+		const exportCard = (label: string) => {
+			const heading = Array.from(
+				document.querySelectorAll<HTMLElement>(".modal-action-card strong"),
+			).find((element) => element.textContent?.trim() === label);
+			const card = heading?.closest("button");
+			if (!(card instanceof HTMLButtonElement))
+				throw new Error(`Export card ${label} was not found.`);
+			return card;
+		};
+
+		for (const label of [
+			"PDF document",
+			"Word document",
+			"Rich Text Format",
+			"Web page",
+			"Plain text",
+			"Bilingual CSV",
+			"XLIFF 1.2",
+			"XLIFF 2.0",
+			"XLIFF 2.1",
+		]) {
+			const card = exportCard(label);
+			card.click();
+			await new Promise((resolve) => setTimeout(resolve, 75));
+			await eventually(() =>
+				expect(document.body.textContent).toContain(
+					"Download permission was denied",
+				),
+			);
+			await eventually(() => expect(card.disabled).toBe(false));
+			expect(document.body.textContent).toContain("Export files");
+		}
+
+		const primary = document.querySelector<HTMLButtonElement>(
+			".modal-action-card.primary",
+		)!;
+		primary.click();
+		await new Promise((resolve) => setTimeout(resolve, 75));
+		await eventually(() =>
+			expect(document.body.textContent).toContain(
+				"Download permission was denied",
+			),
+		);
+		await eventually(() => expect(primary.disabled).toBe(false));
+		expect(document.body.textContent).toContain("Export files");
+
+		clickFailure.mockImplementation(() => {
+			throw new DOMException("The operation was aborted.", "AbortError");
+		});
+		exportCard("Plain text").click();
+		await new Promise((resolve) => setTimeout(resolve, 75));
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Export was cancelled"),
+		);
+
+		clickFailure.mockImplementation(() => undefined);
+		exportCard("Plain text").click();
+		await eventually(() =>
+			expect(document.body.textContent).not.toContain("Export files"),
+		);
 	});
 
 	it("edits the displayed TM record after filtering without corrupting another record", async () => {

@@ -34,7 +34,7 @@ describe("translation output builders", () => {
 		const metadata = doc.getElementsByTagName("mda:metadata")[0];
 
 		expect(metadata.namespaceURI).toBe("urn:oasis:names:tc:xliff:metadata:2.0");
-		expect(output).toContain('type="schema_version">1</mda:meta>');
+		expect(output).toContain('type="schema_version">2</mda:meta>');
 		expect(validateXliff2_0Data(doc)).toBe(true);
 	});
 

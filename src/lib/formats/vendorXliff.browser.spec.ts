@@ -71,4 +71,20 @@ describe("FF-503 browser-native vendor XLIFF workflows", () => {
 		expect(reparsed.querySelector("parsererror")).toBeNull();
 		expect(reparsed.documentElement.localName).toBe("xliff");
 	});
+
+	it("propagates a failed vendor download so the export UI can stay retryable", async () => {
+		const imported = await importXliffProjectStreaming(
+			xliffFile(memoqFixture, "retry.mqxlf"),
+		);
+		vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:failed-vendor");
+		vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+		vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {
+			throw new Error("Download blocked");
+		});
+
+		expect(() => downloadVendorXliff(imported.data)).toThrow(
+			"Download blocked",
+		);
+		expect(document.querySelector('a[href="blob:failed-vendor"]')).toBeNull();
+	});
 });
