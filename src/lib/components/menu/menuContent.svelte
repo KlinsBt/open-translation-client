@@ -21,7 +21,8 @@
 	import {
 		filterProjects,
 		getNextProjectSort,
-		parseProjectViewMode,
+		loadProjectViewMode,
+		saveProjectViewMode,
 		type ProjectSortState,
 		type ProjectViewMode,
 	} from "./projectDashboard";
@@ -56,9 +57,7 @@
 		}
 		parsingPreferences = loadParsingPreferences();
 
-		viewMode = parseProjectViewMode(
-			localStorage.getItem("opentlc-project-view"),
-		);
+		viewMode = loadProjectViewMode();
 	});
 
 	function applySort() {
@@ -86,7 +85,7 @@
 
 	function changeViewMode(mode: ProjectViewMode) {
 		viewMode = mode;
-		localStorage.setItem("opentlc-project-view", mode);
+		saveProjectViewMode(mode);
 	}
 </script>
 

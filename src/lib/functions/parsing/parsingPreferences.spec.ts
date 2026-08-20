@@ -33,6 +33,23 @@ describe("parsing preferences", () => {
 		expect(warning).toHaveBeenCalledOnce();
 	});
 
+	it("falls back safely when browser storage access is denied", () => {
+		const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+		vi.stubGlobal("localStorage", {
+			getItem: () => {
+				throw new DOMException("denied", "SecurityError");
+			},
+			setItem: () => {
+				throw new DOMException("quota", "QuotaExceededError");
+			},
+		});
+		expect(loadParsingPreferences()).toEqual([
+			expect.objectContaining({ id: "default", active: true }),
+		]);
+		expect(() => saveParsingPreferences([])).not.toThrow();
+		expect(warning).toHaveBeenCalled();
+	});
+
 	it("adds, selects, updates, and deletes a custom preference", () => {
 		let preferences = addParsingPreference("Paragraph", [" || ", ""]);
 		const custom = preferences.find(

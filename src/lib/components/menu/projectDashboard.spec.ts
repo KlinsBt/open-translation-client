@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { UserData } from "$lib/types/types";
 import {
 	filterProjects,
 	getNextProjectSort,
+	loadProjectViewMode,
 	parseProjectViewMode,
+	saveProjectViewMode,
 } from "./projectDashboard";
 
 function project(
@@ -73,5 +75,19 @@ describe("project dashboard view preferences", () => {
 	it("restores the classic and table alternatives", () => {
 		expect(parseProjectViewMode("classic")).toBe("classic");
 		expect(parseProjectViewMode("table")).toBe("table");
+	});
+
+	it("falls back without breaking the dashboard when storage throws", () => {
+		vi.stubGlobal("window", {});
+		vi.stubGlobal("localStorage", {
+			getItem: () => {
+				throw new DOMException("denied", "SecurityError");
+			},
+			setItem: () => {
+				throw new DOMException("quota", "QuotaExceededError");
+			},
+		});
+		expect(loadProjectViewMode()).toBe("cards");
+		expect(saveProjectViewMode("table")).toBe(false);
 	});
 });

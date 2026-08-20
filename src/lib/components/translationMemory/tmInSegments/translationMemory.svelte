@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Modal from "$lib/components/modal.svelte";
-	import { updateTranslationOnIndexedDB } from "$lib/functions/saveData/indexedDb";
 	import {
 		tmMatches,
 		seg2WordCount,
@@ -12,20 +11,30 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
+	import type { UserData } from "$lib/types/types";
 
-	let showConfirmationModal: boolean = false;
-	let tempTargetText: string = "";
+	let {
+		onPersistProjectMutation,
+	}: {
+		onPersistProjectMutation: (
+			mutate: (project: UserData) => void,
+		) => Promise<UserData | undefined>;
+	} = $props();
+
+	let showConfirmationModal: boolean = $state(false);
+	let tempTargetText: string = $state("");
 
 	async function fillTargetText(tm: string) {
 		if (!$singleUserData) return;
 		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a TM match.");
-		let newUserData = structuredClone($singleUserData);
-		newUserData.translationData.seg2[$selectedSegmentId] = tm;
 		try {
-			await updateTranslationOnIndexedDB(newUserData);
-			singleUserData.set(newUserData);
-			seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+			const updated = await onPersistProjectMutation((project) => {
+				project.translationData.seg2[$selectedSegmentId] = tm;
+				project.translationData.checked[$selectedSegmentId] = false;
+			});
+			if (!updated) return;
+			seg2WordCount.set(getTotalWordCount(updated.translationData.seg2));
 			showConfirmationModal = false;
 			notifySuccess("Segment filled from TM");
 		} catch (error) {
@@ -42,13 +51,14 @@
 		if (!$singleUserData) return;
 		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a TM match.");
-		let newUserData = structuredClone($singleUserData);
-		if (newUserData.translationData.seg2[$selectedSegmentId] === "") {
-			newUserData.translationData.seg2[$selectedSegmentId] = tm;
+		if ($singleUserData.translationData.seg2[$selectedSegmentId] === "") {
 			try {
-				await updateTranslationOnIndexedDB(newUserData);
-				singleUserData.set(newUserData);
-				seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+				const updated = await onPersistProjectMutation((project) => {
+					project.translationData.seg2[$selectedSegmentId] = tm;
+					project.translationData.checked[$selectedSegmentId] = false;
+				});
+				if (!updated) return;
+				seg2WordCount.set(getTotalWordCount(updated.translationData.seg2));
 				notifySuccess("Segment filled from TM");
 			} catch (error) {
 				notifyError(

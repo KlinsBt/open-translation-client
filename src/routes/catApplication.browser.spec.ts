@@ -299,14 +299,18 @@ describe("real CAT application route", () => {
 		);
 		expect(get(singleUserData).translationData.checked).toEqual([false]);
 
-		enterText(
-			segment.querySelector<HTMLTextAreaElement>("textarea")!,
-			"Target",
-		);
+		for (const value of ["T", "Tar", "Target"]) {
+			enterText(segment.querySelector<HTMLTextAreaElement>("textarea")!, value);
+		}
 		segmentButton("Confirm").click();
-		await eventually(() =>
-			expect(get(singleUserData).translationData.checked).toEqual([true]),
-		);
+		await eventuallyAsync(async () => {
+			expect(get(singleUserData).translationData.checked).toEqual([true]);
+			const saved = (await loadTranslationsUserDataFromIndexedDB()).find(
+				(candidate) => candidate.id === project.id,
+			);
+			expect(saved?.translationData.seg2).toEqual(["Target"]);
+			expect(saved?.translationData.checked).toEqual([true]);
+		});
 		expect(segmentButton("Confirmed")).not.toBeDisabled();
 
 		segment
@@ -342,6 +346,96 @@ describe("real CAT application route", () => {
 				(candidate) => candidate.id === project.id,
 			);
 			expect(saved?.translationData.seg2).toEqual(["Edited target"]);
+			expect(saved?.translationData.checked).toEqual([false]);
+		});
+
+		await deleteTranslationFromIndexedDB(project.id);
+	});
+
+	it("invalidates confirmation after applying TM and TB content", async () => {
+		const resourceId = Date.now();
+		const project = makeUserData({
+			name: "Review invalidation",
+			sourceLang: "English (en)",
+			targetLang: "German (de)",
+			seg1: ["Save file"],
+			seg2: ["Altes Ziel"],
+			checked: [true],
+			locked: [false],
+			tm: { id: resourceId, name: "Editor memory", active: true },
+			tb: { id: resourceId, name: "Editor terms", active: true },
+		});
+		project.id = resourceId + 1;
+		const memory = {
+			id: resourceId,
+			name: "Editor memory",
+			terms: [
+				{
+					source: { lang: "en", segment: "Save file" },
+					target: [{ lang: "de", segment: "Datei speichern" }],
+				},
+			],
+		};
+		const termBase = {
+			id: resourceId,
+			name: "Editor terms",
+			entries: [
+				{
+					terms: [
+						{ lang: "en", term: "file", notes: [] },
+						{ lang: "de", term: "Datei", notes: [] },
+					],
+				},
+			],
+		};
+		await updateTranslationOnIndexedDB(project);
+		singleUserData.set(project);
+		tmData.set([memory]);
+		tbData.set([termBase]);
+		selectedSegmentId.set(0);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector("textarea")).not.toBeNull(),
+		);
+		document.querySelector<HTMLTextAreaElement>("textarea")!.focus();
+		await eventually(() =>
+			expect(
+				document.querySelector(".segment-memory-container"),
+			).not.toBeNull(),
+		);
+
+		document
+			.querySelector<HTMLButtonElement>(".segment-memory-container")!
+			.click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Replace the current target"),
+		);
+		button("Use TM match").click();
+		await eventuallyAsync(async () => {
+			const saved = (await loadTranslationsUserDataFromIndexedDB()).find(
+				(candidate) => candidate.id === project.id,
+			);
+			expect(saved?.translationData.seg2).toEqual(["Datei speichern"]);
+			expect(saved?.translationData.checked).toEqual([false]);
+		});
+
+		const segment = document.querySelector<HTMLElement>(
+			'[data-segment-id="0"]',
+		)!;
+		const confirm = Array.from(segment.querySelectorAll("button")).find(
+			(candidate) => candidate.textContent?.trim() === "Confirm",
+		) as HTMLButtonElement;
+		confirm.click();
+		await eventually(() =>
+			expect(get(singleUserData).translationData.checked).toEqual([true]),
+		);
+		document.querySelector<HTMLButtonElement>(".tb-sub-container")!.click();
+		await eventuallyAsync(async () => {
+			const saved = (await loadTranslationsUserDataFromIndexedDB()).find(
+				(candidate) => candidate.id === project.id,
+			);
+			expect(saved?.translationData.seg2).toEqual(["Datei speichern Datei"]);
 			expect(saved?.translationData.checked).toEqual([false]);
 		});
 

@@ -50,7 +50,7 @@
 	import TbxUpload from "../uploads/tbxUpload/tbxUpload.svelte";
 	import TmEditing from "../translationMemory/tmEditing/tmEditing.svelte";
 	import TbEditing from "../termBase/tbEditing/tbEditing.svelte";
-	import type { TbData, TmData } from "$lib/types/types";
+	import type { TbData, TmData, UserData } from "$lib/types/types";
 	import {
 		notifySuccess,
 		notifyInfo,
@@ -239,12 +239,15 @@
 		getProjectCompletionSummary($singleUserData),
 	);
 	let combineSelection: Set<number> = $state(new Set());
+	let persistenceFailureCount = 0;
 	const projectEditQueue = createPersistedEditQueue(
 		$singleUserData,
 		updateTranslationOnIndexedDB,
 		{
 			onFailure(error, committed) {
+				persistenceFailureCount += 1;
 				singleUserData.set(committed);
+				seg1WordCount.set(getTotalWordCount(committed.translationData.seg1));
 				seg2WordCount.set(getTotalWordCount(committed.translationData.seg2));
 				notifyError(
 					error instanceof Error
@@ -351,19 +354,23 @@
 		if (action) await action();
 	}
 
-	async function persistCandidate(project: typeof $singleUserData) {
-		try {
-			await projectEditQueue.flush();
-			await updateTranslationOnIndexedDB(project);
-			singleUserData.set(project);
-			projectEditQueue.markCommitted(project);
-			return true;
-		} catch (error) {
-			notifyError(
-				error instanceof Error ? error.message : "Could not save this project.",
-			);
-			return false;
-		}
+	async function persistCandidate(project: UserData) {
+		const failureCount = persistenceFailureCount;
+		singleUserData.set(project);
+		seg1WordCount.set(getTotalWordCount(project.translationData.seg1));
+		seg2WordCount.set(getTotalWordCount(project.translationData.seg2));
+		void projectEditQueue.schedule(project);
+		await projectEditQueue.flush();
+		return persistenceFailureCount === failureCount;
+	}
+
+	async function persistProjectMutation(
+		mutate: (project: UserData) => void,
+	): Promise<UserData | undefined> {
+		const candidate = structuredClone($singleUserData);
+		mutate(candidate);
+		if (!(await persistCandidate(candidate))) return undefined;
+		return projectEditQueue.committedSnapshot();
 	}
 
 	function editTargetSegment(detail: { index: number; value: string }) {
@@ -488,6 +495,7 @@
 		const newUserData = structuredClone($singleUserData);
 		newUserData.translationData.seg2[idx] =
 			newUserData.translationData.seg1[idx];
+		newUserData.translationData.checked[idx] = false;
 		if (!(await persistCandidate(newUserData))) return;
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 		notifySuccess(`Filled segment ${idx + 1}`);
@@ -633,6 +641,13 @@
 				return segment;
 			},
 		);
+		newUserData.translationData.checked =
+			newUserData.translationData.checked.map((confirmed, index) =>
+				newUserData.translationData.seg2[index] !==
+				$singleUserData.translationData.seg2[index]
+					? false
+					: confirmed,
+			);
 		if (!(await persistCandidate(newUserData))) return;
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 	}
@@ -1333,6 +1348,7 @@
 			}}
 			onEditTarget={editTargetSegment}
 			onFlushEdits={flushProjectEdits}
+			onPersistProjectMutation={persistProjectMutation}
 		/>
 	{/each}
 </div>
@@ -1345,12 +1361,12 @@
 >
 	{#if tmActive}
 		<div class="translation-memory">
-			<TranslationMemory />
+			<TranslationMemory onPersistProjectMutation={persistProjectMutation} />
 		</div>
 	{/if}
 	{#if tbActive}
 		<div class="term-base">
-			<TermBase />
+			<TermBase onPersistProjectMutation={persistProjectMutation} />
 		</div>
 	{/if}
 </div>

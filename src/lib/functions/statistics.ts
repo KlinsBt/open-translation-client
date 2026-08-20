@@ -21,7 +21,10 @@ export function getProjectsProgressStatistics(userData: UserData[]) {
 		values[2] += getTotalWordCount(userData[i].translationData.seg1);
 		values[3] += getTotalWordCount(userData[i].translationData.seg2);
 		values[0] += percentage;
-		if (percentage === 100) {
+		if (
+			userData[i].translationData.checked.length > 0 &&
+			userData[i].translationData.checked.every(Boolean)
+		) {
 			values[1] += 1;
 		}
 	}
@@ -46,21 +49,30 @@ export function calcPercentageOfTotalSegmentsChecked(
 }
 
 export async function getWordsAmountFromFullText(fullText: string) {
-	return fullText.trim() ? fullText.trim().split(/\s+/).length : 0;
+	return countWords(fullText);
+}
+
+function countWords(text: string): number {
+	if (!text.trim()) return 0;
+
+	if (typeof Intl.Segmenter === "function") {
+		const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+		let count = 0;
+		for (const segment of segmenter.segment(text)) {
+			if (segment.isWordLike) count += 1;
+		}
+		return count;
+	}
+
+	// Older engines get a Unicode-aware fallback. CJK characters are counted
+	// individually rather than collapsing a complete sentence into one word.
+	return (
+		text.match(
+			/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|[\p{L}\p{N}\p{M}]+(?:['’][\p{L}\p{N}\p{M}]+)*/gu,
+		)?.length ?? 0
+	);
 }
 
 export function getTotalWordCount(segmentsArray: string[]): number {
-	let totalWordCount = 0;
-
-	for (let i = 0; i < segmentsArray.length; i++) {
-		const text: string = segmentsArray[i];
-
-		// Split the text by spaces to get the words, and filter out empty strings
-		const words: string[] = text.split(/\s+/).filter((word) => word.length > 0);
-
-		// Add the word count to the total
-		totalWordCount += words.length;
-	}
-
-	return totalWordCount;
+	return segmentsArray.reduce((total, text) => total + countWords(text), 0);
 }

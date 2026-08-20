@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { updateTranslationOnIndexedDB } from "$lib/functions/saveData/indexedDb";
 	import {
 		seg2WordCount,
 		selectedSegmentId,
@@ -11,22 +10,30 @@
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
+	import type { UserData } from "$lib/types/types";
+
+	let {
+		onPersistProjectMutation,
+	}: {
+		onPersistProjectMutation: (
+			mutate: (project: UserData) => void,
+		) => Promise<UserData | undefined>;
+	} = $props();
 
 	async function fillTargetText(term: string) {
 		if (!$singleUserData) return;
 		if ($singleUserData.translationData.locked[$selectedSegmentId])
 			return notifyError("Unlock this segment before applying a term.");
-		let newUserData = structuredClone($singleUserData);
-		if (newUserData.translationData.seg2[$selectedSegmentId] === "") {
-			newUserData.translationData.seg2[$selectedSegmentId] += term;
-		} else {
-			newUserData.translationData.seg2[$selectedSegmentId] += " " + term;
-		}
-
 		try {
-			await updateTranslationOnIndexedDB(newUserData);
-			singleUserData.set(newUserData);
-			seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
+			const updated = await onPersistProjectMutation((project) => {
+				const current = project.translationData.seg2[$selectedSegmentId];
+				project.translationData.seg2[$selectedSegmentId] = current
+					? `${current} ${term}`
+					: term;
+				project.translationData.checked[$selectedSegmentId] = false;
+			});
+			if (!updated) return;
+			seg2WordCount.set(getTotalWordCount(updated.translationData.seg2));
 			notifySuccess("Term inserted");
 		} catch (error) {
 			notifyError(

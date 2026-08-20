@@ -24,10 +24,28 @@ describe("statistics", () => {
 		expect(calcPercentageOfTotalSegmentsChecked([true, false, true])).toBe(67);
 	});
 
+	it("does not count a rounded 99.5 percent project as finished", () => {
+		const checked = Array.from({ length: 200 }, (_, index) => index !== 199);
+		const project = makeUserData({
+			seg1: checked.map(() => "word"),
+			seg2: checked.map(() => "Wort"),
+			checked,
+		});
+		expect(calcPercentageOfTotalSegmentsChecked(checked)).toBe(100);
+		expect(getProjectsProgressStatistics([project])[1]).toBe(0);
+		checked[199] = true;
+		expect(getProjectsProgressStatistics([project])[1]).toBe(1);
+	});
+
 	it("counts whitespace-separated words consistently", async () => {
 		expect(await getWordsAmountFromFullText("  one\n two\tthree ")).toBe(3);
 		expect(await getWordsAmountFromFullText("   ")).toBe(0);
 		expect(getTotalWordCount(["one two", "three\nfour", ""])).toBe(4);
+	});
+
+	it("uses Unicode word boundaries for languages without spaces", async () => {
+		expect(await getWordsAmountFromFullText("你好世界")).toBe(2);
+		expect(getTotalWordCount(["こんにちは世界", "ภาษาไทย"])).toBe(4);
 	});
 
 	it("aggregates project progress and word counts", () => {

@@ -3,12 +3,12 @@
 This checklist tracks the repository-wide functional audit performed on
 2026-08-20 and reopened after the independent follow-up audit on 2026-08-20.
 
-> **Current status: COMPLETE — independently rechecked 2026-08-20.** The first
-> completion pass relied too heavily on broad task wording and tests that still
-> encoded flawed legacy behavior. Every reopened and follow-up item has now been
-> re-audited against its explicit acceptance criteria, backed by a targeted
-> pre-fix-sensitive regression, and passed through the final clean-worktree,
-> dependency, bundle, browser, and independent-validator gates recorded below.
+> **Current status: COMPLETE — second independent follow-up closed on
+> 2026-08-21.** A further review found and repaired an editor save-order race,
+> review-state invalidation gaps, near-complete progress rounding, multilingual
+> word-count limitations, preference-storage failure paths, and a stale public
+> workflow count. AUD-037 through AUD-042 now have pre-fix-sensitive regressions
+> and have passed every final release gate recorded below.
 
 The final gate is `npm run verify` on a clean worktree, the absence of unexpected
 runtime/build warnings, and a manual review of the evidence recorded beneath
@@ -822,6 +822,78 @@ verify` also passed formatting, ESLint, Svelte diagnostics (0 errors/warnings),
   such as Adobe FrameMaker are not automatable in this open CI environment and
   are not claimed as validated; no known conditional native-validator gate in
   the repository remains unexecuted.
+
+## Second independent follow-up audit
+
+- [x] AUD-037 Serialize every editor project mutation through the route-owned
+      persisted edit queue. A rapid trailing target edit followed immediately
+      by confirmation, lock, Fill, TM, or TB must persist the newest combined
+      state; no older debounced snapshot may overwrite it.
+
+  Completed 2026-08-21 in the remediation commit containing this entry.
+  `segments.svelte` is now the sole project-persistence owner for the open CAT
+  editor. Segment, TM, and TB actions submit mutations to the same route-owned
+  queue as textarea input; optimistic snapshots are published in queue order,
+  failures restore both segment arrays and word counts, and no child performs a
+  competing direct IndexedDB project write. The browser state-transition test
+  enters three rapid target drafts and immediately confirms, then reloads the
+  project from IndexedDB and requires the final target plus confirmation. It
+  fails against the old trailing-snapshot behavior.
+
+- [x] AUD-038 Invalidate segment confirmation whenever TM, TB, direct Fill, or
+      bulk Fill changes target text. Persist and reload the unconfirmed state
+      before progress, QA, or export can treat the changed target as reviewed.
+
+  Completed 2026-08-21. TM replacement, TB insertion, row Fill, keyboard Fill,
+  and bulk Fill explicitly clear `checked[index]` for every changed target.
+  `catApplication.browser.spec.ts` applies a TM match to a confirmed segment,
+  reconfirms it, inserts a TB term, and verifies after each operation by reading
+  IndexedDB that the changed target is unconfirmed. No known target-changing
+  editor shortcut bypasses this invariant.
+
+- [x] AUD-039 Determine finished-project counts from exact segment state rather
+      than a rounded display percentage. A 199/200 project may display 100% when
+      rounded, but it must not be classified as finished.
+
+  Completed 2026-08-21. Dashboard completion now requires a non-empty segment
+  array whose entries are all confirmed. The regression proves 199/200 remains
+  unfinished even though the presentation percentage rounds to 100, and becomes
+  finished only when the final segment is confirmed.
+
+- [x] AUD-040 Count multilingual words with Unicode word boundaries, including
+      CJK and Thai text without ASCII whitespace, with a safe fallback for older
+      browser engines.
+
+  Completed 2026-08-21. Both full-text and project totals share
+  `Intl.Segmenter` word boundaries, with a Unicode-aware CJK fallback for older
+  engines. Regressions cover Chinese, Japanese, Thai, whitespace-only, and mixed
+  whitespace inputs. Word totals are token counts rather than language-specific
+  morphological analysis, which is the intended cross-language CAT statistic.
+
+- [x] AUD-041 Contain unavailable, denied, and quota-limited `localStorage`
+      access for parsing and dashboard view preferences. These optional settings
+      must fall back to defaults and must never prevent the workspace loading.
+
+  Completed 2026-08-21. Parsing-preference reads/writes and project-view
+  reads/writes contain storage getter, `getItem`, `setItem`, security, and quota
+  failures. Unit regressions inject throwing storage implementations and prove
+  default parsing and card views remain usable. When storage is denied these
+  optional preferences cannot persist, but project data and workspace loading
+  are unaffected.
+
+- [x] AUD-042 Keep the public workflow count synchronized with the 44-adapter
+      registry, run the complete unit/browser/build/dependency/external-validator
+      gates, and review the final diff before declaring this follow-up complete.
+
+  Completed 2026-08-21. README now reports 44 registered workflows. `npm run
+verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
+  90 unit files with 1,124 tests passed and 11 intentional conditional skips,
+  18 browser files with 96 tests passed, coverage gates, production build, and
+  bundle budgets. Production-only and full `npm audit --audit-level=high` each
+  reported 0 vulnerabilities. The strict external suite separately passed all
+  13 files and 125 tests with zero skips using LibreOffice 25.8.2.2, EPUBCheck
+  5.3.0, DITA-OT 4.4.0, pdfTeX/TeX Live 2026, GNU windres 2.46, FFmpeg n8.0,
+  Poppler 25.10.0, Qt qmllint 1.0, libxml2 2.15.1, and gettext 0.26.
 
 ## Checkbox closure protocol
 

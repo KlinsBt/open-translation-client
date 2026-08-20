@@ -1,8 +1,5 @@
 <script lang="ts">
-	import {
-		updateTmOnIndexedDB,
-		updateTranslationOnIndexedDB,
-	} from "$lib/functions/saveData/indexedDb";
+	import { updateTmOnIndexedDB } from "$lib/functions/saveData/indexedDb";
 	// import { getTranslationMemoryMatches } from "$lib/components/translationMemory/tmFunctions";
 	import {
 		singleUserData,
@@ -16,13 +13,12 @@
 	import { getTotalWordCount } from "$lib/functions/statistics";
 	import { searchForMatches } from "$lib/components/translationMemory/tmFunctions";
 	import { getTermMatches } from "$lib/components/termBase/tbFunctions";
-	import type { TbData, TmData } from "$lib/types/types";
+	import type { TbData, TmData, UserData } from "$lib/types/types";
 	import {
 		notifyError,
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
 	import { getSplitOffsetFromSelection } from "$lib/functions/parsing/segmentSelection";
-	import { commitPersistedMutation } from "$lib/functions/saveData/persistenceContract";
 
 	let {
 		id,
@@ -39,6 +35,7 @@
 		onActivateSegment,
 		onEditTarget,
 		onFlushEdits,
+		onPersistProjectMutation,
 	}: {
 		id: number;
 		textSegment1: string;
@@ -54,6 +51,9 @@
 		onActivateSegment?: (detail: { index: number }) => void;
 		onEditTarget?: (detail: { index: number; value: string }) => void;
 		onFlushEdits?: () => Promise<void>;
+		onPersistProjectMutation: (
+			mutate: (project: UserData) => void,
+		) => Promise<UserData | undefined>;
 	} = $props();
 
 	let tmMatchesFound: { segment: string; match: string; percentage: string }[] =
@@ -111,17 +111,9 @@
 		return parts;
 	});
 
-	async function commitProjectMutation(
-		mutate: (project: typeof $singleUserData) => void,
-	) {
+	async function commitProjectMutation(mutate: (project: UserData) => void) {
 		try {
-			const updated = await commitPersistedMutation(
-				$singleUserData,
-				mutate,
-				updateTranslationOnIndexedDB,
-			);
-			singleUserData.set(updated);
-			return updated;
+			return await onPersistProjectMutation(mutate);
 		} catch (error) {
 			notifyError(
 				error instanceof Error ? error.message : "Could not save this project.",
@@ -154,9 +146,10 @@
 		if (!$singleUserData) return;
 		if (locked) return notifyError("Unlock this segment before changing it.");
 		if (textSegment1 === "" || textSegment2 !== "") return;
-		const updated = await commitProjectMutation(
-			(project) => (project.translationData.seg2[id] = textSegment1),
-		);
+		const updated = await commitProjectMutation((project) => {
+			project.translationData.seg2[id] = textSegment1;
+			project.translationData.checked[id] = false;
+		});
 		if (updated) {
 			textSegment2 = textSegment1;
 			seg2WordCount.set(getTotalWordCount(updated.translationData.seg2));

@@ -27,8 +27,14 @@ const DEFAULT_PREF: ParsingPreference = {
 	kind: "tokens",
 };
 
-function isBrowser() {
-	return typeof window !== "undefined" && typeof localStorage !== "undefined";
+function getBrowserStorage(): Storage | null {
+	if (typeof window === "undefined") return null;
+	try {
+		return globalThis.localStorage;
+	} catch (error) {
+		reportProductionWarning("Parsing preferences are unavailable", error);
+		return null;
+	}
 }
 
 function ensureDefaultPref(prefs: ParsingPreference[]): ParsingPreference[] {
@@ -68,10 +74,11 @@ function ensureDefaultPref(prefs: ParsingPreference[]): ParsingPreference[] {
 }
 
 function readStore(): ParsingPreference[] {
-	if (!isBrowser()) return [DEFAULT_PREF];
-	const raw = localStorage.getItem(STORAGE_KEY);
-	if (!raw) return [DEFAULT_PREF];
+	const storage = getBrowserStorage();
+	if (!storage) return [DEFAULT_PREF];
 	try {
+		const raw = storage.getItem(STORAGE_KEY);
+		if (!raw) return [DEFAULT_PREF];
 		const parsed = JSON.parse(raw);
 		if (Array.isArray(parsed)) return ensureDefaultPref(parsed);
 		return [DEFAULT_PREF];
@@ -82,8 +89,13 @@ function readStore(): ParsingPreference[] {
 }
 
 function writeStore(data: ParsingPreference[]) {
-	if (!isBrowser()) return;
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+	const storage = getBrowserStorage();
+	if (!storage) return;
+	try {
+		storage.setItem(STORAGE_KEY, JSON.stringify(data));
+	} catch (error) {
+		reportProductionWarning("Parsing preferences could not be saved", error);
+	}
 }
 
 function normalizeLanguageCode(languageCode: string): string {
