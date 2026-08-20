@@ -21,11 +21,41 @@ every reopened task.
       and delete operations always modify the displayed unit.
 - [x] AUD-002 Preserve stable TB concept identities while filtering so edit,
       add, and delete operations always modify the displayed concept.
-- [ ] AUD-003 **REOPENED:** Make project, TM, and TB IndexedDB writes
+- [x] AUD-003 Make project, TM, and TB IndexedDB writes
       transaction-complete, awaited, serialized where necessary, and visible to
       the UI on failure. Editor persistence wrappers must reject on failure;
       callers must not announce success, close a modal, or retain an
       unpersisted optimistic mutation unless they explicitly roll it back.
+
+  Closed 2026-08-20 after a second caller-by-caller review. The implementation
+  is in follow-up AUD-026 (`c8d9e0c`): all project, TM, and TB write/delete
+  helpers enter one serialized queue, await the IndexedDB transaction's
+  `complete` event, translate quota/abort failures into actionable errors, and
+  publish refreshed stores only after commit. Cross-store TM/TB deletion and
+  project-reference repair share a single transaction. Project creation,
+  rename/language changes, segment operations, resource selection, imports,
+  merges, and TM/TB editors await those helpers; successful UI state and modal
+  closure occur only afterward. Editors that expose an optimistic local draft
+  restore their exact last-persisted snapshot on rejection.
+
+  Regression evidence: `persistenceContract.spec.ts` covers publish-after-
+  commit and exact quota/abort rollback; `saveFileModsIndexedDb.spec.ts` proves
+  failed project creation cannot publish an unpersisted collection;
+  `persistedEditQueue.spec.ts` covers serialized in-flight writes and rollback;
+  `indexedDb.browser.spec.ts` verifies awaited writes are immediately readable
+  and cross-store reference repair is transaction-complete. The route browser
+  cases inject real object-store quota/abort failures and verify that project,
+  segment, TM, and TB data, notifications, and retryable UI remain correct after
+  an IndexedDB reload. These tests fail against the pre-fix implementation,
+  which published or mutated state before transaction completion.
+
+  Closure commands: `npm run test:unit -- --run
+src/lib/functions/saveData/persistenceContract.spec.ts
+src/lib/functions/saveFileModsIndexedDb.spec.ts
+src/lib/functions/saveData/persistedEditQueue.spec.ts` — 3 files and 11 tests
+  passed; `npm run test:browser:smoke` — 1 file and 18 tests passed. Final-edit
+  lifecycle durability is independently closed and evidenced by AUD-004/027.
+
 - [ ] AUD-004 **REOPENED:** Debounce segment autosaves and remove full-library
       reloads from the per-keystroke persistence path. Additionally flush or
       durably queue the last edit during blur, route navigation, `pagehide`, and
