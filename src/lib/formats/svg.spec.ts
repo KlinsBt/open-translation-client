@@ -16,6 +16,9 @@ import { decodeTextBytes } from "./safeInput";
 import { importSvgFile, validateSvgFile } from "./svg";
 import type { FormatOptionValues } from "./types";
 
+const XMLLINT_AVAILABLE =
+	spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status === 0;
+
 async function importProject(
 	content: BlobPart,
 	options: Readonly<FormatOptionValues> = {},
@@ -179,25 +182,26 @@ describe("SVG localization profile", () => {
 		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
 	});
 
-	it("produces SVG accepted by xmllint when available", async () => {
-		if (spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status !== 0)
-			return;
-		const { project } = await importProject(
-			'<svg xmlns="http://www.w3.org/2000/svg"><text>Hello</text></svg>',
-			{},
-			["Hallo"],
-		);
-		const directory = mkdtempSync(join(tmpdir(), "opentlc-svg-"));
-		try {
-			const path = join(directory, "translated.svg");
-			writeFileSync(path, buildSvgTranslation(project));
-			const checked = spawnSync("xmllint", ["--noout", "--nonet", path], {
-				encoding: "utf8",
-				timeout: 5_000,
-			});
-			expect(checked.status, checked.stderr).toBe(0);
-		} finally {
-			rmSync(directory, { recursive: true, force: true });
-		}
-	});
+	it.skipIf(!XMLLINT_AVAILABLE)(
+		"produces SVG accepted by xmllint when available",
+		async () => {
+			const { project } = await importProject(
+				'<svg xmlns="http://www.w3.org/2000/svg"><text>Hello</text></svg>',
+				{},
+				["Hallo"],
+			);
+			const directory = mkdtempSync(join(tmpdir(), "opentlc-svg-"));
+			try {
+				const path = join(directory, "translated.svg");
+				writeFileSync(path, buildSvgTranslation(project));
+				const checked = spawnSync("xmllint", ["--noout", "--nonet", path], {
+					encoding: "utf8",
+					timeout: 5_000,
+				});
+				expect(checked.status, checked.stderr).toBe(0);
+			} finally {
+				rmSync(directory, { recursive: true, force: true });
+			}
+		},
+	);
 });

@@ -69,6 +69,32 @@ async function epubFile(options: EpubFixtureOptions = {}): Promise<File> {
 	);
 }
 
+async function conformantEpub3File(): Promise<File> {
+	const zip = new JSZip();
+	zip.file("mimetype", EPUB_MIME_TYPE, { compression: "STORE" });
+	zip.file(
+		"META-INF/container.xml",
+		'<?xml version="1.0"?><container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+	);
+	zip.file(
+		"EPUB/package.opf",
+		'<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:uuid:123e4567-e89b-12d3-a456-426614174000</dc:identifier><dc:language>en</dc:language><dc:title>Conformant book</dc:title><meta property="dcterms:modified">2026-08-20T00:00:00Z</meta></metadata><manifest><item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine><itemref idref="chapter"/></spine></package>',
+	);
+	zip.file(
+		"EPUB/chapter.xhtml",
+		'<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter</title></head><body><p id="p1">Hello world</p></body></html>',
+	);
+	zip.file(
+		"EPUB/nav.xhtml",
+		'<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h1>Contents</h1><ol><li><a href="chapter.xhtml#p1">Chapter</a></li></ol></nav></body></html>',
+	);
+	return new File(
+		[await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" })],
+		"conformant.epub",
+		{ type: EPUB_MIME_TYPE },
+	);
+}
+
 async function importProject(
 	file: File,
 	options: Readonly<FormatOptionValues> = {},
@@ -293,13 +319,10 @@ describe("EPUB 2/3 package workflow", () => {
 		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
 	});
 
-	it.runIf(
-		process.env.OPENTLC_RUN_EPUBCHECK === "1" &&
-			spawnSync("epubcheck", ["--version"]).status === 0,
-	)(
+	it.runIf(process.env.OPENTLC_RUN_EPUBCHECK === "1")(
 		"provides an opt-in EPUBCheck gate when the validator is installed",
 		async () => {
-			const file = await epubFile();
+			const file = await conformantEpub3File();
 			const { project } = await importProject(file);
 			const output = await buildEpubTranslationPackage(project);
 			const directory = mkdtempSync(join(tmpdir(), "opentlc-epub-"));

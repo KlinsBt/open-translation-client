@@ -20,6 +20,8 @@
 		"test:coverage": "vitest --run --coverage --testTimeout=20000",
 		"test:browser": "vitest --config vite.browser.config.ts --run",
 		"test:browser:smoke": "vitest --config vite.browser.config.ts --run src/routes/catApplication.browser.spec.ts",
+		"test:external": "node scripts/runExternalValidators.mjs",
+		"test:external:available": "node scripts/runExternalValidators.mjs --allow-missing",
 		"test": "npm run test:unit -- --run && npm run test:browser",
 		"verify": "npm run lint && npm run check && npm run test:coverage && npm run test:browser && npm run build"
 	},

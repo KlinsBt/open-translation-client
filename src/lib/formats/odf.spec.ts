@@ -439,10 +439,7 @@ describe("OpenDocument document, template, master, and formula workflows", () =>
 		).rejects.toThrow(/cancelled|aborted/i);
 	});
 
-	it.runIf(
-		process.env.OPENTLC_RUN_LIBREOFFICE === "1" &&
-			spawnSync("libreoffice", ["--version"]).status === 0,
-	)(
+	it.runIf(process.env.OPENTLC_RUN_LIBREOFFICE === "1")(
 		"produces an ODT LibreOffice can reopen when LibreOffice is available",
 		async () => {
 			const file = await odfFile("odt", body("odt", "<text:p>Hello</text:p>"));
@@ -472,17 +469,18 @@ describe("OpenDocument document, template, master, and formula workflows", () =>
 					throw new Error(
 						`LibreOffice reopen failed (${reopened.status}): ${reopened.stderr || reopened.stdout}`,
 					);
+				expect(readdirSync(target).some((name) => name.endsWith(".pdf"))).toBe(
+					true,
+				);
 			} finally {
 				rmSync(directory, { recursive: true, force: true });
 			}
 		},
+		40_000,
 	);
 
 	it
-		.runIf(
-			process.env.OPENTLC_RUN_LIBREOFFICE === "1" &&
-				spawnSync("libreoffice", ["--version"]).status === 0,
-		)
+		.runIf(process.env.OPENTLC_RUN_LIBREOFFICE === "1")
 		.each(["ott", "odm", "ots", "otp", "odf"] as const)(
 		"produces a translated .%s package LibreOffice can reopen when enabled",
 		async (profile) => {

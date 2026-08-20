@@ -243,7 +243,18 @@ describe("Windows RC workflow", () => {
 					0,
 			);
 			expect(executable).toBeTruthy();
-			const { project } = await importProject(source);
+			const compileFixture = `#include "resource.h"
+IDD_MAIN DIALOGEX 0, 0, 120, 40
+CAPTION "Compiler fixture"
+BEGIN
+    LTEXT "Hello", IDC_STATIC, 7, 12, 40, 8
+END
+STRINGTABLE
+BEGIN
+    IDS_GREETING "Hello, world!"
+END
+`;
+			const { project } = await importProject(compileFixture);
 			const directory = mkdtempSync(join(tmpdir(), "opentlc-rc-"));
 			try {
 				const rcPath = join(directory, "translated.rc");

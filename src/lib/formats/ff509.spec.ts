@@ -105,15 +105,6 @@ async function projectFrom(
 	};
 }
 
-function hasFfprobe(): boolean {
-	try {
-		execFileSync("ffprobe", ["-version"], { stdio: "ignore" });
-		return true;
-	} catch {
-		return false;
-	}
-}
-
 describe("FF-509 ASS, SSA, and Spruce STL subtitles", () => {
 	it("detects subtitle profiles from content even when renamed", async () => {
 		expect(detectSubtitleProfileFromContent(ASS, "renamed.txt")).toBe("ass");
@@ -301,7 +292,7 @@ describe("FF-509 ASS, SSA, and Spruce STL subtitles", () => {
 		expect(imported.segments).toHaveLength(2_000);
 	});
 
-	it.runIf(process.env.OPENTLC_RUN_FFPROBE === "1" && hasFfprobe())(
+	it.runIf(process.env.OPENTLC_RUN_FFPROBE === "1")(
 		"reopens generated ASS and Spruce STL with the independent FFmpeg demuxer",
 		async () => {
 			for (const [source, name, expectedCodec] of [

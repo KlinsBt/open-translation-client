@@ -20,6 +20,8 @@ import type { FormatOptionValues } from "./types";
 
 const packagingNamespace =
 	"http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging";
+const XMLLINT_AVAILABLE =
+	spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status === 0;
 
 async function idmlFile(entries: Record<string, string | Uint8Array>) {
 	const zip = new JSZip();
@@ -282,37 +284,38 @@ describe("Adobe IDML and ICML workflow", () => {
 		);
 	});
 
-	it("imports 1,000 Content nodes deterministically and passes independent XML validation", async () => {
-		const source = `<Document><Story Self="large">${Array.from(
-			{ length: 1_000 },
-			(_, index) =>
-				`<ParagraphStyleRange><Content>Message ${index}</Content></ParagraphStyleRange>`,
-		).join("")}</Story></Document>`;
-		const first = await importInDesignFile(new File([source], "large.icml"));
-		const second = await importInDesignFile(new File([source], "large.icml"));
-		if (first.kind !== "segments" || second.kind !== "segments")
-			throw new Error("Expected IDML/ICML segments");
-		expect(first.segments).toHaveLength(1_000);
-		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
-		if (spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status !== 0)
-			return;
-		const { project } = await importProject(source);
-		const directory = mkdtempSync(join(tmpdir(), "opentlc-icml-"));
-		try {
-			const path = join(directory, "translated.icml");
-			writeFileSync(
-				path,
-				new Uint8Array(
-					await (await buildInDesignTranslationBlob(project)).arrayBuffer(),
-				),
-			);
-			const checked = spawnSync("xmllint", ["--noout", "--nonet", path], {
-				encoding: "utf8",
-				timeout: 5_000,
-			});
-			expect(checked.status, checked.stderr).toBe(0);
-		} finally {
-			rmSync(directory, { recursive: true, force: true });
-		}
-	});
+	it.skipIf(!XMLLINT_AVAILABLE)(
+		"imports 1,000 Content nodes deterministically and passes independent XML validation",
+		async () => {
+			const source = `<Document><Story Self="large">${Array.from(
+				{ length: 1_000 },
+				(_, index) =>
+					`<ParagraphStyleRange><Content>Message ${index}</Content></ParagraphStyleRange>`,
+			).join("")}</Story></Document>`;
+			const first = await importInDesignFile(new File([source], "large.icml"));
+			const second = await importInDesignFile(new File([source], "large.icml"));
+			if (first.kind !== "segments" || second.kind !== "segments")
+				throw new Error("Expected IDML/ICML segments");
+			expect(first.segments).toHaveLength(1_000);
+			expect(second.segmentsMeta).toEqual(first.segmentsMeta);
+			const { project } = await importProject(source);
+			const directory = mkdtempSync(join(tmpdir(), "opentlc-icml-"));
+			try {
+				const path = join(directory, "translated.icml");
+				writeFileSync(
+					path,
+					new Uint8Array(
+						await (await buildInDesignTranslationBlob(project)).arrayBuffer(),
+					),
+				);
+				const checked = spawnSync("xmllint", ["--noout", "--nonet", path], {
+					encoding: "utf8",
+					timeout: 5_000,
+				});
+				expect(checked.status, checked.stderr).toBe(0);
+			} finally {
+				rmSync(directory, { recursive: true, force: true });
+			}
+		},
+	);
 });

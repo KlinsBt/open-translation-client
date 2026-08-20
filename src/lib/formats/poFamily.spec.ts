@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -23,6 +23,8 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\\n"
 
 `;
+const MSGFMT_AVAILABLE =
+	spawnSync("msgfmt", ["--version"], { timeout: 5_000 }).status === 0;
 
 async function importProject(
 	content: BlobPart,
@@ -287,39 +289,37 @@ msgstr "Zeile\\nTab\\tZitat\\\""
 		expect(() => buildPoTranslation(project)).toThrow(/do not align uniquely/);
 	});
 
-	it("produces a catalog accepted by GNU msgfmt when the tool is available", async () => {
-		const source = `${header}#, c-format
+	it.skipIf(!MSGFMT_AVAILABLE)(
+		"produces a catalog accepted by GNU msgfmt when the tool is available",
+		async () => {
+			const source = `${header}#, c-format
 msgid "Found %d file"
 msgid_plural "Found %d files"
 msgstr[0] ""
 msgstr[1] ""
 `;
-		const { project } = await importProject(source, "valid.po", {}, [
-			"%d Datei gefunden",
-			"%d Dateien gefunden",
-		]);
-		const output = buildPoTranslation(project);
-		const directory = mkdtempSync(join(tmpdir(), "opentlc-po-"));
-		try {
-			const input = join(directory, "messages.po");
-			const destination = join(directory, "messages.mo");
-			writeFileSync(input, output, "utf8");
-			const checked = spawnSync(
-				"msgfmt",
-				["--check", "--check-format", "-o", destination, input],
-				{ encoding: "utf8", timeout: 5_000 },
-			);
-			if (
-				checked.error &&
-				"code" in checked.error &&
-				checked.error.code === "ENOENT"
-			)
-				return;
-			expect(checked.status, checked.stderr).toBe(0);
-		} finally {
-			rmSync(directory, { recursive: true, force: true });
-		}
-	});
+			const { project } = await importProject(source, "valid.po", {}, [
+				"%d Datei gefunden",
+				"%d Dateien gefunden",
+			]);
+			const output = buildPoTranslation(project);
+			const directory = mkdtempSync(join(tmpdir(), "opentlc-po-"));
+			try {
+				const input = join(directory, "messages.po");
+				const destination = join(directory, "messages.mo");
+				writeFileSync(input, output, "utf8");
+				const checked = spawnSync(
+					"msgfmt",
+					["--check", "--check-format", "-o", destination, input],
+					{ encoding: "utf8", timeout: 5_000 },
+				);
+				expect(checked.status, checked.stderr).toBe(0);
+				expect(existsSync(destination)).toBe(true);
+			} finally {
+				rmSync(directory, { recursive: true, force: true });
+			}
+		},
+	);
 
 	it("imports a 1,000-message catalog deterministically", async () => {
 		const source = `${header}${Array.from(

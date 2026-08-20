@@ -23,6 +23,8 @@ import type { FormatOptionValues } from "./types";
 
 const namespaces =
 	'xmlns="http://www.w3.org/ns/ttml" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"';
+const XMLLINT_AVAILABLE =
+	spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status === 0;
 
 async function importProject(
 	content: BlobPart,
@@ -190,31 +192,32 @@ describe("TTML/DFXP timed-text workflow", () => {
 		);
 	});
 
-	it("imports 1,000 cues deterministically and passes independent XML validation", async () => {
-		const source = `<tt ${namespaces}><body><div>${Array.from(
-			{ length: 1_000 },
-			(_, index) => `<p begin="${index * 5}s" dur="5s">Message ${index}</p>`,
-		).join("")}</div></body></tt>`;
-		const first = await importTtmlFile(new File([source], "large.ttml"));
-		const second = await importTtmlFile(new File([source], "large.ttml"));
-		if (first.kind !== "segments" || second.kind !== "segments")
-			throw new Error("Expected TTML segments");
-		expect(first.segments).toHaveLength(1_000);
-		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
-		if (spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status !== 0)
-			return;
-		const { project } = await importProject(source, { maxReadingSpeed: 100 });
-		const directory = mkdtempSync(join(tmpdir(), "opentlc-ttml-"));
-		try {
-			const path = join(directory, "translated.ttml");
-			writeFileSync(path, buildTtmlTranslation(project));
-			const checked = spawnSync("xmllint", ["--noout", "--nonet", path], {
-				encoding: "utf8",
-				timeout: 5_000,
-			});
-			expect(checked.status, checked.stderr).toBe(0);
-		} finally {
-			rmSync(directory, { recursive: true, force: true });
-		}
-	});
+	it.skipIf(!XMLLINT_AVAILABLE)(
+		"imports 1,000 cues deterministically and passes independent XML validation",
+		async () => {
+			const source = `<tt ${namespaces}><body><div>${Array.from(
+				{ length: 1_000 },
+				(_, index) => `<p begin="${index * 5}s" dur="5s">Message ${index}</p>`,
+			).join("")}</div></body></tt>`;
+			const first = await importTtmlFile(new File([source], "large.ttml"));
+			const second = await importTtmlFile(new File([source], "large.ttml"));
+			if (first.kind !== "segments" || second.kind !== "segments")
+				throw new Error("Expected TTML segments");
+			expect(first.segments).toHaveLength(1_000);
+			expect(second.segmentsMeta).toEqual(first.segmentsMeta);
+			const { project } = await importProject(source, { maxReadingSpeed: 100 });
+			const directory = mkdtempSync(join(tmpdir(), "opentlc-ttml-"));
+			try {
+				const path = join(directory, "translated.ttml");
+				writeFileSync(path, buildTtmlTranslation(project));
+				const checked = spawnSync("xmllint", ["--noout", "--nonet", path], {
+					encoding: "utf8",
+					timeout: 5_000,
+				});
+				expect(checked.status, checked.stderr).toBe(0);
+			} finally {
+				rmSync(directory, { recursive: true, force: true });
+			}
+		},
+	);
 });

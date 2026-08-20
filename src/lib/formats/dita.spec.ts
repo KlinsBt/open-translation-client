@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import JSZip from "jszip";
@@ -13,6 +13,9 @@ import { splitSegmentData } from "$lib/functions/parsing/segmentationLogic";
 import { decodeTextBytes } from "./safeInput";
 import { importDitaFile, maskKnownDitaDoctype, validateDitaFile } from "./dita";
 import type { FormatOptionValues } from "./types";
+
+const XMLLINT_AVAILABLE =
+	spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status === 0;
 
 async function importProject(
 	content: BlobPart,
@@ -277,19 +280,20 @@ describe("DITA and DITAMAP workflow", () => {
 		);
 	});
 
-	it("imports 1,000 topic paragraphs deterministically and validates output independently", async () => {
-		const source = `<topic id="large"><title>Large</title><body>${Array.from(
-			{ length: 1_000 },
-			(_, index) => `<p id="p${index}">Message ${index}</p>`,
-		).join("")}</body></topic>`;
-		const first = await importDitaFile(new File([source], "large.dita"));
-		const second = await importDitaFile(new File([source], "large.dita"));
-		if (first.kind !== "segments" || second.kind !== "segments")
-			throw new Error("Expected DITA segments");
-		expect(first.segments).toHaveLength(1_001);
-		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
+	it.skipIf(!XMLLINT_AVAILABLE)(
+		"imports 1,000 topic paragraphs deterministically and validates output independently",
+		async () => {
+			const source = `<topic id="large"><title>Large</title><body>${Array.from(
+				{ length: 1_000 },
+				(_, index) => `<p id="p${index}">Message ${index}</p>`,
+			).join("")}</body></topic>`;
+			const first = await importDitaFile(new File([source], "large.dita"));
+			const second = await importDitaFile(new File([source], "large.dita"));
+			if (first.kind !== "segments" || second.kind !== "segments")
+				throw new Error("Expected DITA segments");
+			expect(first.segments).toHaveLength(1_001);
+			expect(second.segmentsMeta).toEqual(first.segmentsMeta);
 
-		if (spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status === 0) {
 			const { project } = await importProject(source, "large.dita");
 			const directory = mkdtempSync(join(tmpdir(), "opentlc-dita-"));
 			try {
@@ -308,8 +312,8 @@ describe("DITA and DITAMAP workflow", () => {
 			} finally {
 				rmSync(directory, { recursive: true, force: true });
 			}
-		}
-	});
+		},
+	);
 
 	it.runIf(process.env.OPENTLC_RUN_DITA_OT === "1")(
 		"publishes a generated topic with DITA-OT when explicitly enabled",
@@ -317,7 +321,7 @@ describe("DITA and DITAMAP workflow", () => {
 			const executable = spawnSync("dita", ["--version"], { timeout: 10_000 });
 			expect(executable.status, executable.stderr?.toString()).toBe(0);
 			const { project } = await importProject(
-				'<topic id="t"><title>Hello</title><body><p>Text</p></body></topic>',
+				'<!DOCTYPE topic PUBLIC "-//OASIS//DTD DITA Topic//EN" "topic.dtd"><topic id="t"><title>Hello</title><body><p>Text</p></body></topic>',
 			);
 			const directory = mkdtempSync(join(tmpdir(), "opentlc-dita-ot-"));
 			try {
@@ -335,6 +339,9 @@ describe("DITA and DITAMAP workflow", () => {
 					{ encoding: "utf8", timeout: 120_000 },
 				);
 				expect(published.status, published.stderr).toBe(0);
+				expect(readdirSync(output).some((name) => name.endsWith(".html"))).toBe(
+					true,
+				);
 			} finally {
 				rmSync(directory, { recursive: true, force: true });
 			}

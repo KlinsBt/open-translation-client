@@ -586,13 +586,52 @@ runtime diagnostics` (this task's commit). Filtered TM/TB library and editor
   build artifact; their route isolation is enforced. No other known AUD-035
   limitation remains.
 
-- [ ] AUD-036 Close the external-validator release gates.
+- [x] AUD-036 Close the external-validator release gates.
+
   - Run or obtain CI artifacts for LibreOffice ODF/PDF reopening, EPUBCheck,
     DITA-OT, a TeX engine, `windres`, `ffprobe`, and every other conditional
     native check currently skipped.
   - Record tool name/version, operating system, command, result, and fixture for
     every gate. A skipped gate may be documented, but the implementation plan
     must not be described as fully release-validated while it remains skipped.
+
+  Completed 2026-08-20; reviewer confirmation: Codex replaced silent
+  tool-unavailable returns with explicit development-suite skips and a strict
+  `npm run test:external` release command. The strict runner requires all ten
+  tools, enables every opt-in test, fails before a missing validator can be
+  mistaken for a pass, and records OS, version command/output, fixture, test
+  command and result in JSON plus a complete log. A dedicated Ubuntu CI workflow
+  installs the native packages, verifies the published SHA-256 digests of pinned
+  EPUBCheck 5.3.0 and DITA-OT 4.4 downloads, runs the strict command, and uploads
+  both artifacts even on failure. `EXTERNAL_VALIDATION.md` records the local
+  CachyOS result and explains the release/development distinction.
+
+  Implementation commit: `ci: enforce external format validators` (this task's
+  commit). Affected files: `.github/workflows/external-format-validation.yml`,
+  `.gitignore`, `EXTERNAL_VALIDATION.md`,
+  `README_FILE_FORMAT_IMPLEMENTATION_PLAN.md`, `package.json`,
+  `scripts/runExternalValidators.mjs`, and the ODF, EPUB, DITA, Windows RC,
+  subtitle, ICML, SVG, TTML, DocBook and PO validator specs. The runner also
+  activates the existing LaTeX, PDF and QML native checks.
+  Regression tests failed on the old gate for concrete reasons: the ODT reopen
+  test exceeded Vitest's five-second default; the EPUB fixture failed EPUBCheck
+  on metadata/navigation/media requirements; the DITA fixture was filtered out
+  by DITA-OT because it had no DITA declaration; and the windres fixture named a
+  missing icon. The strict runner and CI artifact did not exist, and missing
+  EPUBCheck, LibreOffice, or ffprobe could disable a requested gate silently.
+
+  Verification: the strict release command passed 13/13 files and 125/125 tests
+  with zero skips using LibreOffice 25.8.2.2, EPUBCheck 5.3.0, DITA-OT 4.4.0,
+  pdfTeX/TeX Live 2026, GNU windres 2.46, FFmpeg ffprobe n8.0, Poppler pdfinfo
+  25.10.0, Qt qmllint 1.0, libxml2 xmllint 2.15.1 and GNU msgfmt 0.26. `npm run
+verify` also passed formatting, ESLint, Svelte diagnostics (0 errors/warnings),
+  90 covered unit files with 1,119 tests passed and 11 intentional external-tool
+  skips, 18 browser files with 95 tests passed, all coverage gates, production
+  build, and bundle budgets. The strict suite runs those conditional native tests
+  separately with zero skips. Remaining limitation: proprietary applications
+  such as Adobe FrameMaker are not automatable in this open CI environment and
+  are not claimed as validated; no known conditional native-validator gate in
+  the repository remains unexecuted.
 
 ## Checkbox closure protocol
 

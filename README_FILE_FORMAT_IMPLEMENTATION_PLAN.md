@@ -795,10 +795,10 @@ Complete these in order after FF-000 through FF-009.
       conformance, all three applications, asset/formula/note/change policy,
       unsafe XML/signature/container, semantic package diff, 1,000-paragraph,
       detection, translated re-import, and browser coverage verifies the core
-      workflow. A conditional LibreOffice headless PDF-conversion reopen test is
-      included (`OPENTLC_RUN_LIBREOFFICE=1`); its managed-sandbox approval timed
-      out twice in this run, so downstream release CI must execute that external
-      gate and an ODF schema validator before advertising origin-tool validation.
+      workflow. The strict external-validator gate reopens generated ODT, ODS,
+      ODP and template/master/formula variants in LibreOffice and verifies real
+      PDF conversion artifacts. Tool versions, commands and fixtures are recorded
+      in `EXTERNAL_VALIDATION.md` and regenerated as a CI artifact.
 - [x] **FF-301 — EPUB 2/3 (`.epub`).** Read the container, package manifest,
       spine, navigation, XHTML/SVG content, metadata, and media overlays; reuse
       HTML/XML filters and preserve CSS, fonts, media, scripts, accessibility,
@@ -822,12 +822,10 @@ Complete these in order after FF-000 through FF-009.
       navigation/metadata/scope/SVG/accessibility, fixed-doctype, encryption/
       entity/signature/container, semantic package diff, 1,000-paragraph,
       detection and translated re-import coverage verifies the core workflow. A
-      generated browser import/edit/download/re-import case is registered; its
-      runner could not bind inside the sandbox and two escalation reviews timed
-      out in this run, so it remains a downstream release gate. An opt-in
-      `OPENTLC_RUN_EPUBCHECK=1` test is also included; EPUBCheck is not installed
-      in this environment, so release CI must execute both gates before
-      origin-validator support is advertised.
+      generated browser import/edit/download/re-import case is registered and
+      passes in the full browser suite. The strict release gate also reopens a
+      translated, conformant EPUB 3 fixture with EPUBCheck 5.3.0; CI installs the
+      checksum-pinned official distribution and uploads its report.
 - [x] **FF-302 — SVG (`.svg`).** Translate text, selected accessibility
       attributes, titles/descriptions, and text-path content while preserving
       namespaces, transforms, styling, geometry, and scripts as inert bytes.
@@ -868,12 +866,9 @@ Complete these in order after FF-000 through FF-009.
       and split/join. Unit, conformance, specialization, map/key/conref/fragment,
       asset, UTF-16, security, semantic re-import, 1,000-paragraph, detection, and
       generated browser coverage verifies the core workflow, and generated XML
-      passed local `xmllint --nonet`. This run's browser runner requires a local
-      bind outside the sandbox and both approval reviews timed out, so that
-      registered case remains a downstream CI gate. An opt-in DITA-OT publish
-      test is included (`OPENTLC_RUN_DITA_OT=1`), but DITA-OT is not installed
-      here; release CI must execute both external gates before claiming
-      DITA-OT-validated output.
+      passes `xmllint --nonet`. The browser case passes in the full suite, while
+      the strict native gate publishes a translated DITA topic to HTML5 with
+      checksum-pinned DITA-OT 4.4 and verifies the generated HTML artifact.
 - [x] **FF-304 — DocBook (`.xml`, `.dbk`).** Add version-aware block/inline rules,
       IDs/xrefs, entities, code, index terms, metadata, and whitespace behavior;
       preserve extensions and validate against the declared schema.
@@ -943,10 +938,10 @@ Complete these in order after FF-000 through FF-009.
       stale mappings and split/join. Unit, conformance, macro/filter, math/code/
       reference/comment, malformed grammar, escaping, UTF-16, 1,000-paragraph,
       detection, re-import, and generated browser coverage verifies the workflow.
-      An opt-in `pdflatex` compile/PDF test is included
-      (`OPENTLC_RUN_LATEX_ENGINE=1`), but no TeX engine is installed here, so
-      release CI must execute that gate with representative macro packages before
-      compiled-output support is advertised.
+      The strict external gate compiles a translated article to a non-empty PDF
+      with pdfTeX/TeX Live and records the exact engine version. The fixture uses
+      the standard article class; documents that depend on additional user macro
+      packages still require those packages in their target environment.
 - [x] **FF-307 — TTML (`.ttml`, `.dfxp`).** Add namespace/profile-aware timed-text
       handling, nested spans, styling, regions, frame/tick rates, timing
       expressions, language, and whitespace. Validate against the selected TTML
@@ -990,7 +985,8 @@ Complete these in order after FF-000 through FF-009.
       styles, resource paths, macros, comments and source encoding while
       reparsing every result. Unit, conformance, filter, malformed-input,
       UTF-16, 1,000-entry, detection, re-import and browser coverage is included;
-      an opt-in GNU windres compile gate is available for equipped environments.
+      the strict native gate compiles a translated fixture to a real RES artifact
+      with GNU windres.
       Qt QML complete: a JavaScript/QML lexer validates strings, escapes,
       comments, regex literals and balanced object/call syntax. It extracts only
       direct non-interpolated literal arguments selected for `qsTr`,

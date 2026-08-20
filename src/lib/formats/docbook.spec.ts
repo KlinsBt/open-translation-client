@@ -16,6 +16,9 @@ import { importDocBookFile, validateDocBookFile } from "./docbook";
 import { decodeTextBytes } from "./safeInput";
 import type { FormatOptionValues } from "./types";
 
+const XMLLINT_AVAILABLE =
+	spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status === 0;
+
 async function importProject(
 	content: BlobPart,
 	options: Readonly<FormatOptionValues> = {},
@@ -201,31 +204,32 @@ describe("DocBook 4/5 workflow", () => {
 		);
 	});
 
-	it("imports 1,000 paragraphs deterministically and passes independent XML validation", async () => {
-		const source = `<book xmlns="http://docbook.org/ns/docbook" version="5.2"><title>Large</title><chapter xml:id="chapter"><title>Chapter</title>${Array.from(
-			{ length: 1_000 },
-			(_, index) => `<para xml:id="p${index}">Message ${index}</para>`,
-		).join("")}</chapter></book>`;
-		const first = await importDocBookFile(new File([source], "large.dbk"));
-		const second = await importDocBookFile(new File([source], "large.dbk"));
-		if (first.kind !== "segments" || second.kind !== "segments")
-			throw new Error("Expected DocBook segments");
-		expect(first.segments).toHaveLength(1_002);
-		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
-		if (spawnSync("xmllint", ["--version"], { timeout: 5_000 }).status !== 0)
-			return;
-		const { project } = await importProject(source);
-		const directory = mkdtempSync(join(tmpdir(), "opentlc-docbook-"));
-		try {
-			const path = join(directory, "translated.dbk");
-			writeFileSync(path, buildDocBookTranslation(project));
-			const checked = spawnSync("xmllint", ["--noout", "--nonet", path], {
-				encoding: "utf8",
-				timeout: 5_000,
-			});
-			expect(checked.status, checked.stderr).toBe(0);
-		} finally {
-			rmSync(directory, { recursive: true, force: true });
-		}
-	});
+	it.skipIf(!XMLLINT_AVAILABLE)(
+		"imports 1,000 paragraphs deterministically and passes independent XML validation",
+		async () => {
+			const source = `<book xmlns="http://docbook.org/ns/docbook" version="5.2"><title>Large</title><chapter xml:id="chapter"><title>Chapter</title>${Array.from(
+				{ length: 1_000 },
+				(_, index) => `<para xml:id="p${index}">Message ${index}</para>`,
+			).join("")}</chapter></book>`;
+			const first = await importDocBookFile(new File([source], "large.dbk"));
+			const second = await importDocBookFile(new File([source], "large.dbk"));
+			if (first.kind !== "segments" || second.kind !== "segments")
+				throw new Error("Expected DocBook segments");
+			expect(first.segments).toHaveLength(1_002);
+			expect(second.segmentsMeta).toEqual(first.segmentsMeta);
+			const { project } = await importProject(source);
+			const directory = mkdtempSync(join(tmpdir(), "opentlc-docbook-"));
+			try {
+				const path = join(directory, "translated.dbk");
+				writeFileSync(path, buildDocBookTranslation(project));
+				const checked = spawnSync("xmllint", ["--noout", "--nonet", path], {
+					encoding: "utf8",
+					timeout: 5_000,
+				});
+				expect(checked.status, checked.stderr).toBe(0);
+			} finally {
+				rmSync(directory, { recursive: true, force: true });
+			}
+		},
+	);
 });

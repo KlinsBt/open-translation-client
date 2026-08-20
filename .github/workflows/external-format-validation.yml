@@ -1,0 +1,82 @@
+name: External format validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/lib/formats/**"
+      - "src/lib/functions/outputGeneration/**"
+      - "scripts/runExternalValidators.mjs"
+      - ".github/workflows/external-format-validation.yml"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-generated-files:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DITA_OT_VERSION: "4.4"
+      EPUBCHECK_VERSION: "5.3.0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+          cache: npm
+
+      - name: Install packaged validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            binutils-mingw-w64-x86-64 \
+            default-jre-headless \
+            ffmpeg \
+            gcc-mingw-w64-x86-64 \
+            gettext \
+            libreoffice-calc \
+            libreoffice-impress \
+            libreoffice-writer \
+            libxml2-utils \
+            poppler-utils \
+            qt6-declarative-dev-tools \
+            texlive-latex-base \
+            unzip
+          echo "/usr/lib/qt6/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned EPUBCheck and DITA-OT releases
+        run: |
+          mkdir -p "$RUNNER_TEMP/external-tools" "$RUNNER_TEMP/external-bin"
+          curl --fail --location --retry 3 \
+            "https://github.com/w3c/epubcheck/releases/download/v${EPUBCHECK_VERSION}/epubcheck-${EPUBCHECK_VERSION}.zip" \
+            --output "$RUNNER_TEMP/epubcheck.zip"
+          echo "6c07e68584b2e2ce2f89fe06e1246dfead3eb36b46b340e7d93524f29dcff6c5  $RUNNER_TEMP/epubcheck.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/epubcheck.zip" -d "$RUNNER_TEMP/external-tools"
+          printf '#!/usr/bin/env bash\nexec java -jar "%s" "$@"\n' \
+            "$RUNNER_TEMP/external-tools/epubcheck-${EPUBCHECK_VERSION}/epubcheck.jar" \
+            > "$RUNNER_TEMP/external-bin/epubcheck"
+          chmod +x "$RUNNER_TEMP/external-bin/epubcheck"
+
+          curl --fail --location --retry 3 \
+            "https://github.com/dita-ot/dita-ot/releases/download/${DITA_OT_VERSION}/dita-ot-${DITA_OT_VERSION}.zip" \
+            --output "$RUNNER_TEMP/dita-ot.zip"
+          echo "598b9d405ed88112abb08a41189d750584e7eece86e89e97787777dea19401a0  $RUNNER_TEMP/dita-ot.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/dita-ot.zip" -d "$RUNNER_TEMP/external-tools"
+          echo "$RUNNER_TEMP/external-bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/external-tools/dita-ot-${DITA_OT_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - run: npm clean-install --ignore-scripts
+      - name: Reopen, compile, and validate generated fixtures
+        run: npm run test:external
+
+      - name: Upload validator versions, commands, fixtures, and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-validator-report-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
