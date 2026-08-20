@@ -7,9 +7,12 @@
 		tbMatches,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { getTotalWordCount } from "$lib/functions/statistics";
+	import { notifyError } from "$lib/components/notifications/toastStore";
 
-	function fillTargetText(term: string) {
+	async function fillTargetText(term: string) {
 		if (!$singleUserData) return console.log("Data not found");
+		if ($singleUserData.translationData.checked[$selectedSegmentId])
+			return notifyError("Unlock this segment before applying a term.");
 		let newUserData = $singleUserData;
 		if (newUserData.translationData.seg2[$selectedSegmentId] === "") {
 			newUserData.translationData.seg2[$selectedSegmentId] += term;
@@ -18,7 +21,7 @@
 		}
 
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
+		await updateTranslationOnIndexedDB($singleUserData);
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
 
@@ -44,9 +47,8 @@
 
 	<div class="tb-segments">
 		{#each $tbMatches as match, i}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div
+			<button
+				type="button"
 				class="tb-sub-container"
 				onclick={() => fillTargetText(match.foundEntry)}
 			>
@@ -62,7 +64,7 @@
 						</div>
 					{/if}
 				</div>
-			</div>
+			</button>
 		{/each}
 	</div>
 </div>
@@ -134,6 +136,13 @@
 		/* height: 100%; */
 		border-top: 2px solid var(--color-theme-3);
 		cursor: pointer;
+		border-right: 0;
+		border-bottom: 0;
+		border-left: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: left;
 	}
 
 	.tb-sub-container:hover {

@@ -38,6 +38,50 @@ const DURABILITY = "relaxed"; // "strict" or "relaxed"
 export const INDEXED_DB_WRITE_BATCH_SIZE = 100;
 
 let db: IDBDatabase | null = null;
+let databasePromise: Promise<IDBDatabase> | null = null;
+let writeQueue: Promise<unknown> = Promise.resolve();
+
+function enqueueWrite<T>(operation: () => Promise<T>): Promise<T> {
+	const result = writeQueue.catch(() => undefined).then(operation);
+	writeQueue = result.catch(() => undefined);
+	return result;
+}
+
+function completeTransaction(transaction: IDBTransaction): Promise<void> {
+	return new Promise((resolve, reject) => {
+		transaction.oncomplete = () => resolve();
+		transaction.onerror = () =>
+			reject(transaction.error ?? new Error("IndexedDB transaction failed."));
+		transaction.onabort = () =>
+			reject(
+				transaction.error ?? new Error("IndexedDB transaction was aborted."),
+			);
+	});
+}
+
+function storageError(error: unknown): Error {
+	if (error instanceof DOMException && error.name === "QuotaExceededError")
+		return new Error(
+			"This project exceeds the browser's available local storage. Free browser storage or import a smaller file, then try again.",
+		);
+	return error instanceof Error
+		? error
+		: new Error("The browser could not save this data locally.");
+}
+
+export async function assertLocalStorageCapacity(
+	inputBytes: number,
+): Promise<void> {
+	if (typeof navigator === "undefined" || !navigator.storage?.estimate) return;
+	const estimate = await navigator.storage.estimate();
+	if (estimate.quota === undefined || estimate.usage === undefined) return;
+	const available = Math.max(0, estimate.quota - estimate.usage);
+	const projected = inputBytes * 2.5 + 5 * 1024 * 1024;
+	if (projected > available)
+		throw new Error(
+			`This import may require about ${Math.ceil(projected / 1024 / 1024)} MB of local storage, but only ${Math.floor(available / 1024 / 1024)} MB is available. Free browser storage or choose a smaller file.`,
+		);
+}
 
 export function ensureProjectModels(userData: UserData): UserData {
 	Object.assign(userData, migrateProjectData(userData));
@@ -89,7 +133,9 @@ export function ensureProjectModels(userData: UserData): UserData {
 
 // Open (or create) the IndexedDB database
 function openDatabase(): Promise<IDBDatabase> {
-	return new Promise((resolve, reject) => {
+	if (db) return Promise.resolve(db);
+	if (databasePromise) return databasePromise;
+	databasePromise = new Promise((resolve, reject) => {
 		const request = indexedDB.open(DB_NAME, DB_VERSION);
 
 		request.onupgradeneeded = (event) => {
@@ -116,6 +162,11 @@ function openDatabase(): Promise<IDBDatabase> {
 
 		request.onsuccess = (event) => {
 			db = (event.target as IDBOpenDBRequest).result;
+			db.onversionchange = () => {
+				db?.close();
+				db = null;
+				databasePromise = null;
+			};
 			resolve(db);
 		};
 
@@ -124,9 +175,11 @@ function openDatabase(): Promise<IDBDatabase> {
 				"IndexedDB error:",
 				(event.target as IDBOpenDBRequest).error,
 			);
+			databasePromise = null;
 			reject((event.target as IDBOpenDBRequest).error);
 		};
 	});
+	return databasePromise;
 }
 
 // Load translations from IndexedDB
@@ -202,9 +255,9 @@ export async function saveNewTranslationToIndexedDB(
 	fileType: Type,
 	fileTypeRef: TypeRef,
 ): Promise<void> {
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		const transaction = db.transaction(DB_USER_STORE_NAME, "readwrite", {
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(DB_USER_STORE_NAME, "readwrite", {
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
@@ -226,17 +279,13 @@ export async function saveNewTranslationToIndexedDB(
 				},
 			}),
 		);
-		const request = store.add(newUserData);
-
-		request.onsuccess = () => {
-			loadTranslationsUserDataFromIndexedDB(); // Reload data after saving
-			resolve();
-		};
-
-		request.onerror = (event) => {
-			console.error("Transaction error:", (event.target as IDBRequest).error);
-			reject((event.target as IDBRequest).error);
-		};
+		store.add(newUserData);
+		try {
+			await completeTransaction(transaction);
+			await loadTranslationsUserDataFromIndexedDB();
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 
@@ -244,16 +293,23 @@ export async function saveNewTranslationToIndexedDB(
 export async function updateAllTranslationsOnIndexedDB(
 	fullUserData: UserData[],
 ): Promise<void> {
-	const db = await openDatabase();
-	await processInBatches(
-		fullUserData,
-		async (batch) => {
-			for (const data of batch) ensureProjectModels(data);
-			await writeTranslationBatch(db, batch);
-		},
-		{ batchSize: INDEXED_DB_WRITE_BATCH_SIZE },
-	);
-	await loadTranslationsUserDataFromIndexedDB();
+	const snapshot = structuredClone(fullUserData);
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		try {
+			await processInBatches(
+				snapshot,
+				async (batch) => {
+					for (const data of batch) ensureProjectModels(data);
+					await writeTranslationBatch(database, batch);
+				},
+				{ batchSize: INDEXED_DB_WRITE_BATCH_SIZE },
+			);
+			await loadTranslationsUserDataFromIndexedDB();
+		} catch (error) {
+			throw storageError(error);
+		}
+	});
 }
 
 function writeTranslationBatch(
@@ -265,13 +321,7 @@ function writeTranslationBatch(
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
-		transaction.oncomplete = () => resolve();
-		transaction.onerror = () =>
-			reject(transaction.error ?? new Error("IndexedDB transaction failed."));
-		transaction.onabort = () =>
-			reject(
-				transaction.error ?? new Error("IndexedDB transaction was aborted."),
-			);
+		completeTransaction(transaction).then(resolve, reject);
 		for (const data of batch) store.put(data);
 	});
 }
@@ -280,45 +330,35 @@ function writeTranslationBatch(
 export async function updateTranslationOnIndexedDB(
 	userData: UserData,
 ): Promise<void> {
-	ensureProjectModels(userData);
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		const transaction = db.transaction(DB_USER_STORE_NAME, "readwrite", {
+	const snapshot = structuredClone(userData);
+	ensureProjectModels(snapshot);
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(DB_USER_STORE_NAME, "readwrite", {
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
-		const request = store.put(userData);
-
-		request.onsuccess = () => {
-			loadTranslationsUserDataFromIndexedDB();
-			resolve();
-		};
-
-		request.onerror = (event) => {
-			reject((event.target as IDBRequest).error);
-		};
+		store.put(snapshot);
+		try {
+			await completeTransaction(transaction);
+		} catch (error) {
+			throw storageError(error);
+		}
 	});
 }
 
 export async function deleteTranslationFromIndexedDB(
 	id: number,
 ): Promise<void> {
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		const transaction = db.transaction(DB_USER_STORE_NAME, "readwrite", {
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(DB_USER_STORE_NAME, "readwrite", {
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
-		const request = store.delete(id);
-
-		request.onsuccess = () => {
-			loadTranslationsUserDataFromIndexedDB();
-			resolve();
-		};
-
-		request.onerror = (event) => {
-			reject((event.target as IDBRequest).error);
-		};
+		store.delete(id);
+		await completeTransaction(transaction);
+		await loadTranslationsUserDataFromIndexedDB();
 	});
 }
 
@@ -401,70 +441,58 @@ export async function getTmDataById(id: number): Promise<TmData | null> {
 
 export async function saveNewTmToIndexedDB(tm: TmData): Promise<void> {
 	Object.assign(tm, migrateTmData(tm));
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		// Create a clean, serializable copy of `tm`
-		const cleanTm = JSON.parse(JSON.stringify(tm));
-
-		const transaction = db.transaction(DB_TM_NAME, "readwrite", {
+	const cleanTm = structuredClone(tm);
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(DB_TM_NAME, "readwrite", {
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_TM_NAME);
-		const request = store.add(cleanTm);
-
-		request.onsuccess = () => {
-			loadTmDataFromIndexedDB();
-			resolve();
-		};
-
-		request.onerror = (event) => {
-			console.error("Transaction error:", (event.target as IDBRequest).error);
-			reject((event.target as IDBRequest).error);
-		};
+		store.add(cleanTm);
+		await completeTransaction(transaction);
+		await loadTmDataFromIndexedDB();
 	});
 }
 
 export async function updateTmOnIndexedDB(tm: TmData): Promise<void> {
 	Object.assign(tm, migrateTmData(tm));
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		// Create a clean, serializable copy of `tm`
-		const cleanTm = JSON.parse(JSON.stringify(tm));
-
-		const transaction = db.transaction(DB_TM_NAME, "readwrite", {
+	const cleanTm = structuredClone(tm);
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(DB_TM_NAME, "readwrite", {
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_TM_NAME);
-		const request = store.put(cleanTm);
-
-		request.onsuccess = () => {
-			loadTmDataFromIndexedDB();
-			resolve();
-		};
-
-		request.onerror = (event) => {
-			reject((event.target as IDBRequest).error);
-		};
+		store.put(cleanTm);
+		await completeTransaction(transaction);
 	});
 }
 
 export async function deleteTmFromIndexedDB(id: number): Promise<void> {
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		const transaction = db.transaction(DB_TM_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_TM_NAME);
-		const request = store.delete(id);
-
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(
+			[DB_TM_NAME, DB_USER_STORE_NAME],
+			"readwrite",
+			{
+				durability: DURABILITY,
+			},
+		);
+		transaction.objectStore(DB_TM_NAME).delete(id);
+		const projects = transaction.objectStore(DB_USER_STORE_NAME);
+		const request = projects.getAll();
 		request.onsuccess = () => {
-			loadTmDataFromIndexedDB();
-			resolve();
+			for (const project of request.result as UserData[]) {
+				if (project.translationData.tm?.id !== id) continue;
+				project.translationData.tm = { id: null, name: null, active: false };
+				projects.put(project);
+			}
 		};
-
-		request.onerror = (event) => {
-			reject((event.target as IDBRequest).error);
-		};
+		await completeTransaction(transaction);
+		await Promise.all([
+			loadTmDataFromIndexedDB(),
+			loadTranslationsUserDataFromIndexedDB(),
+		]);
 	});
 }
 ////////////////////////////////////////////////////////////////////////////////////
@@ -552,70 +580,58 @@ export async function getTbDataById(id: number): Promise<TbData | null> {
 
 export async function saveNewTbToIndexedDB(tb: TbData): Promise<void> {
 	Object.assign(tb, migrateTbData(tb));
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		// Create a clean, serializable copy of `tm`
-		const cleanTb = JSON.parse(JSON.stringify(tb));
-
-		const transaction = db.transaction(DB_TB_NAME, "readwrite", {
+	const cleanTb = structuredClone(tb);
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(DB_TB_NAME, "readwrite", {
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_TB_NAME);
-		const request = store.add(cleanTb);
-
-		request.onsuccess = () => {
-			loadTbDataFromIndexedDB();
-			resolve();
-		};
-
-		request.onerror = (event) => {
-			console.error("Transaction error:", (event.target as IDBRequest).error);
-			reject((event.target as IDBRequest).error);
-		};
+		store.add(cleanTb);
+		await completeTransaction(transaction);
+		await loadTbDataFromIndexedDB();
 	});
 }
 
 export async function updateTbOnIndexedDB(tb: TbData): Promise<void> {
 	Object.assign(tb, migrateTbData(tb));
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		// Create a clean, serializable copy of `tm`
-		const cleanTb = JSON.parse(JSON.stringify(tb));
-
-		const transaction = db.transaction(DB_TB_NAME, "readwrite", {
+	const cleanTb = structuredClone(tb);
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(DB_TB_NAME, "readwrite", {
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_TB_NAME);
-		const request = store.put(cleanTb);
-
-		request.onsuccess = () => {
-			loadTbDataFromIndexedDB();
-			resolve();
-		};
-
-		request.onerror = (event) => {
-			reject((event.target as IDBRequest).error);
-		};
+		store.put(cleanTb);
+		await completeTransaction(transaction);
 	});
 }
 
 export async function deleteTbFromIndexedDB(id: number): Promise<void> {
-	const db = await openDatabase();
-	return new Promise((resolve, reject) => {
-		const transaction = db.transaction(DB_TB_NAME, "readwrite", {
-			durability: DURABILITY,
-		});
-		const store = transaction.objectStore(DB_TB_NAME);
-		const request = store.delete(id);
-
+	return enqueueWrite(async () => {
+		const database = await openDatabase();
+		const transaction = database.transaction(
+			[DB_TB_NAME, DB_USER_STORE_NAME],
+			"readwrite",
+			{
+				durability: DURABILITY,
+			},
+		);
+		transaction.objectStore(DB_TB_NAME).delete(id);
+		const projects = transaction.objectStore(DB_USER_STORE_NAME);
+		const request = projects.getAll();
 		request.onsuccess = () => {
-			loadTbDataFromIndexedDB();
-			resolve();
+			for (const project of request.result as UserData[]) {
+				if (project.translationData.tb?.id !== id) continue;
+				project.translationData.tb = { id: null, name: null, active: false };
+				projects.put(project);
+			}
 		};
-
-		request.onerror = (event) => {
-			reject((event.target as IDBRequest).error);
-		};
+		await completeTransaction(transaction);
+		await Promise.all([
+			loadTbDataFromIndexedDB(),
+			loadTranslationsUserDataFromIndexedDB(),
+		]);
 	});
 }
 ////////////////////////////////////////////////////////////////////////////////////

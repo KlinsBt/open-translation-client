@@ -12,6 +12,7 @@
 		notifyInfo,
 		notifyError,
 	} from "$lib/components/notifications/toastStore";
+	import { filterWithSourceIndexes } from "$lib/components/resources/resourceFiltering";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -43,7 +44,7 @@
 
 	let searchQuery: string = $state("");
 	let filteredData = $derived(
-		localTbData.entries.filter((t) => {
+		filterWithSourceIndexes(localTbData.entries, (t) => {
 			// Check if searchQuery matches source.segment
 			for (let i = 0; i < t.terms.length; i++) {
 				const sourceMatch = t.terms[i].term
@@ -52,24 +53,42 @@
 				// Return true if searchQuery matches
 				if (sourceMatch) return true;
 			}
+			return false;
 		}),
 	);
 
 	async function toggleEditMode(key: string) {
-		editMode.set(key, !editMode.get(key));
-
-		if (!editMode.get(key)) {
-			singleTbData.set(localTbData);
-			await updateTbOnIndexedDB(localTbData);
-			notifyInfo("Entry saved");
-		}
-
+		const isEditing = !editMode.get(key);
+		editMode.set(key, isEditing);
 		editMode = new Map(editMode);
+
+		if (!isEditing) {
+			await persistTb("Entry saved", "info");
+		}
 	}
 
 	function getLangByCode(code: string) {
 		let lang = LANGUAGES.find((lang) => lang.code === code);
 		return lang ? `${lang.name} (${lang.code})` : "";
+	}
+
+	async function persistTb(
+		message: string,
+		tone: "success" | "info" = "success",
+	) {
+		const snapshot = $state.snapshot(localTbData);
+		singleTbData.set(snapshot);
+		try {
+			await updateTbOnIndexedDB(snapshot);
+			if (tone === "info") notifyInfo(message);
+			else notifySuccess(message);
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not save the term base.",
+			);
+		}
 	}
 
 	async function addNewEntry() {
@@ -83,8 +102,7 @@
 				},
 			],
 		});
-		await updateTbOnIndexedDB(localTbData);
-		notifySuccess("Entry added");
+		await persistTb("Entry added");
 	}
 
 	async function addNewTerm(termId: number) {
@@ -93,8 +111,7 @@
 			term: "",
 			notes: [],
 		});
-		await updateTbOnIndexedDB(localTbData);
-		notifySuccess("Term added");
+		await persistTb("Term added");
 	}
 
 	async function addNewNote(unitId: number, termId: number) {
@@ -118,8 +135,7 @@
 			text: "",
 		});
 
-		await updateTbOnIndexedDB(localTbData);
-		notifySuccess("Note added");
+		await persistTb("Note added");
 	}
 
 	async function deleteNote(unitId: number, termId: number, noteIndex: number) {
@@ -139,15 +155,13 @@
 			term.notes.splice(noteIndex, 1);
 		}
 
-		await updateTbOnIndexedDB(localTbData);
-		notifyError("Note deleted");
+		await persistTb("Note deleted", "info");
 	}
 
 	async function deleteTermUnit(unitId: number) {
 		localTbData.entries.splice(unitId, 1);
 		showModal = false;
-		await updateTbOnIndexedDB(localTbData);
-		notifyError("Term unit deleted");
+		await persistTb("Term unit deleted", "info");
 	}
 
 	async function deleteEntry(unitId: number, termId: number) {
@@ -156,8 +170,7 @@
 			return deleteTermUnit(unitId);
 		}
 		showModal = false;
-		await updateTbOnIndexedDB(localTbData);
-		notifyError("Entry deleted");
+		await persistTb("Entry deleted", "info");
 	}
 
 	function ShowModal(termId: number, trgId: number) {
@@ -249,7 +262,9 @@
 			bind:this={segmentsContainer}
 			onscroll={handleScroll}
 		>
-			{#each filteredData.slice(0, visibleSegmentsCount) as unit, unitId}
+			{#each filteredData.slice(0, visibleSegmentsCount) as filteredUnit, unitId (filteredUnit.sourceIndex)}
+				{@const unit = filteredUnit.item}
+				{@const sourceIndex = filteredUnit.sourceIndex}
 				<article class="resource-unit-card">
 					<div class="tu-header">
 						<h3>
@@ -257,7 +272,7 @@
 						</h3>
 						<button
 							class="editor-action primary"
-							onclick={() => addNewTerm(unitId)}
+							onclick={() => addNewTerm(sourceIndex)}
 						>
 							Add Entry +
 						</button>
@@ -268,7 +283,7 @@
 								<div class="language-selection">
 									<select
 										class="lang-select"
-										disabled={!editMode.get(`target-${unitId}-${termId}`)}
+										disabled={!editMode.get(`target-${sourceIndex}-${termId}`)}
 										bind:value={term.lang}
 									>
 										<option disabled selected value=""
@@ -282,13 +297,14 @@
 									</select>
 									<button
 										class="editor-action {editMode.get(
-											`target-${unitId}-${termId}`,
+											`target-${sourceIndex}-${termId}`,
 										)
 											? 'save'
 											: 'secondary'}"
-										onclick={() => toggleEditMode(`target-${unitId}-${termId}`)}
+										onclick={() =>
+											toggleEditMode(`target-${sourceIndex}-${termId}`)}
 									>
-										{#if editMode.get(`target-${unitId}-${termId}`)}
+										{#if editMode.get(`target-${sourceIndex}-${termId}`)}
 											Save <SaveFile marginBottom="-2px" />
 										{:else}
 											Edit <Edit marginBottom="-2px" />
@@ -296,13 +312,13 @@
 									</button>
 									<button
 										class="editor-action danger"
-										onclick={() => ShowModal(unitId, termId)}
+										onclick={() => ShowModal(sourceIndex, termId)}
 									>
 										Delete <Delete marginBottom="-2px" />
 									</button>
 								</div>
 								<div class="term-field">
-									{#if !editMode.get(`target-${unitId}-${termId}`)}
+									{#if !editMode.get(`target-${sourceIndex}-${termId}`)}
 										<p class="field locked">{term.term}</p>
 									{:else}
 										<textarea
@@ -328,7 +344,7 @@
 												placeholder="Add Note"
 											></textarea>
 										{/if} -->
-											{:else if !editMode.get(`target-${unitId}-${termId}`)}
+											{:else if !editMode.get(`target-${sourceIndex}-${termId}`)}
 												{#if note.type === "" && note.text === ""}
 													<div class="note-with-attr-container-locked">
 														<p
@@ -370,21 +386,21 @@
 													></textarea>
 													<button
 														class="delete-note-btn editor-action danger icon-only"
-														onclick={() => deleteNote(unitId, termId, j)}
+														onclick={() => deleteNote(sourceIndex, termId, j)}
 														><Delete marginBottom="-2px" /></button
 													>
 												</div>
 											{/if}
 										{/each}
-									{:else if !editMode.get(`target-${unitId}-${termId}`)}
+									{:else if !editMode.get(`target-${sourceIndex}-${termId}`)}
 										<p>No notes available</p>
 									{:else}
 										<p>No notes available</p>
 									{/if}
-									{#if editMode.get(`target-${unitId}-${termId}`)}
+									{#if editMode.get(`target-${sourceIndex}-${termId}`)}
 										<button
 											class="editor-action secondary"
-											onclick={() => addNewNote(unitId, termId)}
+											onclick={() => addNewNote(sourceIndex, termId)}
 										>
 											Add Note +
 										</button>

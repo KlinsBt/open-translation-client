@@ -44,7 +44,9 @@
 		// Set loading state immediately
 		showLoading.set(true);
 		// Small timeout to ensure loading state is updated before proceeding
-		await new Promise((resolve) => setTimeout(resolve, 0));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 0);
+		});
 		let data = $userData.find((d) => d.id === id);
 		console.log(data);
 		if (!data) {
@@ -59,7 +61,7 @@
 			) {
 				console.log("Loading TM data");
 				// await loadTmDataOfProject(data.translationData.tm.id);
-				getAllTmDataFromIndexedDB();
+				await getAllTmDataFromIndexedDB();
 			}
 		}
 		if (data.translationData.tb) {
@@ -69,7 +71,7 @@
 			) {
 				console.log("Loading TB data");
 				// await loadTbDataOfProject(data.translationData.tb.id);
-				getAllTbDataFromIndexedDB();
+				await getAllTbDataFromIndexedDB();
 			}
 		}
 		singleUserData.set(data);
@@ -120,42 +122,58 @@
 	// 	console.log($singleTbData);
 	// }
 
-	function updateFileName(newName: string) {
+	async function updateFileName(newName: string) {
 		console.log("Updating file name to: ", newName);
 		if (!$singleUserData) return console.log("Data not found");
-		if (newName === "") return console.log("Invalid name");
+		if (!newName.trim()) return notifyError("Enter a project name.");
 		let newUserData = $singleUserData;
-		newUserData.translationData.name = newName;
+		newUserData.translationData.name = newName.trim();
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
-		editNameWindow = false;
-		show = false;
-		notifyInfo("Project name updated");
+		try {
+			await updateTranslationOnIndexedDB($singleUserData);
+			editNameWindow = false;
+			show = false;
+			notifyInfo("Project name updated");
+		} catch (error) {
+			notifyError(error instanceof Error ? error.message : "Rename failed.");
+		}
 	}
 
-	function updateFileLanguages() {
+	async function updateFileLanguages() {
 		if (!$singleUserData) return console.log("Data not found");
 		if (newTargetLang === "" || newSourceLang === "") {
 			notifyError("Please select both source and target languages");
+			return;
+		}
+		if (newTargetLang === newSourceLang) {
+			notifyError("Source and target languages must be different");
 			return;
 		}
 		let newUserData = $singleUserData;
 		newUserData.translationData.sourceLang = newSourceLang;
 		newUserData.translationData.targetLang = newTargetLang;
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
-		editLanguagesWindow = false;
-		show = false;
-		notifyInfo("Project languages updated");
+		try {
+			await updateTranslationOnIndexedDB($singleUserData);
+			editLanguagesWindow = false;
+			show = false;
+			notifyInfo("Project languages updated");
+		} catch (error) {
+			notifyError(error instanceof Error ? error.message : "Update failed.");
+		}
 	}
 
-	function handleSaveFileDeletion(id: number) {
+	async function handleSaveFileDeletion(id: number) {
 		if (typeof id !== "number") return console.log("Invalid ID");
 		console.log("Deleting file with ID: ", id);
-		deleteTranslationFromIndexedDB(id);
-		confirmDeletionWindow = false;
-		show = false;
-		notifyError("Project deleted");
+		try {
+			await deleteTranslationFromIndexedDB(id);
+			confirmDeletionWindow = false;
+			show = false;
+			notifyWarning("Project deleted");
+		} catch (error) {
+			notifyError(error instanceof Error ? error.message : "Deletion failed.");
+		}
 	}
 
 	let show: boolean = $state(false);
@@ -406,20 +424,22 @@
 	{/if}
 {/snippet}
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-	role="presentation"
-	class="modal-element-global {show ? '' : 'close-modal-global'}"
-	onclick={closeProjectModal}
->
-	<Modal
-		title={modalTitle}
-		description={projectName}
-		content={options}
-		onClose={closeProjectModal}
-	/>
-</div>
+{#if show}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		role="presentation"
+		class="modal-element-global"
+		onclick={closeProjectModal}
+	>
+		<Modal
+			title={modalTitle}
+			description={projectName}
+			content={options}
+			onClose={closeProjectModal}
+		/>
+	</div>
+{/if}
 
 {#if viewMode === "cards"}
 	<button

@@ -22,12 +22,8 @@ async function generateTbxFileDownload(tbxData: string, name: string) {
 }
 
 export async function generateTbxSaveFile(sourceLang: string, tbxData: TbData) {
-	try {
-		await generateTbxFileDownload(
-			buildTbx(sourceLang, tbxData),
-			tbxData.name || "TBX_Save_File",
-		);
-	} catch (error) {
-		console.error("Failed to generate TBX save file:", error);
-	}
+	await generateTbxFileDownload(
+		buildTbx(sourceLang, tbxData),
+		tbxData.name || "TBX_Save_File",
+	);
 }

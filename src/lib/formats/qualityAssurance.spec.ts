@@ -8,6 +8,7 @@ import {
 	ExportQaError,
 	FORMAT_QA_POLICIES,
 	formatExportQaResult,
+	getProjectCompletionSummary,
 	runProjectExportQuality,
 } from "./qualityAssurance";
 import { generateTextTranslation } from "$lib/functions/outputGeneration/outputGenerationText";
@@ -249,5 +250,19 @@ describe("export blocking and messages", () => {
 		expect(formatExportQaResult(result)).toBe(
 			"Export QA passed for 1 segment.",
 		);
+	});
+
+	it("reports empty and unconfirmed delivery segments separately", () => {
+		const summary = getProjectCompletionSummary(
+			makeUserData({
+				seg1: ["One", "Two", "Three"],
+				seg2: ["Uno", "", "Tres"],
+				checked: [true, false, false],
+			}),
+		);
+		expect(summary).toEqual({
+			emptyTargetUnits: [1],
+			unconfirmedUnits: [1, 2],
+		});
 	});
 });

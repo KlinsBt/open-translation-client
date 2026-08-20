@@ -293,26 +293,30 @@ describe("EPUB 2/3 package workflow", () => {
 		expect(second.segmentsMeta).toEqual(first.segmentsMeta);
 	});
 
-	it("provides an opt-in EPUBCheck gate when the validator is installed", async () => {
-		if (process.env.OPENTLC_RUN_EPUBCHECK !== "1") return;
-		if (spawnSync("epubcheck", ["--version"]).status !== 0) return;
-		const file = await epubFile();
-		const { project } = await importProject(file);
-		const output = await buildEpubTranslationPackage(project);
-		const directory = mkdtempSync(join(tmpdir(), "opentlc-epub-"));
-		try {
-			const path = join(directory, "translated.epub");
-			writeFileSync(path, new Uint8Array(await output.arrayBuffer()));
-			const checked = spawnSync("epubcheck", [path], {
-				encoding: "utf8",
-				timeout: 30_000,
-			});
-			if (checked.status !== 0)
-				throw new Error(
-					`EPUBCheck failed: ${checked.stderr || checked.stdout}`,
-				);
-		} finally {
-			rmSync(directory, { recursive: true, force: true });
-		}
-	});
+	it.runIf(
+		process.env.OPENTLC_RUN_EPUBCHECK === "1" &&
+			spawnSync("epubcheck", ["--version"]).status === 0,
+	)(
+		"provides an opt-in EPUBCheck gate when the validator is installed",
+		async () => {
+			const file = await epubFile();
+			const { project } = await importProject(file);
+			const output = await buildEpubTranslationPackage(project);
+			const directory = mkdtempSync(join(tmpdir(), "opentlc-epub-"));
+			try {
+				const path = join(directory, "translated.epub");
+				writeFileSync(path, new Uint8Array(await output.arrayBuffer()));
+				const checked = spawnSync("epubcheck", [path], {
+					encoding: "utf8",
+					timeout: 30_000,
+				});
+				if (checked.status !== 0)
+					throw new Error(
+						`EPUBCheck failed: ${checked.stderr || checked.stdout}`,
+					);
+			} finally {
+				rmSync(directory, { recursive: true, force: true });
+			}
+		},
+	);
 });

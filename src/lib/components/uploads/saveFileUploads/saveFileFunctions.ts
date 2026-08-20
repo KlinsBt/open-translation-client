@@ -343,8 +343,7 @@ export function validateJsonData(data: any): boolean {
 		return false;
 	if (
 		!Array.isArray(td.seg1) ||
-		!td.seg1.every((s: any) => typeof s === "string") ||
-		td.seg1.length !== td.seg2.length
+		!td.seg1.every((s: any) => typeof s === "string")
 	)
 		return false;
 	if (
@@ -352,6 +351,7 @@ export function validateJsonData(data: any): boolean {
 		!td.seg2.every((s: any) => typeof s === "string")
 	)
 		return false;
+	if (td.seg1.length !== td.seg2.length) return false;
 	if (
 		!Array.isArray(td.checked) ||
 		!td.checked.every((s: any) => typeof s === "boolean") ||

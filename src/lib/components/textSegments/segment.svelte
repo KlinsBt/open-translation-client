@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from "svelte";
 	import {
 		updateTmOnIndexedDB,
 		updateTranslationOnIndexedDB,
@@ -17,7 +18,10 @@
 	import { searchForMatches } from "$lib/components/translationMemory/tmFunctions";
 	import { getTermMatches } from "$lib/components/termBase/tbFunctions";
 	import type { TbData, TmData } from "$lib/types/types";
-	import { notifySuccess } from "$lib/components/notifications/toastStore";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 	import { getSplitOffsetFromSelection } from "$lib/functions/parsing/segmentSelection";
 
 	let {
@@ -66,6 +70,15 @@
 		$singleUserData.translationData.tm?.active ?? false,
 	);
 	let isSelected: boolean = $derived($selectedSegmentId === id);
+	let validTmActive: boolean = $derived(
+		tmActive &&
+			$singleUserData.translationData.tm?.id != null &&
+			$tmData.some(
+				(resource) => resource.id === $singleUserData.translationData.tm?.id,
+			),
+	);
+	let saveTimer: ReturnType<typeof setTimeout> | null = null;
+	let pendingSave: Promise<void> | null = null;
 	type SourceDisplayPart = { text: string; markerOffset: number | null };
 	let sourceDisplayParts: SourceDisplayPart[] = $derived.by(() => {
 		const offsets = new Set(
@@ -104,12 +117,43 @@
 		}
 	}
 
-	function updateSegmentLock() {
+	async function persistProject() {
+		try {
+			await updateTranslationOnIndexedDB($singleUserData);
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "Could not save this project.",
+			);
+		}
+	}
+
+	function scheduleProjectSave() {
+		if (saveTimer) clearTimeout(saveTimer);
+		saveTimer = setTimeout(() => {
+			saveTimer = null;
+			pendingSave = persistProject().finally(() => (pendingSave = null));
+		}, 300);
+	}
+
+	async function flushProjectSave() {
+		if (saveTimer) {
+			clearTimeout(saveTimer);
+			saveTimer = null;
+			pendingSave = persistProject().finally(() => (pendingSave = null));
+		}
+		await pendingSave;
+	}
+
+	onDestroy(() => {
+		void flushProjectSave();
+	});
+
+	async function updateSegmentLock() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
 		newUserData.translationData.checked[id] = checked;
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
+		await persistProject();
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
 
@@ -119,18 +163,19 @@
 		let newUserData = $singleUserData;
 		newUserData.translationData.seg2[id] = textSegment2;
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
+		scheduleProjectSave();
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
 
-	function fillTargetSegmentText() {
+	async function fillTargetSegmentText() {
 		if (!$singleUserData) return console.log("Data not found");
+		if (checked) return notifyError("Unlock this segment before changing it.");
 		if (textSegment1 === "") return console.log("No text to add");
 		if (textSegment2 !== "") return console.log("Target segment is not empty");
 		let newUserData = $singleUserData;
 		newUserData.translationData.seg2[id] = textSegment1;
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
+		await persistProject();
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
 
@@ -160,7 +205,7 @@
 	}
 
 	function splitAtCaret() {
-		if (splitOffset === null) return;
+		if (checked || splitOffset === null) return;
 		onSplitSegment?.({ index: id, offset: splitOffset });
 	}
 
@@ -175,6 +220,7 @@
 	}
 
 	function toggleCombineSelect() {
+		if (checked) return;
 		onToggleCombine?.({ index: id });
 	}
 
@@ -279,7 +325,9 @@
 		sourceSentence: string,
 		targetSentence: string,
 	) {
-		if (!$singleTmData) return console.log("TM Data not found");
+		if (checked) return notifyError("Unlock this segment before changing it.");
+		if (!validTmActive || !$singleTmData?.terms)
+			return notifyError("Choose an available translation memory first.");
 		let localTmData = $singleTmData;
 		console.log("Local TM Data: ", localTmData);
 		console.log("sourceLang: ", sourceLang);
@@ -344,6 +392,7 @@
 		class="combine-toggle-checkbox"
 		checked={combineSelected}
 		onchange={toggleCombineSelect}
+		disabled={checked}
 		title="Select for combining"
 	/>
 
@@ -351,7 +400,11 @@
 
 	<div class="field left source-text">
 		<div class="left-buttons-container">
-			<button class="translate-btn" onclick={() => fillTargetSegmentText()}>
+			<button
+				class="translate-btn"
+				onclick={() => fillTargetSegmentText()}
+				disabled={checked}
+			>
 				Fill
 				<span>→</span>
 			</button>
@@ -361,14 +414,14 @@
 					event.stopPropagation();
 					splitAtCaret();
 				}}
-				disabled={splitOffset === null}
+				disabled={checked || splitOffset === null}
 				title="Place the caret inside the source text to enable split"
 			>
 				Split
 			</button>
 			<button
 				class="tm-btn save"
-				disabled={tmActive ? false : true}
+				disabled={checked || !validTmActive}
 				onclick={() => addTranslationUnit(textSegment1, textSegment2)}
 			>
 				TM<span>+</span>
@@ -415,6 +468,7 @@
 				checkIfElligibleForTmOrTbSearch(textSegment1);
 			}}
 			oninput={handleInput}
+			onblur={flushProjectSave}
 			class="field right"
 			class:target-field={true}
 			style="

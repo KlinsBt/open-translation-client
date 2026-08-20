@@ -128,12 +128,21 @@
 	async function downloadTbx(id: number) {
 		if (id === undefined) return;
 		await setLoadingAndRender();
-		console.log("Downloading TBX File for ID:", id);
-		let tb = $tbData.find((tb) => tb.id === id) as TbData;
-		console.log("TB Data:", tb);
-		generateTbxSaveFile(tb.entries[0].terms[0].lang, tb);
-		showLoading.set(false);
-		notifySuccess("Term Base downloaded");
+		try {
+			const tb = $tbData.find((candidate) => candidate.id === id);
+			if (!tb) throw new Error("Term base not found.");
+			const sourceLanguage = tb.entries[0]?.terms[0]?.lang;
+			if (!sourceLanguage)
+				throw new Error("Add at least one term before exporting.");
+			await generateTbxSaveFile(sourceLanguage, tb);
+			notifySuccess("Term Base downloaded");
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "TBX export failed.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	async function selectTbToEdit(id: number) {

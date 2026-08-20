@@ -13,7 +13,7 @@ export function getTermMatches(
 		notes: string[];
 	}[] = [];
 
-	const normalizedSentence = searchSentence.toLowerCase();
+	const normalizedSentence = normalizeTermText(searchSentence);
 	const normalizeNotes = (
 		notes: string[] | { type: string; text: string }[],
 	): string[] =>
@@ -33,7 +33,7 @@ export function getTermMatches(
 		for (const sourceTerm of entry.terms) {
 			if (
 				sourceTerm.lang === sourceLanguage &&
-				normalizedSentence.includes(sourceTerm.term.toLowerCase())
+				containsWholeTerm(normalizedSentence, sourceTerm.term)
 			) {
 				// Find the corresponding term in the target language
 				const targetTerm = entry.terms.filter(
@@ -65,4 +65,22 @@ export function getTermMatches(
 
 	tbMatches.set(matches);
 	return matches;
+}
+
+export function normalizeTermText(value: string): string {
+	return value
+		.normalize("NFKC")
+		.toLocaleLowerCase()
+		.replace(/\s+/gu, " ")
+		.trim();
+}
+
+export function containsWholeTerm(sentence: string, rawTerm: string): boolean {
+	const term = normalizeTermText(rawTerm);
+	if (!term) return false;
+	const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const startsWithWord = /^[\p{L}\p{N}\p{M}_]/u.test(term);
+	const endsWithWord = /[\p{L}\p{N}\p{M}_]$/u.test(term);
+	const pattern = `${startsWithWord ? "(?<![\\p{L}\\p{N}\\p{M}_])" : ""}${escaped}${endsWithWord ? "(?![\\p{L}\\p{N}\\p{M}_])" : ""}`;
+	return new RegExp(pattern, "iu").test(sentence);
 }

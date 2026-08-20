@@ -99,13 +99,13 @@ async function canvasPng(
 ): Promise<Blob> {
 	if ("convertToBlob" in canvas)
 		return canvas.convertToBlob({ type: "image/png" });
-	return new Promise((resolve, reject) =>
+	return new Promise((resolve, reject) => {
 		canvas.toBlob(
 			(blob) =>
 				blob ? resolve(blob) : reject(new Error("Canvas PNG encoding failed.")),
 			"image/png",
-		),
-	);
+		);
+	});
 }
 
 const browserImageDecoder: LocalOcrImageDecoder = {

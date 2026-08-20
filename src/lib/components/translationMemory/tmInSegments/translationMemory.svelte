@@ -8,30 +8,37 @@
 		singleUserData,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { getTotalWordCount } from "$lib/functions/statistics";
-	import { notifySuccess } from "$lib/components/notifications/toastStore";
+	import {
+		notifyError,
+		notifySuccess,
+	} from "$lib/components/notifications/toastStore";
 
 	let showConfirmationModal: boolean = false;
 	let tempTargetText: string = "";
 
-	function fillTargetText(tm: string) {
+	async function fillTargetText(tm: string) {
 		if (!$singleUserData) return console.log("Data not found");
+		if ($singleUserData.translationData.checked[$selectedSegmentId])
+			return notifyError("Unlock this segment before applying a TM match.");
 		let newUserData = $singleUserData;
 		newUserData.translationData.seg2[$selectedSegmentId] = tm;
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
+		await updateTranslationOnIndexedDB($singleUserData);
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 		showConfirmationModal = false;
 		notifySuccess("Segment filled from TM");
 	}
 
-	function checkIfConfirmationIsNeeded(tm: string) {
+	async function checkIfConfirmationIsNeeded(tm: string) {
 		tempTargetText = tm;
 		if (!$singleUserData) return console.log("Data not found");
+		if ($singleUserData.translationData.checked[$selectedSegmentId])
+			return notifyError("Unlock this segment before applying a TM match.");
 		let newUserData = $singleUserData;
 		if (newUserData.translationData.seg2[$selectedSegmentId] === "") {
 			newUserData.translationData.seg2[$selectedSegmentId] = tm;
 			singleUserData.set(newUserData);
-			updateTranslationOnIndexedDB($singleUserData);
+			await updateTranslationOnIndexedDB($singleUserData);
 			seg2WordCount.set(
 				getTotalWordCount($singleUserData.translationData.seg2),
 			);
@@ -62,21 +69,21 @@
 	</div>
 {/snippet}
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-	role="presentation"
-	class="modal-element-global {showConfirmationModal
-		? ''
-		: 'close-modal-global'}"
-	onclick={() => (showConfirmationModal = false)}
->
-	<Modal
-		title="Replace target segment"
-		content={confirmationMenu}
-		onClose={() => (showConfirmationModal = false)}
-	/>
-</div>
+{#if showConfirmationModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		role="presentation"
+		class="modal-element-global"
+		onclick={() => (showConfirmationModal = false)}
+	>
+		<Modal
+			title="Replace target segment"
+			content={confirmationMenu}
+			onClose={() => (showConfirmationModal = false)}
+		/>
+	</div>
+{/if}
 
 <div class="translation-memory-container">
 	<h1>Translation Memory</h1>
@@ -89,9 +96,8 @@
 
 	<div class="tm-segments">
 		{#each $tmMatches as match, i}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div
+			<button
+				type="button"
 				class="segment-memory-container"
 				onclick={() => checkIfConfirmationIsNeeded(match.match)}
 			>
@@ -112,7 +118,7 @@
 					{match.percentage}
 				</p>
 				<p class="target-segment">{match.match}</p>
-			</div>
+			</button>
 		{/each}
 	</div>
 </div>
@@ -186,6 +192,11 @@
 	}
 
 	.segment-memory-container {
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: left;
 		display: flex;
 		align-items: center;
 		padding: 0px;

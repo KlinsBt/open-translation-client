@@ -36,6 +36,8 @@ import uploadUi from "$lib/components/uploads/saveFileUploads/saveFileUpload.sve
 import exportUi from "$lib/components/textSegments/segments.svelte?raw";
 import landingPage from "../../routes/(main)/+page.svelte?raw";
 import aboutPage from "../../routes/(main)/about/+page.svelte?raw";
+import supportCatalog from "./supportCatalog.ts?raw";
+import xliffProfileSource from "./xliffProfiles.ts?raw";
 import strictXliff12Schema from "../../test/fixtures/xliff12/xliff-core-1.2-strict.xsd?raw";
 import xmlSchema from "../../test/fixtures/xliff12/xml.xsd?raw";
 import worldServerWrapperSchema from "../../test/fixtures/xliff12/worldserver-conformance-wrapper.xsd?raw";
@@ -308,7 +310,10 @@ describe("vendor XLIFF profiles", () => {
 		expect(uploadUi).toContain("same-profile export");
 		expect(exportUi).toContain("handleVendorXliffSaveFileDownload");
 		expect(exportUi).toContain("vendorXliffProfile.label");
-		expect(landingPage).toContain("WsXLIFF");
+		expect(landingPage).toContain("SUPPORT_FORMAT_GROUPS");
+		expect(supportCatalog).toContain('"legacy-bilingual"');
+		expect(supportCatalog).toContain("WsXLIFF");
+		expect(xliffProfileSource).toContain("WsXLIFF");
 		expect(aboutPage).toContain("same-profile export");
 	});
 

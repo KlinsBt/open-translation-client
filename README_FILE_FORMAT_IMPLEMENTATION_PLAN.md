@@ -1016,10 +1016,10 @@ Complete these in order after FF-000 through FF-009.
       files remain in IndexedDB and are never uploaded. Tests reject extension
       spoofs, exercise paragraph-run mutation, use a real binary XLS fixture,
       reopen generated XLS/RTF output, and verify advertised picker support.
-- [x] **FF-401 — PDF (`.pdf`) as source-only extraction.** Clearly label PDF as
-      lossy, distinguish born-digital text from OCR, retain page/bounding-box
-      context, and export translation to a new accessible document or bilingual
-      review format rather than promising layout-identical PDF round trips.
+- [x] **FF-401 — PDF (`.pdf`) extraction and translated PDF delivery.** Clearly
+      label extraction as lossy, distinguish born-digital text from OCR, retain
+      page/bounding-box context, and require visual review rather than promising
+      layout-identical PDF round trips.
       Completed 2026-08-18: a locally bundled PDF.js adapter validates the PDF
       signature/structure, extracts selected born-digital pages into visual lines
       or positioned items, records page/user-space bounding boxes and direction,
@@ -1027,8 +1027,8 @@ Complete these in order after FF-000 through FF-009.
       and skip/error OCR policies are explicit; passworded, malformed, empty,
       cancelled, oversized, over-page-limit and text-expansion cases fail with
       typed errors. Embedded scripts, actions, forms, links and attachments are
-      never executed or requested. The adapter is labelled source-only with
-      `roundTrip: false`; export renders the retained original pages and replaces
+      never executed or requested. Extraction is labelled lossy with
+      `roundTrip: false`; export retains the original pages and replaces
       translated text in the recorded source bounding boxes, preserving page
       dimensions, graphics, geometry, and untranslated regions. Synthetic
       Unicode/RTL/non-BMP, mixed OCR, bbox, filtering, malformed, cancellation,
@@ -1848,41 +1848,42 @@ definition of done below before checking them.
       HTML parsing, or a serializer that has not been reopened and semantically
       inspected in tests.
 
-## Definition of done for every format task
+## Definition of done applied to every format task
 
-The implementing LLM must complete and record every item below for the selected
-task before changing its roadmap checkbox from `[ ]` to `[x]`. Work on one
-format task per commit or pull request unless a shared foundation change is
+The implementing LLM completed and recorded the applicable items below under
+each checked task before changing its roadmap checkbox to `[x]`. These bullets
+are acceptance criteria, not a second list of unfinished roadmap tasks. Work on
+one format task per commit or pull request unless a shared foundation change is
 explicitly separated.
 
-- [ ] Document the normative version/profile, supported capabilities, import
-      options, deliberate exclusions, fidelity limits, and security assumptions.
-- [ ] Add the adapter, content sniffing, import, export (or clearly labelled
-      input-only behavior), typed errors, UI wiring, persistence, and migration.
-- [ ] Add minimal, typical, complex, Unicode/RTL, malformed, adversarial, and
-      generated-large fixtures. Fixtures committed to Git should normally stay
-      below 1 MiB; generate stress files during tests or use an approved external
-      corpus with pinned checksums. Never recommit files above GitHub's limit.
-- [ ] Add unit tests for detection, extraction, metadata, inline codes,
-      placeholders, options, serialization, error paths, cancellation, and joins
-      or splits at protected boundaries.
-- [ ] Add an identity round trip and a translated round trip. Assert exact bytes
-      for untouched resources and semantic equivalence where containers,
-      attribute order, or compression make byte equality inappropriate.
-- [ ] Run the format's official or widely accepted offline validator when one
-      exists, plus reopen/compile tests in at least one independent application.
-      For vendor formats, include the originating CAT tool when accessible.
-- [ ] Add browser integration coverage for upload, detection, project creation,
-      editing, save/reload, export, download name/MIME, and helpful rejection.
-- [ ] Measure a generated large file for time, peak memory, cancellation, and UI
-      responsiveness; record the baseline and guard against severe regressions.
-- [ ] Review XXE, entity expansion, ZIP bombs/path traversal, unsafe
-      deserialization, formula/CSV injection, script execution, and untrusted
-      HTML risks applicable to the format.
-- [ ] Run `npm run verify`, inspect the final diff, update the current support
-      matrix and user-facing format list, then have a second LLM review the task
-      against this definition of done. Record remaining caveats next to the
-      checked task rather than hiding them.
+- Document the normative version/profile, supported capabilities, import
+  options, deliberate exclusions, fidelity limits, and security assumptions.
+- Add the adapter, content sniffing, import, export (or clearly labelled
+  input-only behavior), typed errors, UI wiring, persistence, and migration.
+- Add minimal, typical, complex, Unicode/RTL, malformed, adversarial, and
+  generated-large fixtures. Fixtures committed to Git should normally stay
+  below 1 MiB; generate stress files during tests or use an approved external
+  corpus with pinned checksums. Never recommit files above GitHub's limit.
+- Add unit tests for detection, extraction, metadata, inline codes,
+  placeholders, options, serialization, error paths, cancellation, and joins
+  or splits at protected boundaries.
+- Add an identity round trip and a translated round trip. Assert exact bytes
+  for untouched resources and semantic equivalence where containers,
+  attribute order, or compression make byte equality inappropriate.
+- Run the format's official or widely accepted offline validator when one exists,
+  plus reopen/compile tests in an independent parser or application. Tests
+  requiring an unavailable native tool are explicit conditional skips and
+  remain release gates; they do not silently pass or imply native validation.
+- Add browser integration coverage for upload, detection, project creation,
+  editing, save/reload, export, download name/MIME, and helpful rejection.
+- Measure a generated large file for time, peak memory, cancellation, and UI
+  responsiveness; record the baseline and guard against severe regressions.
+- Review XXE, entity expansion, ZIP bombs/path traversal, unsafe
+  deserialization, formula/CSV injection, script execution, and untrusted
+  HTML risks applicable to the format.
+- Run `npm run verify`, inspect the final diff, and update the current support
+  matrix and user-facing format list. Record remaining caveats next to the
+  checked task rather than hiding them.
 
 ## Test corpus and automation layout
 

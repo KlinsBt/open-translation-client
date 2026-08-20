@@ -9,9 +9,14 @@ export function getTranslationMemoryMatches(
 ): { segment: string; match: string; percentage: string }[] {
 	const matches: { segment: string; match: string; percentage: string }[] = [];
 
-	// Iterate over the TM source segments and find matches based on threshold
+	const normalizedQuery = normalizeForMatch(segment);
 	for (let i = 0; i < sourceSegments.length; i++) {
-		const similarity = similarityPercentage(segment, sourceSegments[i]);
+		const candidate = normalizeForMatch(sourceSegments[i]);
+		const maxLength = Math.max(normalizedQuery.length, candidate.length);
+		const maximumDistance = Math.floor(maxLength * (1 - threshold / 100));
+		if (Math.abs(normalizedQuery.length - candidate.length) > maximumDistance)
+			continue;
+		const similarity = similarityPercentage(normalizedQuery, candidate);
 		if (similarity >= threshold) {
 			matches.push({
 				segment: sourceSegments[i],
@@ -21,56 +26,55 @@ export function getTranslationMemoryMatches(
 		}
 	}
 
-	let sortedMatches = matches.sort((a, b) => {
+	const sortedMatches = matches.sort((a, b) => {
 		return parseFloat(b.percentage) - parseFloat(a.percentage);
 	});
-	return sortedMatches;
+	return sortedMatches.slice(0, 50);
 }
 
-// Helper function to calculate Levenshtein distance
+export function normalizeForMatch(value: string): string {
+	return value
+		.normalize("NFKC")
+		.toLocaleLowerCase()
+		.replace(/\s+/gu, " ")
+		.trim();
+}
+
 function levenshteinDistance(a: string, b: string): number {
-	const matrix = Array.from({ length: a.length + 1 }, () =>
-		Array(b.length + 1).fill(0),
-	);
-
-	for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
-	for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
-
-	for (let i = 1; i <= a.length; i++) {
-		for (let j = 1; j <= b.length; j++) {
-			if (a[i - 1] === b[j - 1]) {
-				matrix[i][j] = matrix[i - 1][j - 1];
-			} else {
-				matrix[i][j] = Math.min(
-					matrix[i - 1][j] + 1, // Deletion
-					matrix[i][j - 1] + 1, // Insertion
-					matrix[i - 1][j - 1] + 1, // Substitution
-				);
-			}
-		}
+	const first = Array.from(a);
+	const second = Array.from(b);
+	if (first.length < second.length) return levenshteinDistance(b, a);
+	let previous = Array.from({ length: second.length + 1 }, (_, index) => index);
+	let current = new Array<number>(second.length + 1);
+	for (let row = 1; row <= first.length; row++) {
+		current[0] = row;
+		for (let column = 1; column <= second.length; column++)
+			current[column] = Math.min(
+				current[column - 1] + 1,
+				previous[column] + 1,
+				previous[column - 1] + (first[row - 1] === second[column - 1] ? 0 : 1),
+			);
+		[previous, current] = [current, previous];
 	}
-	return matrix[a.length][b.length];
+	return previous[second.length];
 }
 
-// Helper function to calculate similarity percentage
-function similarityPercentage(a: string, b: string): number {
-	const maxLen = Math.max(a.length, b.length);
+function tokenDiceSimilarity(a: string, b: string): number {
+	const tokensA = new Set(a.split(/\s+/u).filter(Boolean));
+	const tokensB = new Set(b.split(/\s+/u).filter(Boolean));
+	if (tokensA.size === 0 && tokensB.size === 0) return 100;
+	let intersection = 0;
+	for (const token of tokensA) if (tokensB.has(token)) intersection++;
+	return (2 * intersection * 100) / (tokensA.size + tokensB.size);
+}
+
+export function similarityPercentage(a: string, b: string): number {
+	const maxLen = Math.max(Array.from(a).length, Array.from(b).length);
 	if (maxLen === 0) return 100; // If both strings are empty, consider 100% match
+	if (maxLen > 500) return tokenDiceSimilarity(a, b);
 	const distance = levenshteinDistance(a, b);
 	return ((maxLen - distance) / maxLen) * 100;
 }
-
-const translationMemory = [
-	"This is an example sentence.",
-	"This is another example sentence.",
-	"This is an example sentence. This is an example sentence.",
-	"John De",
-	"30",
-	"New Yorn",
-	"You will rejoice to hear that no disaster has accomp",
-	"If you have any questions, please fill out the form below",
-	"If you have any questions, please fill out the form below and we'll get back to you soon.",
-];
 
 function tmDataToLangFilteredArrays(
 	tmData: TmData,

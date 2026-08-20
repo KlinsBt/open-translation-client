@@ -60,7 +60,7 @@
 					? `${profile.label ?? detection.label} detected. Vendor structure will be retained by the same-profile export.`
 					: `${detection.label} detected (${detection.confidence} confidence). New project created.`,
 			);
-			createNewProjectWithSaveFile();
+			await createNewProjectWithSaveFile();
 		} catch (error) {
 			notifyError(safeInputMessage(error));
 			console.error("Invalid project file", error);
@@ -92,19 +92,19 @@
 		await processTranslationFile(file);
 	}
 
-	function createNewProjectWithSaveFile() {
+	async function createNewProjectWithSaveFile() {
 		if (!saveData) return;
-		let data: UserData = JSON.parse(JSON.stringify(saveData));
+		const data: UserData = structuredClone(saveData);
 		delete data.id;
-		saveAndOpenNewFileWithStringArrayFromSaveFile($userData, data);
+		await saveAndOpenNewFileWithStringArrayFromSaveFile($userData, data);
 		showLoading.set(false);
 	}
 
-	function updateExistingProjectWithSaveFile() {
+	async function updateExistingProjectWithSaveFile() {
 		const timestamp = new Date().valueOf().toString();
 		if (!saveData) return;
 		saveData.translationData.creationDate = timestamp;
-		updateAndOpenNewFileWithStringArray(saveData);
+		await updateAndOpenNewFileWithStringArray(saveData);
 		showLoading.set(false);
 	}
 

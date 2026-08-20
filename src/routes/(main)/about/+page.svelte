@@ -1,6 +1,7 @@
 <script lang="ts">
 	import DataStructureCard from "$lib/components/about/dataStructureCard.svelte";
 	import { onMount } from "svelte";
+	import { SUPPORT_FORMAT_GROUPS } from "$lib/formats/supportCatalog";
 
 	const tableOfContents = [
 		{ id: "workflow", label: "How files are handled" },
@@ -58,89 +59,7 @@
 		};
 	});
 
-	const sourceFormatGroups = [
-		{
-			title: "Office, web and text",
-			formats: [
-				"DOCX, DOCM, DOTX and DOTM",
-				"XLSX, XLSM, XLTX and XLTM",
-				"PPTX, PPTM, POTX, POTM, PPSX, PPSM and standalone SLDX",
-				"ODT/OTT/ODM, ODS/OTS, ODP/OTP and ODF Formula",
-				"RTF native round trips",
-				"Legacy DOC, DOT and applicable BAK to DOCX",
-				"Legacy XLS and XLT, plus binary XLSB",
-				"Legacy PPT, PPS and POT to translated HTML",
-				"SpreadsheetML 2003 XML workbooks",
-				"HTML, XHTML and server-side templates",
-				"SHTML, JSP, ASP, ASPX, ASCX and HTML includes",
-				"HTML Help HHC and HHK navigation files",
-				"TXT, CSV and TSV",
-			],
-		},
-		{
-			title: "Structured localization",
-			formats: [
-				"JSON, ARB, i18next, Chrome and locJSON",
-				"YAML 1.2",
-				"GNU gettext PO and POT",
-				"XML with ITS 2.0",
-				"W3C ITS rule files and MULIX multilingual XML",
-				"Author-it, MadCap and legacy TYPO3 XML",
-				"Constrained SGML with safe fixed doctypes",
-				"Android strings.xml",
-				"Apple .strings, .stringsdict and .xcstrings",
-				"Java and Mozilla .properties",
-				".NET RESX",
-			],
-		},
-		{
-			title: "Application resources",
-			formats: [
-				"Qt Linguist TS and QML",
-				"INI, .desktop and .lang",
-				"Windows INF localized Strings and Registry REG string values",
-				"FreeMind MM node labels, rich text and notes",
-				"Outlook MSG subject/body → safe EML delivery",
-				"Static PHP localization arrays and mixed PHP/HTML templates",
-				"Windows RC resources",
-				"FrameMaker MIF and MIF2 filter-alias files",
-				"Markdown and AsciiDoc",
-				"SRT, WebVTT, SBV, ASS, SSA and Spruce STL subtitles",
-			],
-		},
-		{
-			title: "Publishing and technical authoring",
-			formats: [
-				"EPUB 2 and 3",
-				"Visio VSDX/VSDM drawings, VSSX/VSSM stencils and VSTX/VSTM templates",
-				"Visio VDX/VSX/VTX XML and protected legacy VSD/VSS/VDW/VSR",
-				"SVG",
-				"DITA, DITAMAP and BOOKMAP",
-				"DocBook",
-				"Adobe IDML, ICML and INX",
-				"QuarkXPress XTG and TAG",
-				"TeX and LaTeX",
-				"TTML and DFXP timed text",
-			],
-		},
-		{
-			title: "Local media and CAT containers",
-			formats: [
-				"PNG, JPEG, TIFF, BMP, DIB and GIF on-device OCR",
-				"Photoshop PSD text layers with translated SVG delivery",
-				"WAV, MP3, M4A, Ogg and FLAC transcription",
-				"MP4, MOV and WebM transcription",
-				"Trados SDLPPX and SDLRPX return packages",
-				"WorldServer WSXZ packages",
-				"memoQ MQOUT, MQBACK and MQXLZ packages",
-				"STAR Transit PXF, PPF, TXF and TPF packages",
-				"TIPP request and response packages",
-				"COTI and legacy WorldServer XLZ packages",
-				"TTX, ITD and Wordfast/GlobalLink TXML bilingual files",
-				"XLIFF:doc and Workbench bilingual DOC, DOCX, RTF and BAK",
-			],
-		},
-	];
+	const sourceFormatGroups = SUPPORT_FORMAT_GROUPS;
 
 	const workflowSteps = [
 		{
@@ -340,11 +259,13 @@
 				</p>
 				<div class="constraint-list">
 					<article>
-						<strong>PDF is source-only</strong>
+						<strong>PDF uses layout-preserving translated delivery</strong>
 						<p>
-							Text is extracted for translation and exported as accessible
-							bilingual HTML. Open TLC does not claim to recreate the original
-							PDF layout.
+							Born-digital text is mapped to its original page and bounding box.
+							Export retains the original PDF pages and overlays translated text
+							in those areas; an accessible bilingual HTML review remains
+							available. Complex fonts, transparent artwork and scanned pages
+							can still need a visual review.
 						</p>
 					</article>
 					<article>

@@ -131,12 +131,20 @@
 	async function downloadTmx(id: number) {
 		if (id === undefined) return;
 		await setLoadingAndRender();
-		console.log("Downloading TMX File for ID:", id);
-		let tm = $tmData.find((tm) => tm.id === id) as TmData;
-		console.log("TM Data:", tm);
-		generateTmxSaveFile(tm.terms[0].source.lang, tm);
-		showLoading.set(false);
-		notifySuccess("Translation Memory downloaded");
+		try {
+			const tm = $tmData.find((candidate) => candidate.id === id);
+			if (!tm) throw new Error("Translation memory not found.");
+			if (tm.terms.length === 0)
+				throw new Error("Add at least one translation unit before exporting.");
+			await generateTmxSaveFile(tm.terms[0].source.lang, tm);
+			notifySuccess("Translation Memory downloaded");
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "TMX export failed.",
+			);
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	async function selectTmToEdit(id: number) {

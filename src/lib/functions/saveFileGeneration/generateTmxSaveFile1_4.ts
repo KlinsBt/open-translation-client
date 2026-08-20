@@ -1,4 +1,3 @@
-import { notifyError } from "$lib/components/notifications/toastStore";
 import { buildTmx14 } from "$lib/formats/tmx14";
 import type { TmData } from "$lib/types/types";
 
@@ -22,17 +21,10 @@ export async function generateTmxSaveFile(
 	sourceLanguage: string,
 	tmData: TmData,
 ): Promise<void> {
-	try {
-		await downloadTmx(
-			buildTmx(sourceLanguage, tmData),
-			tmData.name || "TMX Save File",
-		);
-	} catch (error) {
-		notifyError(
-			error instanceof Error ? error.message : "Failed to export TMX 1.4b.",
-		);
-		console.error("Failed to generate TMX save file:", error);
-	}
+	await downloadTmx(
+		buildTmx(sourceLanguage, tmData),
+		tmData.name || "TMX Save File",
+	);
 }
 
 export async function generateRandomTmxFile(count: number): Promise<void> {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
+	import { onDestroy, onMount } from "svelte";
 	import "./modalSystem.css";
 
 	let {
@@ -17,13 +18,84 @@
 		description?: string;
 		onClose?: () => void;
 	} = $props();
+	let dialog: HTMLElement;
+	let previouslyFocused: HTMLElement | null = null;
+	let previousBodyOverflow = "";
+	let focusFrame: number | null = null;
+	let isolatedElements: Array<{
+		element: HTMLElement;
+		inert: boolean;
+		ariaHidden: string | null;
+	}> = [];
+
+	const FOCUSABLE =
+		'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === "Escape") {
+			event.preventDefault();
+			onClose?.();
+			return;
+		}
+		if (event.key !== "Tab") return;
+		const focusable = Array.from(
+			dialog?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [],
+		).filter((element) => element.offsetParent !== null);
+		if (focusable.length === 0) {
+			event.preventDefault();
+			dialog?.focus();
+			return;
+		}
+		const first = focusable[0];
+		const last = focusable.at(-1)!;
+		if (event.shiftKey && document.activeElement === first) {
+			event.preventDefault();
+			last.focus();
+		} else if (!event.shiftKey && document.activeElement === last) {
+			event.preventDefault();
+			first.focus();
+		}
+	}
+
+	onMount(() => {
+		previouslyFocused =
+			document.activeElement instanceof HTMLElement
+				? document.activeElement
+				: null;
+		previousBodyOverflow = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		const overlay = dialog.parentElement;
+		if (overlay?.parentElement) {
+			for (const sibling of Array.from(overlay.parentElement.children)) {
+				if (sibling === overlay || !(sibling instanceof HTMLElement)) continue;
+				isolatedElements.push({
+					element: sibling,
+					inert: sibling.inert,
+					ariaHidden: sibling.getAttribute("aria-hidden"),
+				});
+				sibling.inert = true;
+				sibling.setAttribute("aria-hidden", "true");
+			}
+		}
+		focusFrame = requestAnimationFrame(() => {
+			focusFrame = null;
+			(dialog.querySelector<HTMLElement>(FOCUSABLE) ?? dialog).focus();
+		});
+	});
+
+	onDestroy(() => {
+		if (focusFrame !== null) cancelAnimationFrame(focusFrame);
+		document.body.style.overflow = previousBodyOverflow;
+		for (const { element, inert, ariaHidden } of isolatedElements) {
+			element.inert = inert;
+			if (ariaHidden === null) element.removeAttribute("aria-hidden");
+			else element.setAttribute("aria-hidden", ariaHidden);
+		}
+		previouslyFocused?.focus();
+	});
 </script>
 
-<svelte:window
-	onkeydown={(event) => {
-		if (event.key === "Escape") onClose?.();
-	}}
-/>
+<svelte:window onkeydown={handleKeydown} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -35,6 +107,7 @@
 	aria-modal="true"
 	aria-label={title}
 	tabindex="-1"
+	bind:this={dialog}
 	onclick={(e) => e.stopPropagation()}
 >
 	<header class="modal-header">

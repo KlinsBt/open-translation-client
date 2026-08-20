@@ -47,7 +47,9 @@
 	onMount(async () => {
 		if ($userData.length === 0) {
 			showLoading.set(true);
-			await new Promise((resolve) => setTimeout(resolve, 0));
+			await new Promise((resolve) => {
+				setTimeout(resolve, 0);
+			});
 		}
 		await loadTranslationsUserDataFromIndexedDB();
 		applySort();
@@ -94,21 +96,23 @@
 	</div>
 {/snippet}
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-	role="presentation"
-	class="modal-element-global {showUploadModal ? '' : 'close-modal-global'}"
-	onclick={() => (showUploadModal = false)}
->
-	<Modal
-		title="Import project"
-		description="Restore a portable Open TLC project from this device."
-		content={upload}
-		wide
-		onClose={() => (showUploadModal = false)}
-	/>
-</div>
+{#if showUploadModal}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		role="presentation"
+		class="modal-element-global"
+		onclick={() => (showUploadModal = false)}
+	>
+		<Modal
+			title="Import project"
+			description="Restore a portable Open TLC project from this device."
+			content={upload}
+			wide
+			onClose={() => (showUploadModal = false)}
+		/>
+	</div>
+{/if}
 
 <ParsingPreferencesModal bind:show={showParsingModal} bind:parsingPreferences />
 <UniversalUpload bind:show={showNewProjectModal} />

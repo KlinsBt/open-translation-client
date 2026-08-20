@@ -12,6 +12,7 @@
 		notifyInfo,
 		notifyError,
 	} from "$lib/components/notifications/toastStore";
+	import { filterWithSourceIndexes } from "$lib/components/resources/resourceFiltering";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -45,7 +46,7 @@
 
 	let searchQuery: string = $state("");
 	let filteredData = $derived(
-		localTmData.terms.filter((term) => {
+		filterWithSourceIndexes(localTmData.terms, (term) => {
 			// Check if searchQuery matches source.segment
 			const sourceMatch = term.source.segment
 				.toLowerCase()
@@ -62,15 +63,13 @@
 	);
 
 	async function toggleEditMode(key: string) {
-		editMode.set(key, !editMode.get(key));
-
-		if (!editMode.get(key)) {
-			singleTmData.set(localTmData);
-			await updateTmOnIndexedDB(localTmData);
-			notifyInfo("Entry saved");
-		}
-
+		const isEditing = !editMode.get(key);
+		editMode.set(key, isEditing);
 		editMode = new Map(editMode);
+
+		if (!isEditing) {
+			await persistTm("Entry saved", "info");
+		}
 	}
 
 	function getLangByCode(code: string) {
@@ -78,43 +77,62 @@
 		return lang ? `${lang.name} (${lang.code})` : "";
 	}
 
-	function addTranslationSegment(termId: number) {
-		// let srcLang = localTmData.terms[termId].source.lang;
-		localTmData.terms[termId].target.push({ lang: "en", segment: "" });
-		notifySuccess("Segment added");
+	async function persistTm(
+		message: string,
+		tone: "success" | "info" = "success",
+	) {
+		const snapshot = $state.snapshot(localTmData);
+		singleTmData.set(snapshot);
+		try {
+			await updateTmOnIndexedDB(snapshot);
+			if (tone === "info") notifyInfo(message);
+			else notifySuccess(message);
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Could not save the translation memory.",
+			);
+		}
 	}
 
-	function addTranslationUnit() {
-		let targetLanguages = localTmData.terms[0].target.map((target) => ({
-			lang: target.lang,
-			segment: "",
-		}));
+	async function addTranslationSegment(termId: number) {
+		localTmData.terms[termId].target.push({ lang: "en", segment: "" });
+		await persistTm("Segment added");
+	}
+
+	async function addTranslationUnit() {
+		const template = localTmData.terms[0];
+		const targetLanguages = (template?.target ?? [{ lang: "de" }]).map(
+			(target) => ({
+				lang: target.lang,
+				segment: "",
+			}),
+		);
 
 		localTmData.terms.push({
 			// id: localTmData.terms.length + 1,
 			source: {
-				lang: localTmData.terms[0].source.lang,
+				lang: template?.source.lang ?? "en",
 				segment: "",
 			},
 			target: targetLanguages,
 		});
-		notifySuccess("Translation unit added");
+		await persistTm("Translation unit added");
 	}
 
 	async function deleteTu(tuId: number) {
 		localTmData.terms.splice(tuId, 1);
 		showSegmentDeletionModal = false;
 		showModal = false;
-		await updateTmOnIndexedDB(localTmData);
-		notifyError("Translation unit deleted");
+		await persistTm("Translation unit deleted", "info");
 	}
 
 	async function deleteSegment(termId: number, segId: number) {
 		localTmData.terms[termId].target.splice(segId, 1);
 		showSegmentDeletionModal = false;
 		showModal = false;
-		await updateTmOnIndexedDB(localTmData);
-		notifyError("Segment deleted");
+		await persistTm("Segment deleted", "info");
 	}
 
 	function showTuDelModal(tuId: number) {
@@ -243,7 +261,9 @@
 			bind:this={segmentsContainer}
 			onscroll={handleScroll}
 		>
-			{#each filteredData.slice(0, visibleSegmentsCount) as unit, unitIndex}
+			{#each filteredData.slice(0, visibleSegmentsCount) as filteredUnit, unitIndex (filteredUnit.sourceIndex)}
+				{@const unit = filteredUnit.item}
+				{@const sourceIndex = filteredUnit.sourceIndex}
 				<article class="resource-unit-card">
 					<div class="tu-header">
 						<h3>
@@ -252,13 +272,13 @@
 						<div class="unit-actions">
 							<button
 								class="editor-action danger"
-								onclick={() => showTuDelModal(unitIndex)}
+								onclick={() => showTuDelModal(sourceIndex)}
 							>
 								Delete <Delete marginBottom="-2px" />
 							</button>
 							<button
 								class="editor-action primary"
-								onclick={() => addTranslationSegment(unitIndex)}
+								onclick={() => addTranslationSegment(sourceIndex)}
 							>
 								Add Segment +
 							</button>
@@ -269,7 +289,7 @@
 							<div class="language-selection">
 								<select
 									class="lang-select"
-									disabled={!editMode.get(`source-${unitIndex}`)}
+									disabled={!editMode.get(`source-${sourceIndex}`)}
 									bind:value={unit.source.lang}
 								>
 									<option disabled selected value=""
@@ -280,12 +300,12 @@
 									{/each}
 								</select>
 								<button
-									class="editor-action {editMode.get(`source-${unitIndex}`)
+									class="editor-action {editMode.get(`source-${sourceIndex}`)
 										? 'save'
 										: 'secondary'}"
-									onclick={() => toggleEditMode(`source-${unitIndex}`)}
+									onclick={() => toggleEditMode(`source-${sourceIndex}`)}
 								>
-									{#if editMode.get(`source-${unitIndex}`)}
+									{#if editMode.get(`source-${sourceIndex}`)}
 										Save <SaveFile marginBottom="-2px" />
 									{:else}
 										Edit <Edit marginBottom="-2px" />
@@ -294,7 +314,7 @@
 							</div>
 
 							<div class="segment-field">
-								{#if !editMode.get(`source-${unitIndex}`)}
+								{#if !editMode.get(`source-${sourceIndex}`)}
 									<p class="field locked">{unit.source.segment}</p>
 								{:else}
 									<textarea
@@ -313,7 +333,9 @@
 								<div class="language-selection">
 									<select
 										class="lang-select"
-										disabled={!editMode.get(`target-${unitIndex}-${trgIndex}`)}
+										disabled={!editMode.get(
+											`target-${sourceIndex}-${trgIndex}`,
+										)}
 										bind:value={trg.lang}
 									>
 										<option disabled selected value=""
@@ -327,14 +349,14 @@
 									</select>
 									<button
 										class="editor-action {editMode.get(
-											`target-${unitIndex}-${trgIndex}`,
+											`target-${sourceIndex}-${trgIndex}`,
 										)
 											? 'save'
 											: 'secondary'}"
 										onclick={() =>
-											toggleEditMode(`target-${unitIndex}-${trgIndex}`)}
+											toggleEditMode(`target-${sourceIndex}-${trgIndex}`)}
 									>
-										{#if editMode.get(`target-${unitIndex}-${trgIndex}`)}
+										{#if editMode.get(`target-${sourceIndex}-${trgIndex}`)}
 											Save <SaveFile marginBottom="-2px" />
 										{:else}
 											Edit <Edit marginBottom="-2px" />
@@ -342,13 +364,13 @@
 									</button>
 									<button
 										class="editor-action danger"
-										onclick={() => showSegDelModal(unitIndex, trgIndex)}
+										onclick={() => showSegDelModal(sourceIndex, trgIndex)}
 									>
 										Delete <Delete marginBottom="-2px" />
 									</button>
 								</div>
 								<div class="segment-field">
-									{#if !editMode.get(`target-${unitIndex}-${trgIndex}`)}
+									{#if !editMode.get(`target-${sourceIndex}-${trgIndex}`)}
 										<p class="field locked">{trg.segment}</p>
 									{:else}
 										<textarea

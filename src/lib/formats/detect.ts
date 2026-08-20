@@ -552,38 +552,41 @@ export async function detectFileFormat(
 	const mimeMatch = mimeType
 		? adapters.find((adapter) => adapter.mimeTypes.includes(mimeType))
 		: undefined;
-	const unverifiedLocalMedia = [extensionMatch?.id, mimeMatch?.id].find(
-		(id) =>
-			id === "image-ocr" ||
-			id === "media-transcription" ||
-			id === "legacy-bilingual" ||
-			id === "legacy-office",
+	const metadataCandidates = [...new Set([extensionMatch, mimeMatch])].filter(
+		(candidate): candidate is FormatAdapter => candidate !== undefined,
 	);
-	if (unverifiedLocalMedia) {
+	for (const candidate of metadataCandidates) {
+		throwIfAborted(context?.signal);
+		if (
+			(await candidate.sniff(file, context)) ||
+			(await candidate.validate(file, context)).valid
+		)
+			return supportedContent(candidate, extension, mimeType);
+	}
+	if (metadataCandidates.length > 0) {
+		const claimed = metadataCandidates[0];
+		const unrecognizedLabel =
+			claimed.id === "image-ocr"
+				? "Unrecognized image"
+				: claimed.id === "media-transcription"
+					? "Unrecognized media"
+					: claimed.id === "legacy-office"
+						? "Unrecognized legacy Office file"
+						: claimed.id === "legacy-bilingual"
+							? "Unrecognized legacy bilingual file"
+							: `Unrecognized ${claimed.label} file`;
 		return unsupported(
-			unverifiedLocalMedia === "legacy-office"
-				? "Unrecognized legacy Office file"
-				: unverifiedLocalMedia === "legacy-bilingual"
-					? "Unrecognized legacy bilingual file"
-					: unverifiedLocalMedia === "image-ocr"
-						? "Unrecognized image"
-						: "Unrecognized media",
+			unrecognizedLabel,
 			"low",
 			metadataEvidence(
 				extension,
 				mimeType,
-				extensionMatch?.extensions ?? mimeMatch?.extensions ?? [],
-				extensionMatch?.mimeTypes ?? mimeMatch?.mimeTypes ?? [],
+				claimed.extensions,
+				claimed.mimeTypes,
 			),
-			"The extension or MIME type claims a supported local format, but its content signature does not match.",
+			"The extension or MIME type claims a supported format, but its content signature or structural validation does not match.",
 		);
 	}
-	if (extensionMatch && mimeMatch?.id === extensionMatch.id) {
-		return supportedMetadata(extensionMatch, "medium", ["extension", "mime"]);
-	}
-	if (extensionMatch)
-		return supportedMetadata(extensionMatch, "low", ["extension"]);
-	if (mimeMatch) return supportedMetadata(mimeMatch, "low", ["mime"]);
 
 	if (isGenericXmlMime(mimeType)) {
 		return unsupported(
@@ -949,22 +952,6 @@ function supportedContent(
 			metadata.length > 0
 				? `The file content and ${metadata.join(" and ")} agree on ${adapter.label}.${conflictMessage}`
 				: `The file content matches ${adapter.label}; filename and MIME metadata were inconclusive.${conflictMessage}`,
-		adapter,
-	};
-}
-
-function supportedMetadata(
-	adapter: FormatAdapter,
-	confidence: DetectionConfidence,
-	evidence: DetectionEvidence[],
-): FormatDetection {
-	return {
-		formatId: adapter.id,
-		label: adapter.label,
-		supported: true,
-		confidence,
-		evidence,
-		reason: `Detected ${adapter.label} from ${evidence.join(" and ")} metadata; validation will confirm its structure.`,
 		adapter,
 	};
 }

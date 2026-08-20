@@ -1,10 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { makeUserData } from "../../../test/fixtures";
 import {
 	contentToPlainText,
 	createNeutralDocument,
 } from "$lib/formats/documentModel";
-import { ensureProjectModels } from "./indexedDb";
+import { assertLocalStorageCapacity, ensureProjectModels } from "./indexedDb";
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("neutral document persistence compatibility", () => {
 	it("backfills old projects with an aligned, deterministic document model", () => {
@@ -118,5 +120,16 @@ describe("neutral document persistence compatibility", () => {
 			part: "content.xml",
 			originalValue: "Template",
 		});
+	});
+
+	it("preflights browser quota with a helpful large-import error", async () => {
+		vi.stubGlobal("navigator", {
+			storage: {
+				estimate: async () => ({ quota: 10_000_000, usage: 9_500_000 }),
+			},
+		});
+		await expect(assertLocalStorageCapacity(1_000_000)).rejects.toThrow(
+			/about 8 MB.*only 0 MB is available/i,
+		);
 	});
 });

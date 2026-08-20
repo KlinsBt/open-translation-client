@@ -38,6 +38,24 @@ export interface ExportQaResult {
 	checkedUnits: number;
 }
 
+export interface ProjectCompletionSummary {
+	emptyTargetUnits: number[];
+	unconfirmedUnits: number[];
+}
+
+export function getProjectCompletionSummary(
+	project: UserData,
+): ProjectCompletionSummary {
+	const data = project.translationData;
+	const emptyTargetUnits: number[] = [];
+	const unconfirmedUnits: number[] = [];
+	for (let index = 0; index < data.seg1.length; index++) {
+		if (!(data.seg2[index] ?? "").trim()) emptyTargetUnits.push(index);
+		if (data.checked[index] !== true) unconfirmedUnits.push(index);
+	}
+	return { emptyTargetUnits, unconfirmedUnits };
+}
+
 export interface FormatQaPolicy {
 	allowTagReorder: boolean;
 	allowInlineCodeReorder: boolean;

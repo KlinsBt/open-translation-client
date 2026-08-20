@@ -6,7 +6,6 @@
 	import { showLoading } from "$lib/functions/saveData/stores.svelte";
 	import {
 		detectFormatWithConfidence,
-		FORMAT_ADAPTERS,
 		getFormatAcceptValue,
 		getFormatAdapter,
 	} from "$lib/formats/registry";
@@ -29,6 +28,12 @@
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
 	import Modal from "$lib/components/modal.svelte";
+	import { assertLocalStorageCapacity } from "$lib/functions/saveData/indexedDb";
+	import {
+		FORMAT_WORKFLOW_COUNT,
+		SUPPORTED_FORMAT_LABELS,
+	} from "$lib/formats/supportCatalog";
+	import { getProjectSetupError } from "./projectValidation";
 
 	let {
 		show = $bindable(),
@@ -48,8 +53,13 @@
 	let importOptionValues: FormatOptionValues = $state({});
 	let importController: AbortController | null = $state(null);
 	let importProgress: SafeInputProgress | null = $state(null);
+	let fileInput: HTMLInputElement | null = $state(null);
+	let projectSetupError = $derived(
+		getProjectSetupError(temporarySaveName, sourceLanguage, targetLanguage),
+	);
+	let canCreateProject = $derived(projectSetupError === null);
 	const acceptedFormats = getFormatAcceptValue();
-	const supportedFormatLabels = FORMAT_ADAPTERS.map((adapter) => adapter.label);
+	const supportedFormatLabels = SUPPORTED_FORMAT_LABELS;
 
 	function getDetectedFormatLabel(): string {
 		return formatDetection?.label ?? "UNSUPPORTED";
@@ -157,6 +167,12 @@
 		if (file) await selectFile(file);
 	}
 
+	function handleDropZoneKeydown(event: KeyboardEvent) {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		fileInput?.click();
+	}
+
 	function check(opt: number, lang: string) {
 		if (opt === 1) {
 			sourceLanguage = lang;
@@ -175,6 +191,10 @@
 			notifyError("Please fill all required fields");
 			return;
 		}
+		if (projectSetupError) {
+			notifyError(projectSetupError);
+			return;
+		}
 
 		isProcessing = true;
 		showLoading.set(true);
@@ -185,6 +205,7 @@
 		};
 
 		try {
+			await assertLocalStorageCapacity(uploadedFile.size);
 			const timestamp = new Date().valueOf().toString();
 			const adapter = getFormatAdapter(detectedFormatId);
 			const validation = await adapter.validate(uploadedFile, context);
@@ -203,7 +224,7 @@
 			);
 			if (imported.kind === "text") {
 				await saveAndOpenNewFileWithTextString(
-					temporarySaveName,
+					temporarySaveName.trim(),
 					sourceLanguage,
 					targetLanguage,
 					timestamp,
@@ -216,7 +237,7 @@
 				);
 			} else {
 				await saveAndOpenNewFileWithStringArray(
-					temporarySaveName,
+					temporarySaveName.trim(),
 					sourceLanguage,
 					targetLanguage,
 					timestamp,
@@ -269,6 +290,7 @@
 				ondragover={handleDragOver}
 				ondragleave={handleDragLeave}
 				ondrop={handleDrop}
+				onkeydown={handleDropZoneKeydown}
 				role="button"
 				tabindex="0"
 			>
@@ -281,6 +303,7 @@
 					Select File
 					<input
 						id="file-input"
+						bind:this={fileInput}
 						type="file"
 						accept={acceptedFormats}
 						onchange={handleFileSelect}
@@ -288,7 +311,7 @@
 					/>
 				</label>
 				<details class="upload-format-note">
-					<summary>{FORMAT_ADAPTERS.length} supported format workflows</summary>
+					<summary>{FORMAT_WORKFLOW_COUNT} supported format workflows</summary>
 					<div
 						class="supported-format-pills"
 						aria-label="Supported source formats"
@@ -486,9 +509,9 @@
 							</div>
 						{/if}
 
-						{#if !sourceLanguage || !targetLanguage}
+						{#if projectSetupError}
 							<p class="project-requirement" aria-live="polite">
-								Choose both a source and target language to continue.
+								{projectSetupError}
 							</p>
 						{/if}
 
@@ -496,7 +519,7 @@
 							<button
 								class="btn save"
 								onclick={processAndCreateProject}
-								disabled={!sourceLanguage || !targetLanguage || isProcessing}
+								disabled={!canCreateProject || isProcessing}
 							>
 								{isProcessing ? "Processing..." : "Create Project"}
 							</button>
@@ -512,21 +535,19 @@
 	</div>
 {/snippet}
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-	role="presentation"
-	class="modal-element-global {show ? '' : 'close-modal-global'}"
-	onclick={closeModal}
->
-	<Modal
-		title="Create new project"
-		description="Import a source file and configure its translation workflow."
-		content={uploadContent}
-		large
-		onClose={closeModal}
-	/>
-</div>
+{#if show}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div role="presentation" class="modal-element-global" onclick={closeModal}>
+		<Modal
+			title="Create new project"
+			description="Import a source file and configure its translation workflow."
+			content={uploadContent}
+			large
+			onClose={closeModal}
+		/>
+	</div>
+{/if}
 
 <style>
 	.universal-upload-container {

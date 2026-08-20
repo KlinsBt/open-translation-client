@@ -439,52 +439,53 @@ describe("OpenDocument document, template, master, and formula workflows", () =>
 		).rejects.toThrow(/cancelled|aborted/i);
 	});
 
-	it("produces an ODT LibreOffice can reopen when LibreOffice is available", async () => {
-		if (process.env.OPENTLC_RUN_LIBREOFFICE !== "1") return;
-		const available = spawnSync("libreoffice", ["--version"], {
-			encoding: "utf8",
-		});
-		if (available.status !== 0) return;
-		const file = await odfFile("odt", body("odt", "<text:p>Hello</text:p>"));
-		const { project } = await importProject(file, {}, ["Hallo"]);
-		const output = await buildOdfTranslationPackage(project);
-		const directory = mkdtempSync(join(tmpdir(), "opentlc-odf-"));
-		try {
-			const input = join(directory, "translated.odt");
-			const target = join(directory, "converted");
-			const profile = join(directory, "profile");
-			mkdirSync(target);
-			writeFileSync(input, new Uint8Array(await output.arrayBuffer()));
-			const reopened = spawnSync(
-				"libreoffice",
-				[
-					"--headless",
-					`-env:UserInstallation=file://${profile}`,
-					"--convert-to",
-					"pdf",
-					"--outdir",
-					target,
-					input,
-				],
-				{ encoding: "utf8", timeout: 30_000 },
-			);
-			if (reopened.status !== 0)
-				throw new Error(
-					`LibreOffice reopen failed (${reopened.status}): ${reopened.stderr || reopened.stdout}`,
+	it.runIf(
+		process.env.OPENTLC_RUN_LIBREOFFICE === "1" &&
+			spawnSync("libreoffice", ["--version"]).status === 0,
+	)(
+		"produces an ODT LibreOffice can reopen when LibreOffice is available",
+		async () => {
+			const file = await odfFile("odt", body("odt", "<text:p>Hello</text:p>"));
+			const { project } = await importProject(file, {}, ["Hallo"]);
+			const output = await buildOdfTranslationPackage(project);
+			const directory = mkdtempSync(join(tmpdir(), "opentlc-odf-"));
+			try {
+				const input = join(directory, "translated.odt");
+				const target = join(directory, "converted");
+				const profile = join(directory, "profile");
+				mkdirSync(target);
+				writeFileSync(input, new Uint8Array(await output.arrayBuffer()));
+				const reopened = spawnSync(
+					"libreoffice",
+					[
+						"--headless",
+						`-env:UserInstallation=file://${profile}`,
+						"--convert-to",
+						"pdf",
+						"--outdir",
+						target,
+						input,
+					],
+					{ encoding: "utf8", timeout: 30_000 },
 				);
-		} finally {
-			rmSync(directory, { recursive: true, force: true });
-		}
-	});
+				if (reopened.status !== 0)
+					throw new Error(
+						`LibreOffice reopen failed (${reopened.status}): ${reopened.stderr || reopened.stdout}`,
+					);
+			} finally {
+				rmSync(directory, { recursive: true, force: true });
+			}
+		},
+	);
 
-	it.each(["ott", "odm", "ots", "otp", "odf"] as const)(
+	it
+		.runIf(
+			process.env.OPENTLC_RUN_LIBREOFFICE === "1" &&
+				spawnSync("libreoffice", ["--version"]).status === 0,
+		)
+		.each(["ott", "odm", "ots", "otp", "odf"] as const)(
 		"produces a translated .%s package LibreOffice can reopen when enabled",
 		async (profile) => {
-			if (process.env.OPENTLC_RUN_LIBREOFFICE !== "1") return;
-			const available = spawnSync("libreoffice", ["--version"], {
-				encoding: "utf8",
-			});
-			if (available.status !== 0) return;
 			const inner =
 				profile === "odf"
 					? "<math:mtext>Hello</math:mtext>"

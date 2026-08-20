@@ -1,5 +1,9 @@
 <script lang="ts">
 	import bg from "$lib/images/bg14.jpg";
+	import {
+		FORMAT_WORKFLOW_COUNT,
+		SUPPORT_FORMAT_GROUPS,
+	} from "$lib/formats/supportCatalog";
 
 	const featureCards = [
 		{
@@ -28,92 +32,14 @@
 		},
 	];
 
-	const formatGroups = [
-		{
-			title: "Office and web",
-			formats: [
-				"DOCX / XLSX / PPTX / SLDX",
-				"Legacy DOC / DOT / BAK",
-				"XLS / XLT / XLSB",
-				"PPT / PPS / POT",
-				"SpreadsheetML 2003 XML",
-				"RTF",
-				"ODT / OTT / ODM / ODS / OTS / ODP / OTP / ODF Formula",
-				"HTML / XHTML / server pages",
-				"SHTML / JSP / ASP.NET / PHP templates",
-				"HTML Help contents and indexes",
-			],
-		},
-		{
-			title: "Software localization",
-			formats: [
-				"JSON / ARB / locJSON",
-				"YAML",
-				"PO / POT",
-				"Android XML",
-				"Apple localization",
-				"RESX",
-				"Qt TS / QML",
-				"Windows INF / Registry REG",
-				"FreeMind MM mind maps",
-				"Outlook MSG → safe EML",
-			],
-		},
-		{
-			title: "Publishing and technical",
-			formats: [
-				"EPUB",
-				"Visio VSDX / VSDM / VSSX / VSSM / VSTX / VSTM",
-				"Visio VDX / VSX / VTX and protected legacy VSD / VSS / VDW",
-				"DITA / DITAMAP / BOOKMAP",
-				"DocBook",
-				"IDML / ICML / INX",
-				"FrameMaker MIF / MIF2",
-				"QuarkXPress XTG / TAG",
-				"TeX / LaTeX",
-				"SVG",
-				"TTML",
-			],
-		},
-		{
-			title: "Text and interchange",
-			formats: [
-				"TXT / CSV / TSV",
-				"XML + ITS 2.0",
-				"ITS rules / MULIX multilingual XML",
-				"Author-it / MadCap / TYPO3 XML",
-				"Constrained SGML",
-				"Markdown / AsciiDoc",
-				"SRT / WebVTT / SBV / ASS / SSA / Spruce STL",
-				"XLIFF 1.2 / 2.x",
-				"SDLXLIFF / MQXLIFF / MXLIFF / WsXLIFF / WPML / XLIFF:doc",
-				"TTX / ITD / TXML / Workbench bilingual",
-				"TMX / TBX",
-			],
-		},
-		{
-			title: "Local extraction and packages",
-			formats: [
-				"PNG / JPEG / TIFF / BMP / DIB / GIF OCR",
-				"Photoshop PSD text layers to SVG",
-				"Audio and video transcription",
-				"Trados return packages",
-				"WorldServer WSXZ / XLZ packages",
-				"memoQ return packages",
-				"STAR Transit PXF / PPF handoffs",
-				"TIPP request / response packages",
-				"COTI packages",
-				"Manifest ZIP projects",
-			],
-		},
-	];
+	const formatGroups = SUPPORT_FORMAT_GROUPS;
 </script>
 
 <svelte:head>
 	<title>Open TLC — Open source browser-based CAT tool</title>
 	<meta
 		name="description"
-		content="Translate 44 office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool."
+		content={`Translate ${FORMAT_WORKFLOW_COUNT} office, web, software-localization, media, diagram and publishing format workflows with a local-first open source CAT tool.`}
 	/>
 </svelte:head>
 
@@ -125,8 +51,8 @@
 			<h1>Translation work belongs in your hands.</h1>
 			<p class="hero-copy">
 				Open TLC is a computer-assisted translation tool for translators,
-				students and teams. Work with 44 registered format workflows, protect
-				inline content, and keep projects on your own device.
+				students and teams. Work with {FORMAT_WORKFLOW_COUNT} registered format workflows,
+				protect inline content, and keep projects on your own device.
 			</p>
 			<div class="hero-actions">
 				<a href="/app" class="button button-primary">Start translating</a>
@@ -138,7 +64,11 @@
 	</section>
 
 	<section class="status-strip" aria-label="Open TLC highlights">
-		<div><strong>44</strong><span>registered format workflows</span></div>
+		<div>
+			<strong>{FORMAT_WORKFLOW_COUNT}</strong><span
+				>registered format workflows</span
+			>
+		</div>
 		<div>
 			<strong>1.2–2.1</strong><span>standard + vendor XLIFF exchange</span>
 		</div>
@@ -202,15 +132,18 @@
 			<p class="eyebrow dark">Clear boundaries</p>
 			<h2>Honest support is safer support</h2>
 			<p>
-				PDF remains source-only. RTF and XLS round-trip locally; legacy DOC and
-				PPT are imported in the browser and exported to DOCX and HTML. CAT
-				packages are rebuilt as return packages. Modern Visio drawings, stencils
-				and templates retain their exact family; edited legacy Visio binaries
-				use an explicit VDX delivery. INX, MIF/MIF2 and XPress Tags preserve
-				their structured text. PSD imports validated text layers and delivers
-				translated SVG while retaining the exact original PSD. Image OCR and
-				media transcription run on-device—the app downloads model assets, never
-				the source file to a processing service.
+				PDF text is extracted locally and translated delivery retains the
+				original pages while replacing mapped text areas. Complex typography,
+				font substitution and scanned pages can still require review. RTF and
+				XLS round-trip locally; legacy DOC and PPT are imported in the browser
+				and exported to DOCX and HTML. CAT packages are rebuilt as return
+				packages. Modern Visio drawings, stencils and templates retain their
+				exact family; edited legacy Visio binaries use an explicit VDX delivery.
+				INX, MIF/MIF2 and XPress Tags preserve their structured text. PSD
+				imports validated text layers and delivers translated SVG while
+				retaining the exact original PSD. Image OCR and media transcription run
+				on-device—the app downloads model assets, never the source file to a
+				processing service.
 			</p>
 			<a class="text-link" href="/about#constrained-workflows"
 				>Read the support policy →</a

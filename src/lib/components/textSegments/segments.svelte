@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from "svelte";
 	import Segment from "./segment.svelte";
 	import AutoFill from "../svg/autoFill.svelte";
 	import DocLock from "../svg/docLock.svelte";
@@ -62,6 +63,7 @@
 		combineSegmentRangeData,
 		getSegmentJoinBoundaryOffsets,
 	} from "$lib/functions/parsing/segmentationLogic";
+	import { getProjectCompletionSummary } from "$lib/formats/qualityAssurance";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	const CONVERTED_EXPORTS: ReadonlyArray<{
@@ -229,12 +231,20 @@
 	let showTmTbModal: boolean = $state(false);
 	let showTmAddModal: boolean = $state(false);
 	let showTbAddModal: boolean = $state(false);
+	let pendingDeliveryExport: (() => Promise<void>) | null = $state(null);
+	let completionWarning = $derived(
+		getProjectCompletionSummary($singleUserData),
+	);
 	let combineSelection: Set<number> = $state(new Set());
 	let pendingSplitOffsets: Map<number, number> = $state(new Map());
 	let percentage: number = $derived(
 		calcPercentageOfTotalSegmentsChecked(
 			$singleUserData.translationData.checked,
 		),
+	);
+	let allSegmentsLocked = $derived(
+		$singleUserData.translationData.checked.length > 0 &&
+			$singleUserData.translationData.checked.every(Boolean),
 	);
 	let translationExportAvailable: boolean = $derived(
 		getFormatAdapter($singleUserData.translationData.type).capabilities.export,
@@ -329,36 +339,61 @@
 		}
 	}
 
-	function lockAllSegments() {
+	async function requestDeliveryExport(action: () => Promise<void>) {
+		const completion = getProjectCompletionSummary($singleUserData);
+		if (
+			completion.emptyTargetUnits.length > 0 ||
+			completion.unconfirmedUnits.length > 0
+		) {
+			pendingDeliveryExport = action;
+			return;
+		}
+		await action();
+	}
+
+	async function continueIncompleteExport() {
+		const action = pendingDeliveryExport;
+		pendingDeliveryExport = null;
+		if (action) await action();
+	}
+
+	async function persistProject(project = $singleUserData) {
+		try {
+			await updateTranslationOnIndexedDB(project);
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "Could not save this project.",
+			);
+		}
+	}
+
+	async function lockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
 		newUserData.translationData.checked =
 			newUserData.translationData.checked.map(() => true);
 		singleUserData.set(newUserData);
+		await persistProject(newUserData);
 	}
 
-	function lockAllUnlockedSegments() {
-		if (!$singleUserData) return console.log("Data not found");
-		let newUserData = $singleUserData;
-		newUserData.translationData.checked =
-			newUserData.translationData.checked.map((segment) => {
-				if (!segment) return true;
-				return segment;
-			});
-		console.log(newUserData.translationData.checked);
-		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
-	}
-
-	function unlockAllSegments() {
+	async function unlockAllSegments() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
 		newUserData.translationData.checked =
 			newUserData.translationData.checked.map(() => false);
 		singleUserData.set(newUserData);
+		await persistProject(newUserData);
 	}
 
-	function focusSegment(idx: number) {
+	async function focusSegment(idx: number) {
+		if (idx >= visibleSegmentsCount) {
+			visibleSegmentsCount = Math.min(
+				$singleUserData.translationData.seg1.length,
+				Math.ceil((idx + 1) / AMOUNT_OF_SEGMENTS_TO_LOAD) *
+					AMOUNT_OF_SEGMENTS_TO_LOAD,
+			);
+			await tick();
+		}
 		const el = document.querySelector<HTMLElement>(
 			`[data-segment-id="${idx}"]`,
 		);
@@ -371,7 +406,7 @@
 		(input ?? el).scrollIntoView({ block: "center", behavior: "smooth" });
 	}
 
-	function selectSegmentByOffset(offset: number) {
+	async function selectSegmentByOffset(offset: number) {
 		const total = $singleUserData.translationData.seg1.length;
 		if (total === 0) return;
 		let current = $selectedSegmentId;
@@ -384,10 +419,10 @@
 		if (next >= total) next = total - 1;
 		lastSelectedSegmentId = next;
 		selectedSegmentId.set(next);
-		focusSegment(next);
+		await focusSegment(next);
 	}
 
-	function toggleLockCurrentSegment() {
+	async function toggleLockCurrentSegment() {
 		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 		if (!$singleUserData) return;
 		const total = $singleUserData.translationData.checked.length;
@@ -399,17 +434,21 @@
 		newUserData.translationData.checked[idx] =
 			!newUserData.translationData.checked[idx];
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB(newUserData);
+		await persistProject(newUserData);
 		notifyInfo(
 			`Segment ${idx + 1} ${newUserData.translationData.checked[idx] ? "locked" : "unlocked"}`,
 		);
 	}
 
-	function fillCurrentSegment() {
+	async function fillCurrentSegment() {
 		if (!$singleUserData) return;
 		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 		const total = $singleUserData.translationData.seg1.length;
 		if (idx < 0 || idx >= total) return;
+		if ($singleUserData.translationData.checked[idx]) {
+			notifyError("Unlock this segment before changing it.");
+			return;
+		}
 
 		// Only fill if target is empty
 		if ($singleUserData.translationData.seg2[idx] !== "") return;
@@ -419,25 +458,29 @@
 		newUserData.translationData.seg2[idx] =
 			newUserData.translationData.seg1[idx];
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB(newUserData);
+		await persistProject(newUserData);
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 		notifySuccess(`Filled segment ${idx + 1}`);
 	}
 
-	function splitCurrentSegment() {
+	async function splitCurrentSegment() {
 		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 		const offset = pendingSplitOffsets.get(idx);
 		if (offset === undefined) {
 			notifyError("Place the caret inside a source segment first.");
 			return;
 		}
-		splitAtOffset(idx, offset);
+		await splitAtOffset(idx, offset);
 	}
 
-	function splitAtOffset(customIdx?: number, customOffset?: number) {
+	async function splitAtOffset(customIdx?: number, customOffset?: number) {
 		if (!$singleUserData) return;
 		const idx = customIdx ?? $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 		if (idx < 0 || idx >= $singleUserData.translationData.seg1.length) return;
+		if ($singleUserData.translationData.checked[idx]) {
+			notifyError("Unlock this segment before splitting it.");
+			return;
+		}
 
 		const offsetFromStore =
 			customOffset ?? pendingSplitOffsets.get(idx) ?? null;
@@ -458,7 +501,7 @@
 		}
 		const newUserData = { ...$singleUserData, translationData: result.data };
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB(newUserData);
+		await persistProject(newUserData);
 		selectedSegmentId.set(idx + 1);
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
@@ -471,7 +514,7 @@
 		);
 	}
 
-	function combineWithNextSegment() {
+	async function combineWithNextSegment() {
 		if (!$singleUserData) return;
 
 		let selected = Array.from(combineSelection.values()).sort((a, b) => a - b);
@@ -479,6 +522,14 @@
 			const current =
 				selected[0] ?? $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
 			selected = [current, current + 1];
+		}
+		if (
+			selected.some(
+				(index) => $singleUserData.translationData.checked[index] === true,
+			)
+		) {
+			notifyError("Unlock every selected segment before joining them.");
+			return;
 		}
 
 		const result = combineSegmentRangeData(
@@ -492,7 +543,7 @@
 
 		const newUserData = { ...$singleUserData, translationData: result.data };
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB(newUserData);
+		await persistProject(newUserData);
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 		combineSelection = new Set();
@@ -503,21 +554,27 @@
 		);
 	}
 
-	function handleKeydown(event: KeyboardEvent) {
-		if (!event.ctrlKey && !event.metaKey) return;
+	async function handleKeydown(event: KeyboardEvent) {
+		const target = event.target;
+		if (
+			target instanceof HTMLElement &&
+			(target.matches("input, textarea, select") || target.isContentEditable)
+		)
+			return;
+		if ((!event.ctrlKey && !event.metaKey) || !event.altKey) return;
 
 		switch (event.key.toLowerCase()) {
 			case "arrowdown":
 				event.preventDefault();
-				selectSegmentByOffset(1);
+				await selectSegmentByOffset(1);
 				break;
 			case "arrowup":
 				event.preventDefault();
-				selectSegmentByOffset(-1);
+				await selectSegmentByOffset(-1);
 				break;
 			case "l":
 				event.preventDefault();
-				toggleLockCurrentSegment();
+				await toggleLockCurrentSegment();
 				break;
 			case "m":
 				event.preventDefault();
@@ -525,35 +582,36 @@
 				break;
 			case "f":
 				event.preventDefault();
-				fillCurrentSegment();
+				await fillCurrentSegment();
 				break;
 			case "e":
 				event.preventDefault();
-				splitCurrentSegment();
+				await splitCurrentSegment();
 				break;
 			case "j":
 				event.preventDefault();
-				combineWithNextSegment();
+				await combineWithNextSegment();
 				break;
 		}
 	}
 
-	function fillAllEmptySegments() {
+	async function fillAllEmptySegments() {
 		if (!$singleUserData) return console.log("Data not found");
 		let newUserData = $singleUserData;
 		newUserData.translationData.seg2 = newUserData.translationData.seg2.map(
 			(segment, i) => {
-				if (segment === "") return newUserData.translationData.seg1[i];
+				if (segment === "" && !newUserData.translationData.checked[i])
+					return newUserData.translationData.seg1[i];
 				return segment;
 			},
 		);
 		console.log(newUserData.translationData.seg2);
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
+		await persistProject(newUserData);
 		seg2WordCount.set(getTotalWordCount($singleUserData.translationData.seg2));
 	}
 
-	function selectTmId(id: number | string, name: string) {
+	async function selectTmId(id: number | string, name: string) {
 		if (typeof id === "string") {
 			id = parseInt(id);
 		}
@@ -561,14 +619,14 @@
 		newUserData.translationData!.tm!.id = id;
 		newUserData.translationData!.tm!.name = name;
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
+		await persistProject(newUserData);
 		singleTmData.set($tmData.find((data) => data.id === id) as TmData);
 		console.log(`Selected TM Name: ${name}`);
 		console.log(`Selected TM Id: ${id}`);
 		notifyInfo(`Translation Memory selected: ${name}`);
 	}
 
-	function selectTbId(id: number | string, name: string) {
+	async function selectTbId(id: number | string, name: string) {
 		if (typeof id === "string") {
 			id = parseInt(id);
 		}
@@ -577,7 +635,7 @@
 		newUserData.translationData!.tb!.id = id;
 		newUserData.translationData!.tb!.name = name;
 		singleUserData.set(newUserData);
-		updateTranslationOnIndexedDB($singleUserData);
+		await persistProject(newUserData);
 		console.log(`Selected TB Id: ${id}`);
 		notifyInfo(`Term Base selected: ${name}`);
 	}
@@ -613,8 +671,10 @@
 	}
 
 	async function toggleTmTbModal() {
-		getAllTmDataFromIndexedDB();
-		getAllTbDataFromIndexedDB();
+		await Promise.all([
+			getAllTmDataFromIndexedDB(),
+			getAllTbDataFromIndexedDB(),
+		]);
 		showTmTbModal = true;
 	}
 
@@ -642,7 +702,7 @@
 			let newUserData = { ...$singleUserData };
 			newUserData.translationData!.tm!.active = tmActive;
 			singleUserData.set(newUserData);
-			updateTranslationOnIndexedDB(newUserData);
+			void persistProject(newUserData);
 			if (tmActive) {
 				notifySuccess(`Translation Memory activated`);
 			} else {
@@ -655,7 +715,7 @@
 			let newUserData = { ...$singleUserData };
 			newUserData.translationData!.tb!.active = tbActive;
 			singleUserData.set(newUserData);
-			updateTranslationOnIndexedDB(newUserData);
+			void persistProject(newUserData);
 			if (tbActive) {
 				notifySuccess(`Term Base activated`);
 			} else {
@@ -676,7 +736,7 @@
 		{#if translationExportAvailable}
 			<button
 				class="modal-action-card primary"
-				onclick={exportTranslatedSourceAndClose}
+				onclick={() => requestDeliveryExport(exportTranslatedSourceAndClose)}
 			>
 				<span class="modal-action-icon">FILE</span>
 				<span class="modal-action-text"
@@ -702,7 +762,10 @@
 			{#each CONVERTED_EXPORTS as exportOption}
 				<button
 					class="modal-action-card converted-export-card"
-					onclick={() => exportConvertedFile(exportOption.format)}
+					onclick={() =>
+						requestDeliveryExport(() =>
+							exportConvertedFile(exportOption.format),
+						)}
 				>
 					<span class="modal-action-icon">{exportOption.icon}</span>
 					<span class="modal-action-text"
@@ -802,6 +865,33 @@
 	</div>
 {/snippet}
 
+{#snippet incompleteExportWarning()}
+	<div class="modal-confirmation">
+		<span class="modal-confirmation-icon neutral">QA</span>
+		<h3>Export an incomplete translation?</h3>
+		<p>
+			{completionWarning.emptyTargetUnits.length} target
+			{completionWarning.emptyTargetUnits.length === 1
+				? " segment is"
+				: " segments are"}
+			empty and {completionWarning.unconfirmedUnits.length}
+			{completionWarning.unconfirmedUnits.length === 1
+				? " segment is"
+				: " segments are"}
+			not confirmed. The delivery may contain missing or unfinished text.
+		</p>
+		<div class="modal-actions inline">
+			<button
+				class="modal-button secondary"
+				onclick={() => (pendingDeliveryExport = null)}>Review project</button
+			>
+			<button class="modal-button primary" onclick={continueIncompleteExport}
+				>Export anyway</button
+			>
+		</div>
+	</div>
+{/snippet}
+
 {#snippet tmTbMenu()}
 	<div class="manage-tm-tb-container">
 		<div class="manage-tm-container modal-section-card">
@@ -815,14 +905,9 @@
 				/>
 			</div>
 			<div class="tm-tb-selection-container">
-				<div
-					class="tm-tb-selection-overlay"
-					style={tmActive
-						? "display: background-color: rgba(230, 230, 230, 0); z-index: -1;"
-						: "background-color: rgba(230, 230, 230, 0.5); z-index: 2;"}
-				></div>
 				<select
 					class="tm-select"
+					disabled={!tmActive}
 					onchange={(e) =>
 						selectTmId(
 							(e.target as HTMLSelectElement).value,
@@ -878,14 +963,9 @@
 				/>
 			</div>
 			<div class="tm-tb-selection-container">
-				<div
-					class="tm-tb-selection-overlay"
-					style={tbActive
-						? "display: background-color: rgba(230, 230, 230, 0); z-index: -1;"
-						: "background-color: rgba(230, 230, 230, 0.5); z-index: 2;"}
-				></div>
 				<select
 					class="tm-select"
+					disabled={!tbActive}
 					onchange={(e) =>
 						selectTbId(
 							(e.target as HTMLSelectElement).value,
@@ -977,11 +1057,14 @@
 		onclick={() => (showSaveFileModal = false)}
 	>
 		<Modal
-			title="Export files"
+			title={pendingDeliveryExport ? "Translation QA warning" : "Export files"}
 			description="Choose a translated delivery file or portable bilingual project format."
-			content={exportMenu}
+			content={pendingDeliveryExport ? incompleteExportWarning : exportMenu}
 			wide
-			onClose={() => (showSaveFileModal = false)}
+			onClose={() => {
+				pendingDeliveryExport = null;
+				showSaveFileModal = false;
+			}}
 		/>
 	</div>
 {:else if showTmAddModal}
@@ -1055,32 +1138,32 @@
 				<span>?</span>
 				<div class="shortcut-popover">
 					<p>
-						<strong>Ctrl/Cmd + ↓ / ↑:</strong>
+						<strong>Ctrl/Cmd + Alt + ↓ / ↑:</strong>
 						<br />
 						<span>Select next/previous segment</span>
 					</p>
 					<p>
-						<strong>Ctrl/Cmd + L:</strong>
+						<strong>Ctrl/Cmd + Alt + L:</strong>
 						<br />
 						<span>Lock/Unlock current segment</span>
 					</p>
 					<p>
-						<strong>Ctrl/Cmd + F:</strong>
+						<strong>Ctrl/Cmd + Alt + F:</strong>
 						<br />
 						<span>Fill current segment (if empty)</span>
 					</p>
 					<p>
-						<strong>Ctrl/Cmd + M:</strong>
+						<strong>Ctrl/Cmd + Alt + M:</strong>
 						<br />
 						<span>Open TM/TB manager</span>
 					</p>
 					<p>
-						<strong>Ctrl/Cmd + E:</strong>
+						<strong>Ctrl/Cmd + Alt + E:</strong>
 						<br />
 						<span>Split current segment</span>
 					</p>
 					<p>
-						<strong>Ctrl/Cmd + J:</strong>
+						<strong>Ctrl/Cmd + Alt + J:</strong>
 						<br />
 						<span>Join selected segments or current + next</span>
 					</p>
@@ -1113,14 +1196,18 @@
 			</div>
 		</div>
 		<div class="segment-actions">
-			<button class="bulk-action" onclick={() => lockAllUnlockedSegments()}>
+			<button
+				class="bulk-action"
+				onclick={() =>
+					allSegmentsLocked ? unlockAllSegments() : lockAllSegments()}
+			>
 				<DocLock />
-				Lock all
+				{allSegmentsLocked ? "Unlock all" : "Lock all"}
 			</button>
 			<button
 				class="bulk-action"
 				onclick={splitCurrentSegment}
-				title="Split current segment at source caret (Ctrl/Cmd+E)"
+				title="Split current segment at source caret (Ctrl/Cmd+Alt+E)"
 				disabled={!pendingSplitOffsets.has(
 					$selectedSegmentId ?? lastSelectedSegmentId ?? 0,
 				)}
@@ -1134,7 +1221,7 @@
 			<button
 				class="bulk-action"
 				onclick={combineWithNextSegment}
-				title="Join selected segments or current + next (Ctrl/Cmd+J)"
+				title="Join selected segments or current + next (Ctrl/Cmd+Alt+J)"
 				disabled={$singleUserData.translationData.seg1.length < 2}
 			>
 				Join selected
@@ -1307,14 +1394,6 @@
 
 	.tm-tb-selection-container {
 		position: relative;
-	}
-
-	.tm-tb-selection-overlay {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
 	}
 
 	.tm-select {
