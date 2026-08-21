@@ -1,9 +1,9 @@
 # Open TLC file-format implementation plan
 
-Status: proposed roadmap, researched 2026-08-15. A checked item means that the
-implementation, review, and test gates in this document all passed. Existing
-code is recorded as a starting point, but is not marked complete until it meets
-the same gates.
+Status: **implemented through Phase 5**, last reconciled 2026-08-21. Every FF
+task and phase gate in this roadmap is checked. A checked item means that its
+implementation, review, and applicable repository test gates passed; the
+format-specific fidelity boundaries recorded under checked tasks still apply.
 
 ## Goal and ordering
 
@@ -27,7 +27,12 @@ The sequence is:
 5. Add publishing, technical-authoring, and specialist formats.
 6. Give lossy, legacy, media, and proprietary formats explicit local workflows.
 
-## Current baseline (not yet the completion matrix)
+## Historical baseline used to start the roadmap
+
+This table records the repository state before the roadmap work began. It is
+kept as project history, not as the current support or defect matrix; the
+checked task records and registry-backed support catalog describe the current
+implementation.
 
 | Area               | Present in the repository                                                                | Main gap before it is production-grade                                           |
 | ------------------ | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |

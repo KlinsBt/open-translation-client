@@ -3,11 +3,11 @@
 This checklist tracks the repository-wide functional audit performed on
 2026-08-20 and reopened after the independent follow-up audit on 2026-08-20.
 
-> **Current status: FIFTH FOLLOW-UP COMPLETE — 2026-08-21.** PDF semantics,
-> editor scaling, media validation/cancellation, cross-tab concurrency,
-> bidirectional-language semantics, roadmap accuracy, and final release
-> evidence were remediated and independently rechecked in AUD-052 through
-> AUD-058.
+> **Current status: SIXTH FOLLOW-UP IN PROGRESS — 2026-08-21.** The latest
+> independent pass reopened resource concurrency, generic XLIFF identity, PDF
+> pagination/search text coverage, bounded editor rendering, reusable TM
+> indexing, and constrained-export wording. AUD-059 through AUD-063 are closed;
+> AUD-064 remains open until the complete release gate is recorded.
 
 The final gate is `npm run verify` on a clean worktree, the absence of unexpected
 runtime/build warnings, and a manual review of the evidence recorded beneath
@@ -1126,6 +1126,64 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   execution is unavailable on this CachyOS host because its Playwright runtime
   libraries are absent; the checked-in browser-matrix workflow remains the
   WebKit release gate.
+
+## Sixth independent follow-up audit
+
+- [x] AUD-059 Add compare-and-swap revisions to TM/TB persistence, repair
+      project references without permitting a stale project overwrite, and
+      prevent generic XLIFF file IDs from replacing Open TLC project identity.
+
+  Completed 2026-08-21 in `fda7924`. TM/TB schema version 2 adds monotonic
+  revisions and every resource update rejects a stale browser copy. Resource
+  deletion and project-reference repair advance the affected project revision
+  in the same transaction. Generic XLIFF 2 file IDs remain document metadata;
+  only explicit Open TLC metadata may restore a project ID. Migration, stale
+  save, delete/reference race, and numeric vendor-file-ID regressions pass.
+
+- [x] AUD-060 Make translated PDF delivery paginate a single oversized segment,
+      preserve searchable unchanged page text, and cover Unicode, RTL, CJK,
+      Indic, Syriac, and emoji text without silently falling back to WinAnsi.
+
+  Completed 2026-08-21 in `3f0a980`. The writer page-breaks at wrapped-line
+  boundaries, creates searchable text per output line, retains searchable text
+  for unchanged visible source regions, and lazily embeds script-appropriate
+  Noto/Unifont/emoji fonts. First-strong direction and grapheme-aware RTL runs
+  keep extracted logical text stable. PDF.js browser tests reopen the result and
+  verify first/middle/last pages, replacement semantics, and mixed-script text.
+
+- [x] AUD-061 Replace append-only segment rendering with a measured, bounded
+      virtual window that supports variable row heights and keyboard jumps.
+
+  Completed 2026-08-21 in `048306f`. A Fenwick-tree size index maps scroll
+  offsets in logarithmic time, ResizeObserver measurements correct variable row
+  heights, and only the viewport plus overscan remains mounted. A real-browser
+  10,000-segment regression reaches the final row, caps mounted rows at 160,
+  removes the first row from the DOM, and retains keyboard navigation behavior.
+
+- [x] AUD-062 Reuse normalized TM candidates instead of rebuilding and
+      normalizing the complete selected memory on every segment focus.
+
+  Completed 2026-08-21 in `f1bd26e`. Revision-aware per-language-pair indexes
+  cache normalized/sketched candidates, sort them by character length, and use
+  binary bounds before fuzzy scoring. A changed persistence revision or terms
+  array invalidates the cache; unsaved mutable memories deliberately rebuild to
+  avoid stale results. Unicode matching and the 10,000-entry regression pass.
+
+- [x] AUD-063 Make constrained export labels and public PDF descriptions match
+      the artifact actually downloaded, and reconcile roadmap completion status.
+
+  Completed 2026-08-21 in the export-copy/roadmap commit containing this entry.
+  Source PDF now says “Translated PDF,” image OCR says “Bilingual HTML OCR
+  review,” and media transcription says “Translated WebVTT transcript,” each
+  with workflow-specific detail. Landing/About copy describes newly flattened
+  rendered pages rather than retained PDF objects. The roadmap header now
+  identifies all checked phases as implemented while preserving explicit
+  fidelity constraints.
+
+- [ ] AUD-064 Run the full format/lint/type/coverage/Chromium/build gate,
+      Firefox browser suite, available independent validators, dependency
+      audits, repository consistency checks, and final clean-worktree review.
+      Record exact evidence and only then mark the sixth follow-up complete.
 
 ## Checkbox closure protocol
 

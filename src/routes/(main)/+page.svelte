@@ -132,18 +132,18 @@
 			<p class="eyebrow dark">Clear boundaries</p>
 			<h2>Honest support is safer support</h2>
 			<p>
-				PDF text is extracted locally and translated delivery retains the
-				original pages while replacing mapped text areas. Complex typography,
-				font substitution and scanned pages can still require review. RTF and
-				XLS round-trip locally; legacy DOC and PPT are imported in the browser
-				and exported to DOCX and HTML. CAT packages are rebuilt as return
-				packages. Modern Visio drawings, stencils and templates retain their
-				exact family; edited legacy Visio binaries use an explicit VDX delivery.
-				INX, MIF/MIF2 and XPress Tags preserve their structured text. PSD
-				imports validated text layers and delivers translated SVG while
-				retaining the exact original PSD. Image OCR and media transcription run
-				on-device—the app downloads model assets, never the source file to a
-				processing service.
+				PDF text is extracted locally; translated delivery creates new flattened
+				pages from local page renders, replaces mapped text areas, and adds a
+				searchable target-language layer. Complex typography, font substitution
+				and scanned pages can still require review. RTF and XLS round-trip
+				locally; legacy DOC and PPT are imported in the browser and exported to
+				DOCX and HTML. CAT packages are rebuilt as return packages. Modern Visio
+				drawings, stencils and templates retain their exact family; edited
+				legacy Visio binaries use an explicit VDX delivery. INX, MIF/MIF2 and
+				XPress Tags preserve their structured text. PSD imports validated text
+				layers and delivers translated SVG while retaining the exact original
+				PSD. Image OCR and media transcription run on-device—the app downloads
+				model assets, never the source file to a processing service.
 			</p>
 			<a class="text-link" href="/about#constrained-workflows"
 				>Read the support policy →</a

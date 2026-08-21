@@ -262,10 +262,11 @@
 						<strong>PDF uses layout-preserving translated delivery</strong>
 						<p>
 							Born-digital text is mapped to its original page and bounding box.
-							Export retains the original PDF pages and overlays translated text
-							in those areas; an accessible bilingual HTML review remains
-							available. Complex fonts, transparent artwork and scanned pages
-							can still need a visual review.
+							Export locally renders each source page, replaces mapped text
+							areas, and writes a new flattened PDF with a searchable
+							target-language text layer; an accessible bilingual HTML review
+							remains available. Complex fonts, transparent artwork and scanned
+							pages can still need a visual review.
 						</p>
 					</article>
 					<article>
