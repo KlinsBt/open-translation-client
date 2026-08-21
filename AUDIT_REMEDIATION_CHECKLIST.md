@@ -3,11 +3,11 @@
 This checklist tracks the repository-wide functional audit performed on
 2026-08-20 and reopened after the independent follow-up audit on 2026-08-20.
 
-> **Current status: SIXTH FOLLOW-UP IN PROGRESS — 2026-08-21.** The latest
+> **Current status: SIXTH FOLLOW-UP COMPLETE — 2026-08-21.** The latest
 > independent pass reopened resource concurrency, generic XLIFF identity, PDF
 > pagination/search text coverage, bounded editor rendering, reusable TM
-> indexing, and constrained-export wording. AUD-059 through AUD-063 are closed;
-> AUD-064 remains open until the complete release gate is recorded.
+> indexing, and constrained-export wording. AUD-059 through AUD-064 are closed
+> with implementation and final release evidence below.
 
 The final gate is `npm run verify` on a clean worktree, the absence of unexpected
 runtime/build warnings, and a manual review of the evidence recorded beneath
@@ -201,9 +201,10 @@ test:browser:smoke` — 1 file and 18 tests passed.
   format run — 9 files, 146 tests passed and 1 conditional test skipped; the
   post-change `npm run test:browser:smoke` run — 1 file and 18 tests passed.
 
-- [x] AUD-015 Improve PDF delivery fidelity by preserving original PDF pages
-      where possible and by wrapping/clipping translated text predictably in its
-      source box; document unavoidable limitations.
+- [x] AUD-015 Improve PDF delivery fidelity by preserving the rendered source
+      page appearance where possible and by wrapping/clipping translated text
+      predictably in its source box; document unavoidable limitations. The
+      superseding safe-output semantics are recorded in AUD-052 and AUD-060.
 - [x] AUD-016 Make the supported-format content on the landing page, About page,
       and upload UI derive from one registry-backed source.
 
@@ -1180,10 +1181,33 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   identifies all checked phases as implemented while preserving explicit
   fidelity constraints.
 
-- [ ] AUD-064 Run the full format/lint/type/coverage/Chromium/build gate,
+- [x] AUD-064 Run the full format/lint/type/coverage/Chromium/build gate,
       Firefox browser suite, available independent validators, dependency
       audits, repository consistency checks, and final clean-worktree review.
       Record exact evidence and only then mark the sixth follow-up complete.
+
+  Completed 2026-08-21 in the final sixth-follow-up evidence commit. The
+  complete `npm run verify` gate passed Prettier, ESLint, Svelte diagnostics
+  with 0 errors/warnings, 93 covered unit files with 1,171 passed and 11
+  explicit conditional skips, all four coverage thresholds, 18 Chromium files
+  with 112/112 tests, production build, and bundle budgets. Coverage finished
+  at 84.78% statements, 74.50% branches, 91.82% functions, and 86.17% lines.
+  The same 18 files and 112/112 tests passed in Firefox.
+
+  `npm run test:external:available` passed 13 files with 121 tests and four
+  explicit skips. LibreOffice 25.8.2.2, FFmpeg n8.0/ffprobe, Poppler 25.10.0,
+  Qt qmllint 1.0, libxml2 2.15.1, and gettext 0.26 exercised every applicable
+  artifact. EPUBCheck, DITA-OT, pdfTeX, and windres are not installed on this
+  workstation and remain strict release-matrix requirements. Full and
+  production-only `npm audit` runs both reported 0 vulnerabilities.
+
+  The local WebKit attempt stopped before loading tests because this CachyOS
+  host lacks Playwright's required ICU/XML/Flite runtime libraries. This is an
+  environment limitation rather than an application pass or failure; the
+  checked-in Ubuntu browser-matrix workflow installs those dependencies and
+  remains the WebKit release gate. Final formatting, repository consistency,
+  diff, generated-artifact, roadmap-checkbox, and clean-worktree checks passed.
+  No remaining regression is known in the remediated behavior.
 
 ## Checkbox closure protocol
 
