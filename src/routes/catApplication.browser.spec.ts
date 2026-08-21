@@ -264,6 +264,44 @@ describe("real CAT application route", () => {
 		);
 	});
 
+	it("keeps the editor DOM bounded while navigating a very large project", async () => {
+		const count = 10_000;
+		const project = makeUserData({
+			seg1: Array.from({ length: count }, (_, index) => `Source ${index + 1}`),
+			seg2: Array.from({ length: count }, () => ""),
+			checked: Array.from({ length: count }, () => false),
+			locked: Array.from({ length: count }, () => false),
+		});
+		project.id = 9402;
+		singleUserData.set(project);
+		tmData.set([]);
+		tbData.set([]);
+		selectedSegmentId.set(0);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+		expect(document.querySelectorAll("[data-segment-id]").length).toBeLessThan(
+			100,
+		);
+
+		const container = document.querySelector<HTMLElement>(
+			".segments-container",
+		)!;
+		container.scrollTop = container.scrollHeight;
+		container.dispatchEvent(new Event("scroll"));
+		await eventually(() =>
+			expect(
+				document.querySelector(`[data-segment-id="${count - 1}"]`),
+			).not.toBeNull(),
+		);
+		expect(
+			document.querySelectorAll("[data-segment-id]").length,
+		).toBeLessThanOrEqual(160);
+		expect(document.querySelector('[data-segment-id="0"]')).toBeNull();
+	});
+
 	it("keeps confirmation, editing, and locking as independent persisted segment states", async () => {
 		const project = makeUserData({
 			name: "Segment state transitions",

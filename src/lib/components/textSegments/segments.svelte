@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, tick } from "svelte";
+	import { onDestroy, onMount, tick } from "svelte";
 	import Segment from "./segment.svelte";
 	import AutoFill from "../svg/autoFill.svelte";
 	import DocLock from "../svg/docLock.svelte";
@@ -66,8 +66,11 @@
 	import { getProjectCompletionSummary } from "$lib/formats/qualityAssurance";
 	import { createPersistedEditQueue } from "$lib/functions/saveData/persistedEditQueue";
 	import { withLoading } from "$lib/functions/uiHelpers";
+	import { VirtualSegmentSizeIndex } from "$lib/functions/virtualSegmentWindow";
 
-	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
+	const ESTIMATED_SEGMENT_HEIGHT = 126;
+	const SEGMENT_GAP = 10;
+	const VIRTUAL_OVERSCAN = 10;
 	const CONVERTED_EXPORTS: ReadonlyArray<{
 		format: ConvertedExportFormat;
 		icon: string;
@@ -111,8 +114,16 @@
 			description: "Source, target, segment number, and confirmation status.",
 		},
 	];
-	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
 	let segmentsContainer: HTMLElement | null = $state(null);
+	let virtualSizeIndex = new VirtualSegmentSizeIndex(
+		$singleUserData.translationData.seg2.length,
+		ESTIMATED_SEGMENT_HEIGHT,
+	);
+	let virtualStart = $state(0);
+	let virtualEnd = $state(
+		Math.min($singleUserData.translationData.seg2.length, 30),
+	);
+	let virtualRevision = $state(0);
 	let tmSelected: null | number = $derived(
 		$singleUserData.translationData.tm?.id ?? null,
 	);
@@ -289,24 +300,68 @@
 		getXliffVendorProfile($singleUserData.translationData.documentModel),
 	);
 
-	function handleScroll() {
-		if (!segmentsContainer) return;
-
-		const isBottom =
-			segmentsContainer.scrollTop + segmentsContainer.clientHeight >=
-			segmentsContainer.scrollHeight - 5; // Small buffer
-
-		// Load more if scrolled to bottom and more segments are available
-		if (
-			isBottom &&
-			visibleSegmentsCount < $singleUserData.translationData.seg2.length
-		) {
-			visibleSegmentsCount = Math.min(
-				visibleSegmentsCount + AMOUNT_OF_SEGMENTS_TO_LOAD,
-				$singleUserData.translationData.seg2.length,
-			);
-		}
+	function refreshVirtualWindow() {
+		const viewportHeight = segmentsContainer?.clientHeight ?? 741;
+		const range = virtualSizeIndex.rangeForViewport(
+			segmentsContainer?.scrollTop ?? 0,
+			viewportHeight,
+			VIRTUAL_OVERSCAN,
+		);
+		virtualStart = range.start;
+		virtualEnd = range.end;
 	}
+
+	function handleScroll() {
+		refreshVirtualWindow();
+	}
+
+	function virtualOffset(index: number): number {
+		void virtualRevision;
+		return virtualSizeIndex.offsetFor(index);
+	}
+
+	function virtualTotalHeight(): number {
+		void virtualRevision;
+		return virtualSizeIndex.totalSize();
+	}
+
+	function measureSegment(node: HTMLElement, index: number) {
+		let currentIndex = index;
+		const measure = () => {
+			const measured = node.getBoundingClientRect().height + SEGMENT_GAP;
+			if (virtualSizeIndex.update(currentIndex, measured)) {
+				virtualRevision += 1;
+				refreshVirtualWindow();
+			}
+		};
+		const observer = new ResizeObserver(measure);
+		observer.observe(node);
+		queueMicrotask(measure);
+		return {
+			update(nextIndex: number) {
+				currentIndex = nextIndex;
+				measure();
+			},
+			destroy() {
+				observer.disconnect();
+			},
+		};
+	}
+
+	$effect(() => {
+		const count = $singleUserData.translationData.seg2.length;
+		if (virtualSizeIndex.count === count) return;
+		virtualSizeIndex.resize(count);
+		virtualRevision += 1;
+		refreshVirtualWindow();
+	});
+
+	onMount(() => {
+		refreshVirtualWindow();
+		const observer = new ResizeObserver(refreshVirtualWindow);
+		if (segmentsContainer) observer.observe(segmentsContainer);
+		return () => observer.disconnect();
+	});
 
 	function exportFailureMessage(error: unknown): string {
 		if (error instanceof DOMException && error.name === "AbortError")
@@ -437,14 +492,15 @@
 	}
 
 	async function focusSegment(idx: number) {
-		if (idx >= visibleSegmentsCount) {
-			visibleSegmentsCount = Math.min(
-				$singleUserData.translationData.seg1.length,
-				Math.ceil((idx + 1) / AMOUNT_OF_SEGMENTS_TO_LOAD) *
-					AMOUNT_OF_SEGMENTS_TO_LOAD,
-			);
-			await tick();
-		}
+		if (!segmentsContainer) return;
+		const targetTop = virtualSizeIndex.offsetFor(idx);
+		const targetHeight = virtualSizeIndex.sizeAt(idx);
+		segmentsContainer.scrollTop = Math.max(
+			0,
+			targetTop - segmentsContainer.clientHeight / 2 + targetHeight / 2,
+		);
+		refreshVirtualWindow();
+		await tick();
 		const el = document.querySelector<HTMLElement>(
 			`[data-segment-id="${idx}"]`,
 		);
@@ -454,7 +510,7 @@
 			el.querySelector<HTMLTextAreaElement>("textarea") ??
 			el.querySelector<HTMLElement>("[tabindex]");
 		(input ?? el).focus();
-		(input ?? el).scrollIntoView({ block: "center", behavior: "smooth" });
+		(input ?? el).scrollIntoView({ block: "center" });
 	}
 
 	async function selectSegmentByOffset(offset: number) {
@@ -1324,51 +1380,61 @@
 	bind:this={segmentsContainer}
 	onscroll={handleScroll}
 >
-	{#each $singleUserData.translationData.seg2.slice(0, visibleSegmentsCount) as _segment, i}
-		<Segment
-			id={i}
-			textSegment1={$singleUserData.translationData.seg1[i]}
-			textSegment2={$singleUserData.translationData.seg2[i]}
-			locked={$singleUserData.translationData.locked[i]}
-			confirmed={$singleUserData.translationData.checked[i]}
-			combineSelected={combineSelection.has(i)}
-			joinBoundaries={getSegmentJoinBoundaryOffsets(
-				$singleUserData.translationData,
-				i,
-			)}
-			splitOffset={pendingSplitOffsets.get(i) ?? null}
-			onMarkSplit={(detail) => {
-				if (detail.offset === null || detail.offset === undefined) {
-					pendingSplitOffsets = new Map();
-				} else {
-					pendingSplitOffsets = new Map([[detail.index, detail.offset]]);
-				}
-				selectedSegmentId.set(detail.index);
-			}}
-			onSplitSegment={(detail) => splitAtOffset(detail.index, detail.offset)}
-			onToggleCombine={(detail) => {
-				const idx = detail.index;
-				pendingSplitOffsets = new Map();
-				selectedSegmentId.set(idx);
-				const next = new Set(combineSelection);
-				if (next.has(idx)) {
-					next.delete(idx);
-				} else {
-					next.add(idx);
-				}
-				combineSelection = next;
-			}}
-			onActivateSegment={(detail) => {
-				if (!pendingSplitOffsets.has(detail.index)) {
-					pendingSplitOffsets = new Map();
-				}
-				selectedSegmentId.set(detail.index);
-			}}
-			onEditTarget={editTargetSegment}
-			onFlushEdits={flushProjectEdits}
-			onPersistProjectMutation={persistProjectMutation}
-		/>
-	{/each}
+	<div class="virtual-segments" style={`height: ${virtualTotalHeight()}px;`}>
+		{#each $singleUserData.translationData.seg2.slice(virtualStart, virtualEnd) as _segment, offset}
+			{@const i = virtualStart + offset}
+			<div
+				class="virtual-segment"
+				style={`transform: translateY(${virtualOffset(i)}px);`}
+				use:measureSegment={i}
+			>
+				<Segment
+					id={i}
+					textSegment1={$singleUserData.translationData.seg1[i]}
+					textSegment2={$singleUserData.translationData.seg2[i]}
+					locked={$singleUserData.translationData.locked[i]}
+					confirmed={$singleUserData.translationData.checked[i]}
+					combineSelected={combineSelection.has(i)}
+					joinBoundaries={getSegmentJoinBoundaryOffsets(
+						$singleUserData.translationData,
+						i,
+					)}
+					splitOffset={pendingSplitOffsets.get(i) ?? null}
+					onMarkSplit={(detail) => {
+						if (detail.offset === null || detail.offset === undefined) {
+							pendingSplitOffsets = new Map();
+						} else {
+							pendingSplitOffsets = new Map([[detail.index, detail.offset]]);
+						}
+						selectedSegmentId.set(detail.index);
+					}}
+					onSplitSegment={(detail) =>
+						splitAtOffset(detail.index, detail.offset)}
+					onToggleCombine={(detail) => {
+						const idx = detail.index;
+						pendingSplitOffsets = new Map();
+						selectedSegmentId.set(idx);
+						const next = new Set(combineSelection);
+						if (next.has(idx)) {
+							next.delete(idx);
+						} else {
+							next.add(idx);
+						}
+						combineSelection = next;
+					}}
+					onActivateSegment={(detail) => {
+						if (!pendingSplitOffsets.has(detail.index)) {
+							pendingSplitOffsets = new Map();
+						}
+						selectedSegmentId.set(detail.index);
+					}}
+					onEditTarget={editTargetSegment}
+					onFlushEdits={flushProjectEdits}
+					onPersistProjectMutation={persistProjectMutation}
+				/>
+			</div>
+		{/each}
+	</div>
 </div>
 
 <div
@@ -1880,14 +1946,24 @@
 	}
 
 	.segments-container {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 0.65rem;
 		padding: 1rem clamp(1.25rem, 2vw, 2.5rem);
 		box-sizing: border-box;
 		overflow-y: auto;
 		width: 100%;
 		background: #eaf6f8;
+	}
+
+	.virtual-segments {
+		position: relative;
+		width: 100%;
+	}
+
+	.virtual-segment {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		will-change: transform;
 	}
 
 	@media (max-width: 980px) {
