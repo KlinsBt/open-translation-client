@@ -68,6 +68,7 @@ describe("local image OCR", () => {
 			png,
 			"eng+deu",
 			expect.any(Function),
+			undefined,
 		);
 		expect(result.kind).toBe("segments");
 		if (result.kind !== "segments") return;
@@ -182,6 +183,7 @@ describe("local image OCR", () => {
 			animated,
 			expect.any(Uint8Array),
 			expect.objectContaining({ frameCount: 2 }),
+			undefined,
 		);
 		expect(recognize.mock.calls[0][0]).toMatchObject({
 			name: "motion.normalized.png",

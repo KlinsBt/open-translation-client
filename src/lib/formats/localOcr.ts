@@ -83,6 +83,7 @@ export interface LocalOcrEngine {
 		file: File,
 		language: string,
 		onProgress: (progress: number, status: string) => void,
+		signal?: AbortSignal,
 	): Promise<TesseractPageLike>;
 }
 
@@ -91,6 +92,7 @@ export interface LocalOcrImageDecoder {
 		file: File,
 		bytes: Uint8Array,
 		inspection: OcrImageInspection,
+		signal?: AbortSignal,
 	): Promise<File>;
 }
 
@@ -109,7 +111,8 @@ async function canvasPng(
 }
 
 const browserImageDecoder: LocalOcrImageDecoder = {
-	async decode(file, bytes, inspection) {
+	async decode(file, bytes, inspection, signal) {
+		throwIfAborted(signal);
 		if (typeof createImageBitmap !== "function")
 			throw new SafeInputError(
 				"OCR_DECODE_FAILED",
@@ -127,12 +130,14 @@ const browserImageDecoder: LocalOcrImageDecoder = {
 				colorSpaceConversion: "default",
 			});
 		} catch {
+			if (signal?.aborted) throwIfAborted(signal);
 			throw new SafeInputError(
 				"OCR_DECODE_FAILED",
 				`The browser could not decode this ${inspection.profile.toUpperCase()} image safely.`,
 			);
 		}
 		try {
+			throwIfAborted(signal);
 			if (
 				bitmap.width !== inspection.width ||
 				bitmap.height !== inspection.height
@@ -162,6 +167,7 @@ const browserImageDecoder: LocalOcrImageDecoder = {
 				);
 			drawing.drawImage(bitmap, 0, 0);
 			const blob = await canvasPng(canvas);
+			throwIfAborted(signal);
 			return new File(
 				[blob],
 				`${file.name.replace(/\.[^.]+$/, "")}.normalized.png`,
@@ -238,20 +244,34 @@ export function ocrUnitsFromPage(
 
 async function defaultOcrEngine(): Promise<LocalOcrEngine> {
 	return {
-		async recognize(file, language, onProgress) {
+		async recognize(file, language, onProgress, signal) {
 			const { createWorker, OEM } = await import("tesseract.js");
 			const worker = await createWorker(language, OEM.LSTM_ONLY, {
-				logger: (message) => onProgress(message.progress, message.status),
+				logger: (message) => {
+					throwIfAborted(signal);
+					onProgress(message.progress, message.status);
+				},
 			});
+			let terminated = false;
+			const terminate = () => {
+				if (!terminated) {
+					terminated = true;
+					void worker.terminate();
+				}
+			};
+			signal?.addEventListener("abort", terminate, { once: true });
 			try {
+				throwIfAborted(signal);
 				const result = await worker.recognize(
 					file,
 					{ rotateAuto: true },
 					{ text: true, blocks: true },
 				);
+				throwIfAborted(signal);
 				return result.data;
 			} finally {
-				await worker.terminate();
+				signal?.removeEventListener("abort", terminate);
+				if (!terminated) await worker.terminate();
 			}
 		},
 	};
@@ -306,7 +326,7 @@ export async function importOcrImageFile(
 		inspection.profile,
 	);
 	const ocrFile = requiresNormalization
-		? await decoder.decode(file, bytes, inspection)
+		? await decoder.decode(file, bytes, inspection, context?.signal)
 		: file;
 	throwIfAborted(context?.signal);
 	const selectedEngine = engine ?? (await defaultOcrEngine());
@@ -321,6 +341,7 @@ export async function importOcrImageFile(
 				message: status || "Running local OCR",
 			});
 		},
+		context?.signal,
 	);
 	throwIfAborted(context?.signal);
 	const units = ocrUnitsFromPage(page, grouping, inspection);

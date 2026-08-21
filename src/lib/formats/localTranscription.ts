@@ -2,7 +2,7 @@ import type { TranscriptionSegmentMeta, TypeRef } from "$lib/types/types";
 import { createNeutralDocument } from "./documentModel";
 import { normalizeImportOptions } from "./options";
 import {
-	readSafeFileBytes,
+	assertSafeFileSize,
 	SafeInputError,
 	throwIfAborted,
 	type SafeInputContext,
@@ -47,24 +47,88 @@ export interface LocalTranscriptionEngine {
 		audio: Float32Array,
 		options: { model: string; language?: string; chunkSeconds: number },
 		onProgress: (progress: number, status: string) => void,
+		signal?: AbortSignal,
 	): Promise<{ text: string; chunks?: TranscriptChunk[] }>;
 }
 
-function hasMediaSignature(bytes: Uint8Array): boolean {
+const MEDIA_HEADER_BYTES = 64 * 1024;
+const MAX_DECODED_AUDIO_SECONDS = 60 * 60;
+
+function uint32Le(bytes: Uint8Array, offset: number): number {
+	return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(
+		offset,
+		true,
+	);
+}
+
+function containsBytes(bytes: Uint8Array, needle: readonly number[]): boolean {
+	outer: for (let index = 0; index <= bytes.length - needle.length; index += 1) {
+		for (let offset = 0; offset < needle.length; offset += 1)
+			if (bytes[index + offset] !== needle[offset]) continue outer;
+		return true;
+	}
+	return false;
+}
+
+export function hasMediaSignature(bytes: Uint8Array, fileSize = bytes.length): boolean {
+	if (bytes.length < 16 || fileSize < 16) return false;
 	const ascii = (start: number, length: number) =>
 		String.fromCharCode(...bytes.slice(start, start + length));
-	return (
-		(ascii(0, 4) === "RIFF" && ["WAVE", "AVI "].includes(ascii(8, 4))) ||
-		ascii(0, 3) === "ID3" ||
-		(bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0) ||
-		ascii(0, 4) === "OggS" ||
-		ascii(0, 4) === "fLaC" ||
-		(bytes[0] === 0x1a &&
+	if (ascii(0, 4) === "RIFF" && ascii(8, 4) === "WAVE") {
+		if (bytes.length < 44 || uint32Le(bytes, 4) + 8 > fileSize) return false;
+		let offset = 12;
+		let format = false;
+		let audioData = false;
+		while (offset + 8 <= bytes.length) {
+			const id = ascii(offset, 4);
+			const size = uint32Le(bytes, offset + 4);
+			if (id === "fmt " && size >= 16) format = true;
+			if (id === "data" && size > 0 && offset + 8 + size <= fileSize)
+				audioData = true;
+			if (format && audioData) return true;
+			offset += 8 + size + (size % 2);
+			if (offset > fileSize || offset > bytes.length) break;
+		}
+		return false;
+	}
+	if (ascii(0, 3) === "ID3") {
+		if (bytes.length < 10) return false;
+		const tagSize =
+			((bytes[6] & 0x7f) << 21) |
+			((bytes[7] & 0x7f) << 14) |
+			((bytes[8] & 0x7f) << 7) |
+			(bytes[9] & 0x7f);
+		const searchFrom = Math.min(10 + tagSize, bytes.length - 2);
+		return bytes
+			.slice(searchFrom)
+			.some((byte, index, rest) => byte === 0xff && (rest[index + 1] & 0xe0) === 0xe0);
+	}
+	if (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)
+		return fileSize >= 4 && bytes.length >= 4;
+	if (ascii(0, 4) === "OggS")
+		return bytes[4] === 0 && bytes.length >= 27 + bytes[26] && fileSize > 27;
+	if (ascii(0, 4) === "fLaC")
+		return (
+			bytes.length >= 42 &&
+			(bytes[4] & 0x7f) === 0 &&
+			((bytes[5] << 16) | (bytes[6] << 8) | bytes[7]) === 34
+		);
+	if (
+		bytes[0] === 0x1a &&
 			bytes[1] === 0x45 &&
 			bytes[2] === 0xdf &&
-			bytes[3] === 0xa3) ||
-		ascii(4, 4) === "ftyp"
-	);
+			bytes[3] === 0xa3
+	)
+		return containsBytes(bytes, [0x18, 0x53, 0x80, 0x67]);
+	if (ascii(4, 4) === "ftyp") {
+		const size = new DataView(
+			bytes.buffer,
+			bytes.byteOffset,
+			bytes.byteLength,
+		).getUint32(0, false);
+		return size >= 16 && size <= fileSize && bytes.length >= Math.min(size, 24);
+	}
+	return false;
 }
 
 export function transcriptUnitsFromResult(result: {
@@ -92,14 +156,27 @@ export function transcriptUnitsFromResult(result: {
 	return text ? [{ text, startMs: 0, endMs: 1, confidence: 1 }] : [];
 }
 
-async function decodeLocalAudio(file: File): Promise<Float32Array> {
+async function decodeLocalAudio(
+	file: File,
+	signal?: AbortSignal,
+): Promise<Float32Array> {
 	if (typeof AudioContext === "undefined")
 		throw new Error(
 			"This browser does not provide the Web Audio API required for local transcription.",
 		);
 	const context = new AudioContext();
+	const cancel = () => void context.close();
+	signal?.addEventListener("abort", cancel, { once: true });
 	try {
+		throwIfAborted(signal);
 		const decoded = await context.decodeAudioData(await file.arrayBuffer());
+		throwIfAborted(signal);
+		if (decoded.duration > MAX_DECODED_AUDIO_SECONDS)
+			throw new SafeInputError(
+				"MEDIA_INVALID",
+				"This media file exceeds the one-hour local transcription limit.",
+				{ durationSeconds: Math.ceil(decoded.duration), limitSeconds: MAX_DECODED_AUDIO_SECONDS },
+			);
 		const length = Math.ceil(
 			(decoded.duration || decoded.length / decoded.sampleRate) * 16000,
 		);
@@ -109,19 +186,23 @@ async function decodeLocalAudio(file: File): Promise<Float32Array> {
 		source.connect(offline.destination);
 		source.start();
 		const rendered = await offline.startRendering();
+		throwIfAborted(signal);
 		return new Float32Array(rendered.getChannelData(0));
 	} catch (error) {
+		if (signal?.aborted) throwIfAborted(signal);
+		if (error instanceof SafeInputError) throw error;
 		throw new Error(
 			`This browser could not decode the selected audio/video codec locally: ${error instanceof Error ? error.message : "unsupported codec"}`,
 		);
 	} finally {
-		await context.close();
+		signal?.removeEventListener("abort", cancel);
+		if (context.state !== "closed") await context.close();
 	}
 }
 
 async function defaultTranscriptionEngine(): Promise<LocalTranscriptionEngine> {
 	return {
-		async transcribe(audio, options, onProgress) {
+		async transcribe(audio, options, onProgress, signal) {
 			const { pipeline } = await import("@huggingface/transformers");
 			const transcriber = await pipeline(
 				"automatic-speech-recognition",
@@ -131,14 +212,17 @@ async function defaultTranscriptionEngine(): Promise<LocalTranscriptionEngine> {
 					progress_callback: (progress: {
 						progress?: number;
 						status?: string;
-					}) =>
+					}) => {
+						throwIfAborted(signal);
 						onProgress(
 							(progress.progress ?? 0) / 100,
 							progress.status ?? "Loading local model",
-						),
+						);
+					},
 				},
 			);
 			try {
+				throwIfAborted(signal);
 				return await transcriber(audio, {
 					return_timestamps: true,
 					chunk_length_s: options.chunkSeconds,
@@ -156,8 +240,13 @@ export async function validateTranscriptionFile(
 	context?: SafeInputContext,
 ): Promise<FormatValidationResult> {
 	try {
-		const bytes = await readSafeFileBytes(file, context);
-		return hasMediaSignature(bytes)
+		throwIfAborted(context?.signal);
+		assertSafeFileSize(file);
+		const bytes = new Uint8Array(
+			await file.slice(0, MEDIA_HEADER_BYTES).arrayBuffer(),
+		);
+		throwIfAborted(context?.signal);
+		return hasMediaSignature(bytes, file.size)
 			? { valid: true }
 			: {
 					valid: false,
@@ -186,7 +275,7 @@ export async function importTranscriptionFile(
 		);
 	const normalized = normalizeImportOptions("media-transcription", options);
 	throwIfAborted(context?.signal);
-	const audio = decodedAudio ?? (await decodeLocalAudio(file));
+	const audio = decodedAudio ?? (await decodeLocalAudio(file, context?.signal));
 	throwIfAborted(context?.signal);
 	const selectedEngine = engine ?? (await defaultTranscriptionEngine());
 	const result = await selectedEngine.transcribe(
@@ -206,6 +295,7 @@ export async function importTranscriptionFile(
 				total: 1000,
 				message: status || "Running local transcription",
 			}),
+		context?.signal,
 	);
 	throwIfAborted(context?.signal);
 	const units = transcriptUnitsFromResult(result);

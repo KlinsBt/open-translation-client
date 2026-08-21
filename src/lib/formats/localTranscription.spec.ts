@@ -3,13 +3,17 @@ import { buildTranslatedWebVtt } from "$lib/functions/outputGeneration/outputGen
 import {
 	importTranscriptionFile,
 	transcriptUnitsFromResult,
+	validateTranscriptionFile,
 } from "./localTranscription";
 import type { UserData } from "$lib/types/types";
 
 const wav = new File(
 	[
 		new Uint8Array([
-			0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x41, 0x56, 0x45, 1, 2,
+			0x52, 0x49, 0x46, 0x46, 0x28, 0, 0, 0, 0x57, 0x41, 0x56, 0x45,
+			0x66, 0x6d, 0x74, 0x20, 0x10, 0, 0, 0, 1, 0, 1, 0, 0x80, 0x3e,
+			0, 0, 0, 0x7d, 0, 0, 2, 0, 0x10, 0, 0x64, 0x61, 0x74, 0x61,
+			4, 0, 0, 0, 0, 0, 0, 0,
 		]),
 	],
 	"speech.wav",
@@ -24,7 +28,18 @@ const transcription = {
 	],
 };
 
-describe("local media transcription", () => {
+	describe("local media transcription", () => {
+	it("rejects truncated containers instead of accepting a magic header", async () => {
+		const truncated = new File(
+			[new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x41, 0x56, 0x45])],
+			"truncated.wav",
+			{ type: "audio/wav" },
+		);
+		await expect(validateTranscriptionFile(truncated)).resolves.toMatchObject({
+			valid: false,
+		});
+	});
+
 	it("converts Whisper timestamp chunks into translation units", () => {
 		expect(transcriptUnitsFromResult(transcription)).toEqual([
 			{ text: "Hello world.", startMs: 0, endMs: 1250, confidence: 1 },
@@ -49,6 +64,7 @@ describe("local media transcription", () => {
 			expect.any(Float32Array),
 			expect.objectContaining({ language: "english", chunkSeconds: 20 }),
 			expect.any(Function),
+			undefined,
 		);
 		expect(imported.document.metadata).toMatchObject({
 			processing: "on-device",
