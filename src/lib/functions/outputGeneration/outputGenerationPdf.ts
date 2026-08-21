@@ -1,5 +1,7 @@
 import { assertProjectExportQuality } from "$lib/formats/qualityAssurance";
 import type { PdfSegmentMeta, UserData } from "$lib/types/types";
+import unifontUrl from "@fontsource/unifont/files/unifont-latin-400-normal.woff?url";
+import notoEmojiUrl from "@fontsource/noto-emoji/files/noto-emoji-emoji-400-normal.woff?url";
 import notoSansArabicUrl from "@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-400-normal.woff?url";
 import notoSansBengaliUrl from "@fontsource/noto-sans-bengali/files/noto-sans-bengali-bengali-400-normal.woff?url";
 import notoSansDevanagariUrl from "@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-400-normal.woff?url";
@@ -8,6 +10,7 @@ import notoSansThaiUrl from "@fontsource/noto-sans-thai/files/noto-sans-thai-tha
 import notoSansCyrillicUrl from "@fontsource/noto-sans/files/noto-sans-cyrillic-400-normal.woff?url";
 import notoSansGreekUrl from "@fontsource/noto-sans/files/noto-sans-greek-400-normal.woff?url";
 import notoSansLatinUrl from "@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff?url";
+import { isRtlLanguage, textDirection } from "$lib/functions/languageDirection";
 
 interface JpegPage {
 	bytes: Uint8Array;
@@ -24,6 +27,7 @@ interface SearchableJpegPage extends JpegPage {
 		y: number;
 		fontSize: number;
 		maxWidth: number;
+		direction: "ltr" | "rtl";
 	}>;
 }
 
@@ -125,47 +129,63 @@ function canvasJpeg(canvas: HTMLCanvasElement): Uint8Array {
 	return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
-const fontBytes = new Map<string, Promise<Uint8Array>>();
+const searchableFontBytes = new Map<string, Promise<Uint8Array>>();
 
-function targetLanguageCode(language: string): string {
-	return (language.match(/\(([^)]+)\)\s*$/)?.[1] ?? language)
-		.toLowerCase()
-		.split(/[-_]/)[0];
-}
-
-function searchableFontUrl(language: string): string {
-	const code = targetLanguageCode(language);
-	if (["ar", "fa", "ps", "sd", "ug", "ur"].includes(code))
-		return notoSansArabicUrl;
-	if (["bn", "as"].includes(code)) return notoSansBengaliUrl;
-	if (["hi", "mr", "ne", "sa"].includes(code)) return notoSansDevanagariUrl;
-	if (["he", "yi"].includes(code)) return notoSansHebrewUrl;
-	if (code === "th") return notoSansThaiUrl;
-	if (
-		["be", "bg", "kk", "ky", "mk", "mn", "ru", "sr", "tg", "uk"].includes(code)
-	)
-		return notoSansCyrillicUrl;
-	if (code === "el") return notoSansGreekUrl;
-	return notoSansLatinUrl;
-}
-
-async function loadSearchableFontBytes(language: string): Promise<Uint8Array> {
-	const url = searchableFontUrl(language);
-	let pending = fontBytes.get(url);
+async function loadSearchableFontBytes(url: string): Promise<Uint8Array> {
+	let pending = searchableFontBytes.get(url);
 	if (!pending) {
 		pending = fetch(url).then(async (response) => {
 			if (!response.ok)
 				throw new Error("The PDF text font could not be loaded.");
 			return new Uint8Array(await response.arrayBuffer());
 		});
-		fontBytes.set(url, pending);
+		searchableFontBytes.set(url, pending);
 	}
 	return pending;
 }
 
+const BROAD_UNICODE_PATTERN =
+	/[\p{Script=Han}\p{Script=Hangul}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Syriac}\p{Script=Thaana}\p{Script=Nko}\p{Script=Armenian}\p{Script=Georgian}\p{Script=Ethiopic}\p{Script=Tamil}\p{Script=Telugu}\p{Script=Kannada}\p{Script=Malayalam}\p{Script=Gujarati}\p{Script=Gurmukhi}\p{Script=Sinhala}\p{Script=Khmer}\p{Script=Lao}\p{Script=Myanmar}]/u;
+
+function searchableFontUrl(text: string): string {
+	if (/\p{Extended_Pictographic}/u.test(text)) return notoEmojiUrl;
+	if (BROAD_UNICODE_PATTERN.test(text)) return unifontUrl;
+	if (/\p{Script=Arabic}/u.test(text)) return notoSansArabicUrl;
+	if (/\p{Script=Bengali}/u.test(text)) return notoSansBengaliUrl;
+	if (/\p{Script=Devanagari}/u.test(text)) return notoSansDevanagariUrl;
+	if (/\p{Script=Hebrew}/u.test(text)) return notoSansHebrewUrl;
+	if (/\p{Script=Thai}/u.test(text)) return notoSansThaiUrl;
+	if (/\p{Script=Cyrillic}/u.test(text)) return notoSansCyrillicUrl;
+	if (/\p{Script=Greek}/u.test(text)) return notoSansGreekUrl;
+	return notoSansLatinUrl;
+}
+
+function reverseGraphemes(value: string): string {
+	const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+	return Array.from(segmenter.segment(value), ({ segment }) => segment)
+		.reverse()
+		.join("");
+}
+
+function searchableFontRuns(
+	value: string,
+): Array<{ text: string; url: string }> {
+	const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+	const runs: Array<{ text: string; url: string }> = [];
+	for (const { segment } of segmenter.segment(value)) {
+		const strong = /[\p{L}\p{N}\p{Extended_Pictographic}]/u.test(segment);
+		const url = strong
+			? searchableFontUrl(segment)
+			: (runs.at(-1)?.url ?? notoSansLatinUrl);
+		const current = runs.at(-1);
+		if (current?.url === url) current.text += segment;
+		else runs.push({ text: segment, url });
+	}
+	return runs;
+}
+
 async function buildSearchableJpegPdf(
 	pages: readonly SearchableJpegPage[],
-	language: string,
 ): Promise<Blob> {
 	if (!pages.length) throw new Error("PDF export requires at least one page.");
 	await import("regenerator-runtime/runtime.js");
@@ -175,12 +195,20 @@ async function buildSearchableJpegPdf(
 	]);
 	const document = await PDFDocument.create();
 	document.registerFontkit(fontkit);
-	const font = await document.embedFont(
-		await loadSearchableFontBytes(language),
-		{
-			subset: true,
-		},
-	);
+	const embeddedFonts = new Map<
+		string,
+		Awaited<ReturnType<typeof document.embedFont>>
+	>();
+	const fontFor = async (url: string) => {
+		let font = embeddedFonts.get(url);
+		if (!font) {
+			font = await document.embedFont(await loadSearchableFontBytes(url), {
+				subset: true,
+			});
+			embeddedFonts.set(url, font);
+		}
+		return font;
+	};
 	for (const pageData of pages) {
 		const pdfWidth = pageData.pdfWidth ?? PDF_WIDTH;
 		const pdfHeight = pageData.pdfHeight ?? PDF_HEIGHT;
@@ -190,16 +218,29 @@ async function buildSearchableJpegPdf(
 		const scaleX = pdfWidth / pageData.width;
 		const scaleY = pdfHeight / pageData.height;
 		for (const item of pageData.text) {
-			for (const line of item.value.split(/\r?\n/)) {
+			for (const [lineIndex, line] of item.value.split(/\r?\n/).entries()) {
 				if (!line) continue;
-				page.drawText(line, {
-					font,
-					size: Math.max(1, item.fontSize * scaleY),
-					x: item.x * scaleX,
-					y: pdfHeight - item.y * scaleY,
-					maxWidth: item.maxWidth * scaleX,
-					opacity: 0,
-				});
+				const pdfText =
+					item.direction === "rtl" ? reverseGraphemes(line) : line;
+				const size = Math.max(1, item.fontSize * scaleY);
+				let x = item.x * scaleX;
+				const y =
+					pdfHeight - (item.y + lineIndex * item.fontSize * 1.18) * scaleY;
+				for (const run of searchableFontRuns(pdfText)) {
+					const font = await fontFor(run.url);
+					page.drawText(run.text, {
+						font,
+						size,
+						x,
+						y,
+						maxWidth: Math.max(
+							1,
+							item.maxWidth * scaleX - (x - item.x * scaleX),
+						),
+						opacity: 0,
+					});
+					x += font.widthOfTextAtSize(run.text, size);
+				}
 			}
 		}
 	}
@@ -261,12 +302,6 @@ function fitWrappedText(
 	};
 }
 
-function targetIsRtl(language: string): boolean {
-	return ["ar", "dv", "fa", "he", "ps", "sd", "ug", "ur", "yi"].includes(
-		targetLanguageCode(language),
-	);
-}
-
 function wrapDeliveryText(
 	context: CanvasRenderingContext2D,
 	text: string,
@@ -309,7 +344,7 @@ export async function buildSegmentDeliveryPdf(
 ): Promise<Blob> {
 	assertProjectExportQuality(project);
 	const data = project.translationData;
-	const rtl = targetIsRtl(data.targetLang);
+	const rtl = isRtlLanguage(data.targetLang);
 	const pages: SearchableJpegPage[] = [];
 	const margin = 90;
 	const maxWidth = DELIVERY_WIDTH - margin * 2;
@@ -372,7 +407,8 @@ export async function buildSegmentDeliveryPdf(
 	for (const segment of data.seg2) {
 		const lines = wrapDeliveryText(context, segment ?? "", maxWidth);
 		const requiredHeight = Math.max(lineHeight, lines.length * lineHeight) + 24;
-		if (y + requiredHeight > 1630) {
+		const pageCapacity = 1630 - 195;
+		if (requiredHeight <= pageCapacity && y + requiredHeight > 1630) {
 			finishPage();
 			startPage();
 			context.fillStyle = "#243f49";
@@ -380,29 +416,38 @@ export async function buildSegmentDeliveryPdf(
 		}
 		context.textAlign = rtl ? "right" : "left";
 		context.direction = rtl ? "rtl" : "ltr";
-		const textStartY = y;
 		for (const line of lines.length ? lines : [""]) {
+			if (y + lineHeight > 1630) {
+				finishPage();
+				startPage();
+				context.fillStyle = "#243f49";
+				context.font = "28px Arial, sans-serif";
+				context.textAlign = rtl ? "right" : "left";
+				context.direction = rtl ? "rtl" : "ltr";
+			}
+			const lineY = y;
 			context.fillText(
 				line,
 				rtl ? DELIVERY_WIDTH - margin : margin,
 				y,
 				maxWidth,
 			);
+			if (line.trim()) {
+				pageText.push({
+					value: line,
+					x: margin,
+					y: lineY,
+					fontSize: 28,
+					maxWidth,
+					direction: textDirection(line, rtl ? "rtl" : "ltr"),
+				});
+			}
 			y += lineHeight;
-		}
-		if (segment?.trim()) {
-			pageText.push({
-				value: segment,
-				x: margin,
-				y: textStartY,
-				fontSize: 28,
-				maxWidth,
-			});
 		}
 		y += 24;
 	}
 	finishPage();
-	return buildSearchableJpegPdf(pages, data.targetLang);
+	return buildSearchableJpegPdf(pages);
 }
 
 export async function buildTranslatedPdf(project: UserData): Promise<Blob> {
@@ -442,7 +487,7 @@ export async function buildTranslatedPdf(project: UserData): Promise<Blob> {
 	});
 	const originalDocument = await loadingTask.promise;
 	const metadata = data.segmentsMeta as PdfSegmentMeta[];
-	const rtl = targetIsRtl(data.targetLang);
+	const rtl = isRtlLanguage(data.targetLang);
 	const outputPages: SearchableJpegPage[] = [];
 	try {
 		for (
@@ -469,7 +514,9 @@ export async function buildTranslatedPdf(project: UserData): Promise<Blob> {
 			for (const [index, entry] of metadata.entries()) {
 				if (entry.page !== pageNumber) continue;
 				const translation = data.seg2[index]?.trim() ?? "";
-				if (!translation || translation === data.seg1[index]) continue;
+				const source = data.seg1[index]?.trim() ?? "";
+				const searchableValue = translation || source;
+				if (!searchableValue) continue;
 				const [x, y, width, height] = entry.bbox;
 				const topLeft = viewport.convertToViewportPoint(x, y + height);
 				const bottomRight = viewport.convertToViewportPoint(x + width, y);
@@ -484,6 +531,17 @@ export async function buildTranslatedPdf(project: UserData): Promise<Blob> {
 				const boxWidth = Math.max(2, Math.abs(rectangle[2] - rectangle[0]));
 				const boxHeight = Math.max(2, Math.abs(rectangle[3] - rectangle[1]));
 				const padding = Math.max(2, viewport.scale);
+				if (!translation || translation === source) {
+					searchableText.push({
+						value: searchableValue,
+						x: left,
+						y: top + Math.max(6, boxHeight * 0.72),
+						fontSize: Math.max(6, Math.min(20, boxHeight * 0.72)),
+						maxWidth: boxWidth,
+						direction: entry.direction,
+					});
+					continue;
+				}
 				sourceContext.save();
 				sourceContext.beginPath();
 				sourceContext.rect(
@@ -536,6 +594,7 @@ export async function buildTranslatedPdf(project: UserData): Promise<Blob> {
 					y: top + layout.fontSize,
 					fontSize: layout.fontSize,
 					maxWidth: boxWidth,
+					direction: textDirection(translation, rtl ? "rtl" : "ltr"),
 				});
 			}
 			outputPages.push({
@@ -548,7 +607,7 @@ export async function buildTranslatedPdf(project: UserData): Promise<Blob> {
 			});
 			page.cleanup();
 		}
-		return await buildSearchableJpegPdf(outputPages, data.targetLang);
+		return await buildSearchableJpegPdf(outputPages);
 	} finally {
 		await loadingTask.destroy();
 	}

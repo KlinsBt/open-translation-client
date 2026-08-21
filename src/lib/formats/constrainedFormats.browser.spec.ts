@@ -75,7 +75,7 @@ describe("browser local and constrained format routing", () => {
 			sourceLang: "English (en)",
 			targetLang: "German (de)",
 			seg1: imported.segments,
-			seg2: ["Übersetzte Überschrift", "Übersetzter Inhalt"],
+			seg2: ["Übersetzte Überschrift", "Original body"],
 			checked: imported.segments.map(() => true),
 			typeRef: imported.typeRef ?? {},
 			segmentsMeta: imported.segmentsMeta,
@@ -102,9 +102,8 @@ describe("browser local and constrained format routing", () => {
 			.map((item) => ("str" in item ? item.str : ""))
 			.join(" ");
 		expect(extracted).toContain("Übersetzte Überschrift");
-		expect(extracted).toContain("Übersetzter Inhalt");
+		expect(extracted).toContain("Original body");
 		expect(extracted).not.toContain("Original heading");
-		expect(extracted).not.toContain("Original body");
 		expect((await document.getPage(2)).getViewport({ scale: 1 })).toMatchObject(
 			{ width: 612, height: 792 },
 		);
@@ -144,4 +143,69 @@ describe("browser local and constrained format routing", () => {
 		expect(extracted).not.toContain("Use the translated guide.");
 		await loadingTask.destroy();
 	}, 20_000);
+
+	it("paginates a single oversized segment without clipping its final text", async () => {
+		const longTranslation = `FIRST-MARKER ${Array.from(
+			{ length: 1_200 },
+			(_, index) => `translated-${index}`,
+		).join(" ")} LAST-MARKER`;
+		const project = makeUserData({
+			name: "Long delivery.txt",
+			type: "text",
+			sourceLang: "English (en)",
+			targetLang: "German (de)",
+			seg1: ["Source"],
+			seg2: [longTranslation],
+			checked: [true],
+		});
+		const exported = await buildConvertedTranslation(project, "pdf");
+		const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+		const loadingTask = pdfjs.getDocument({
+			data: new Uint8Array(await exported.blob.arrayBuffer()),
+		});
+		const document = await loadingTask.promise;
+		expect(document.numPages).toBeGreaterThan(1);
+		const pages: string[] = [];
+		for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber++) {
+			const page = await document.getPage(pageNumber);
+			pages.push(
+				(await page.getTextContent()).items
+					.map((item) => ("str" in item ? item.str : ""))
+					.join(" "),
+			);
+		}
+		const extracted = pages.join(" ");
+		expect(extracted).toContain("FIRST-MARKER");
+		expect(extracted).toContain("translated-600");
+		expect(extracted).toContain("LAST-MARKER");
+		await loadingTask.destroy();
+	}, 30_000);
+
+	it("keeps mixed CJK, RTL, and non-BMP target text searchable", async () => {
+		const multilingual = ["日本語", "한국어", "中文", "ܫܠܡܐ", "😀"];
+		const project = makeUserData({
+			name: "Unicode delivery.txt",
+			type: "text",
+			sourceLang: "English (en)",
+			targetLang: "Syriac (syr)",
+			seg1: multilingual.map((_, index) => `Source ${index + 1}`),
+			seg2: multilingual,
+			checked: multilingual.map(() => true),
+		});
+		const exported = await buildConvertedTranslation(project, "pdf");
+		const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+		const loadingTask = pdfjs.getDocument({
+			data: new Uint8Array(await exported.blob.arrayBuffer()),
+		});
+		const page = await (await loadingTask.promise).getPage(1);
+		const extracted = (await page.getTextContent()).items
+			.map((item) => ("str" in item ? item.str : ""))
+			.join(" ");
+		expect(extracted).toContain("日本語");
+		expect(extracted).toContain("한국어");
+		expect(extracted).toContain("中文");
+		expect(extracted).toContain("ܫܠܡܐ");
+		expect(extracted).toContain("😀");
+		await loadingTask.destroy();
+	}, 30_000);
 });

@@ -22,6 +22,7 @@
 		notifySuccess,
 	} from "$lib/components/notifications/toastStore";
 	import { getSplitOffsetFromSelection } from "$lib/functions/parsing/segmentSelection";
+	import { isRtlLanguage } from "$lib/functions/languageDirection";
 
 	let {
 		id,
@@ -72,28 +73,8 @@
 	let targetLang: string = $derived(
 		getLanguageCode($singleUserData.translationData.targetLang),
 	);
-	const rtlLanguageCodes = new Set([
-		"ar",
-		"arc",
-		"ckb",
-		"dv",
-		"fa",
-		"he",
-		"ku",
-		"nqo",
-		"ps",
-		"sd",
-		"syr",
-		"ug",
-		"ur",
-		"yi",
-	]);
-	let rightToLeftSourceLang: boolean = $derived(
-		rtlLanguageCodes.has(sourceLang),
-	);
-	let rightToLeftTargetLang: boolean = $derived(
-		rtlLanguageCodes.has(targetLang),
-	);
+	let rightToLeftSourceLang: boolean = $derived(isRtlLanguage(sourceLang));
+	let rightToLeftTargetLang: boolean = $derived(isRtlLanguage(targetLang));
 	let tmActive: boolean = $derived(
 		$singleUserData.translationData.tm?.active ?? false,
 	);
