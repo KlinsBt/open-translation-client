@@ -72,8 +72,27 @@
 	let targetLang: string = $derived(
 		getLanguageCode($singleUserData.translationData.targetLang),
 	);
+	const rtlLanguageCodes = new Set([
+		"ar",
+		"arc",
+		"ckb",
+		"dv",
+		"fa",
+		"he",
+		"ku",
+		"nqo",
+		"ps",
+		"sd",
+		"syr",
+		"ug",
+		"ur",
+		"yi",
+	]);
+	let rightToLeftSourceLang: boolean = $derived(
+		rtlLanguageCodes.has(sourceLang),
+	);
 	let rightToLeftTargetLang: boolean = $derived(
-		["ar", "he", "dv", "fa", "ur"].includes(targetLang),
+		rtlLanguageCodes.has(targetLang),
 	);
 	let tmActive: boolean = $derived(
 		$singleUserData.translationData.tm?.active ?? false,
@@ -327,7 +346,6 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	class="segment"
-	lang={targetLang}
 	data-segment-id={id}
 	tabindex="0"
 	class:selected={isSelected}
@@ -415,7 +433,12 @@
 		</div>
 		<span class="segment-number-inner">{id + 1}.</span>
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<p class="source-select" onmouseup={handleSourceMouseUp}>
+		<p
+			class="source-select"
+			lang={sourceLang}
+			dir={rightToLeftSourceLang ? "rtl" : "ltr"}
+			onmouseup={handleSourceMouseUp}
+		>
 			{#each sourceDisplayParts as part}
 				{part.text}{#if part.markerOffset !== null}<span
 						class="source-split-marker"
@@ -443,12 +466,17 @@
 	</div>
 
 	{#if locked}
-		<p class="field left target-field">
+		<p
+			class="field left target-field"
+			lang={targetLang}
+			dir={rightToLeftTargetLang ? "rtl" : "ltr"}
+		>
 			{textSegment2}
 		</p>
 	{:else}
 		<textarea
 			lang={targetLang}
+			dir={rightToLeftTargetLang ? "rtl" : "ltr"}
 			spellcheck="false"
 			onfocus={async () => {
 				checkIfElligibleForTmOrTbSearch(textSegment1);
@@ -457,9 +485,6 @@
 			onblur={() => void onFlushEdits?.()}
 			class="field right"
 			class:target-field={true}
-			style="
-				direction: {rightToLeftTargetLang ? 'rtl' : 'ltr'}; 
-				"
 			bind:value={textSegment2}
 			placeholder="Translate the text here..."
 			use:useAutoHeight

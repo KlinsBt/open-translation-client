@@ -355,6 +355,34 @@ describe("real CAT application route", () => {
 		await deleteTranslationFromIndexedDB(project.id);
 	});
 
+	it("marks source and target text with independent language directions", async () => {
+		const project = makeUserData({
+			name: "RTL semantics",
+			sourceLang: "English (en)",
+			targetLang: "Arabic (ar)",
+			seg1: ["Source text"],
+			seg2: ["نص الهدف"],
+			checked: [true],
+			locked: [true],
+		});
+		singleUserData.set(project);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+		const segment = document.querySelector<HTMLElement>(
+			'[data-segment-id="0"]',
+		)!;
+		const source = segment.querySelector<HTMLElement>(".source-select")!;
+		const target = segment.querySelector<HTMLElement>(".target-field")!;
+		expect(segment.hasAttribute("lang")).toBe(false);
+		expect(source.getAttribute("lang")).toBe("en");
+		expect(source.getAttribute("dir")).toBe("ltr");
+		expect(target.getAttribute("lang")).toBe("ar");
+		expect(target.getAttribute("dir")).toBe("rtl");
+	});
+
 	it("invalidates confirmation after applying TM and TB content", async () => {
 		const resourceId = Date.now();
 		const project = makeUserData({
