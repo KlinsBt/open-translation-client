@@ -10,6 +10,9 @@ export interface PersistedEditQueueOptions<T> {
 	cloneScheduled?: (value: T) => T;
 	/** Produces the immutable value handed to persistence. */
 	cloneForPersistence?: (value: T) => T;
+	/** Reconciles persistence-generated metadata (for example, a revision) back
+	 * into the exact live value that was scheduled, even after route switching. */
+	onPersisted?: (scheduled: T, persisted: T) => void;
 }
 
 export interface PersistedEditQueue<T> {
@@ -34,7 +37,8 @@ export function createPersistedEditQueue<T>(
 	const debounceMs = Math.max(0, options.debounceMs ?? 250);
 	const cloneScheduled: (value: T) => T =
 		options.cloneScheduled ?? ((value: T) => structuredClone(value));
-	const cloneForPersistence = options.cloneForPersistence ?? ((value: T) => value);
+	const cloneForPersistence =
+		options.cloneForPersistence ?? ((value: T) => value);
 	let committed = structuredClone(initial) as T;
 	let pending: T | null = null;
 	let running: Promise<void> | null = null;
@@ -88,12 +92,16 @@ export function createPersistedEditQueue<T>(
 	function startDrain(): Promise<void> {
 		if (running) return running;
 		if (pending === null) return Promise.resolve();
-		const candidate = cloneForPersistence(pending);
+		const scheduled = pending;
+		const candidate = cloneForPersistence(scheduled);
 		pending = null;
 		let failed = false;
 		running = (async () => {
 			try {
 				await persist(candidate);
+				options.onPersisted?.(scheduled, candidate);
+				if (pending !== null && pending !== scheduled)
+					options.onPersisted?.(pending, candidate);
 				committed = structuredClone(candidate);
 				handlers.onCommit?.(structuredClone(committed));
 			} catch (error) {

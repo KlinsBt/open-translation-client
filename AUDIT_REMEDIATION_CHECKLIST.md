@@ -3,11 +3,11 @@
 This checklist tracks the repository-wide functional audit performed on
 2026-08-20 and reopened after the independent follow-up audit on 2026-08-20.
 
-> **Current status: FIFTH FOLLOW-UP IN PROGRESS — 2026-08-21.** A new audit
-> reopened PDF semantics, editor scaling, media validation/cancellation,
-> cross-tab concurrency, bidirectional-language semantics, roadmap accuracy,
-> and final release evidence. AUD-052 through AUD-058 supersede the earlier
-> blanket completion statement.
+> **Current status: FIFTH FOLLOW-UP COMPLETE — 2026-08-21.** PDF semantics,
+> editor scaling, media validation/cancellation, cross-tab concurrency,
+> bidirectional-language semantics, roadmap accuracy, and final release
+> evidence were remediated and independently rechecked in AUD-052 through
+> AUD-058.
 
 The final gate is `npm run verify` on a clean worktree, the absence of unexpected
 runtime/build warnings, and a manual review of the evidence recorded beneath
@@ -1092,10 +1092,40 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   migration, and persistence-queue focused run passed 3 files and 41 tests, and
   Svelte diagnostics reported 0 errors and 0 warnings.
 
-- [ ] AUD-058 Run formatting, lint, type checking, full coverage/unit and
+- [x] AUD-058 Run formatting, lint, type checking, full coverage/unit and
       Chromium browser suites, production build/bundle checks, available native
       validators, dependency audit, and final diff review. Record exact evidence
       here before declaring the fifth follow-up complete.
+
+  Completed 2026-08-21 in the final fifth-follow-up regression commit. During
+  the complete run, realistic media conformance data replaced the obsolete
+  header-only WAV fixture, XLIFF output assertions now follow schema version 3,
+  persistence-generated revisions are reconciled into both the scheduled live
+  project and a dependent pending snapshot, fresh bulk/portable imports receive
+  database-owned IDs, synchronous IndexedDB request failures retain their
+  actionable error, and concurrent browser tests address the intended project
+  card explicitly.
+
+  `npm run verify` passed formatting and ESLint, Svelte diagnostics with 0
+  errors and 0 warnings, 90 unit/coverage files with 1,139 passed and 11
+  conditional skips (1,150 total), 18 Chromium files with 107/107 tests, the
+  production build, and all route bundle budgets. The same 18 files and 107/107
+  tests passed in Firefox. Coverage finished at 85.08% statements, 74.74%
+  branches, 92.05% functions, and 86.46% lines.
+
+  `npm run test:external:available` passed 13 files with 121 tests and 4
+  conditional skips (125 total). LibreOffice 25.8.2.2, FFmpeg n8.0, Poppler
+  25.10.0, Qt qmllint 1.0, libxml2 2.15.1, and gettext 0.26 reopened or validated
+  every applicable generated artifact. EPUBCheck, DITA-OT, pdfTeX, and windres
+  are not installed on this workstation, so their four conditional native
+  checks remain the release-matrix responsibility. Both `npm audit` and
+  `npm audit --omit=dev` reported 0 vulnerabilities. The final diff passed
+  `git diff --check`; generated screenshots and attachments were removed.
+
+  No remaining regression is known in the remediated behavior. Local WebKit
+  execution is unavailable on this CachyOS host because its Playwright runtime
+  libraries are absent; the checked-in browser-matrix workflow remains the
+  WebKit release gate.
 
 ## Checkbox closure protocol
 

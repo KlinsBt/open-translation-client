@@ -144,4 +144,63 @@ describe("lifecycle-safe persisted edit queue", () => {
 		expect(snapshots).toEqual(["a", "final"]);
 		expect(writes).toEqual(["a", "final"]);
 	});
+
+	it("reconciles generated revisions into the scheduled live value", async () => {
+		const live = { text: "draft", revision: 1 };
+		const queue = createPersistedEditQueue<{
+			text: string;
+			revision: number;
+		}>(
+			{ text: "old", revision: 1 },
+			async (value) => {
+				value.revision += 1;
+			},
+			{},
+			{
+				cloneScheduled: (value) => value,
+				cloneForPersistence: structuredClone,
+				onPersisted: (scheduled, persisted) => {
+					scheduled.revision = persisted.revision;
+				},
+			},
+		);
+		await queue.schedule(live);
+		expect(live.revision).toBe(2);
+	});
+
+	it("advances a dependent pending snapshot to the committed revision", async () => {
+		const first = deferred();
+		const initial = { text: "old", revision: 1 };
+		const optimistic = { text: "first", revision: 1 };
+		const dependent = { text: "confirmed", revision: 1 };
+		let writes = 0;
+		const queue = createPersistedEditQueue<{
+			text: string;
+			revision: number;
+		}>(
+			initial,
+			async (value) => {
+				writes += 1;
+				if (writes === 1) await first.promise;
+				value.revision += 1;
+			},
+			{},
+			{
+				cloneScheduled: (value) => value,
+				cloneForPersistence: structuredClone,
+				onPersisted: (scheduled, persisted) => {
+					scheduled.revision = persisted.revision;
+				},
+			},
+		);
+		void queue.schedule(optimistic);
+		void queue.schedule(dependent);
+		first.resolve();
+		await queue.whenIdle();
+		expect(dependent.revision).toBe(3);
+		expect(queue.committedSnapshot()).toEqual({
+			text: "confirmed",
+			revision: 3,
+		});
+	});
 });

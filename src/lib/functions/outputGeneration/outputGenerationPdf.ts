@@ -142,18 +142,7 @@ function searchableFontUrl(language: string): string {
 	if (["he", "yi"].includes(code)) return notoSansHebrewUrl;
 	if (code === "th") return notoSansThaiUrl;
 	if (
-		[
-			"be",
-			"bg",
-			"kk",
-			"ky",
-			"mk",
-			"mn",
-			"ru",
-			"sr",
-			"tg",
-			"uk",
-		].includes(code)
+		["be", "bg", "kk", "ky", "mk", "mn", "ru", "sr", "tg", "uk"].includes(code)
 	)
 		return notoSansCyrillicUrl;
 	if (code === "el") return notoSansGreekUrl;
@@ -186,9 +175,12 @@ async function buildSearchableJpegPdf(
 	]);
 	const document = await PDFDocument.create();
 	document.registerFontkit(fontkit);
-	const font = await document.embedFont(await loadSearchableFontBytes(language), {
-		subset: true,
-	});
+	const font = await document.embedFont(
+		await loadSearchableFontBytes(language),
+		{
+			subset: true,
+		},
+	);
 	for (const pageData of pages) {
 		const pdfWidth = pageData.pdfWidth ?? PDF_WIDTH;
 		const pdfHeight = pageData.pdfHeight ?? PDF_HEIGHT;

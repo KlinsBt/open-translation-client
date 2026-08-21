@@ -38,10 +38,9 @@ describe("browser local and constrained format routing", () => {
 			"interview.wav",
 			"audio/wav",
 			new Uint8Array([
-				0x52, 0x49, 0x46, 0x46, 0x28, 0, 0, 0, 0x57, 0x41, 0x56, 0x45,
-				0x66, 0x6d, 0x74, 0x20, 0x10, 0, 0, 0, 1, 0, 1, 0, 0x80, 0x3e,
-				0, 0, 0, 0x7d, 0, 0, 2, 0, 0x10, 0, 0x64, 0x61, 0x74, 0x61,
-				4, 0, 0, 0, 0, 0, 0, 0,
+				0x52, 0x49, 0x46, 0x46, 0x28, 0, 0, 0, 0x57, 0x41, 0x56, 0x45, 0x66,
+				0x6d, 0x74, 0x20, 0x10, 0, 0, 0, 1, 0, 1, 0, 0x80, 0x3e, 0, 0, 0, 0x7d,
+				0, 0, 2, 0, 0x10, 0, 0x64, 0x61, 0x74, 0x61, 4, 0, 0, 0, 0, 0, 0, 0,
 			]),
 			"transcription",
 		],
@@ -95,9 +94,10 @@ describe("browser local and constrained format routing", () => {
 		const document = await loadingTask.promise;
 		expect(document.numPages).toBe(2);
 		const firstPage = await document.getPage(1);
-		expect(firstPage.getViewport({ scale: 1 })).toMatchObject(
-			{ width: 612, height: 792 },
-		);
+		expect(firstPage.getViewport({ scale: 1 })).toMatchObject({
+			width: 612,
+			height: 792,
+		});
 		const extracted = (await firstPage.getTextContent()).items
 			.map((item) => ("str" in item ? item.str : ""))
 			.join(" ");
@@ -132,12 +132,10 @@ describe("browser local and constrained format routing", () => {
 		const document = await loadingTask.promise;
 		expect(document.numPages).toBe(1);
 		const page = await document.getPage(1);
-		expect(page.getViewport({ scale: 1 })).toMatchObject(
-			{
-				width: 595.28,
-				height: 841.89,
-			},
-		);
+		expect(page.getViewport({ scale: 1 })).toMatchObject({
+			width: 595.28,
+			height: 841.89,
+		});
 		const extracted = (await page.getTextContent()).items
 			.map((item) => ("str" in item ? item.str : ""))
 			.join(" ");

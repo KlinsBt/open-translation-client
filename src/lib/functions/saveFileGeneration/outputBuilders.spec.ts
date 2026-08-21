@@ -13,6 +13,7 @@ import { buildXliff1_2 } from "./generateXliffSaveFile1_2";
 import { buildXliff2_0 } from "./generateXliffSaveFile2_0";
 import { createNeutralDocument } from "$lib/formats/documentModel";
 import { createSkeletonFromLegacy } from "$lib/formats/skeleton";
+import { PROJECT_SCHEMA_VERSION } from "$lib/formats/persistenceMigrations";
 
 describe("translation output builders", () => {
 	it("builds plain text without JSON quoting", () => {
@@ -34,7 +35,9 @@ describe("translation output builders", () => {
 		const metadata = doc.getElementsByTagName("mda:metadata")[0];
 
 		expect(metadata.namespaceURI).toBe("urn:oasis:names:tc:xliff:metadata:2.0");
-		expect(output).toContain('type="schema_version">2</mda:meta>');
+		expect(output).toContain(
+			`type="schema_version">${PROJECT_SCHEMA_VERSION}</mda:meta>`,
+		);
 		expect(validateXliff2_0Data(doc)).toBe(true);
 	});
 

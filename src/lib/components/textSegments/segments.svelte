@@ -245,9 +245,6 @@
 		$singleUserData,
 		updateTranslationOnIndexedDB,
 		{
-			onCommit(committed) {
-				$singleUserData.persistenceRevision = committed.persistenceRevision;
-			},
 			onFailure(error, committed) {
 				persistenceFailureCount += 1;
 				singleUserData.set(committed);
@@ -263,6 +260,16 @@
 		{
 			cloneScheduled: (project) => project,
 			cloneForPersistence: (project) => structuredClone(project),
+			onPersisted: (scheduled, persisted) => {
+				if (
+					scheduled.id !== undefined &&
+					persisted.id !== undefined &&
+					scheduled.id !== persisted.id
+				)
+					return;
+				scheduled.persistenceRevision = persisted.persistenceRevision;
+				if (scheduled.id === undefined) scheduled.id = persisted.id;
+			},
 		},
 	);
 	let pendingSplitOffsets: Map<number, number> = $state(new Map());

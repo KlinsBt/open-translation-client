@@ -191,9 +191,9 @@ describe("transaction-complete browser persistence", () => {
 		project.id = Date.now() + 50_000;
 		try {
 			await updateTranslationOnIndexedDB(project);
-			const current = (
-				await loadTranslationsUserDataFromIndexedDB()
-			).find(({ id }) => id === project.id)!;
+			const current = (await loadTranslationsUserDataFromIndexedDB()).find(
+				({ id }) => id === project.id,
+			)!;
 			const firstTab = structuredClone(current);
 			const staleTab = structuredClone(current);
 			firstTab.translationData.seg2[0] = "Saved in the first tab";
@@ -203,12 +203,10 @@ describe("transaction-complete browser persistence", () => {
 			await expect(updateTranslationOnIndexedDB(staleTab)).rejects.toThrow(
 				/changed in another tab/i,
 			);
-			const restored = (
-				await loadTranslationsUserDataFromIndexedDB()
-			).find(({ id }) => id === project.id);
-			expect(restored?.translationData.seg2[0]).toBe(
-				"Saved in the first tab",
+			const restored = (await loadTranslationsUserDataFromIndexedDB()).find(
+				({ id }) => id === project.id,
 			);
+			expect(restored?.translationData.seg2[0]).toBe("Saved in the first tab");
 		} finally {
 			await deleteTranslationFromIndexedDB(project.id);
 		}

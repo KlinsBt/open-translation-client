@@ -334,7 +334,16 @@ export async function updateAllTranslationsOnIndexedDB(
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
-			for (const data of snapshot) ensureProjectModels(data);
+			for (const data of snapshot) {
+				const isUnpersisted = data.persistenceRevision === undefined;
+				ensureProjectModels(data);
+				// Portable imports and newly constructed bulk records must not claim a
+				// coincidentally matching key from another browser database.
+				if (isUnpersisted) {
+					delete data.id;
+					data.persistenceRevision = 0;
+				}
+			}
 			for (
 				let offset = 0;
 				offset < snapshot.length;
@@ -361,16 +370,19 @@ function writeTranslationBatch(
 		});
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
 		let conflict: PersistenceConflictError | null = null;
+		let operationError: unknown;
 		transaction.oncomplete = () => resolve();
 		transaction.onerror = () =>
 			reject(
 				conflict ??
+					operationError ??
 					transaction.error ??
 					new Error("IndexedDB transaction failed."),
 			);
 		transaction.onabort = () =>
 			reject(
 				conflict ??
+					operationError ??
 					transaction.error ??
 					new Error("IndexedDB transaction was aborted."),
 			);
@@ -378,10 +390,15 @@ function writeTranslationBatch(
 			const expectedRevision = data.persistenceRevision ?? 0;
 			if (data.id === undefined) {
 				data.persistenceRevision = 1;
-				const request = store.add(data);
-				request.onsuccess = () => {
-					data.id = request.result as number;
-				};
+				try {
+					const request = store.add(data);
+					request.onsuccess = () => {
+						data.id = request.result as number;
+					};
+				} catch (error) {
+					operationError = error;
+					transaction.abort();
+				}
 				continue;
 			}
 			const request = store.get(data.id);
@@ -398,7 +415,12 @@ function writeTranslationBatch(
 					return;
 				}
 				data.persistenceRevision = currentRevision + 1;
-				store.put(data);
+				try {
+					store.put(data);
+				} catch (error) {
+					operationError = error;
+					transaction.abort();
+				}
 			};
 		}
 	});

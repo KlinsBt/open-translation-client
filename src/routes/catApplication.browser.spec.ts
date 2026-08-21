@@ -568,8 +568,8 @@ describe("real CAT application route", () => {
 			seg2: ["Target"],
 			checked: [true],
 		});
-		const failedPut = vi
-			.spyOn(IDBObjectStore.prototype, "put")
+		const failedAdd = vi
+			.spyOn(IDBObjectStore.prototype, "add")
 			.mockImplementationOnce(() => {
 				throw new DOMException("Quota reached", "QuotaExceededError");
 			});
@@ -593,7 +593,7 @@ describe("real CAT application route", () => {
 		expect(get(toastStore).some((toast) => toast.type === "success")).toBe(
 			false,
 		);
-		expect(failedPut).toHaveBeenCalled();
+		expect(failedAdd).toHaveBeenCalled();
 	});
 
 	it("creates a validated text project through the real upload modal", async () => {
@@ -1450,7 +1450,12 @@ describe("real CAT application route", () => {
 		await eventually(() =>
 			expect(document.body.textContent).toContain("Missing resource project"),
 		);
-		button("Project options").click();
+		const projectCard = document.querySelector<HTMLButtonElement>(
+			'[aria-label="Open options for Missing resource project"]',
+		);
+		if (!projectCard)
+			throw new Error("Missing-resource project card not found");
+		projectCard.click();
 		await eventually(() =>
 			expect(document.body.textContent).toContain("Continue translating"),
 		);

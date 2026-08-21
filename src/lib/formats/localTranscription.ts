@@ -55,14 +55,19 @@ const MEDIA_HEADER_BYTES = 64 * 1024;
 const MAX_DECODED_AUDIO_SECONDS = 60 * 60;
 
 function uint32Le(bytes: Uint8Array, offset: number): number {
-	return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(
-		offset,
-		true,
-	);
+	return new DataView(
+		bytes.buffer,
+		bytes.byteOffset,
+		bytes.byteLength,
+	).getUint32(offset, true);
 }
 
 function containsBytes(bytes: Uint8Array, needle: readonly number[]): boolean {
-	outer: for (let index = 0; index <= bytes.length - needle.length; index += 1) {
+	outer: for (
+		let index = 0;
+		index <= bytes.length - needle.length;
+		index += 1
+	) {
 		for (let offset = 0; offset < needle.length; offset += 1)
 			if (bytes[index + offset] !== needle[offset]) continue outer;
 		return true;
@@ -70,7 +75,10 @@ function containsBytes(bytes: Uint8Array, needle: readonly number[]): boolean {
 	return false;
 }
 
-export function hasMediaSignature(bytes: Uint8Array, fileSize = bytes.length): boolean {
+export function hasMediaSignature(
+	bytes: Uint8Array,
+	fileSize = bytes.length,
+): boolean {
 	if (bytes.length < 16 || fileSize < 16) return false;
 	const ascii = (start: number, length: number) =>
 		String.fromCharCode(...bytes.slice(start, start + length));
@@ -101,7 +109,10 @@ export function hasMediaSignature(bytes: Uint8Array, fileSize = bytes.length): b
 		const searchFrom = Math.min(10 + tagSize, bytes.length - 2);
 		return bytes
 			.slice(searchFrom)
-			.some((byte, index, rest) => byte === 0xff && (rest[index + 1] & 0xe0) === 0xe0);
+			.some(
+				(byte, index, rest) =>
+					byte === 0xff && (rest[index + 1] & 0xe0) === 0xe0,
+			);
 	}
 	if (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)
 		return fileSize >= 4 && bytes.length >= 4;
@@ -115,9 +126,9 @@ export function hasMediaSignature(bytes: Uint8Array, fileSize = bytes.length): b
 		);
 	if (
 		bytes[0] === 0x1a &&
-			bytes[1] === 0x45 &&
-			bytes[2] === 0xdf &&
-			bytes[3] === 0xa3
+		bytes[1] === 0x45 &&
+		bytes[2] === 0xdf &&
+		bytes[3] === 0xa3
 	)
 		return containsBytes(bytes, [0x18, 0x53, 0x80, 0x67]);
 	if (ascii(4, 4) === "ftyp") {
@@ -175,7 +186,10 @@ async function decodeLocalAudio(
 			throw new SafeInputError(
 				"MEDIA_INVALID",
 				"This media file exceeds the one-hour local transcription limit.",
-				{ durationSeconds: Math.ceil(decoded.duration), limitSeconds: MAX_DECODED_AUDIO_SECONDS },
+				{
+					durationSeconds: Math.ceil(decoded.duration),
+					limitSeconds: MAX_DECODED_AUDIO_SECONDS,
+				},
 			);
 		const length = Math.ceil(
 			(decoded.duration || decoded.length / decoded.sampleRate) * 16000,
