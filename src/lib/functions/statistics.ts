@@ -28,7 +28,9 @@ export function getProjectsProgressStatistics(userData: UserData[]) {
 			values[1] += 1;
 		}
 	}
-	values[0] = parseInt((values[0] / userData.length).toFixed(0));
+	const average = Math.round(values[0] / userData.length);
+	values[0] =
+		values[1] === userData.length ? 100 : Math.min(99, Math.max(0, average));
 	return values;
 }
 
@@ -36,13 +38,15 @@ export function calcPercentageOfTotalSegmentsChecked(
 	checked: boolean[],
 ): number {
 	let total: number = checked.length;
+	if (total === 0) return 0;
 	try {
 		let done = checked.filter((x) => x === true);
 		let sum: number = (done.length / total) * 100;
 		if (isNaN(sum)) {
 			sum = 0;
 		}
-		return parseInt(sum.toFixed(0));
+		if (done.length === total) return 100;
+		return Math.min(99, Math.round(sum));
 	} catch (error) {
 		return 0;
 	}

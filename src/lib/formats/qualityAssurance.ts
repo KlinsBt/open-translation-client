@@ -201,8 +201,13 @@ export function runProjectExportQuality(
 		const unit = model?.units[index];
 		const rich =
 			unit && (hasInlineCodes(unit.source) || hasInlineCodes(unit.target));
-		const source = rich ? contentText(unit.source) : (data.seg1[index] ?? "");
-		const target = rich ? contentText(unit.target) : (data.seg2[index] ?? "");
+		// The legacy arrays are the editor's live text projection. Inline-code
+		// fragments deliberately remain immutable while a user types, so reading
+		// their text here can inspect an older target until the project is reopened.
+		// Scan placeholders and visible tags from the current editor values, while
+		// compareInlineCodes below continues to validate the protected fragments.
+		const source = data.seg1[index] ?? "";
+		const target = data.seg2[index] ?? "";
 		compareProtectedText(
 			source,
 			target,

@@ -55,12 +55,12 @@
 				?.xliffProfile as
 				| { label?: string; exportPolicy?: "same-profile" }
 				| undefined;
+			await createNewProjectWithSaveFile();
 			notifySuccess(
 				profile?.exportPolicy === "same-profile"
-					? `${profile.label ?? detection.label} detected. Vendor structure will be retained by the same-profile export.`
-					: `${detection.label} detected (${detection.confidence} confidence). New project created.`,
+					? `${profile.label ?? detection.label} imported. Vendor structure will be retained by the same-profile export.`
+					: `${detection.label} imported (${detection.confidence} confidence). Project created.`,
 			);
-			await createNewProjectWithSaveFile();
 		} catch (error) {
 			notifyError(safeInputMessage(error));
 		} finally {

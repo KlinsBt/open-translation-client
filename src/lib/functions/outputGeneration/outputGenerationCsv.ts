@@ -153,5 +153,5 @@ export async function generateCsvTranslation(project: UserData): Promise<void> {
 	document.body.appendChild(anchor);
 	anchor.click();
 	document.body.removeChild(anchor);
-	URL.revokeObjectURL(url);
+	setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 }

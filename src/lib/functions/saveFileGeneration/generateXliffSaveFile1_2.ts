@@ -17,7 +17,7 @@ async function generateXliffFileDownload(xliffData: string, name: string) {
 		anchor.click();
 	} finally {
 		anchor.remove();
-		URL.revokeObjectURL(url);
+		setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 	}
 }
 

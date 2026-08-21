@@ -67,7 +67,7 @@ export async function createPptxFromModifiedXmlText(translation: UserData) {
 	document.body.appendChild(link);
 	link.click();
 	document.body.removeChild(link);
-	URL.revokeObjectURL(url);
+	setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 }
 
 export async function buildPptxTranslationPackage(

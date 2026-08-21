@@ -107,7 +107,7 @@ export function downloadVendorXliff(userData: UserData): VendorXliffOutput {
 		anchor.click();
 	} finally {
 		anchor.remove();
-		URL.revokeObjectURL(url);
+		setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 	}
 	return output;
 }

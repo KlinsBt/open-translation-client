@@ -15,6 +15,7 @@ import {
 import {
 	getTranslationMemoryMatches,
 	searchForMatches,
+	translationUnitValidationError,
 } from "../components/translationMemory/tmFunctions";
 import { getTermMatches } from "../components/termBase/tbFunctions";
 
@@ -31,7 +32,7 @@ describe("statistics", () => {
 			seg2: checked.map(() => "Wort"),
 			checked,
 		});
-		expect(calcPercentageOfTotalSegmentsChecked(checked)).toBe(100);
+		expect(calcPercentageOfTotalSegmentsChecked(checked)).toBe(99);
 		expect(getProjectsProgressStatistics([project])[1]).toBe(0);
 		checked[199] = true;
 		expect(getProjectsProgressStatistics([project])[1]).toBe(1);
@@ -54,6 +55,23 @@ describe("statistics", () => {
 			makeUserData({ seg1: ["three"], seg2: [""], checked: [false] }),
 		];
 		expect(getProjectsProgressStatistics(projects)).toEqual([50, 1, 3, 2]);
+	});
+});
+
+describe("translation-memory entry validation", () => {
+	it("requires complete text and language metadata before adding a unit", () => {
+		expect(translationUnitValidationError("", "Hallo", "en", "de")).toMatch(
+			/source segment is empty/i,
+		);
+		expect(translationUnitValidationError("Hello", "  ", "en", "de")).toMatch(
+			/target translation/i,
+		);
+		expect(translationUnitValidationError("Hello", "Hallo", "", "de")).toMatch(
+			/valid source and target languages/i,
+		);
+		expect(
+			translationUnitValidationError("Hello", "Hallo", "en", "de"),
+		).toBeUndefined();
 	});
 });
 

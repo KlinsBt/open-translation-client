@@ -7,6 +7,32 @@ import { isolatePdfJsWorkerImport } from "./src/test/runtimeWarningPolicy.ts";
 const chromiumPath =
 	process.env.OPEN_TLC_CHROMIUM_PATH ??
 	(existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined);
+const supportedBrowsers = ["chromium", "firefox", "webkit"] as const;
+type SupportedBrowser = (typeof supportedBrowsers)[number];
+const requestedBrowsers = (process.env.OPEN_TLC_BROWSERS ?? "chromium")
+	.split(",")
+	.map((browser) => browser.trim())
+	.filter(Boolean);
+const unknownBrowsers = requestedBrowsers.filter(
+	(browser) => !supportedBrowsers.includes(browser as SupportedBrowser),
+);
+if (unknownBrowsers.length > 0)
+	throw new Error(
+		`Unsupported browser test target: ${unknownBrowsers.join(", ")}`,
+	);
+const browserInstances = requestedBrowsers.map((browser) => ({
+	browser: browser as SupportedBrowser,
+	...(browser === "chromium" && chromiumPath
+		? {
+				provider: playwright({
+					launchOptions: {
+						executablePath: chromiumPath,
+						args: ["--no-sandbox", "--disable-dev-shm-usage"],
+					},
+				}),
+			}
+		: {}),
+}));
 
 export default defineConfig({
 	cacheDir: ".svelte-kit/vite-browser-cache",
@@ -33,13 +59,8 @@ export default defineConfig({
 		teardownTimeout: 10_000,
 		browser: {
 			enabled: true,
-			provider: playwright({
-				launchOptions: {
-					...(chromiumPath ? { executablePath: chromiumPath } : {}),
-					args: ["--no-sandbox", "--disable-dev-shm-usage"],
-				},
-			}),
-			instances: [{ browser: "chromium" }],
+			provider: playwright(),
+			instances: browserInstances,
 			headless: true,
 			api: { host: "127.0.0.1", port: 63315 },
 		},

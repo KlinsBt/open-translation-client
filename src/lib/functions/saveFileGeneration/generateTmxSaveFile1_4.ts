@@ -14,7 +14,7 @@ async function downloadTmx(tmx: string, name: string): Promise<void> {
 	document.body.appendChild(anchor);
 	anchor.click();
 	anchor.remove();
-	URL.revokeObjectURL(url);
+	setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 }
 
 export async function generateTmxSaveFile(

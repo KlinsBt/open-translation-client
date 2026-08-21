@@ -466,5 +466,5 @@ export async function generateTranslatedPdf(project: UserData): Promise<void> {
 	document.body.appendChild(link);
 	link.click();
 	link.remove();
-	setTimeout(() => URL.revokeObjectURL(url), 0);
+	setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 }

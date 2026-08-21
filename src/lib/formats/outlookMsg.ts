@@ -767,5 +767,5 @@ export async function generateOutlookMsgTranslation(
 	);
 	link.download = `${base}.translated.${output.extension}`;
 	link.click();
-	URL.revokeObjectURL(url);
+	setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 }

@@ -55,6 +55,19 @@ describe("repository consistency", () => {
 		expect(loggingCalls).toEqual([]);
 	});
 
+	it("defers object-URL cleanup until browser downloads have started", () => {
+		const immediateRevocations = sourceFiles()
+			.filter(
+				(file) =>
+					/\.(?:ts|svelte)$/.test(file) && !/(?:\.spec\.|\.test\.)/.test(file),
+			)
+			.flatMap((file) => {
+				const source = readFileSync(resolve(root, file), "utf8");
+				return /^\s*URL\.revokeObjectURL\s*\(/m.test(source) ? [file] : [];
+			});
+		expect(immediateRevocations).toEqual([]);
+	});
+
 	it("keeps disconnected uploader and remote-API prototypes out of source", () => {
 		const obsolete = sourceFiles().filter(
 			(file) =>

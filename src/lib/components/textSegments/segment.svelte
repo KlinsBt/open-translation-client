@@ -11,7 +11,10 @@
 		selectedSegmentId,
 	} from "$lib/functions/saveData/stores.svelte";
 	import { getTotalWordCount } from "$lib/functions/statistics";
-	import { searchForMatches } from "$lib/components/translationMemory/tmFunctions";
+	import {
+		searchForMatches,
+		translationUnitValidationError,
+	} from "$lib/components/translationMemory/tmFunctions";
 	import { getTermMatches } from "$lib/components/termBase/tbFunctions";
 	import type { TbData, TmData, UserData } from "$lib/types/types";
 	import {
@@ -284,6 +287,13 @@
 		if (locked) return notifyError("Unlock this segment before changing it.");
 		if (!validTmActive || !$singleTmData?.terms)
 			return notifyError("Choose an available translation memory first.");
+		const validationError = translationUnitValidationError(
+			sourceSentence,
+			targetSentence,
+			sourceLang,
+			targetLang,
+		);
+		if (validationError) return notifyError(validationError);
 		let localTmData = structuredClone($singleTmData);
 		localTmData.terms.push({
 			// id: localTmData.terms.length + 1,
@@ -381,7 +391,13 @@
 			</button>
 			<button
 				class="tm-btn save"
-				disabled={locked || !validTmActive}
+				disabled={locked ||
+					!validTmActive ||
+					!textSegment1.trim() ||
+					!textSegment2.trim() ||
+					!sourceLang ||
+					!targetLang}
+				title="Save this completed source and target pair to the selected translation memory"
 				onclick={() => addTranslationUnit(textSegment1, textSegment2)}
 			>
 				TM<span>+</span>

@@ -7,6 +7,9 @@ import TmEditing from "$lib/components/translationMemory/tmEditing/tmEditing.sve
 import TbEditing from "$lib/components/termBase/tbEditing/tbEditing.svelte";
 import TmSection from "$lib/components/translationMemory/tmSection.svelte";
 import TbSection from "$lib/components/termBase/tbSection.svelte";
+import TmxUpload from "$lib/components/uploads/tmxUpload/tmxUpload.svelte";
+import TbxUpload from "$lib/components/uploads/tbxUpload/tbxUpload.svelte";
+import SaveFileUpload from "$lib/components/uploads/saveFileUploads/saveFileUpload.svelte";
 import {
 	openMenu,
 	selectedSegmentId,
@@ -442,6 +445,129 @@ describe("real CAT application route", () => {
 		await deleteTranslationFromIndexedDB(project.id);
 	});
 
+	it("enables TM+ only for complete bilingual units", async () => {
+		const resourceId = Date.now();
+		const project = makeUserData({
+			sourceLang: "English (en)",
+			targetLang: "German (de)",
+			seg1: ["Complete source"],
+			seg2: [""],
+			checked: [false],
+			locked: [false],
+			tm: { id: resourceId, name: "Validated memory", active: true },
+		});
+		project.id = resourceId + 1;
+		singleUserData.set(project);
+		tmData.set([{ id: resourceId, name: "Validated memory", terms: [] }]);
+		tbData.set([]);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+		const tmAdd = Array.from(
+			document.querySelectorAll<HTMLButtonElement>(
+				'[data-segment-id="0"] button',
+			),
+		).find(
+			(candidate) => candidate.textContent?.replace(/\s+/g, "") === "TM+",
+		)!;
+		expect(tmAdd.disabled).toBe(true);
+
+		enterText(document.querySelector<HTMLTextAreaElement>("textarea")!, "Ziel");
+		await tick();
+		expect(tmAdd.disabled).toBe(false);
+	});
+
+	it("does not announce TMX or TBX import success when persistence fails", async () => {
+		const tmx = `<?xml version="1.0"?><tmx version="1.4"><header creationtool="OpenTLC" creationtoolversion="1" segtype="sentence" o-tmf="OpenTLC" adminlang="en" srclang="en" datatype="plaintext"><prop type="name">Failure test</prop></header><body><tu tuid="1"><tuv xml:lang="en"><seg>Hello</seg></tuv><tuv xml:lang="de"><seg>Hallo</seg></tuv></tu></body></tmx>`;
+		const tbx = `<?xml version="1.0"?><tbx style="dca" type="TBX-Min" xml:lang="en" xmlns="urn:iso:std:iso:30042:ed-2"><tbxHeader><fileDesc><title>Failure test</title><sourceDesc>Browser persistence test</sourceDesc></fileDesc></tbxHeader><text><body><conceptEntry id="c1"><langSec xml:lang="en"><termSec><term>Hello</term></termSec></langSec><langSec xml:lang="de"><termSec><term>Hallo</term></termSec></langSec></conceptEntry></body></text></tbx>`;
+		tmData.set([]);
+		tbData.set([]);
+		const failedAdd = vi
+			.spyOn(IDBObjectStore.prototype, "add")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Quota reached", "QuotaExceededError");
+			});
+		mounted = mount(TmxUpload, { target: document.body });
+		const tmxInput =
+			document.querySelector<HTMLInputElement>('input[type="file"]')!;
+		Object.defineProperty(tmxInput, "files", {
+			configurable: true,
+			value: [new File([tmx], "memory.tmx", { type: "application/xml" })],
+		});
+		tmxInput.dispatchEvent(new Event("input", { bubbles: true }));
+		await eventually(() =>
+			expect(get(toastStore).some((toast) => toast.type === "error")).toBe(
+				true,
+			),
+		);
+		expect(get(toastStore).some((toast) => toast.type === "success")).toBe(
+			false,
+		);
+
+		await unmount(mounted);
+		mounted = null;
+		document.body.replaceChildren();
+		for (const toast of get(toastStore)) toastStore.remove(toast.id);
+		failedAdd.mockImplementationOnce(() => {
+			throw new DOMException("Quota reached", "QuotaExceededError");
+		});
+		mounted = mount(TbxUpload, { target: document.body });
+		const tbxInput =
+			document.querySelector<HTMLInputElement>('input[type="file"]')!;
+		Object.defineProperty(tbxInput, "files", {
+			configurable: true,
+			value: [new File([tbx], "terms.tbx", { type: "application/xml" })],
+		});
+		tbxInput.dispatchEvent(new Event("input", { bubbles: true }));
+		await eventually(() =>
+			expect(get(toastStore).some((toast) => toast.type === "error")).toBe(
+				true,
+			),
+		);
+		expect(get(toastStore).some((toast) => toast.type === "success")).toBe(
+			false,
+		);
+		expect(failedAdd).toHaveBeenCalledTimes(2);
+	});
+
+	it("does not announce portable-project import success before persistence", async () => {
+		userData.set([]);
+		const project = makeUserData({
+			name: "Portable failure",
+			seg1: ["Source"],
+			seg2: ["Target"],
+			checked: [true],
+		});
+		const failedPut = vi
+			.spyOn(IDBObjectStore.prototype, "put")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Quota reached", "QuotaExceededError");
+			});
+		mounted = mount(SaveFileUpload, { target: document.body });
+		const input =
+			document.querySelector<HTMLInputElement>('input[type="file"]')!;
+		Object.defineProperty(input, "files", {
+			configurable: true,
+			value: [
+				new File([JSON.stringify(project)], "portable.json", {
+					type: "application/json",
+				}),
+			],
+		});
+		input.dispatchEvent(new Event("input", { bubbles: true }));
+		await eventually(() =>
+			expect(get(toastStore).some((toast) => toast.type === "error")).toBe(
+				true,
+			),
+		);
+		expect(get(toastStore).some((toast) => toast.type === "success")).toBe(
+			false,
+		);
+		expect(failedPut).toHaveBeenCalled();
+	});
+
 	it("creates a validated text project through the real upload modal", async () => {
 		const projectName = `browser-project-${Date.now()}`;
 		openMenu.set(true);
@@ -789,6 +915,8 @@ describe("real CAT application route", () => {
 		const project = makeUserData({ name: "Persisted project" });
 		project.id = Date.now();
 		await updateTranslationOnIndexedDB(project);
+		userData.set([project]);
+		singleUserData.set(project);
 		openMenu.set(true);
 		mounted = mount(AppRoute, { target: document.body });
 		await eventually(() =>

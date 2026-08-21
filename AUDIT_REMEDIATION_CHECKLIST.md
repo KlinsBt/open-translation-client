@@ -3,12 +3,12 @@
 This checklist tracks the repository-wide functional audit performed on
 2026-08-20 and reopened after the independent follow-up audit on 2026-08-20.
 
-> **Current status: COMPLETE — second independent follow-up closed on
-> 2026-08-21.** A further review found and repaired an editor save-order race,
-> review-state invalidation gaps, near-complete progress rounding, multilingual
-> word-count limitations, preference-storage failure paths, and a stale public
-> workflow count. AUD-037 through AUD-042 now have pre-fix-sensitive regressions
-> and have passed every final release gate recorded below.
+> **Current status: COMPLETE — third independent follow-up closed on
+> 2026-08-21.** The latest review repaired live-text QA, TM/TB collection
+> coherence, reactive-proxy import failures, premature import success messages,
+> invalid empty TM units, misleading 100% progress, and cross-browser download
+> cleanup. AUD-043 through AUD-048 have pre-fix-sensitive regressions and the
+> final release evidence recorded below.
 
 The final gate is `npm run verify` on a clean worktree, the absence of unexpected
 runtime/build warnings, and a manual review of the evidence recorded beneath
@@ -852,13 +852,13 @@ verify` also passed formatting, ESLint, Svelte diagnostics (0 errors/warnings),
   editor shortcut bypasses this invariant.
 
 - [x] AUD-039 Determine finished-project counts from exact segment state rather
-      than a rounded display percentage. A 199/200 project may display 100% when
-      rounded, but it must not be classified as finished.
+      than a rounded display percentage. A 199/200 project must neither display
+      100% nor be classified as finished.
 
   Completed 2026-08-21. Dashboard completion now requires a non-empty segment
-  array whose entries are all confirmed. The regression proves 199/200 remains
-  unfinished even though the presentation percentage rounds to 100, and becomes
-  finished only when the final segment is confirmed.
+  array whose entries are all confirmed. The regression proves 199/200 displays
+  99% and remains unfinished, then becomes 100% and finished only when the final
+  segment is confirmed.
 
 - [x] AUD-040 Count multilingual words with Unicode word boundaries, including
       CJK and Thai text without ASCII whitespace, with a safe fallback for older
@@ -894,6 +894,80 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   13 files and 125 tests with zero skips using LibreOffice 25.8.2.2, EPUBCheck
   5.3.0, DITA-OT 4.4.0, pdfTeX/TeX Live 2026, GNU windres 2.46, FFmpeg n8.0,
   Poppler 25.10.0, Qt qmllint 1.0, libxml2 2.15.1, and gettext 0.26.
+
+## Third independent follow-up audit
+
+- [x] AUD-043 Run export QA against the editor's current source and target text,
+      even when the neutral document model retains immutable rich fragments for
+      protected inline-code reconstruction.
+
+  Completed 2026-08-21 in the remediation commit containing this entry.
+  `runProjectExportQuality` now scans placeholders and visible tags from the live
+  segment arrays while continuing to compare protected inline-code structure
+  from the neutral model. The rich-fragment regression changes only the current
+  target and fails against the old stale-text scan. No known limitation remains.
+
+- [x] AUD-044 Keep TM and TB collection stores coherent after every successful
+      resource update, and convert reactive upload state to plain snapshots
+      before cloning, replacing, or merging imported TMX/TBX data.
+
+  Completed 2026-08-21. TM/TB updates reload their collection stores after the
+  IndexedDB transaction completes. A real-browser regression updates both
+  resources and requires the collection stores to expose the committed values.
+  The import failure-path test also exposed that Svelte reactive proxies could
+  not be `structuredClone`d; import, same-ID replacement, and merge paths now use
+  plain state snapshots. The focused Chromium suite passes 25/25 tests. No known
+  collection or reactive-cloning limitation remains.
+
+- [x] AUD-045 Publish import success only after persistence and reopening have
+      succeeded; create genuinely empty TM/TB resources; and reject incomplete
+      TM units at both the UI and function boundary.
+
+  Completed 2026-08-21. TMX, TBX, and portable-project import notifications now
+  follow the awaited database commit. Browser tests inject quota failures and
+  require an error with no success toast. Empty memories and term bases contain
+  no synthetic blank records, while TM+ remains disabled until both languages
+  and both segment texts are present and its function guard returns a helpful
+  validation error. No known invalid-empty-record path remains.
+
+- [x] AUD-046 Reserve 100% progress for exact completion in both per-project and
+      aggregate statistics, including empty and near-complete projects.
+
+  Completed 2026-08-21. Incomplete percentages round normally but are capped at
+  99; empty projects remain 0; aggregate progress reaches 100 only when every
+  project has a non-empty, fully confirmed segment set. Unit regressions cover
+  empty, partial, 199/200, and exact-completion states. No known limitation
+  remains.
+
+- [x] AUD-047 Let browser downloads begin before object URLs are revoked and run
+      browser regressions under configurable Chromium, Firefox, and WebKit
+      targets.
+
+  Completed 2026-08-21. Every production download path now defers object-URL
+  revocation for one second; a repository regression rejects immediate cleanup.
+  `OPEN_TLC_BROWSERS` configures the Vitest Playwright instances, the default
+  remains Chromium, `npm run test:browser:matrix` targets all three engines, and
+  the dedicated CI workflow installs their runtime dependencies. The complete
+  Chromium suite passes 100/100 tests and the CAT Firefox smoke suite passes
+  22/22. Local WebKit execution is blocked on this CachyOS host by absent ICU,
+  XML, and Flite runtime libraries; Ubuntu CI installs them with Playwright's
+  dependency installer, so this host limitation is not hidden as a local pass.
+
+- [x] AUD-048 Run the complete repository, native-format, dependency, and diff
+      gates before closing the third follow-up.
+
+  Completed 2026-08-21 after reviewing the final diff. `npm run verify` passes
+  formatting, ESLint, Svelte diagnostics with 0 errors/warnings, 90 covered unit
+  files with 1,127 tests passed and 11 intentional conditional skips, all four
+  coverage thresholds, 18 Chromium browser files with 100 tests passed, the
+  production build, and bundle budgets. The strict native-format suite passes
+  all 13 files and 125/125 tests with zero skips using LibreOffice 25.8.2.2,
+  EPUBCheck 5.3.0, DITA-OT 4.4.0, pdfTeX/TeX Live 2026, GNU windres 2.46,
+  FFmpeg n8.0, Poppler 25.10.0, Qt qmllint 1.0, libxml2 2.15.1, and gettext 0.26.
+  Production and full high-severity dependency audits report zero
+  vulnerabilities. The only remaining environment limitation is the explicitly
+  recorded local WebKit host-library gap in AUD-047; no known application defect
+  from this follow-up remains.
 
 ## Checkbox closure protocol
 

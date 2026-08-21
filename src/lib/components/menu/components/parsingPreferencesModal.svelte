@@ -126,7 +126,7 @@
 			document.body.appendChild(anchor);
 			anchor.click();
 			document.body.removeChild(anchor);
-			URL.revokeObjectURL(url);
+			setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 		} catch (error) {
 			notifyError(
 				error instanceof Error ? error.message : "Could not export SRX",

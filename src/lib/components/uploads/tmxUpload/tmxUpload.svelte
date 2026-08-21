@@ -47,8 +47,8 @@
 				tmxDataIdExists = true;
 				return;
 			}
-			notifySuccess("New TMX file created");
-			await createNewProjectWithTmxFile();
+			if (await createNewProjectWithTmxFile())
+				notifySuccess("Translation memory imported");
 		} catch (error) {
 			notifyError(safeInputMessage(error));
 		} finally {
@@ -85,25 +85,31 @@
 		await processTmxFile(file);
 	}
 
-	async function createNewProjectWithTmxFile() {
+	async function createNewProjectWithTmxFile(): Promise<boolean> {
 		showLoading.set(true);
 		try {
 			if (!extractedTmxData) throw new Error("Choose a TMX file first.");
-			let tm: TmData = structuredClone(extractedTmxData);
+			let tm: TmData = structuredClone($state.snapshot(extractedTmxData));
 			delete tm.id;
 			await saveNewTmToIndexedDB(tm);
 			const updatedTmData = await loadTmDataFromIndexedDB();
 			const newTm = updatedTmData[updatedTmData.length - 1];
+			if (!newTm)
+				throw new Error(
+					"The imported translation memory could not be reopened.",
+				);
 			singleTmData.set(newTm);
 			tmIdSelected.set(newTm.id!);
 			editTm.set(true);
 			showTmxModal.set(false);
+			return true;
 		} catch (error) {
 			notifyError(
 				error instanceof Error
 					? error.message
 					: "Could not import the TMX file.",
 			);
+			return false;
 		} finally {
 			showLoading.set(false);
 		}
@@ -113,8 +119,9 @@
 		showLoading.set(true);
 		try {
 			if (!extractedTmxData) throw new Error("Choose a TMX file first.");
-			await updateTmOnIndexedDB(extractedTmxData);
-			singleTmData.set(structuredClone(extractedTmxData));
+			const tm = structuredClone($state.snapshot(extractedTmxData));
+			await updateTmOnIndexedDB(tm);
+			singleTmData.set(tm);
 			editTm.set(true);
 			showTmxModal.set(false);
 			tmxDataIdExists = false;
@@ -137,21 +144,7 @@
 		let tempTm: TmData = {
 			// id: 1,
 			name: temporarySaveName,
-			terms: [
-				{
-					// id: 1,
-					source: {
-						lang: "en",
-						segment: "",
-					},
-					target: [
-						{
-							lang: "de",
-							segment: "",
-						},
-					],
-				},
-			],
+			terms: [],
 		};
 
 		showLoading.set(true);
@@ -160,6 +153,8 @@
 			await saveNewTmToIndexedDB(tempTm);
 			const updatedTmData = await loadTmDataFromIndexedDB();
 			const newTm = updatedTmData[updatedTmData.length - 1];
+			if (!newTm)
+				throw new Error("The new translation memory could not be reopened.");
 			singleTmData.set(newTm);
 			tmIdSelected.set(newTm.id!);
 			editTm.set(true);

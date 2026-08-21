@@ -44,8 +44,8 @@
 				tbxDataIdExists = true;
 				return;
 			}
-			notifySuccess("New TBX file created");
-			await createNewProjectWithTbxFile();
+			if (await createNewProjectWithTbxFile())
+				notifySuccess("Term base imported");
 		} catch (error) {
 			notifyError(safeInputMessage(error));
 		} finally {
@@ -82,25 +82,29 @@
 		await processTbxFile(file);
 	}
 
-	async function createNewProjectWithTbxFile() {
+	async function createNewProjectWithTbxFile(): Promise<boolean> {
 		showLoading.set(true);
 		try {
 			if (!extractedTbxData) throw new Error("Choose a TBX file first.");
-			let tb: TbData = structuredClone(extractedTbxData);
+			let tb: TbData = structuredClone($state.snapshot(extractedTbxData));
 			delete tb.id;
 			await saveNewTbToIndexedDB(tb);
 			const updatedTbData = await loadTbDataFromIndexedDB();
 			const newTb = updatedTbData[updatedTbData.length - 1];
+			if (!newTb)
+				throw new Error("The imported term base could not be reopened.");
 			singleTbData.set(newTb);
 			tbIdSelected.set(newTb.id!);
 			editTb.set(true);
 			showTbxModal.set(false);
+			return true;
 		} catch (error) {
 			notifyError(
 				error instanceof Error
 					? error.message
 					: "Could not import the TBX file.",
 			);
+			return false;
 		} finally {
 			showLoading.set(false);
 		}
@@ -110,8 +114,9 @@
 		showLoading.set(true);
 		try {
 			if (!extractedTbxData) throw new Error("Choose a TBX file first.");
-			await updateTbOnIndexedDB(extractedTbxData);
-			singleTbData.set(structuredClone(extractedTbxData));
+			const tb = structuredClone($state.snapshot(extractedTbxData));
+			await updateTbOnIndexedDB(tb);
+			singleTbData.set(tb);
 			editTb.set(true);
 			showTbxModal.set(false);
 			tbxDataIdExists = false;
@@ -134,18 +139,7 @@
 		let tempTb: TbData = {
 			// id: 1,
 			name: temporarySaveName,
-			entries: [
-				{
-					// id: 1,
-					terms: [
-						{
-							lang: "",
-							term: "",
-							notes: [],
-						},
-					],
-				},
-			],
+			entries: [],
 		};
 
 		showLoading.set(true);
@@ -154,6 +148,7 @@
 			await saveNewTbToIndexedDB(tempTb);
 			const updatedTbData = await loadTbDataFromIndexedDB();
 			const newTb = updatedTbData[updatedTbData.length - 1];
+			if (!newTb) throw new Error("The new term base could not be reopened.");
 			singleTbData.set(newTb);
 			tbIdSelected.set(newTb.id!);
 			editTb.set(true);

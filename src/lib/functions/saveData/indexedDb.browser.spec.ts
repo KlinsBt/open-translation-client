@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { get } from "svelte/store";
 
 import { makeUserData } from "../../../test/fixtures";
 import {
@@ -11,8 +12,11 @@ import {
 	loadTranslationsUserDataFromIndexedDB,
 	saveNewTbToIndexedDB,
 	saveNewTmToIndexedDB,
+	updateTbOnIndexedDB,
+	updateTmOnIndexedDB,
 	updateTranslationOnIndexedDB,
 } from "./indexedDb";
+import { tbData, tmData } from "./stores.svelte";
 
 describe("transaction-complete browser persistence", () => {
 	it("reports an actionable error before an import exceeds browser quota", async () => {
@@ -103,6 +107,53 @@ describe("transaction-complete browser persistence", () => {
 				await deleteTmFromIndexedDB(tmId);
 			if ((await loadTbDataFromIndexedDB()).some(({ id }) => id === tbId))
 				await deleteTbFromIndexedDB(tbId);
+		}
+	});
+
+	it("refreshes collection stores after TM and TB updates", async () => {
+		const seed = Date.now();
+		const tmId = seed + 10;
+		const tbId = seed + 11;
+		try {
+			await saveNewTmToIndexedDB({
+				id: tmId,
+				name: "Live memory",
+				terms: [],
+			});
+			await saveNewTbToIndexedDB({
+				id: tbId,
+				name: "Live terminology",
+				entries: [],
+			});
+			await updateTmOnIndexedDB({
+				id: tmId,
+				name: "Live memory",
+				terms: [
+					{
+						source: { lang: "en", segment: "New source" },
+						target: [{ lang: "de", segment: "Neues Ziel" }],
+					},
+				],
+			});
+			await updateTbOnIndexedDB({
+				id: tbId,
+				name: "Live terminology",
+				entries: [
+					{
+						terms: [{ lang: "en", term: "new term", notes: [] }],
+					},
+				],
+			});
+
+			expect(
+				get(tmData).find(({ id }) => id === tmId)?.terms[0].source.segment,
+			).toBe("New source");
+			expect(
+				get(tbData).find(({ id }) => id === tbId)?.entries[0].terms[0].term,
+			).toBe("new term");
+		} finally {
+			await deleteTmFromIndexedDB(tmId);
+			await deleteTbFromIndexedDB(tbId);
 		}
 	});
 });

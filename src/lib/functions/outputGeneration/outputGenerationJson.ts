@@ -16,7 +16,7 @@ async function generateJsonFileDownload(blob: Blob, name: string) {
 	document.body.appendChild(a);
 	a.click();
 	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
+	setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 }
 
 export async function generateJsonTranslation(translation: UserData) {

@@ -37,7 +37,7 @@ async function generateHtmlFileDownload(
 	a.click();
 	document.body.removeChild(a);
 
-	URL.revokeObjectURL(url);
+	setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 }
 
 export function getHtmlOutputFormat(

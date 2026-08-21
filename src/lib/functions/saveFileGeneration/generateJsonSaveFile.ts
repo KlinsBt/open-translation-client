@@ -21,7 +21,7 @@ async function generateJsonFileDownload(jsonData: string, name: string) {
 		a.click();
 	} finally {
 		a.remove();
-		URL.revokeObjectURL(url);
+		setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 	}
 }
 

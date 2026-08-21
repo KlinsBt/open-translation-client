@@ -19,6 +19,7 @@
 		"test:unit": "vitest",
 		"test:coverage": "vitest --run --coverage --testTimeout=20000",
 		"test:browser": "vitest --config vite.browser.config.ts --run",
+		"test:browser:matrix": "OPEN_TLC_BROWSERS=chromium,firefox,webkit vitest --config vite.browser.config.ts --run",
 		"test:browser:smoke": "vitest --config vite.browser.config.ts --run src/routes/catApplication.browser.spec.ts",
 		"test:external": "node scripts/runExternalValidators.mjs",
 		"test:external:available": "node scripts/runExternalValidators.mjs --allow-missing",

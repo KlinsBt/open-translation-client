@@ -5,6 +5,20 @@ import { bestLanguageMatches } from "$lib/components/resources/languageMatching"
 const LONG_SEGMENT_THRESHOLD = 500;
 const SKETCH_BUCKETS = 2_048;
 
+export function translationUnitValidationError(
+	source: string,
+	target: string,
+	sourceLanguage: string,
+	targetLanguage: string,
+): string | undefined {
+	if (!source.trim()) return "The source segment is empty and cannot be added.";
+	if (!target.trim())
+		return "Add a target translation before saving this unit to the memory.";
+	if (!sourceLanguage || !targetLanguage)
+		return "Choose valid source and target languages before saving to the memory.";
+	return undefined;
+}
+
 interface PreparedSegment {
 	text: string;
 	characterLength: number;

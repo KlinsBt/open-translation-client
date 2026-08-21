@@ -499,6 +499,7 @@ export async function updateTmOnIndexedDB(tm: TmData): Promise<void> {
 			const store = transaction.objectStore(DB_TM_NAME);
 			store.put(cleanTm);
 			await completeTransaction(transaction);
+			await loadTmDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
 		}
@@ -651,6 +652,7 @@ export async function updateTbOnIndexedDB(tb: TbData): Promise<void> {
 			const store = transaction.objectStore(DB_TB_NAME);
 			store.put(cleanTb);
 			await completeTransaction(transaction);
+			await loadTbDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
 		}

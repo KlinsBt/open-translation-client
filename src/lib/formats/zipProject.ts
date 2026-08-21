@@ -637,5 +637,5 @@ export async function generateZipProjectTranslation(
 	document.body.appendChild(link);
 	link.click();
 	link.remove();
-	URL.revokeObjectURL(url);
+	setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 }

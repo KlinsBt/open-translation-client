@@ -69,7 +69,7 @@
 	function mergeTbxFiles() {
 		if (!extractedTbxData) return;
 		const part1 = structuredClone($singleTbData);
-		const part2 = structuredClone(extractedTbxData);
+		const part2 = structuredClone($state.snapshot(extractedTbxData));
 		combinedTbxData = {
 			name: "Merged TBX",
 			entries: [...part1.entries, ...part2.entries],

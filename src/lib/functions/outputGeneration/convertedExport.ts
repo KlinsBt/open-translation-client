@@ -148,6 +148,6 @@ export async function downloadConvertedTranslation(
 		link.click();
 	} finally {
 		link.remove();
-		URL.revokeObjectURL(url);
+		setTimeout(URL.revokeObjectURL.bind(URL, url), 1_000);
 	}
 }

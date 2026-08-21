@@ -71,9 +71,13 @@
 
 	function mergeTmxFiles() {
 		if (!extractedTmxData) return;
-		combinedTmxData = mergeTmxData($singleTmData, extractedTmxData, {
-			policy: mergePolicy,
-		});
+		combinedTmxData = mergeTmxData(
+			$singleTmData,
+			$state.snapshot(extractedTmxData),
+			{
+				policy: mergePolicy,
+			},
+		);
 	}
 
 	async function createNewProjectWithTmxFile() {

@@ -206,6 +206,30 @@ describe("structured inline-code export QA", () => {
 		unit.target.fragments = [];
 		expect(runProjectExportQuality(project)).toMatchObject({ valid: true });
 	});
+
+	it("checks the live editor text instead of stale rich-fragment text", () => {
+		const project = richProject();
+		const unit = project.translationData.documentModel!.units[0];
+		unit.source.fragments = [
+			{ kind: "code", id: "bold", codeType: "standalone" },
+			{ kind: "text", text: "Hello {name}" },
+		];
+		unit.target.fragments = [
+			{ kind: "code", id: "bold", codeType: "standalone" },
+			{ kind: "text", text: "Hallo {name}" },
+		];
+		project.translationData.seg1 = ["Hello {name}"];
+		project.translationData.seg2 = ["Hallo"];
+
+		expect(
+			runProjectExportQuality(project).issues.map((issue) => issue.code),
+		).toContain("MISSING_PLACEHOLDER");
+
+		project.translationData.seg2 = ["Hallo {name} {unexpected}"];
+		expect(
+			runProjectExportQuality(project).issues.map((issue) => issue.code),
+		).toContain("UNEXPECTED_PLACEHOLDER");
+	});
 });
 
 describe("export blocking and messages", () => {
