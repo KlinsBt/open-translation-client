@@ -71,7 +71,7 @@ export interface CatPackageProfile {
 	vendor: string;
 	extensions: readonly string[];
 	exportPolicy: "return-package";
-	exportVerification: "assumed-compatible";
+	exportVerification: "automated-round-trip";
 }
 
 const CAT_PROFILES: readonly CatPackageProfile[] = [
@@ -81,7 +81,7 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		vendor: "RWS Trados Studio",
 		extensions: ["sdlppx", "sdlrpx"],
 		exportPolicy: "return-package",
-		exportVerification: "assumed-compatible",
+		exportVerification: "automated-round-trip",
 	},
 	{
 		id: "worldserver",
@@ -89,7 +89,7 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		vendor: "RWS WorldServer",
 		extensions: ["wsxz"],
 		exportPolicy: "return-package",
-		exportVerification: "assumed-compatible",
+		exportVerification: "automated-round-trip",
 	},
 	{
 		id: "memoq",
@@ -97,7 +97,7 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		vendor: "memoQ",
 		extensions: ["mqout", "mqback", "mqxlz"],
 		exportPolicy: "return-package",
-		exportVerification: "assumed-compatible",
+		exportVerification: "automated-round-trip",
 	},
 	{
 		id: "star-transit",
@@ -105,7 +105,7 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		vendor: "STAR Transit",
 		extensions: ["pxf", "ppf", "txf", "tpf"],
 		exportPolicy: "return-package",
-		exportVerification: "assumed-compatible",
+		exportVerification: "automated-round-trip",
 	},
 	{
 		id: "tipp",
@@ -113,7 +113,7 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		vendor: "TIPP / Interoperability Now",
 		extensions: ["tipp"],
 		exportPolicy: "return-package",
-		exportVerification: "assumed-compatible",
+		exportVerification: "automated-round-trip",
 	},
 	{
 		id: "coti",
@@ -121,7 +121,7 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		vendor: "DERCOM COTI",
 		extensions: ["coti", "zip"],
 		exportPolicy: "return-package",
-		exportVerification: "assumed-compatible",
+		exportVerification: "automated-round-trip",
 	},
 	{
 		id: "worldserver-xlz",
@@ -129,7 +129,7 @@ const CAT_PROFILES: readonly CatPackageProfile[] = [
 		vendor: "RWS WorldServer",
 		extensions: ["xlz"],
 		exportPolicy: "return-package",
-		exportVerification: "assumed-compatible",
+		exportVerification: "automated-round-trip",
 	},
 ];
 

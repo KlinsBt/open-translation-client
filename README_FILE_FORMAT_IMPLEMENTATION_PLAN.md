@@ -116,7 +116,10 @@ adapter; they are never routed to the ZIP-based OOXML importers.
       embedded newlines. Streaming operations expose cancellation, byte/record
       progress, safety limits, timing, buffer metrics, and cooperative main-thread
       yields. Bulk project persistence now commits ordered 100-record IndexedDB
-      transactions instead of queuing every write at once. A 5,000-record stress
+      transactions instead of queuing every write at once. The editor takes a
+      durable project snapshot only when a coalesced write starts, updates word
+      totals incrementally, and rejects stale cross-tab revisions rather than
+      overwriting a newer save. A 5,000-record stress
       fixture keeps the scanner buffer below 2 KiB and verifies 50 scheduling
       yields; this measurement favored cooperative batching over a worker because
       worker transfer would duplicate the resulting in-memory model. Encoding,
@@ -136,9 +139,11 @@ adapter; they are never routed to the ZIP-based OOXML importers.
       XLSX/XLSM/XLTX/XLTM and PPTX/PPTM/POTX/POTM/PPSX/PPSM families from
       ODT/ODS/ODP, EPUB, and unknown ZIP containers by internal entries and
       declared media types.
-      Legacy OLE `.doc`/`.xls`/`.ppt`, RTF, and generic XML
-      are recognized but reported as unsupported instead of routed to an
-      incompatible importer; misleading legacy upload hints were removed.
+      Later phases superseded the original legacy exclusion: structurally
+      verified OLE `.doc`/`.xls`/`.ppt`, RTF, and generic XML now route to their
+      dedicated adapters. Legacy Word and PowerPoint use explicitly labelled
+      browser conversion outputs where a safe same-family writer is unavailable;
+      extension-only and mismatched-container spoofs remain rejected.
       Project backups recognize JSON or the XLIFF root independently of their
       filename, including `.xlf`, `.xliff`, and generic XML MIME types. Ambiguous,
       renamed, uppercase, multi-extension, conflicting-metadata, package-family,
@@ -1024,9 +1029,13 @@ Complete these in order after FF-000 through FF-009.
       cancelled, oversized, over-page-limit and text-expansion cases fail with
       typed errors. Embedded scripts, actions, forms, links and attachments are
       never executed or requested. Extraction is labelled lossy with
-      `roundTrip: false`; export retains the original pages and replaces
-      translated text in the recorded source bounding boxes, preserving page
-      dimensions, graphics, geometry, and untranslated regions. Synthetic
+      `roundTrip: false`; export renders each original page locally, replaces
+      translated text in the recorded source bounding boxes, and creates a new
+      flattened delivery PDF. This preserves page dimensions, graphics,
+      geometry, and untranslated visual regions without retaining active or
+      extractable source PDF objects. A Unicode target-text layer makes the
+      delivery searchable and copyable; browser tests assert translated text is
+      extractable and replaced source text is absent. Synthetic
       Unicode/RTL/non-BMP, mixed OCR, bbox, filtering, malformed, cancellation,
       2,001-page limit, 250-line performance, detection, shared conformance and
       real-browser coverage is included, and the reference PDF passes installed
@@ -1041,7 +1050,9 @@ Complete these in order after FF-000 through FF-009.
       local Whisper pipeline, producing timestamped translation units and WebVTT
       output. Model assets are downloaded and browser-cached, while source bytes
       stay on-device in the project skeleton/IndexedDB. Signature-first routing
-      rejects renamed binaries. Tests cover provider-independent local engines,
+      validates container structure rather than accepting short magic headers,
+      rejects renamed/truncated binaries, bounds decoded audio to one hour, and
+      passes cancellation signals through decoding and inference. Tests cover provider-independent local engines,
       confidence/context mapping, retained originals and derived exports.
       Additional raster aliases and animation handling are completed under
       FF-510.
@@ -1062,7 +1073,9 @@ Complete these in order after FF-000 through FF-009.
       unchanged, and copies all opaque entries. SDLPPX becomes SDLRPX and MQOUT
       becomes MQBACK; existing return/archive extensions are retained. Automated
       tests reopen Trados, WorldServer, and memoQ-style output, verify translated
-      targets, and byte-check preserved binary resources.
+      targets, and byte-check preserved binary resources. Registry metadata calls
+      this evidence `automated-round-trip`; it no longer labels tested writers as
+      merely assumed compatible.
 - [x] **FF-404 — Generic ZIP projects.** Add only as a manifest-driven batch
       container over already supported adapters. Preserve paths and bytes,
       prevent traversal/collisions, cap recursion and expansion, and report each

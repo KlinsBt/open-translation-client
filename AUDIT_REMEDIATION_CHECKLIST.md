@@ -3,12 +3,11 @@
 This checklist tracks the repository-wide functional audit performed on
 2026-08-20 and reopened after the independent follow-up audit on 2026-08-20.
 
-> **Current status: COMPLETE — third independent follow-up closed on
-> 2026-08-21.** The latest review repaired live-text QA, TM/TB collection
-> coherence, reactive-proxy import failures, premature import success messages,
-> invalid empty TM units, misleading 100% progress, and cross-browser download
-> cleanup. AUD-043 through AUD-048 have pre-fix-sensitive regressions and the
-> final release evidence recorded below.
+> **Current status: FIFTH FOLLOW-UP IN PROGRESS — 2026-08-21.** A new audit
+> reopened PDF semantics, editor scaling, media validation/cancellation,
+> cross-tab concurrency, bidirectional-language semantics, roadmap accuracy,
+> and final release evidence. AUD-052 through AUD-058 supersede the earlier
+> blanket completion statement.
 
 The final gate is `npm run verify` on a clean worktree, the absence of unexpected
 runtime/build warnings, and a manual review of the evidence recorded beneath
@@ -1028,6 +1027,76 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   checked-in Ubuntu browser-matrix workflow installs those dependencies and is
   the WebKit gate.
 
+## Fifth independent follow-up audit
+
+- [x] AUD-052 Rebuild translated PDFs as flattened delivery documents, remove
+      extractable source objects, and add a searchable translated text layer.
+
+  Completed 2026-08-21 in `5039be8`. Both source-PDF and converted-document
+  delivery paths now create fresh PDFs from rendered pages and add invisible
+  Unicode target text. Browser regressions reopen output with PDF.js, verify
+  page geometry, require translated extraction, and prove replaced source text
+  is absent. No scripts, forms, links, attachments, or original PDF objects are
+  copied into delivery output. PDF extraction and visual replacement remain
+  inherently lossy and are still labelled accordingly.
+
+- [x] AUD-053 Remove whole-project clones and full target-word recounts from
+      every editor keystroke while retaining exact rollback and final-save
+      behavior.
+
+  Completed 2026-08-21 in `ee72501`. The live editor mutates the addressed
+  target/confirmation fields, adjusts the word count by old/new segment delta,
+  and takes immutable snapshots only when the immediate or trailing coalesced
+  write starts. Queue tests prove three rapid edits produce two snapshots/writes
+  and that persistence failure still restores the exact committed project.
+
+- [x] AUD-054 Validate media container structure beyond magic bytes, bound local
+      decoded-audio allocation, and pass cancellation through image decoding,
+      OCR, audio decoding, model loading, and transcription.
+
+  Completed 2026-08-21 in `592b4ff`. WAV chunk structure, MP3 frames, Ogg page
+  headers, FLAC STREAMINFO, WebM Segment markers, and ISO-BMFF boxes are checked
+  from a bounded header read. Header-only WAV is rejected, decoded audio is
+  capped at one hour, and OCR/transcription extension points receive the active
+  AbortSignal; built-in workers/models check it during progress and terminate
+  on cancellation. Focused OCR/transcription tests pass 22/22.
+
+- [x] AUD-055 Prevent stale browser tabs from silently overwriting newer
+      projects and make the documented 100-record bulk-write batching real.
+
+  Completed 2026-08-21 in `050a3f4`. Project schema version 3 adds a monotonic
+  persistence revision. Every project write compares the caller revision inside
+  its read/write transaction and rejects a mismatch with a reload instruction.
+  A real-browser regression saves two copies of one revision and proves the
+  second stale write fails while the first tab's text remains. Bulk writes now
+  commit ordered slices of at most 100 records.
+
+- [x] AUD-056 Give source and target content independent language and direction
+      semantics, including locked target text and additional RTL languages.
+
+  Completed 2026-08-21 in `6ecac50`. The segment container no longer mislabels
+  source UI as target-language content. Source text, editable targets, and
+  locked targets expose their own `lang` and `dir`; the RTL set covers Arabic,
+  Hebrew, Persian, Kurdish-family, Pashto, Sindhi, Syriac, Uyghur, Urdu, Yiddish,
+  Divehi, and N'Ko codes. The focused Chromium accessibility regression passes.
+
+- [x] AUD-057 Reconcile implementation-plan claims and CAT package evidence
+      labels with the code and focused round-trip tests.
+
+  Completed 2026-08-21 in the roadmap/evidence commit containing this entry.
+  FF-005 now describes actual coalesced snapshots, batching, and revision
+  conflicts; FF-006 no longer preserves its superseded legacy-format exclusion;
+  FF-401 describes flattened searchable delivery PDFs; FF-402 records bounded
+  structural media checks and cancellation; and FF-403 calls repository-reopen
+  evidence `automated-round-trip` instead of `assumed-compatible`. The CAT,
+  migration, and persistence-queue focused run passed 3 files and 41 tests, and
+  Svelte diagnostics reported 0 errors and 0 warnings.
+
+- [ ] AUD-058 Run formatting, lint, type checking, full coverage/unit and
+      Chromium browser suites, production build/bundle checks, available native
+      validators, dependency audit, and final diff review. Record exact evidence
+      here before declaring the fifth follow-up complete.
+
 ## Checkbox closure protocol
 
 Before changing any reopened item to `[x]`, record directly beneath it:
@@ -1059,7 +1128,7 @@ applicable AUD item is closed.
   and stale resource-reference repair.
 - Adapter/catalog parity tests ensure every registered format is represented
   exactly once in the shared landing, About, and upload support catalog.
-- PDF output is reopened with PDF.js in browser tests; translated PDF exports
-  retain source pages/resources and place translated text in mapped source
-  regions. Native application fidelity beyond the retained PDF structure remains
-  subject to the source file's extractable text and bounding-box quality.
+- PDF output is reopened with PDF.js in browser tests. This historical statement
+  that delivery retained original PDF objects is superseded by AUD-052: output is
+  now flattened, visually mapped, searchable in the target language, and does
+  not retain replaced extractable source text.

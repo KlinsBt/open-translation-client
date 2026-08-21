@@ -123,7 +123,11 @@ describe("proprietary CAT package return workflow", () => {
 	it("detects fixture-led Trados, WorldServer, and memoQ structures", () => {
 		expect(
 			detectCatPackageProfile("work.sdlppx", ["target/a.sdlxliff"]),
-		)?.toMatchObject({ id: "trados", exportPolicy: "return-package" });
+		)?.toMatchObject({
+			id: "trados",
+			exportPolicy: "return-package",
+			exportVerification: "automated-round-trip",
+		});
 		expect(
 			detectCatPackageProfile("work.wszx", ["target/a.xlf"]),
 		).toBeUndefined();
