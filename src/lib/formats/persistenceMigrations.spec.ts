@@ -121,8 +121,16 @@ describe("persisted data migrations", () => {
 			() => migrateProjectData({ schemaVersion: PROJECT_SCHEMA_VERSION + 1 }),
 			PROJECT_SCHEMA_VERSION + 1,
 		],
-		["translation memory", () => migrateTmData({ schemaVersion: 2 }), 2],
-		["termbase", () => migrateTbData({ schemaVersion: 2 }), 2],
+		[
+			"translation memory",
+			() => migrateTmData({ schemaVersion: TM_SCHEMA_VERSION + 1 }),
+			TM_SCHEMA_VERSION + 1,
+		],
+		[
+			"termbase",
+			() => migrateTbData({ schemaVersion: TB_SCHEMA_VERSION + 1 }),
+			TB_SCHEMA_VERSION + 1,
+		],
 	])("rejects unsupported future %s versions", (_kind, migrate, version) => {
 		expect(migrate).toThrowError(
 			expect.objectContaining({
@@ -164,6 +172,7 @@ describe("persisted data migrations", () => {
 		});
 
 		expect(tm.schemaVersion).toBe(TM_SCHEMA_VERSION);
+		expect(tm.persistenceRevision).toBe(0);
 		expect(tm.terms[0].source as Record<string, unknown>).toMatchObject({
 			quality: 100,
 		});
@@ -171,6 +180,7 @@ describe("persisted data migrations", () => {
 			origin: "reviewed",
 		});
 		expect(tb.schemaVersion).toBe(TB_SCHEMA_VERSION);
+		expect(tb.persistenceRevision).toBe(0);
 		expect(tb.entries[0] as Record<string, unknown>).toMatchObject({
 			conceptId: "c1",
 		});

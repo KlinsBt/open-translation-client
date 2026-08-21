@@ -556,6 +556,7 @@ export interface TmTerm {
 
 export interface TmData {
 	schemaVersion?: number;
+	persistenceRevision?: number;
 	id?: number;
 	name?: string;
 	terms: TmTerm[];
@@ -644,6 +645,7 @@ export interface TbEntry {
 
 export interface TbData {
 	schemaVersion?: number;
+	persistenceRevision?: number;
 	id?: number;
 	name?: string;
 	entries: TbEntry[];

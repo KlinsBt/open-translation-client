@@ -125,25 +125,25 @@ describe("transaction-complete browser persistence", () => {
 				name: "Live terminology",
 				entries: [],
 			});
-			await updateTmOnIndexedDB({
-				id: tmId,
-				name: "Live memory",
-				terms: [
-					{
-						source: { lang: "en", segment: "New source" },
-						target: [{ lang: "de", segment: "Neues Ziel" }],
-					},
-				],
-			});
-			await updateTbOnIndexedDB({
-				id: tbId,
-				name: "Live terminology",
-				entries: [
-					{
-						terms: [{ lang: "en", term: "new term", notes: [] }],
-					},
-				],
-			});
+			const savedTm = (await loadTmDataFromIndexedDB()).find(
+				({ id }) => id === tmId,
+			)!;
+			savedTm.terms = [
+				{
+					source: { lang: "en", segment: "New source" },
+					target: [{ lang: "de", segment: "Neues Ziel" }],
+				},
+			];
+			await updateTmOnIndexedDB(savedTm);
+			const savedTb = (await loadTbDataFromIndexedDB()).find(
+				({ id }) => id === tbId,
+			)!;
+			savedTb.entries = [
+				{
+					terms: [{ lang: "en", term: "new term", notes: [] }],
+				},
+			];
+			await updateTbOnIndexedDB(savedTb);
 
 			expect(
 				get(tmData).find(({ id }) => id === tmId)?.terms[0].source.segment,
@@ -209,6 +209,105 @@ describe("transaction-complete browser persistence", () => {
 			expect(restored?.translationData.seg2[0]).toBe("Saved in the first tab");
 		} finally {
 			await deleteTranslationFromIndexedDB(project.id);
+		}
+	});
+
+	it("rejects stale TM and TB saves instead of using last-write-wins", async () => {
+		const seed = Date.now() + 80_000;
+		const tmId = seed;
+		const tbId = seed + 1;
+		try {
+			await saveNewTmToIndexedDB({
+				id: tmId,
+				name: "Concurrent TM",
+				terms: [],
+			});
+			await saveNewTbToIndexedDB({
+				id: tbId,
+				name: "Concurrent TB",
+				entries: [],
+			});
+			const currentTm = (await loadTmDataFromIndexedDB()).find(
+				({ id }) => id === tmId,
+			)!;
+			const firstTmTab = structuredClone(currentTm);
+			const staleTmTab = structuredClone(currentTm);
+			firstTmTab.name = "First TM tab";
+			await updateTmOnIndexedDB(firstTmTab);
+			staleTmTab.name = "Stale TM tab";
+			await expect(updateTmOnIndexedDB(staleTmTab)).rejects.toThrow(
+				/translation memory.*another tab/i,
+			);
+
+			const currentTb = (await loadTbDataFromIndexedDB()).find(
+				({ id }) => id === tbId,
+			)!;
+			const firstTbTab = structuredClone(currentTb);
+			const staleTbTab = structuredClone(currentTb);
+			firstTbTab.name = "First TB tab";
+			await updateTbOnIndexedDB(firstTbTab);
+			staleTbTab.name = "Stale TB tab";
+			await expect(updateTbOnIndexedDB(staleTbTab)).rejects.toThrow(
+				/term base.*another tab/i,
+			);
+
+			expect(
+				(await loadTmDataFromIndexedDB()).find(({ id }) => id === tmId)?.name,
+			).toBe("First TM tab");
+			expect(
+				(await loadTbDataFromIndexedDB()).find(({ id }) => id === tbId)?.name,
+			).toBe("First TB tab");
+		} finally {
+			if ((await loadTmDataFromIndexedDB()).some(({ id }) => id === tmId))
+				await deleteTmFromIndexedDB(tmId);
+			if ((await loadTbDataFromIndexedDB()).some(({ id }) => id === tbId))
+				await deleteTbFromIndexedDB(tbId);
+		}
+	});
+
+	it("advances project revisions when resources are deleted and blocks stale reference restoration", async () => {
+		const seed = Date.now() + 100_000;
+		const projectId = seed;
+		const tmId = seed + 1;
+		const tbId = seed + 2;
+		const project = makeUserData({
+			name: "Deletion conflict",
+			tm: { id: tmId, name: "Deleted TM", active: true },
+			tb: { id: tbId, name: "Deleted TB", active: true },
+		});
+		project.id = projectId;
+		try {
+			await saveNewTmToIndexedDB({ id: tmId, name: "Deleted TM", terms: [] });
+			await saveNewTbToIndexedDB({ id: tbId, name: "Deleted TB", entries: [] });
+			await updateTranslationOnIndexedDB(project);
+			const staleProject = structuredClone(project);
+			const staleTm = (await loadTmDataFromIndexedDB()).find(
+				({ id }) => id === tmId,
+			)!;
+			const staleTb = (await loadTbDataFromIndexedDB()).find(
+				({ id }) => id === tbId,
+			)!;
+
+			await deleteTmFromIndexedDB(tmId);
+			await deleteTbFromIndexedDB(tbId);
+
+			await expect(updateTranslationOnIndexedDB(staleProject)).rejects.toThrow(
+				/changed in another tab or was deleted/i,
+			);
+			await expect(updateTmOnIndexedDB(staleTm)).rejects.toThrow(
+				/changed in another tab or was deleted/i,
+			);
+			await expect(updateTbOnIndexedDB(staleTb)).rejects.toThrow(
+				/changed in another tab or was deleted/i,
+			);
+			const repaired = (await loadTranslationsUserDataFromIndexedDB()).find(
+				({ id }) => id === projectId,
+			);
+			expect(repaired?.persistenceRevision).toBe(3);
+			expect(repaired?.translationData.tm?.id).toBeNull();
+			expect(repaired?.translationData.tb?.id).toBeNull();
+		} finally {
+			await deleteTranslationFromIndexedDB(projectId);
 		}
 	});
 });

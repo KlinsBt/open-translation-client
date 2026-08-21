@@ -17,7 +17,11 @@ import {
 	importTmxStreaming,
 	importXliffProjectStreaming,
 } from "./streamingImporters";
-import { PROJECT_SCHEMA_VERSION } from "./persistenceMigrations";
+import {
+	PROJECT_SCHEMA_VERSION,
+	TB_SCHEMA_VERSION,
+	TM_SCHEMA_VERSION,
+} from "./persistenceMigrations";
 
 function textFile(text: string, name: string): File {
 	return new File([text], name, { type: "application/xml" });
@@ -204,7 +208,8 @@ describe("streaming CAT interchange importers", () => {
 		const tmx = `<?xml version="1.0"?><tmx version="1.4"><header creationtool="OpenTLC" creationtoolversion="1" segtype="sentence" o-tmf="OpenTLC" adminlang="en" srclang="en" datatype="plaintext"><prop type="id">7</prop><prop type="name">Memory</prop></header><body><tu tuid="1"><tuv xml:lang="en"><seg>Hello</seg></tuv><tuv xml:lang="de"><seg>Hallo</seg></tuv></tu><tu tuid="2"><tuv xml:lang="en"><seg>World</seg></tuv><tuv xml:lang="de"><seg>Welt</seg></tuv></tu></body></tmx>`;
 		const result = await importTmxStreaming(textFile(tmx, "memory.tmx"));
 		expect(result.data).toMatchObject({
-			schemaVersion: 1,
+			schemaVersion: TM_SCHEMA_VERSION,
+			persistenceRevision: 0,
 			id: 7,
 			name: "Memory",
 			terms: [
@@ -230,7 +235,8 @@ describe("streaming CAT interchange importers", () => {
 		const tbx = `<?xml version="1.0"?><tbx style="dca" type="TBX-Min" xml:lang="en" xmlns="urn:iso:std:iso:30042:ed-2"><tbxHeader><fileDesc><title>Terms</title><sourceDesc>OpenTLC ID: 9</sourceDesc></fileDesc></tbxHeader><text><body><conceptEntry id="c1"><langSec xml:lang="en-US"><termSec><term>file</term><termNote type="partOfSpeech">noun</termNote></termSec></langSec><langSec xml:lang="de"><termSec><term>Datei</term></termSec></langSec></conceptEntry></body></text></tbx>`;
 		const result = await importTbxStreaming(textFile(tbx, "terms.tbx"));
 		expect(result.data.id).toBe(9);
-		expect(result.data.schemaVersion).toBe(1);
+		expect(result.data.schemaVersion).toBe(TB_SCHEMA_VERSION);
+		expect(result.data.persistenceRevision).toBe(0);
 		expect(result.data.name).toBe("Terms");
 		expect(result.data.entries[0].terms).toMatchObject([
 			{ lang: "en-US", term: "file" },
@@ -293,6 +299,17 @@ describe("streaming CAT interchange importers", () => {
 
 		expect(result.data.schemaVersion).toBe(PROJECT_SCHEMA_VERSION);
 		expect(result.data.translationData.seg1).toEqual(["Hello & welcome."]);
+	});
+
+	it("does not treat a standard XLIFF 2 file id as a local project id", async () => {
+		const generic = `<?xml version="1.0"?><xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="de"><file id="42"><unit id="u1"><segment><source>Hello</source><target>Hallo</target></segment></unit></file></xliff>`;
+		const result = await importXliffProjectStreaming(
+			textFile(generic, "vendor-project.xlf"),
+		);
+
+		expect(result.data.id).toBeUndefined();
+		expect(result.data.translationData.seg1).toEqual(["Hello"]);
+		expect(result.data.translationData.seg2).toEqual(["Hallo"]);
 	});
 });
 

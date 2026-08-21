@@ -120,6 +120,10 @@
 		try {
 			if (!extractedTmxData) throw new Error("Choose a TMX file first.");
 			const tm = structuredClone($state.snapshot(extractedTmxData));
+			const current = $tmData.find((entry) => entry.id === tm.id);
+			if (!current)
+				throw new Error("That translation memory is no longer available.");
+			tm.persistenceRevision = current.persistenceRevision;
 			await updateTmOnIndexedDB(tm);
 			singleTmData.set(tm);
 			editTm.set(true);

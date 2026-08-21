@@ -49,11 +49,79 @@ let writeQueue: Promise<unknown> = Promise.resolve();
 export class PersistenceConflictError extends Error {
 	readonly name = "PersistenceConflictError";
 
-	constructor() {
+	constructor(recordLabel = "project") {
 		super(
-			"This project was changed in another tab. Reload the project before saving so the newer work is not overwritten.",
+			`This ${recordLabel} was changed in another tab or was deleted there. Reload it before saving so newer work is not overwritten.`,
 		);
 	}
+}
+
+type RevisionedResource = Pick<TmData | TbData, "id" | "persistenceRevision">;
+
+function writeRevisionedResource<T extends RevisionedResource>(
+	database: IDBDatabase,
+	storeName: typeof DB_TM_NAME | typeof DB_TB_NAME,
+	record: T,
+	mode: "add" | "update",
+	recordLabel: string,
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const transaction = database.transaction(storeName, "readwrite", {
+			durability: DURABILITY,
+		});
+		const store = transaction.objectStore(storeName);
+		let conflict: PersistenceConflictError | null = null;
+		let operationError: unknown;
+		transaction.oncomplete = () => resolve();
+		transaction.onerror = () =>
+			reject(
+				conflict ??
+					operationError ??
+					transaction.error ??
+					new Error("IndexedDB transaction failed."),
+			);
+		transaction.onabort = transaction.onerror;
+
+		if (mode === "add") {
+			record.persistenceRevision = 1;
+			try {
+				const request = store.add(record);
+				request.onsuccess = () => {
+					record.id = request.result as number;
+				};
+			} catch (error) {
+				operationError = error;
+				transaction.abort();
+			}
+			return;
+		}
+
+		if (record.id === undefined) {
+			operationError = new Error(
+				`The ${recordLabel} has no storage identifier.`,
+			);
+			transaction.abort();
+			return;
+		}
+		const expectedRevision = record.persistenceRevision ?? 0;
+		const request = store.get(record.id);
+		request.onsuccess = () => {
+			const current = request.result as RevisionedResource | undefined;
+			const currentRevision = current?.persistenceRevision ?? 0;
+			if (!current || currentRevision !== expectedRevision) {
+				conflict = new PersistenceConflictError(recordLabel);
+				transaction.abort();
+				return;
+			}
+			record.persistenceRevision = currentRevision + 1;
+			try {
+				store.put(record);
+			} catch (error) {
+				operationError = error;
+				transaction.abort();
+			}
+		};
+	});
 }
 
 function enqueueWrite<T>(operation: () => Promise<T>): Promise<T> {
@@ -553,12 +621,15 @@ export async function saveNewTmToIndexedDB(tm: TmData): Promise<void> {
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
-			const transaction = database.transaction(DB_TM_NAME, "readwrite", {
-				durability: DURABILITY,
-			});
-			const store = transaction.objectStore(DB_TM_NAME);
-			store.add(cleanTm);
-			await completeTransaction(transaction);
+			await writeRevisionedResource(
+				database,
+				DB_TM_NAME,
+				cleanTm,
+				"add",
+				"translation memory",
+			);
+			tm.id = cleanTm.id;
+			tm.persistenceRevision = cleanTm.persistenceRevision;
 			await loadTmDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
@@ -573,12 +644,14 @@ export async function updateTmOnIndexedDB(tm: TmData): Promise<void> {
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
-			const transaction = database.transaction(DB_TM_NAME, "readwrite", {
-				durability: DURABILITY,
-			});
-			const store = transaction.objectStore(DB_TM_NAME);
-			store.put(cleanTm);
-			await completeTransaction(transaction);
+			await writeRevisionedResource(
+				database,
+				DB_TM_NAME,
+				cleanTm,
+				"update",
+				"translation memory",
+			);
+			tm.persistenceRevision = cleanTm.persistenceRevision;
 			await loadTmDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
@@ -604,6 +677,7 @@ export async function deleteTmFromIndexedDB(id: number): Promise<void> {
 				for (const project of request.result as UserData[]) {
 					if (project.translationData.tm?.id !== id) continue;
 					project.translationData.tm = { id: null, name: null, active: false };
+					project.persistenceRevision = (project.persistenceRevision ?? 0) + 1;
 					projects.put(project);
 				}
 			};
@@ -710,12 +784,15 @@ export async function saveNewTbToIndexedDB(tb: TbData): Promise<void> {
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
-			const transaction = database.transaction(DB_TB_NAME, "readwrite", {
-				durability: DURABILITY,
-			});
-			const store = transaction.objectStore(DB_TB_NAME);
-			store.add(cleanTb);
-			await completeTransaction(transaction);
+			await writeRevisionedResource(
+				database,
+				DB_TB_NAME,
+				cleanTb,
+				"add",
+				"term base",
+			);
+			tb.id = cleanTb.id;
+			tb.persistenceRevision = cleanTb.persistenceRevision;
 			await loadTbDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
@@ -730,12 +807,14 @@ export async function updateTbOnIndexedDB(tb: TbData): Promise<void> {
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
-			const transaction = database.transaction(DB_TB_NAME, "readwrite", {
-				durability: DURABILITY,
-			});
-			const store = transaction.objectStore(DB_TB_NAME);
-			store.put(cleanTb);
-			await completeTransaction(transaction);
+			await writeRevisionedResource(
+				database,
+				DB_TB_NAME,
+				cleanTb,
+				"update",
+				"term base",
+			);
+			tb.persistenceRevision = cleanTb.persistenceRevision;
 			await loadTbDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
@@ -761,6 +840,7 @@ export async function deleteTbFromIndexedDB(id: number): Promise<void> {
 				for (const project of request.result as UserData[]) {
 					if (project.translationData.tb?.id !== id) continue;
 					project.translationData.tb = { id: null, name: null, active: false };
+					project.persistenceRevision = (project.persistenceRevision ?? 0) + 1;
 					projects.put(project);
 				}
 			};

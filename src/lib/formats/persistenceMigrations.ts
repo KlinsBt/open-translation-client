@@ -2,8 +2,8 @@ import { FORMAT_IDS, type FormatId } from "./formatIds";
 import type { TbData, TmData, UserData } from "$lib/types/types";
 
 export const PROJECT_SCHEMA_VERSION = 3;
-export const TM_SCHEMA_VERSION = 1;
-export const TB_SCHEMA_VERSION = 1;
+export const TM_SCHEMA_VERSION = 2;
+export const TB_SCHEMA_VERSION = 2;
 
 export type PersistenceRecordKind =
 	| "project"
@@ -49,11 +49,26 @@ const PROJECT_MIGRATIONS: Readonly<Record<number, Migration>> = {
 
 const TM_MIGRATIONS: Readonly<Record<number, Migration>> = {
 	0: (record) => ({ ...record, schemaVersion: 1 }),
+	1: addPersistenceRevision,
 };
 
 const TB_MIGRATIONS: Readonly<Record<number, Migration>> = {
 	0: (record) => ({ ...record, schemaVersion: 1 }),
+	1: addPersistenceRevision,
 };
+
+function addPersistenceRevision(record: UnknownRecord): UnknownRecord {
+	return {
+		...record,
+		schemaVersion: 2,
+		persistenceRevision:
+			typeof record.persistenceRevision === "number" &&
+			Number.isSafeInteger(record.persistenceRevision) &&
+			record.persistenceRevision >= 0
+				? record.persistenceRevision
+				: 0,
+	};
+}
 
 export function migrateProjectData(input: unknown): UserData {
 	const migrated = runMigrations(
@@ -182,6 +197,7 @@ export function migrateTmData(input: unknown): TmData {
 	return {
 		...migrated,
 		schemaVersion: TM_SCHEMA_VERSION,
+		persistenceRevision: validPersistenceRevision(migrated.persistenceRevision),
 		...(typeof migrated.id === "number" ? { id: migrated.id } : {}),
 		name: stringOr(migrated.name, "Unnamed TM"),
 		terms,
@@ -236,10 +252,17 @@ export function migrateTbData(input: unknown): TbData {
 	return {
 		...migrated,
 		schemaVersion: TB_SCHEMA_VERSION,
+		persistenceRevision: validPersistenceRevision(migrated.persistenceRevision),
 		...(typeof migrated.id === "number" ? { id: migrated.id } : {}),
 		name: stringOr(migrated.name, "Unnamed TB"),
 		entries,
 	} as TbData;
+}
+
+function validPersistenceRevision(value: unknown): number {
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+		? value
+		: 0;
 }
 
 function runMigrations(

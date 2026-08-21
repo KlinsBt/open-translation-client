@@ -115,6 +115,9 @@
 		try {
 			if (!extractedTbxData) throw new Error("Choose a TBX file first.");
 			const tb = structuredClone($state.snapshot(extractedTbxData));
+			const current = $tbData.find((entry) => entry.id === tb.id);
+			if (!current) throw new Error("That term base is no longer available.");
+			tb.persistenceRevision = current.persistenceRevision;
 			await updateTbOnIndexedDB(tb);
 			singleTbData.set(tb);
 			editTb.set(true);

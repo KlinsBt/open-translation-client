@@ -364,7 +364,9 @@ export async function importXliffProjectStreaming(
 				: {
 						schemaVersion: state.schemaVersion ?? PROJECT_SCHEMA_VERSION,
 					}),
-			...(Number.isFinite(numericId) ? { id: numericId } : {}),
+			...(state.hasOpenTlcMetadata && Number.isFinite(numericId)
+				? { id: numericId }
+				: {}),
 			translationData: {
 				name: projectName,
 				sourceLang: state.sourceLang,
