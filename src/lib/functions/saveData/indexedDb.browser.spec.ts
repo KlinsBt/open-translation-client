@@ -156,4 +156,33 @@ describe("transaction-complete browser persistence", () => {
 			await deleteTbFromIndexedDB(tbId);
 		}
 	});
+
+	it("rejects incomplete TM and TB records at the IndexedDB boundary", async () => {
+		const seed = Date.now();
+		await expect(
+			saveNewTmToIndexedDB({
+				id: seed,
+				name: "Invalid memory",
+				terms: [
+					{
+						source: { lang: "en", segment: "Source" },
+						target: [{ lang: "de", segment: " " }],
+					},
+				],
+			}),
+		).rejects.toThrow(/translated text/i);
+		await expect(
+			saveNewTbToIndexedDB({
+				id: seed + 1,
+				name: "Invalid terminology",
+				entries: [{ terms: [{ lang: "", term: "مصطلح", notes: [] }] }],
+			}),
+		).rejects.toThrow(/needs a language/i);
+		expect(
+			(await loadTmDataFromIndexedDB()).some(({ id }) => id === seed),
+		).toBe(false);
+		expect(
+			(await loadTbDataFromIndexedDB()).some(({ id }) => id === seed + 1),
+		).toBe(false);
+	});
 });

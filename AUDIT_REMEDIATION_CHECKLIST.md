@@ -928,7 +928,10 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   require an error with no success toast. Empty memories and term bases contain
   no synthetic blank records, while TM+ remains disabled until both languages
   and both segment texts are present and its function guard returns a helpful
-  validation error. No known invalid-empty-record path remains.
+  validation error. That closure statement covered project-editor TM+ and empty
+  resource creation, but the later audit found that the standalone TM/TB
+  resource editors could still persist their own newly inserted blank rows.
+  That narrower gap is tracked and closed independently by AUD-049/AUD-050.
 
 - [x] AUD-046 Reserve 100% progress for exact completion in both per-project and
       aggregate statistics, including empty and near-complete projects.
@@ -968,6 +971,62 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   vulnerabilities. The only remaining environment limitation is the explicitly
   recorded local WebKit host-library gap in AUD-047; no known application defect
   from this follow-up remains.
+
+## Fourth independent follow-up audit
+
+- [x] AUD-049 Treat newly added translation units, target variants, terminology
+      concepts, terms, and notes as editor-local drafts. Persist only after the
+      complete resource is valid, keep validation failures editable, and prevent
+      deletion of the final target variant in a translation unit.
+
+  Completed 2026-08-21 in the remediation commit containing this entry. The TM
+  and TB editors now open every newly inserted record in edit mode without
+  writing it, retain invalid drafts for correction, and publish success only
+  after a complete snapshot commits. The final TM target delete control is
+  disabled with an explanatory tooltip and the mutation guard independently
+  rejects the operation. `catApplication.browser.spec.ts` proves that new TM
+  units, extra targets, TB terms, and notes remain absent from IndexedDB until
+  complete; it also covers Unicode/RTL text, validation recovery, and final-
+  target protection. The focused Chromium CAT suite passed 26/26. No known
+  editor-local invalid-record path remains.
+
+- [x] AUD-050 Enforce the same complete-record invariant at the IndexedDB and
+      TMX/TBX serialization boundaries. Empty resource libraries remain valid,
+      but a stored or exported record must contain its required language and
+      non-whitespace text; an empty terminology note must be completed or
+      removed.
+
+  Completed 2026-08-21 in the same remediation commit. Shared TM/TB resource
+  validation is called before every create/update transaction and before TMX or
+  TBX serialization. Unit cases reject missing variants, blank languages,
+  whitespace-only source/target/term values, empty concepts, and empty notes;
+  the browser persistence regression proves rejected data never reaches the
+  object stores. Existing empty-library creation remains supported, while TMX
+  correctly continues to require at least one unit for file export. Existing
+  identity/translated round trips, malformed/adversarial imports, large-file
+  generation, and independent-parser reopen tests remained green in the full
+  suites. No known boundary bypass remains.
+
+- [x] AUD-051 Run focused mutation-sensitive editor, persistence, Unicode/RTL,
+      malformed-resource, and round-trip regressions, then rerun the full
+      repository, native-format, dependency, Chromium, and Firefox gates before
+      closing this follow-up. Keep the already documented local WebKit runtime
+      limitation distinct from application correctness; the browser-matrix CI
+      workflow remains the WebKit release gate.
+
+  Completed and reviewer-confirmed 2026-08-21. `npm run verify` passed Prettier,
+  ESLint, Svelte diagnostics with 0 errors/warnings, 90 covered unit files with
+  1,135 tests passed and 11 intentional conditional skips, all four coverage
+  thresholds, 18 Chromium browser files with 105/105 tests, production build,
+  and bundle budgets. The complete Firefox run passed the same 18 files and
+  105/105 tests. The strict native suite passed 13 files and 125/125 tests with
+  zero skips using LibreOffice 25.8.2.2, EPUBCheck 5.3.0, DITA-OT 4.4.0,
+  pdfTeX/TeX Live 2026, GNU windres 2.46, FFmpeg n8.0, Poppler 25.10.0, Qt
+  qmllint 1.0, libxml2 2.15.1, and gettext 0.26. Production and complete npm
+  audits both reported 0 vulnerabilities. Local WebKit remains unavailable only
+  because this CachyOS host lacks its ICU/XML/Flite runtime libraries; the
+  checked-in Ubuntu browser-matrix workflow installs those dependencies and is
+  the WebKit gate.
 
 ## Checkbox closure protocol
 

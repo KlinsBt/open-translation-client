@@ -16,6 +16,7 @@ import type {
 	TmxUserDefinedEncoding,
 	TmxVariantMetadata,
 } from "$lib/types/types";
+import { tmDataValidationError } from "$lib/components/resources/resourceDataValidation";
 
 export const TMX_VERSION = "1.4" as const;
 
@@ -290,6 +291,8 @@ export function validateTmxDocument(document: Document): TmxValidationResult {
 export function buildTmx14(sourceLanguage: string, input: TmData): string {
 	if (input.terms.length === 0)
 		throw new Error("A TMX file needs at least one translation unit.");
+	const validationError = tmDataValidationError(input);
+	if (validationError) throw new Error(validationError);
 	const metadata = input.tmx;
 	const fallbackSource =
 		normalizeLanguage(sourceLanguage) || input.terms[0].source.lang || "*all*";
@@ -531,13 +534,13 @@ function serializeTerm(
 	index: number,
 	headerSourceLanguage: string,
 ): string[] {
-	if (!term.source.lang)
+	if (!term.source.lang.trim())
 		throw new Error(`TMX unit ${index + 1} has no source language.`);
 	if (term.target.length === 0)
 		throw new Error(`TMX unit ${index + 1} needs at least one target variant.`);
 	const variants = [term.source, ...term.target];
 	for (const variant of variants) {
-		if (!variant.lang)
+		if (!variant.lang.trim())
 			throw new Error(`TMX unit ${index + 1} has an empty language.`);
 	}
 	const attributes: Record<string, string> = {

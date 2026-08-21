@@ -29,6 +29,10 @@ import {
 	userData,
 } from "$lib/functions/saveData/stores.svelte";
 import { reportProductionError } from "$lib/functions/productionDiagnostics";
+import {
+	tbDataValidationError,
+	tmDataValidationError,
+} from "$lib/components/resources/resourceDataValidation";
 
 const DB_NAME = "OPEN_TLC_5432_DB";
 const DB_VERSION = 3; // No floats
@@ -472,6 +476,8 @@ export async function getTmDataById(id: number): Promise<TmData | null> {
 
 export async function saveNewTmToIndexedDB(tm: TmData): Promise<void> {
 	const cleanTm = structuredClone(migrateTmData(tm));
+	const validationError = tmDataValidationError(cleanTm);
+	if (validationError) throw new Error(validationError);
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
@@ -490,6 +496,8 @@ export async function saveNewTmToIndexedDB(tm: TmData): Promise<void> {
 
 export async function updateTmOnIndexedDB(tm: TmData): Promise<void> {
 	const cleanTm = structuredClone(migrateTmData(tm));
+	const validationError = tmDataValidationError(cleanTm);
+	if (validationError) throw new Error(validationError);
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
@@ -625,6 +633,8 @@ export async function getTbDataById(id: number): Promise<TbData | null> {
 
 export async function saveNewTbToIndexedDB(tb: TbData): Promise<void> {
 	const cleanTb = structuredClone(migrateTbData(tb));
+	const validationError = tbDataValidationError(cleanTb);
+	if (validationError) throw new Error(validationError);
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
@@ -643,6 +653,8 @@ export async function saveNewTbToIndexedDB(tb: TbData): Promise<void> {
 
 export async function updateTbOnIndexedDB(tb: TbData): Promise<void> {
 	const cleanTb = structuredClone(migrateTbData(tb));
+	const validationError = tbDataValidationError(cleanTb);
+	if (validationError) throw new Error(validationError);
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();

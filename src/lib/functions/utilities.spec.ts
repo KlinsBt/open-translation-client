@@ -18,6 +18,10 @@ import {
 	translationUnitValidationError,
 } from "../components/translationMemory/tmFunctions";
 import { getTermMatches } from "../components/termBase/tbFunctions";
+import {
+	tbDataValidationError,
+	tmDataValidationError,
+} from "../components/resources/resourceDataValidation";
 
 describe("statistics", () => {
 	it("handles empty and partial completion", () => {
@@ -72,6 +76,52 @@ describe("translation-memory entry validation", () => {
 		expect(
 			translationUnitValidationError("Hello", "Hallo", "en", "de"),
 		).toBeUndefined();
+	});
+
+	it("allows empty resource libraries but rejects every incomplete stored record", () => {
+		expect(
+			tmDataValidationError({ name: "Empty TM", terms: [] }),
+		).toBeUndefined();
+		expect(
+			tmDataValidationError({
+				terms: [
+					{
+						source: { lang: "en", segment: "Source" },
+						target: [],
+					},
+				],
+			}),
+		).toMatch(/at least one target/i);
+		expect(
+			tmDataValidationError({
+				terms: [
+					{
+						source: { lang: "en", segment: " \n " },
+						target: [{ lang: "ar", segment: "هدف" }],
+					},
+				],
+			}),
+		).toMatch(/source text/i);
+
+		expect(
+			tbDataValidationError({ name: "Empty TB", entries: [] }),
+		).toBeUndefined();
+		expect(
+			tbDataValidationError({
+				entries: [{ terms: [{ lang: "", term: "مصطلح", notes: [] }] }],
+			}),
+		).toMatch(/needs a language/i);
+		expect(
+			tbDataValidationError({
+				entries: [
+					{
+						terms: [
+							{ lang: "ar", term: "مصطلح", notes: [{ type: "", text: " " }] },
+						],
+					},
+				],
+			}),
+		).toMatch(/note text or remove/i);
 	});
 });
 

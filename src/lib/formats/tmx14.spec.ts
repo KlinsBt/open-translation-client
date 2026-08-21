@@ -7,6 +7,7 @@ import missingSourceFixture from "../../test/fixtures/tmx14/malformed-missing-so
 import officialDtd from "../../test/fixtures/tmx14/tmx14.dtd?raw";
 import { importTmxStreaming } from "./streamingImporters";
 import { migrateTmData } from "./persistenceMigrations";
+import type { TmTerm } from "$lib/types/types";
 import {
 	buildTmx14,
 	mergeTmxData,
@@ -135,6 +136,37 @@ describe("TMX 1.4b interoperability", () => {
 		expect(output).toContain('tuid="stable-A1"');
 		expect(output).toContain("Save &lt;file&gt;");
 	});
+
+	it.each([
+		[
+			"blank source text",
+			{
+				source: { lang: "en", segment: "  " },
+				target: [{ lang: "de", segment: "Ziel" }],
+			},
+			/source text/i,
+		],
+		[
+			"missing target",
+			{ source: { lang: "en", segment: "Source" }, target: [] },
+			/at least one target/i,
+		],
+		[
+			"blank target text",
+			{
+				source: { lang: "en", segment: "Source" },
+				target: [{ lang: "ar", segment: "\n" }],
+			},
+			/translated text/i,
+		],
+	] as Array<[string, TmTerm, RegExp]>)(
+		"refuses to export a TMX unit with %s",
+		(_label, term, message) => {
+			expect(() =>
+				buildTmx14("en", { name: "Invalid", terms: [term] }),
+			).toThrow(message);
+		},
+	);
 
 	it.each([
 		["unbalanced inline pair", unbalancedFixture],

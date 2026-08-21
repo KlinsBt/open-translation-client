@@ -8,6 +8,7 @@ import type {
 	TbxEntryMetadata,
 	TbxStyle,
 } from "$lib/types/types";
+import { tbDataValidationError } from "$lib/components/resources/resourceDataValidation";
 
 export const TBX_V3_NAMESPACE = "urn:iso:std:iso:30042:ed-2";
 const TERM_MARKER_PREFIX = "__OPENTLC_TBX_TERM_";
@@ -344,6 +345,9 @@ export function validateTbxDocument(root: Element): TbxValidationIssue[] {
 /** Applies the local dialect constraints to the streamed, hierarchy-preserving model. */
 export function validateTbxData(data: TbData): TbxValidationIssue[] {
 	const issues: TbxValidationIssue[] = [];
+	const genericError = tbDataValidationError(data);
+	if (genericError)
+		issues.push({ code: "STRUCTURE", message: genericError, path: "//body" });
 	const metadata = data.tbx;
 	if (!metadata) return issues;
 	if (metadata.version === 2) {
@@ -428,6 +432,8 @@ export function buildTbxDocument(
 	data: TbData,
 	options: BuildTbxOptions = {},
 ): string {
+	const validationError = tbDataValidationError(data);
+	if (validationError) throw new Error(validationError);
 	const dialect = options.dialect ?? data.tbx?.dialect ?? "TBX-Basic";
 	const version = options.version ?? data.tbx?.version ?? 3;
 	const style =

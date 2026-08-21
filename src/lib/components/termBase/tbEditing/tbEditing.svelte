@@ -14,6 +14,7 @@
 	} from "$lib/components/notifications/toastStore";
 	import { filterWithSourceIndexes } from "$lib/components/resources/resourceFiltering";
 	import { persistedSnapshot } from "$lib/functions/saveData/persistenceContract";
+	import { tbDataValidationError } from "$lib/components/resources/resourceDataValidation";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -80,6 +81,11 @@
 		tone: "success" | "info" = "success",
 	): Promise<boolean> {
 		const snapshot = $state.snapshot(localTbData);
+		const validationError = tbDataValidationError(snapshot);
+		if (validationError) {
+			notifyError(validationError);
+			return false;
+		}
 		try {
 			await updateTbOnIndexedDB(snapshot);
 			lastPersistedTb = persistedSnapshot(snapshot);
@@ -98,7 +104,8 @@
 		}
 	}
 
-	async function addNewEntry() {
+	function addNewEntry() {
+		const unitIndex = localTbData.entries.length;
 		localTbData.entries.push({
 			// id: localTbData.entries.length + 1,
 			terms: [
@@ -109,19 +116,24 @@
 				},
 			],
 		});
-		await persistTb("Entry added");
+		editMode.set(`target-${unitIndex}-0`, true);
+		editMode = new Map(editMode);
+		notifyInfo("Complete the new term and choose Save to add it.");
 	}
 
-	async function addNewTerm(termId: number) {
+	function addNewTerm(termId: number) {
+		const termIndex = localTbData.entries[termId].terms.length;
 		localTbData.entries[termId].terms.push({
 			lang: "",
 			term: "",
 			notes: [],
 		});
-		await persistTb("Term added");
+		editMode.set(`target-${termId}-${termIndex}`, true);
+		editMode = new Map(editMode);
+		notifyInfo("Complete the new term and choose Save to add it.");
 	}
 
-	async function addNewNote(unitId: number, termId: number) {
+	function addNewNote(unitId: number, termId: number) {
 		const term = localTbData.entries[unitId].terms[termId];
 
 		// Check if notes is an array of strings (legacy format)
@@ -140,7 +152,7 @@
 			text: "",
 		});
 
-		await persistTb("Note added");
+		notifyInfo("Add note text or remove the note before saving.");
 	}
 
 	async function deleteNote(unitId: number, termId: number, noteIndex: number) {

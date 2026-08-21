@@ -14,6 +14,7 @@
 	} from "$lib/components/notifications/toastStore";
 	import { filterWithSourceIndexes } from "$lib/components/resources/resourceFiltering";
 	import { persistedSnapshot } from "$lib/functions/saveData/persistenceContract";
+	import { tmDataValidationError } from "$lib/components/resources/resourceDataValidation";
 
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
@@ -85,6 +86,11 @@
 		tone: "success" | "info" = "success",
 	): Promise<boolean> {
 		const snapshot = $state.snapshot(localTmData);
+		const validationError = tmDataValidationError(snapshot);
+		if (validationError) {
+			notifyError(validationError);
+			return false;
+		}
 		try {
 			await updateTmOnIndexedDB(snapshot);
 			lastPersistedTm = persistedSnapshot(snapshot);
@@ -103,29 +109,38 @@
 		}
 	}
 
-	async function addTranslationSegment(termId: number) {
-		localTmData.terms[termId].target.push({ lang: "en", segment: "" });
-		await persistTm("Segment added");
+	function addTranslationSegment(termId: number) {
+		const targetIndex = localTmData.terms[termId].target.length;
+		localTmData.terms[termId].target.push({ lang: "", segment: "" });
+		editMode.set(`target-${termId}-${targetIndex}`, true);
+		editMode = new Map(editMode);
+		notifyInfo("Complete the new target and choose Save to add it.");
 	}
 
-	async function addTranslationUnit() {
+	function addTranslationUnit() {
 		const template = localTmData.terms[0];
-		const targetLanguages = (template?.target ?? [{ lang: "de" }]).map(
-			(target) => ({
-				lang: target.lang,
-				segment: "",
-			}),
-		);
+		const targetTemplate = template?.target.length
+			? template.target
+			: [{ lang: "de" }];
+		const targetLanguages = targetTemplate.map((target) => ({
+			lang: target.lang.trim() || "de",
+			segment: "",
+		}));
 
+		const unitIndex = localTmData.terms.length;
 		localTmData.terms.push({
 			// id: localTmData.terms.length + 1,
 			source: {
-				lang: template?.source.lang ?? "en",
+				lang: template?.source.lang.trim() || "en",
 				segment: "",
 			},
 			target: targetLanguages,
 		});
-		await persistTm("Translation unit added");
+		editMode.set(`source-${unitIndex}`, true);
+		for (const targetIndex of targetLanguages.keys())
+			editMode.set(`target-${unitIndex}-${targetIndex}`, true);
+		editMode = new Map(editMode);
+		notifyInfo("Complete the new translation unit and choose Save.");
 	}
 
 	async function deleteTu(tuId: number) {
@@ -137,6 +152,14 @@
 	}
 
 	async function deleteSegment(termId: number, segId: number) {
+		if (localTmData.terms[termId].target.length <= 1) {
+			showSegmentDeletionModal = false;
+			showModal = false;
+			notifyError(
+				"A translation unit needs at least one target. Delete the entire unit instead.",
+			);
+			return;
+		}
 		localTmData.terms[termId].target.splice(segId, 1);
 		if (await persistTm("Segment deleted", "info")) {
 			showSegmentDeletionModal = false;
@@ -379,6 +402,10 @@
 									<button
 										class="editor-action danger"
 										onclick={() => showSegDelModal(sourceIndex, trgIndex)}
+										disabled={unit.target.length <= 1}
+										title={unit.target.length <= 1
+											? "A translation unit must keep at least one target"
+											: "Delete target segment"}
 									>
 										Delete <Delete marginBottom="-2px" />
 									</button>

@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { validateXML } from "xmllint-wasm/index-node.js";
 import { buildTbx } from "$lib/functions/saveFileGeneration/generateTbx3SaveFile";
+import type { TbData } from "$lib/types/types";
 import { migrateTbData } from "./persistenceMigrations";
 import { importTbxStreaming } from "./streamingImporters";
 import {
@@ -181,6 +182,43 @@ describe("TBX dialect interoperability", () => {
 			expect(document.documentElement.getAttribute("type")).toBe(dialect);
 			expect(document.documentElement.getAttribute("style")).toBe(style);
 			expect(validateTbxDocument(document.documentElement)).toEqual([]);
+		},
+	);
+
+	it.each([
+		[
+			"term unit without terms",
+			{ entries: [{ terms: [] }] },
+			/at least one term/i,
+		],
+		[
+			"term without a language",
+			{ entries: [{ terms: [{ lang: " ", term: "file", notes: [] }] }] },
+			/needs a language/i,
+		],
+		[
+			"blank term value",
+			{ entries: [{ terms: [{ lang: "en", term: "\n", notes: [] }] }] },
+			/needs a value/i,
+		],
+		[
+			"empty note",
+			{
+				entries: [
+					{
+						terms: [
+							{ lang: "en", term: "file", notes: [{ type: "", text: " " }] },
+						],
+					},
+				],
+			},
+			/is empty/i,
+		],
+	] as Array<[string, TbData, RegExp]>)(
+		"refuses to export a TBX with %s",
+		(_label, data, message) => {
+			expect(() => buildTbx("en", data)).toThrow(message);
+			expect(validateTbxData(data)[0]?.message).toMatch(message);
 		},
 	);
 

@@ -911,6 +911,159 @@ describe("real CAT application route", () => {
 		await deleteTbFromIndexedDB(seed);
 	});
 
+	it("keeps new TM units as local drafts until the complete unit is saved", async () => {
+		const seed = Date.now();
+		const memory = { id: seed, name: "Draft-safe memory", terms: [] };
+		await saveNewTmToIndexedDB(memory);
+		singleTmData.set(memory);
+		mounted = mount(TmEditing, { target: document.body });
+		button("Add Translation Unit").click();
+		await tick();
+
+		expect((await getTmDataById(seed))?.terms).toEqual([]);
+		const drafts = document.querySelectorAll<HTMLTextAreaElement>("textarea");
+		expect(drafts).toHaveLength(2);
+		enterText(drafts[0], "Hello 🌍");
+		button("Save").click();
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) => /translated text/i.test(toast.message)),
+			).toBe(true),
+		);
+		expect((await getTmDataById(seed))?.terms).toEqual([]);
+
+		enterText(drafts[1], "مرحبا بالعالم");
+		button("Save").click();
+		await eventuallyAsync(async () => {
+			expect((await getTmDataById(seed))?.terms[0]).toMatchObject({
+				source: { lang: "en", segment: "Hello 🌍" },
+				target: [{ lang: "de", segment: "مرحبا بالعالم" }],
+			});
+		});
+		await deleteTmFromIndexedDB(seed);
+	});
+
+	it("keeps new TB terms as local drafts until language and value are complete", async () => {
+		const seed = Date.now();
+		const termBase = { id: seed, name: "Draft-safe terminology", entries: [] };
+		await saveNewTbToIndexedDB(termBase);
+		singleTbData.set(termBase);
+		mounted = mount(TbEditing, { target: document.body });
+		button("Add New Term Unit").click();
+		await tick();
+
+		expect((await getTbDataById(seed))?.entries).toEqual([]);
+		const select = document.querySelector<HTMLSelectElement>("select")!;
+		const textarea = document.querySelector<HTMLTextAreaElement>("textarea")!;
+		enterText(textarea, "مصطلح");
+		button("Save").click();
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) =>
+					/needs a language/i.test(toast.message),
+				),
+			).toBe(true),
+		);
+		expect((await getTbDataById(seed))?.entries).toEqual([]);
+
+		select.value = "ar";
+		select.dispatchEvent(new Event("change", { bubbles: true }));
+		button("Save").click();
+		await eventuallyAsync(async () => {
+			expect((await getTbDataById(seed))?.entries[0].terms[0]).toMatchObject({
+				lang: "ar",
+				term: "مصطلح",
+			});
+		});
+		await deleteTbFromIndexedDB(seed);
+	});
+
+	it("does not persist a new TM target early and protects the final target", async () => {
+		const seed = Date.now();
+		const memory = {
+			id: seed,
+			name: "Target-safe memory",
+			terms: [
+				{
+					source: { lang: "en", segment: "Source" },
+					target: [{ lang: "de", segment: "Ziel" }],
+				},
+			],
+		};
+		await saveNewTmToIndexedDB(memory);
+		singleTmData.set(memory);
+		mounted = mount(TmEditing, { target: document.body });
+		const onlyDelete = document.querySelector<HTMLButtonElement>(
+			".segment-group.target .editor-action.danger",
+		)!;
+		expect(onlyDelete.disabled).toBe(true);
+		expect(onlyDelete.title).toMatch(/at least one target/i);
+
+		button("Add Segment").click();
+		await tick();
+		expect((await getTmDataById(seed))?.terms[0].target).toHaveLength(1);
+		const targetGroups = document.querySelectorAll<HTMLElement>(
+			".segment-group.target",
+		);
+		const draft = targetGroups[targetGroups.length - 1];
+		const select = draft.querySelector<HTMLSelectElement>("select")!;
+		const textarea = draft.querySelector<HTMLTextAreaElement>("textarea")!;
+		select.value = "fr";
+		select.dispatchEvent(new Event("change", { bubbles: true }));
+		enterText(textarea, "Cible — مرحبا");
+		draft.querySelector<HTMLButtonElement>("button.save")!.click();
+		await eventuallyAsync(async () => {
+			expect((await getTmDataById(seed))?.terms[0].target).toEqual([
+				{ lang: "de", segment: "Ziel" },
+				{ lang: "fr", segment: "Cible — مرحبا" },
+			]);
+		});
+		await deleteTmFromIndexedDB(seed);
+	});
+
+	it("keeps new TB notes local and refuses an empty note on save", async () => {
+		const seed = Date.now();
+		const termBase = {
+			id: seed,
+			name: "Note-safe terminology",
+			entries: [
+				{ terms: [{ lang: "en", term: "file", notes: [] as string[] }] },
+			],
+		};
+		await saveNewTbToIndexedDB(termBase);
+		singleTbData.set(termBase);
+		mounted = mount(TbEditing, { target: document.body });
+		button("Edit").click();
+		await tick();
+		button("Add Note").click();
+		await tick();
+		expect((await getTbDataById(seed))?.entries[0].terms[0].notes).toEqual([]);
+
+		button("Save").click();
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) =>
+					/note text or remove/i.test(toast.message),
+				),
+			).toBe(true),
+		);
+		expect((await getTbDataById(seed))?.entries[0].terms[0].notes).toEqual([]);
+
+		enterText(
+			document.querySelector<HTMLTextAreaElement>(
+				".note-with-attr-container-open textarea",
+			)!,
+			"Approved ✓",
+		);
+		button("Save").click();
+		await eventuallyAsync(async () => {
+			expect((await getTbDataById(seed))?.entries[0].terms[0].notes).toEqual([
+				{ type: "", text: "Approved ✓" },
+			]);
+		});
+		await deleteTbFromIndexedDB(seed);
+	});
+
 	it("keeps the project rename modal and snapshots unchanged after a quota failure", async () => {
 		const project = makeUserData({ name: "Persisted project" });
 		project.id = Date.now();
