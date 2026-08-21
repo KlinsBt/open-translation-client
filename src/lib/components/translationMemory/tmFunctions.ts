@@ -1,6 +1,7 @@
 import { tmMatches } from "$lib/functions/saveData/stores.svelte";
 import type { TmData } from "$lib/types/types";
 import { bestLanguageMatches } from "$lib/components/resources/languageMatching";
+import { canonicalizeLanguageTag } from "$lib/components/resources/languageMatching";
 
 const LONG_SEGMENT_THRESHOLD = 500;
 const SKETCH_BUCKETS = 2_048;
@@ -25,6 +26,30 @@ interface PreparedSegment {
 	sketch?: OrderedTokenSketch;
 }
 
+interface PreparedTmCandidate {
+	source: string;
+	target: string;
+	prepared: PreparedSegment;
+	order: number;
+}
+
+export interface PreparedTranslationMemoryIndex {
+	readonly sourceLanguage: string;
+	readonly targetLanguage: string;
+	readonly candidates: readonly PreparedTmCandidate[];
+}
+
+interface CachedTranslationMemoryIndexes {
+	revision: number;
+	terms: TmData["terms"];
+	byLanguagePair: Map<string, PreparedTranslationMemoryIndex>;
+}
+
+const translationMemoryIndexCache = new WeakMap<
+	TmData,
+	CachedTranslationMemoryIndexes
+>();
+
 interface OrderedTokenSketch {
 	unigrams: Uint32Array;
 	bigrams: Uint32Array;
@@ -38,38 +63,126 @@ export function getTranslationMemoryMatches(
 	segment: string,
 	threshold: number,
 ): { segment: string; match: string; percentage: string }[] {
-	const matches: { segment: string; match: string; percentage: string }[] = [];
+	const candidates = sourceSegments
+		.map((source, index): PreparedTmCandidate | null => {
+			if (targetSegments[index] === undefined) return null;
+			return {
+				source,
+				target: targetSegments[index],
+				prepared: prepareSegment(normalizeForMatch(source)),
+				order: index,
+			};
+		})
+		.filter((candidate): candidate is PreparedTmCandidate => candidate !== null)
+		.sort(comparePreparedCandidates);
+	return matchPreparedTranslationMemoryIndex(
+		{
+			sourceLanguage: "",
+			targetLanguage: "",
+			candidates,
+		},
+		segment,
+		threshold,
+	);
+}
 
-	const normalizedQuery = normalizeForMatch(segment);
-	const preparedQuery = prepareSegment(normalizedQuery);
-	for (let i = 0; i < sourceSegments.length; i++) {
-		const candidate = normalizeForMatch(sourceSegments[i]);
-		const preparedCandidate = prepareSegment(candidate);
+function comparePreparedCandidates(
+	first: PreparedTmCandidate,
+	second: PreparedTmCandidate,
+): number {
+	return (
+		first.prepared.characterLength - second.prepared.characterLength ||
+		first.order - second.order
+	);
+}
+
+function firstCandidateAtLeast(
+	candidates: readonly PreparedTmCandidate[],
+	minimumLength: number,
+): number {
+	let low = 0;
+	let high = candidates.length;
+	while (low < high) {
+		const middle = (low + high) >>> 1;
+		if (candidates[middle].prepared.characterLength < minimumLength)
+			low = middle + 1;
+		else high = middle;
+	}
+	return low;
+}
+
+function firstCandidateAbove(
+	candidates: readonly PreparedTmCandidate[],
+	maximumLength: number,
+): number {
+	let low = 0;
+	let high = candidates.length;
+	while (low < high) {
+		const middle = (low + high) >>> 1;
+		if (candidates[middle].prepared.characterLength <= maximumLength)
+			low = middle + 1;
+		else high = middle;
+	}
+	return low;
+}
+
+export function matchPreparedTranslationMemoryIndex(
+	index: PreparedTranslationMemoryIndex,
+	segment: string,
+	threshold: number,
+): { segment: string; match: string; percentage: string }[] {
+	const safeThreshold = Math.max(0, Math.min(100, threshold));
+	const preparedQuery = prepareSegment(normalizeForMatch(segment));
+	const thresholdRatio = safeThreshold / 100;
+	const minimumLength =
+		thresholdRatio === 0
+			? 0
+			: Math.max(0, Math.floor(preparedQuery.characterLength * thresholdRatio));
+	const maximumLength =
+		thresholdRatio === 0
+			? Number.POSITIVE_INFINITY
+			: Math.ceil(preparedQuery.characterLength / thresholdRatio);
+	const start = firstCandidateAtLeast(index.candidates, minimumLength);
+	const end = firstCandidateAbove(index.candidates, maximumLength);
+	const matches: Array<{
+		segment: string;
+		match: string;
+		percentage: string;
+		order: number;
+	}> = [];
+
+	for (let i = start; i < end; i++) {
+		const candidate = index.candidates[i];
 		const maxLength = Math.max(
 			preparedQuery.characterLength,
-			preparedCandidate.characterLength,
+			candidate.prepared.characterLength,
 		);
-		const maximumDistance = Math.floor(maxLength * (1 - threshold / 100));
+		const maximumDistance = Math.floor(maxLength * (1 - safeThreshold / 100));
 		if (
 			Math.abs(
-				preparedQuery.characterLength - preparedCandidate.characterLength,
+				preparedQuery.characterLength - candidate.prepared.characterLength,
 			) > maximumDistance
 		)
 			continue;
-		const similarity = preparedSimilarity(preparedQuery, preparedCandidate);
-		if (similarity >= threshold) {
+		const similarity = preparedSimilarity(preparedQuery, candidate.prepared);
+		if (similarity >= safeThreshold) {
 			matches.push({
-				segment: sourceSegments[i],
-				match: targetSegments[i],
+				segment: candidate.source,
+				match: candidate.target,
 				percentage: `${similarity.toFixed(2)}%`,
+				order: candidate.order,
 			});
 		}
 	}
 
-	const sortedMatches = matches.sort((a, b) => {
-		return parseFloat(b.percentage) - parseFloat(a.percentage);
-	});
-	return sortedMatches.slice(0, 50);
+	return matches
+		.sort(
+			(a, b) =>
+				parseFloat(b.percentage) - parseFloat(a.percentage) ||
+				a.order - b.order,
+		)
+		.slice(0, 50)
+		.map(({ order: _order, ...match }) => match);
 }
 
 export function normalizeForMatch(value: string): string {
@@ -185,13 +298,19 @@ export function similarityPercentage(a: string, b: string): number {
 	return preparedSimilarity(prepareSegment(a), prepareSegment(b));
 }
 
-function tmDataToLangFilteredArrays(
+function normalizedLanguageCacheKey(language: string): string {
+	return (
+		canonicalizeLanguageTag(language) ?? language.trim().toLocaleLowerCase()
+	);
+}
+
+function buildTranslationMemoryIndex(
 	tmData: TmData,
 	sourceLang: string,
 	targetLang: string,
-): [string[], string[]] {
-	const sourceTextArray: string[] = [];
-	const targetTextArray: string[] = [];
+): PreparedTranslationMemoryIndex {
+	const candidates: PreparedTmCandidate[] = [];
+	let order = 0;
 
 	for (const term of bestLanguageMatches(
 		tmData.terms,
@@ -205,12 +324,52 @@ function tmDataToLangFilteredArrays(
 			targetLang,
 			(entry) => entry.lang,
 		)) {
-			sourceTextArray.push(sourceSegment);
-			targetTextArray.push(target.segment);
+			candidates.push({
+				source: sourceSegment,
+				target: target.segment,
+				prepared: prepareSegment(normalizeForMatch(sourceSegment)),
+				order: order++,
+			});
 		}
 	}
 
-	return [sourceTextArray, targetTextArray];
+	candidates.sort(comparePreparedCandidates);
+	return {
+		sourceLanguage: normalizedLanguageCacheKey(sourceLang),
+		targetLanguage: normalizedLanguageCacheKey(targetLang),
+		candidates,
+	};
+}
+
+export function prepareTranslationMemoryIndex(
+	tmData: TmData,
+	sourceLang: string,
+	targetLang: string,
+): PreparedTranslationMemoryIndex {
+	const revision = tmData.persistenceRevision;
+	if (revision === undefined)
+		return buildTranslationMemoryIndex(tmData, sourceLang, targetLang);
+
+	let cached = translationMemoryIndexCache.get(tmData);
+	if (
+		!cached ||
+		cached.revision !== revision ||
+		cached.terms !== tmData.terms
+	) {
+		cached = {
+			revision,
+			terms: tmData.terms,
+			byLanguagePair: new Map(),
+		};
+		translationMemoryIndexCache.set(tmData, cached);
+	}
+	const key = `${normalizedLanguageCacheKey(sourceLang)}\u0000${normalizedLanguageCacheKey(targetLang)}`;
+	let prepared = cached.byLanguagePair.get(key);
+	if (!prepared) {
+		prepared = buildTranslationMemoryIndex(tmData, sourceLang, targetLang);
+		cached.byLanguagePair.set(key, prepared);
+	}
+	return prepared;
 }
 
 export function searchForMatches(
@@ -219,17 +378,13 @@ export function searchForMatches(
 	sourceLang: string,
 	targetLang: string,
 ) {
-	// Extract only the terms matching the chosen sourceLang and targetLang
-	const [sourceTextArray, targetTextArray] = tmDataToLangFilteredArrays(
+	const index = prepareTranslationMemoryIndex(
 		translationMemory,
 		sourceLang,
 		targetLang,
 	);
-
-	// Perform fuzzy matching with the specified threshold
-	const tmMatchesFound = getTranslationMemoryMatches(
-		sourceTextArray,
-		targetTextArray,
+	const tmMatchesFound = matchPreparedTranslationMemoryIndex(
+		index,
 		textSegment1,
 		55,
 	);

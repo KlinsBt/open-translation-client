@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	getTranslationMemoryMatches,
 	normalizeForMatch,
+	prepareTranslationMemoryIndex,
 	searchForMatches,
 	similarityPercentage,
 } from "$lib/components/translationMemory/tmFunctions";
@@ -94,6 +95,48 @@ describe("CAT resource matching", () => {
 			percentage: "100.00%",
 		});
 		expect(performance.now() - started).toBeLessThan(5_000);
+	});
+
+	it("reuses revisioned language indexes and invalidates them after TM edits", () => {
+		const memory = {
+			persistenceRevision: 7,
+			terms: Array.from({ length: 10_000 }, (_, index) => ({
+				source: { lang: "en", segment: `Message ${index}` },
+				target: [{ lang: "de", segment: `Nachricht ${index}` }],
+			})),
+		};
+		const first = prepareTranslationMemoryIndex(memory, "en", "de");
+		const reused = prepareTranslationMemoryIndex(memory, "English (EN)", "DE");
+		expect(reused).toBe(first);
+		expect(
+			searchForMatches(memory, "Message 9999", "en", "de")[0],
+		).toMatchObject({ match: "Nachricht 9999", percentage: "100.00%" });
+
+		memory.terms[9_999].target[0].segment = "Aktualisiert";
+		memory.persistenceRevision += 1;
+		const rebuilt = prepareTranslationMemoryIndex(memory, "en", "de");
+		expect(rebuilt).not.toBe(first);
+		expect(
+			searchForMatches(memory, "Message 9999", "en", "de")[0],
+		).toMatchObject({ match: "Aktualisiert" });
+	});
+
+	it("does not retain potentially stale indexes for unsaved in-memory TMs", () => {
+		const memory = {
+			terms: [
+				{
+					source: { lang: "en", segment: "Open" },
+					target: [{ lang: "de", segment: "Öffnen" }],
+				},
+			],
+		};
+		const first = prepareTranslationMemoryIndex(memory, "en", "de");
+		memory.terms[0].target[0].segment = "Aufmachen";
+		const rebuilt = prepareTranslationMemoryIndex(memory, "en", "de");
+		expect(rebuilt).not.toBe(first);
+		expect(searchForMatches(memory, "Open", "en", "de")[0].match).toBe(
+			"Aufmachen",
+		);
 	});
 
 	it("canonicalizes BCP 47 tags and prefers exact locales before base fallback", () => {
