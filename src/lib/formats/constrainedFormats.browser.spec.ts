@@ -91,9 +91,17 @@ describe("browser local and constrained format routing", () => {
 		const loadingTask = pdfjs.getDocument({ data: bytes });
 		const document = await loadingTask.promise;
 		expect(document.numPages).toBe(2);
-		expect((await document.getPage(1)).getViewport({ scale: 1 })).toMatchObject(
+		const firstPage = await document.getPage(1);
+		expect(firstPage.getViewport({ scale: 1 })).toMatchObject(
 			{ width: 612, height: 792 },
 		);
+		const extracted = (await firstPage.getTextContent()).items
+			.map((item) => ("str" in item ? item.str : ""))
+			.join(" ");
+		expect(extracted).toContain("Übersetzte Überschrift");
+		expect(extracted).toContain("Übersetzter Inhalt");
+		expect(extracted).not.toContain("Original heading");
+		expect(extracted).not.toContain("Original body");
 		expect((await document.getPage(2)).getViewport({ scale: 1 })).toMatchObject(
 			{ width: 612, height: 792 },
 		);
@@ -120,12 +128,19 @@ describe("browser local and constrained format routing", () => {
 		});
 		const document = await loadingTask.promise;
 		expect(document.numPages).toBe(1);
-		expect((await document.getPage(1)).getViewport({ scale: 1 })).toMatchObject(
+		const page = await document.getPage(1);
+		expect(page.getViewport({ scale: 1 })).toMatchObject(
 			{
 				width: 595.28,
 				height: 841.89,
 			},
 		);
+		const extracted = (await page.getTextContent()).items
+			.map((item) => ("str" in item ? item.str : ""))
+			.join(" ");
+		expect(extracted).toContain("Willkommen");
+		expect(extracted).toContain("Verwenden Sie den übersetzten Leitfaden.");
+		expect(extracted).not.toContain("Use the translated guide.");
 		await loadingTask.destroy();
 	}, 20_000);
 });
