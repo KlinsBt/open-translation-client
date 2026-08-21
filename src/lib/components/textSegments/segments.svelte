@@ -42,6 +42,7 @@
 	import Modal from "../modal.svelte";
 	import {
 		calcPercentageOfTotalSegmentsChecked,
+		countWords,
 		getTotalWordCount,
 	} from "$lib/functions/statistics";
 	import TranslationMemory from "../translationMemory/tmInSegments/translationMemory.svelte";
@@ -240,7 +241,7 @@
 	);
 	let combineSelection: Set<number> = $state(new Set());
 	let persistenceFailureCount = 0;
-	const projectEditQueue = createPersistedEditQueue(
+	const projectEditQueue = createPersistedEditQueue<UserData>(
 		$singleUserData,
 		updateTranslationOnIndexedDB,
 		{
@@ -255,6 +256,10 @@
 						: "Could not save the latest segment edit.",
 				);
 			},
+		},
+		{
+			cloneScheduled: (project) => project,
+			cloneForPersistence: (project) => structuredClone(project),
 		},
 	);
 	let pendingSplitOffsets: Map<number, number> = $state(new Map());
@@ -374,12 +379,15 @@
 	}
 
 	function editTargetSegment(detail: { index: number; value: string }) {
-		const candidate = structuredClone($singleUserData);
-		candidate.translationData.seg2[detail.index] = detail.value;
-		candidate.translationData.checked[detail.index] = false;
-		singleUserData.set(candidate);
-		seg2WordCount.set(getTotalWordCount(candidate.translationData.seg2));
-		void projectEditQueue.schedule(candidate);
+		const project = $singleUserData;
+		const previousValue = project.translationData.seg2[detail.index] ?? "";
+		project.translationData.seg2[detail.index] = detail.value;
+		project.translationData.checked[detail.index] = false;
+		singleUserData.set(project);
+		seg2WordCount.update(
+			(total) => total - countWords(previousValue) + countWords(detail.value),
+		);
+		void projectEditQueue.schedule(project);
 	}
 
 	function flushProjectEdits() {

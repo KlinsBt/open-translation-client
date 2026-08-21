@@ -109,4 +109,39 @@ describe("lifecycle-safe persisted edit queue", () => {
 		await queue.schedule({ text: "new", locked: true });
 		expect(rollbacks).toEqual([{ text: "old", locked: true }]);
 	});
+
+	it("defers expensive snapshots until a coalesced write starts", async () => {
+		const first = deferred();
+		const live = { text: "" };
+		const snapshots: string[] = [];
+		const writes: string[] = [];
+		const queue = createPersistedEditQueue(
+			{ text: "persisted" },
+			async (value) => {
+				writes.push(value.text);
+				if (writes.length === 1) await first.promise;
+			},
+			{},
+			{
+				cloneScheduled: (value) => value,
+				cloneForPersistence: (value) => {
+					snapshots.push(value.text);
+					return structuredClone(value);
+				},
+			},
+		);
+
+		live.text = "a";
+		void queue.schedule(live);
+		live.text = "ab";
+		void queue.schedule(live);
+		live.text = "final";
+		void queue.schedule(live);
+		expect(snapshots).toEqual(["a"]);
+		first.resolve();
+		await queue.whenIdle();
+
+		expect(snapshots).toEqual(["a", "final"]);
+		expect(writes).toEqual(["a", "final"]);
+	});
 });

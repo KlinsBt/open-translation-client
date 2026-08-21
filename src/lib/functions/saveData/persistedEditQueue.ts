@@ -3,8 +3,13 @@ export interface PersistedEditQueueHandlers<T> {
 	onCommit?: (committed: T) => void;
 }
 
-export interface PersistedEditQueueOptions {
+export interface PersistedEditQueueOptions<T> {
 	debounceMs?: number;
+	/** Clone once per scheduled value by default. High-volume callers may retain
+	 * a live reference here and take the durable snapshot only when a write starts. */
+	cloneScheduled?: (value: T) => T;
+	/** Produces the immutable value handed to persistence. */
+	cloneForPersistence?: (value: T) => T;
 }
 
 export interface PersistedEditQueue<T> {
@@ -24,10 +29,13 @@ export function createPersistedEditQueue<T>(
 	initial: T,
 	persist: (value: T) => Promise<void>,
 	handlers: PersistedEditQueueHandlers<T> = {},
-	options: PersistedEditQueueOptions = {},
+	options: PersistedEditQueueOptions<T> = {},
 ): PersistedEditQueue<T> {
 	const debounceMs = Math.max(0, options.debounceMs ?? 250);
-	let committed = structuredClone(initial);
+	const cloneScheduled: (value: T) => T =
+		options.cloneScheduled ?? ((value: T) => structuredClone(value));
+	const cloneForPersistence = options.cloneForPersistence ?? ((value: T) => value);
+	let committed = structuredClone(initial) as T;
 	let pending: T | null = null;
 	let running: Promise<void> | null = null;
 	let timer: ReturnType<typeof setTimeout> | null = null;
@@ -80,12 +88,12 @@ export function createPersistedEditQueue<T>(
 	function startDrain(): Promise<void> {
 		if (running) return running;
 		if (pending === null) return Promise.resolve();
-		const candidate = pending;
+		const candidate = cloneForPersistence(pending);
 		pending = null;
 		let failed = false;
 		running = (async () => {
 			try {
-				await persist(structuredClone(candidate));
+				await persist(candidate);
 				committed = structuredClone(candidate);
 				handlers.onCommit?.(structuredClone(committed));
 			} catch (error) {
@@ -128,7 +136,7 @@ export function createPersistedEditQueue<T>(
 
 	return {
 		schedule(value) {
-			pending = structuredClone(value);
+			pending = cloneScheduled(value);
 			if (!burstOpen) {
 				burstOpen = true;
 				void startDrain();

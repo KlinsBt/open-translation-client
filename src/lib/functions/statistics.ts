@@ -56,7 +56,7 @@ export async function getWordsAmountFromFullText(fullText: string) {
 	return countWords(fullText);
 }
 
-function countWords(text: string): number {
+export function countWords(text: string): number {
 	if (!text.trim()) return 0;
 
 	if (typeof Intl.Segmenter === "function") {
