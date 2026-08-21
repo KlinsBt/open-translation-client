@@ -46,6 +46,16 @@ let db: IDBDatabase | null = null;
 let databasePromise: Promise<IDBDatabase> | null = null;
 let writeQueue: Promise<unknown> = Promise.resolve();
 
+export class PersistenceConflictError extends Error {
+	readonly name = "PersistenceConflictError";
+
+	constructor() {
+		super(
+			"This project was changed in another tab. Reload the project before saving so the newer work is not overwritten.",
+		);
+	}
+}
+
 function enqueueWrite<T>(operation: () => Promise<T>): Promise<T> {
 	const result = writeQueue.catch(() => undefined).then(operation);
 	writeQueue = result.catch(() => undefined);
@@ -325,7 +335,15 @@ export async function updateAllTranslationsOnIndexedDB(
 		try {
 			const database = await openDatabase();
 			for (const data of snapshot) ensureProjectModels(data);
-			await writeTranslationBatch(database, snapshot);
+			for (
+				let offset = 0;
+				offset < snapshot.length;
+				offset += INDEXED_DB_WRITE_BATCH_SIZE
+			)
+				await writeTranslationBatch(
+					database,
+					snapshot.slice(offset, offset + INDEXED_DB_WRITE_BATCH_SIZE),
+				);
 			await loadTranslationsUserDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
@@ -342,8 +360,47 @@ function writeTranslationBatch(
 			durability: DURABILITY,
 		});
 		const store = transaction.objectStore(DB_USER_STORE_NAME);
-		completeTransaction(transaction).then(resolve, reject);
-		for (const data of batch) store.put(data);
+		let conflict: PersistenceConflictError | null = null;
+		transaction.oncomplete = () => resolve();
+		transaction.onerror = () =>
+			reject(
+				conflict ??
+					transaction.error ??
+					new Error("IndexedDB transaction failed."),
+			);
+		transaction.onabort = () =>
+			reject(
+				conflict ??
+					transaction.error ??
+					new Error("IndexedDB transaction was aborted."),
+			);
+		for (const data of batch) {
+			const expectedRevision = data.persistenceRevision ?? 0;
+			if (data.id === undefined) {
+				data.persistenceRevision = 1;
+				const request = store.add(data);
+				request.onsuccess = () => {
+					data.id = request.result as number;
+				};
+				continue;
+			}
+			const request = store.get(data.id);
+			request.onsuccess = () => {
+				if (conflict) return;
+				const current = request.result as UserData | undefined;
+				const currentRevision = current?.persistenceRevision ?? 0;
+				if (
+					(current && currentRevision !== expectedRevision) ||
+					(!current && expectedRevision !== 0)
+				) {
+					conflict = new PersistenceConflictError();
+					transaction.abort();
+					return;
+				}
+				data.persistenceRevision = currentRevision + 1;
+				store.put(data);
+			};
+		}
 	});
 }
 
@@ -356,16 +413,9 @@ export async function updateTranslationOnIndexedDB(
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
-			const transaction = database.transaction(
-				DB_USER_STORE_NAME,
-				"readwrite",
-				{
-					durability: DURABILITY,
-				},
-			);
-			const store = transaction.objectStore(DB_USER_STORE_NAME);
-			store.put(snapshot);
-			await completeTransaction(transaction);
+			await writeTranslationBatch(database, [snapshot]);
+			userData.persistenceRevision = snapshot.persistenceRevision;
+			if (userData.id === undefined) userData.id = snapshot.id;
 		} catch (error) {
 			throw storageError(error);
 		}

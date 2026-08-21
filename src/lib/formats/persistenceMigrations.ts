@@ -1,7 +1,7 @@
 import { FORMAT_IDS, type FormatId } from "./formatIds";
 import type { TbData, TmData, UserData } from "$lib/types/types";
 
-export const PROJECT_SCHEMA_VERSION = 2;
+export const PROJECT_SCHEMA_VERSION = 3;
 export const TM_SCHEMA_VERSION = 1;
 export const TB_SCHEMA_VERSION = 1;
 
@@ -35,6 +35,16 @@ type Migration = (record: UnknownRecord) => UnknownRecord;
 const PROJECT_MIGRATIONS: Readonly<Record<number, Migration>> = {
 	0: migrateProjectV0ToV1,
 	1: migrateProjectV1ToV2,
+	2: (record) => ({
+		...record,
+		schemaVersion: 3,
+		persistenceRevision:
+			typeof record.persistenceRevision === "number" &&
+			Number.isSafeInteger(record.persistenceRevision) &&
+			record.persistenceRevision >= 0
+				? record.persistenceRevision
+				: 0,
+	}),
 };
 
 const TM_MIGRATIONS: Readonly<Record<number, Migration>> = {
@@ -87,6 +97,12 @@ export function migrateProjectData(input: unknown): UserData {
 	return {
 		...migrated,
 		schemaVersion: PROJECT_SCHEMA_VERSION,
+		persistenceRevision:
+			typeof migrated.persistenceRevision === "number" &&
+			Number.isSafeInteger(migrated.persistenceRevision) &&
+			migrated.persistenceRevision >= 0
+				? migrated.persistenceRevision
+				: 0,
 		...(typeof migrated.id === "number" ? { id: migrated.id } : {}),
 		translationData: {
 			...translation,

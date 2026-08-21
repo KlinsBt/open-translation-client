@@ -460,6 +460,8 @@ export interface SegmentJoinState {
 
 export interface UserData {
 	schemaVersion?: number;
+	/** Monotonic local-storage revision used to reject stale cross-tab writes. */
+	persistenceRevision?: number;
 	id?: number;
 	translationData: {
 		name: string;

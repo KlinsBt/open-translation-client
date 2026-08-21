@@ -245,6 +245,9 @@
 		$singleUserData,
 		updateTranslationOnIndexedDB,
 		{
+			onCommit(committed) {
+				$singleUserData.persistenceRevision = committed.persistenceRevision;
+			},
 			onFailure(error, committed) {
 				persistenceFailureCount += 1;
 				singleUserData.set(committed);

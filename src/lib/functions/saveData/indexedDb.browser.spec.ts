@@ -185,4 +185,32 @@ describe("transaction-complete browser persistence", () => {
 			(await loadTbDataFromIndexedDB()).some(({ id }) => id === seed + 1),
 		).toBe(false);
 	});
+
+	it("rejects a stale project save instead of overwriting another tab", async () => {
+		const project = makeUserData({ name: `conflict-${Date.now()}` });
+		project.id = Date.now() + 50_000;
+		try {
+			await updateTranslationOnIndexedDB(project);
+			const current = (
+				await loadTranslationsUserDataFromIndexedDB()
+			).find(({ id }) => id === project.id)!;
+			const firstTab = structuredClone(current);
+			const staleTab = structuredClone(current);
+			firstTab.translationData.seg2[0] = "Saved in the first tab";
+			await updateTranslationOnIndexedDB(firstTab);
+			staleTab.translationData.seg2[0] = "Stale second-tab edit";
+
+			await expect(updateTranslationOnIndexedDB(staleTab)).rejects.toThrow(
+				/changed in another tab/i,
+			);
+			const restored = (
+				await loadTranslationsUserDataFromIndexedDB()
+			).find(({ id }) => id === project.id);
+			expect(restored?.translationData.seg2[0]).toBe(
+				"Saved in the first tab",
+			);
+		} finally {
+			await deleteTranslationFromIndexedDB(project.id);
+		}
+	});
 });
