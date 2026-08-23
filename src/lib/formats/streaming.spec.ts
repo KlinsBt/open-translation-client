@@ -301,6 +301,38 @@ describe("streaming CAT interchange importers", () => {
 		expect(result.data.translationData.seg1).toEqual(["Hello & welcome."]);
 	});
 
+	it.each([
+		[
+			"project-1.2.xliff",
+			buildXliff1_2(makeUserData()).replace(
+				/<note from="OpenTLC"[^>]*>[\s\S]*?<\/note>/,
+				'<note from="OpenTLC" annotates="general">{broken</note>',
+			),
+		],
+		[
+			"project-2.0.xliff",
+			buildXliff2_0(makeUserData()).replace(
+				/(<mda:meta type="checked">)[\s\S]*?(<\/mda:meta>)/,
+				"$1{broken$2",
+			),
+		],
+	] as const)("rejects corrupt Open TLC metadata in %s", async (name, xml) => {
+		await expect(
+			importXliffProjectStreaming(textFile(xml, name)),
+		).rejects.toMatchObject({
+			code: "PROJECT_METADATA_INVALID",
+			message: expect.stringMatching(/Open TLC .* malformed/i),
+		});
+	});
+
+	it("accepts malformed JSON-like third-party notes outside Open TLC metadata", async () => {
+		const generic = `<?xml version="1.0"?><xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2"><file original="vendor.txt" source-language="en" target-language="de" datatype="plaintext"><header><note from="Vendor">{not-json</note></header><body><trans-unit id="u1"><source>Hello</source><target>Hallo</target></trans-unit></body></file></xliff>`;
+		const result = await importXliffProjectStreaming(
+			textFile(generic, "vendor.xlf"),
+		);
+		expect(result.data.translationData.seg1).toEqual(["Hello"]);
+	});
+
 	it("does not treat a standard XLIFF 2 file id as a local project id", async () => {
 		const generic = `<?xml version="1.0"?><xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="de"><file id="42"><unit id="u1"><segment><source>Hello</source><target>Hallo</target></segment></unit></file></xliff>`;
 		const result = await importXliffProjectStreaming(

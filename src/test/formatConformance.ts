@@ -23,6 +23,10 @@ import { buildResxTranslationBlob } from "$lib/functions/outputGeneration/output
 import { buildQtTsTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationQtTs";
 import { buildIniTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationIni";
 import { buildAuxiliaryResourceTranslationBlob } from "$lib/formats/auxiliaryResources";
+import {
+	buildRoundTripFormatOutput,
+	type RoundTripFormatOutput,
+} from "$lib/formats/formatOutput";
 import { buildOutlookMsgDelivery } from "$lib/formats/outlookMsg";
 import { buildPhpTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationPhp";
 import { buildLightweightMarkupTranslationBlob } from "$lib/functions/outputGeneration/outputGenerationMarkup";
@@ -280,11 +284,29 @@ export async function buildConformanceOutput(project: UserData): Promise<Blob> {
 	}
 }
 
+export function buildConformanceRoundTripOutput(
+	project: UserData,
+): Promise<RoundTripFormatOutput> {
+	if (project.translationData.type === "zip-project")
+		return buildZipProjectTranslationPackage(project).then((blob) => ({
+			blob,
+			extension: "zip",
+			mimeType: "application/zip",
+		}));
+	return buildRoundTripFormatOutput(project);
+}
+
 export function outputFile(
 	fixture: FormatConformanceFixture,
 	output: Blob,
+	identity?: Pick<RoundTripFormatOutput, "extension" | "mimeType">,
 ): File {
-	return new File([output], fixture.fileName, { type: fixture.mimeType });
+	const fileName = identity
+		? `${fixture.fileName.replace(/\.[^.]+$/, "")}.${identity.extension}`
+		: fixture.fileName;
+	return new File([output], fileName, {
+		type: identity?.mimeType ?? fixture.mimeType,
+	});
 }
 
 export async function blobBytes(blob: Blob): Promise<Uint8Array> {

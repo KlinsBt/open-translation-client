@@ -32,10 +32,68 @@ import { buildPptxTranslationPackage } from "$lib/functions/outputGeneration/out
 import { buildRtfTranslationBlob } from "./rtf";
 import { buildCatReturnPackage } from "./catPackage";
 import { buildLegacyBilingualTranslation } from "./legacyBilingual";
-import { buildVisioTranslationBlob } from "./visio";
+import { buildVisioTranslation, buildVisioTranslationBlob } from "./visio";
 import { buildQuarkTranslationBlob } from "./quark";
 import { buildSpecialistXmlTranslationBlob } from "./specialistXml";
 import { buildAuxiliaryResourceTranslationBlob } from "./auxiliaryResources";
+
+export interface RoundTripFormatOutput {
+	blob: Blob;
+	extension: string;
+	mimeType: string;
+}
+
+function sourceExtension(project: UserData): string {
+	const sourceName =
+		project.translationData.skeleton?.source.name ||
+		project.translationData.name ||
+		"translation";
+	const match = sourceName.match(/\.([^.\/]+)$/);
+	if (!match)
+		throw new Error("The source format has no reusable file extension.");
+	return match[1].toLowerCase();
+}
+
+/**
+ * Builds a native output together with its actual file identity. Some protected
+ * legacy workflows deliberately return a different, safe delivery family, so
+ * callers must not infer the output extension from the input path.
+ */
+export async function buildRoundTripFormatOutput(
+	project: UserData,
+): Promise<RoundTripFormatOutput> {
+	if (project.translationData.type === "legacy-bilingual") {
+		const output = await buildLegacyBilingualTranslation(project);
+		return {
+			blob: output.blob,
+			extension: output.extension.toLowerCase(),
+			mimeType:
+				output.mimeType || output.blob.type || "application/octet-stream",
+		};
+	}
+	if (project.translationData.type === "cat-package") {
+		const output = await buildCatReturnPackage(project);
+		return {
+			blob: output.blob,
+			extension: output.extension.toLowerCase(),
+			mimeType: output.blob.type || "application/zip",
+		};
+	}
+	if (project.translationData.type === "visio") {
+		const output = await buildVisioTranslation(project);
+		return {
+			blob: output.blob,
+			extension: output.extension.toLowerCase(),
+			mimeType: output.blob.type || "application/octet-stream",
+		};
+	}
+	const blob = await buildRoundTripFormatOutputBlob(project);
+	return {
+		blob,
+		extension: sourceExtension(project),
+		mimeType: blob.type || "application/octet-stream",
+	};
+}
 
 /** Builds only native, same-format round-trip output. */
 export async function buildRoundTripFormatOutputBlob(

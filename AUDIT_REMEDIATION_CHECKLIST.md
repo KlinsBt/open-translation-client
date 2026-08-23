@@ -1311,6 +1311,41 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   matrix that installs those dependencies. This host limitation is not recorded
   as a WebKit pass.
 
+## Eighth independent follow-up audit
+
+- [ ] AUD-073 Make manifest-driven ZIP export profile-aware. Reject members that
+      cannot preserve their declared path and format, or rename both the member
+      and manifest entry atomically when a documented conversion changes the
+      extension. Re-import the complete generated ZIP and cover legacy Visio and
+      Workbench binary conversions so converted bytes are never mislabeled.
+
+- [ ] AUD-074 Describe the artifact actually downloaded for every primary export.
+      Cover CAT return-package extension changes and legacy bilingual conversions
+      in presentation tests and the real export modal.
+
+- [ ] AUD-075 Reject malformed Open TLC-owned JSON metadata in XLIFF 1.2 and 2.x
+      with an actionable safe-input error while continuing to accept ordinary
+      third-party XLIFF that contains no Open TLC metadata.
+
+- [ ] AUD-076 Bound the complete retained TM search index, avoid rebuilding long-
+      segment sketches on each query after the retained-sketch budget is reached,
+      and enforce latency plus retained-byte regressions on a generated memory
+      substantially larger than the former 6,200-entry test.
+
+- [ ] AUD-077 Remove roadmap and public workflow-count drift. Phase 5 status must
+      agree with its checked tasks, and every public workflow count must derive
+      from the shared support catalog.
+
+- [ ] AUD-078 Strengthen conformance coverage for profile-dependent output. Tests
+      must use the generated artifact's real extension and MIME type, cover
+      conversion profiles rather than only one representative adapter fixture,
+      and exercise the export modal's primary artifact copy.
+
+- [ ] AUD-079 Run focused regressions, the full lint/type/coverage/Chromium/build
+      gate, Firefox, available independent validators, dependency audits,
+      roadmap/catalog consistency, diff checks, and clean-worktree review. Record
+      exact evidence before closing this follow-up.
+
 ## Checkbox closure protocol
 
 Before changing any reopened item to `[x]`, record directly beneath it:

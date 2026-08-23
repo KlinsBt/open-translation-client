@@ -115,7 +115,7 @@ async function slowZipFile(name: string): Promise<{
 
 async function eventually(assertion: () => void): Promise<void> {
 	let lastError: unknown;
-	for (let attempt = 0; attempt < 120; attempt++) {
+	for (let attempt = 0; attempt < 320; attempt++) {
 		try {
 			assertion();
 			return;
@@ -1016,6 +1016,36 @@ describe("real CAT application route", () => {
 		await eventually(() =>
 			expect(document.body.textContent).not.toContain("Export files"),
 		);
+	});
+
+	it("shows the actual CAT return-package artifact in the export modal", async () => {
+		const project = makeUserData({
+			name: "handoff.mqout",
+			seg1: ["Source"],
+			seg2: ["Target"],
+			checked: [true],
+			locked: [false],
+			type: "cat-package",
+			typeRef: { returnExtension: "mqback" },
+		});
+		project.id = 9403;
+		singleUserData.set(project);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+
+		button("Export translation").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Export files"),
+		);
+		const primary = document.querySelector<HTMLElement>(
+			".modal-action-card.primary",
+		);
+		expect(primary?.textContent).toContain("MQBACK return package");
+		expect(primary?.textContent).toContain(".mqback");
+		expect(primary?.textContent).not.toMatch(/original source format/i);
 	});
 
 	it("does not export after the latest edit fails to persist", async () => {

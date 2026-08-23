@@ -4,6 +4,7 @@ import type { FormatConformanceFixture } from "./formatConformance";
 import {
 	blobBytes,
 	buildConformanceOutput,
+	buildConformanceRoundTripOutput,
 	CONFORMANCE_PERFORMANCE_UNITS,
 	CONFORMANCE_UNICODE_SOURCE,
 	diffZipPackages,
@@ -121,7 +122,11 @@ export function registerFormatConformanceSuite(
 							);
 							return;
 						}
-						const output = await buildConformanceOutput(project);
+						const roundTripOutput = adapter.capabilities.roundTrip
+							? await buildConformanceRoundTripOutput(project)
+							: undefined;
+						const output =
+							roundTripOutput?.blob ?? (await buildConformanceOutput(project));
 						if (!adapter.capabilities.roundTrip) {
 							expect(fixture.derivedOutput).toBeDefined();
 							expect(output.type).toBe(fixture.derivedOutput!.mimeType);
@@ -130,7 +135,7 @@ export function registerFormatConformanceSuite(
 								expect(text).toContain(marker);
 							return;
 						}
-						const translatedFile = outputFile(fixture, output);
+						const translatedFile = outputFile(fixture, output, roundTripOutput);
 
 						await expect(
 							adapter.validate(translatedFile),

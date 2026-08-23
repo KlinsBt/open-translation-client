@@ -1107,10 +1107,10 @@ Complete these in order after FF-000 through FF-009.
 ## Phase 5 — Expanded CAT-tool format parity backlog
 
 Gap-audited against the active registry and common RWS Trados/memoQ format lists
-on 2026-08-19. These tasks are intentionally unchecked: an extension is not
-considered supported merely because a generic XML, HTML, ZIP, OLE, or image
-sniffer can sometimes read it. Complete tasks in priority order and apply the
-definition of done below before checking them.
+on 2026-08-19 and completed through the verified Phase 5 tasks below. An
+extension is not considered supported merely because a generic XML, HTML, ZIP,
+OLE, or image sniffer can sometimes read it; each checked task remains subject
+to the definition of done below.
 
 ### Priority A — Common Office, web, and CAT compatibility gaps
 

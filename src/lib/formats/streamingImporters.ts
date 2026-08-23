@@ -439,13 +439,38 @@ function extractXliff2Header(
 		name: values.get("name") || `Translation ${file.getAttribute("id") ?? ""}`,
 		sourceLang: root.getAttribute("srcLang") ?? "",
 		targetLang: root.getAttribute("trgLang") ?? "",
-		checked: parseJsonOr(values.get("checked"), []),
+		checked: parseMetadataJson(
+			values.get("checked"),
+			[],
+			hasOpenTlcMetadata,
+			"checked state",
+		),
 		hasOpenTlcMetadata,
 		type: values.get("type") || "text",
-		typeRef: parseJsonOr(values.get("type_ref"), {}),
-		tm: parseJsonOr(values.get("tm"), inactiveResource()),
-		tb: parseJsonOr(values.get("tb"), inactiveResource()),
-		editingState: parseJsonOr(values.get("editing_state"), {}),
+		typeRef: parseMetadataJson(
+			values.get("type_ref"),
+			{},
+			hasOpenTlcMetadata,
+			"format metadata",
+		),
+		tm: parseMetadataJson(
+			values.get("tm"),
+			inactiveResource(),
+			hasOpenTlcMetadata,
+			"translation-memory reference",
+		),
+		tb: parseMetadataJson(
+			values.get("tb"),
+			inactiveResource(),
+			hasOpenTlcMetadata,
+			"term-base reference",
+		),
+		editingState: parseMetadataJson(
+			values.get("editing_state"),
+			{},
+			hasOpenTlcMetadata,
+			"editing state",
+		),
 	};
 }
 
@@ -465,9 +490,11 @@ function extractXliff12Header(
 	const projectNote = findClosedElements(metrics.header, "note")
 		.map((xml) => parseXmlRecord(xml, metrics.namespaceDeclarations))
 		.find((note) => note.getAttribute("from") === "OpenTLC");
-	const parsedEmbedded = parseJsonOr<unknown>(
+	const parsedEmbedded = parseMetadataJson<unknown>(
 		projectNote?.textContent ?? undefined,
 		{},
+		projectNote !== undefined,
+		"project metadata",
 	);
 	const embedded =
 		parsedEmbedded !== null &&
@@ -475,27 +502,55 @@ function extractXliff12Header(
 		!Array.isArray(parsedEmbedded)
 			? (parsedEmbedded as Record<string, unknown>)
 			: {};
-	const value = (legacyName: string, key: string): string => {
+	const textValue = (legacyName: string, key: string): string => {
 		const current = embedded[key];
-		if (typeof current === "string") return current;
-		if (current !== undefined) return JSON.stringify(current);
+		if (current !== undefined) return String(current);
 		return legacyValue(legacyName);
 	};
+	const jsonValue = (legacyName: string, key: string): string =>
+		embedded[key] !== undefined
+			? JSON.stringify(embedded[key])
+			: legacyValue(legacyName);
 	return {
 		schemaVersion: parseOptionalVersion(
-			value("SchemaVersion", "schemaVersion"),
+			textValue("SchemaVersion", "schemaVersion"),
 		),
-		id: value("Id", "id") || undefined,
-		name: value("Name", "name") || "Unnamed Translation",
+		id: textValue("Id", "id") || undefined,
+		name: textValue("Name", "name") || "Unnamed Translation",
 		sourceLang: file.getAttribute("source-language") ?? "",
 		targetLang: file.getAttribute("target-language") ?? "",
-		checked: parseJsonOr(value("Checked", "checked"), []),
+		checked: parseMetadataJson(
+			jsonValue("Checked", "checked"),
+			[],
+			projectNote !== undefined || info !== undefined,
+			"checked state",
+		),
 		hasOpenTlcMetadata: projectNote !== undefined || info !== undefined,
-		type: value("Type", "type") || "text",
-		typeRef: parseJsonOr(value("TypeRef", "typeRef"), {}),
-		tm: parseJsonOr(value("Tm", "tm"), inactiveResource()),
-		tb: parseJsonOr(value("Tb", "tb"), inactiveResource()),
-		editingState: parseJsonOr(value("EditingState", "editingState"), {}),
+		type: textValue("Type", "type") || "text",
+		typeRef: parseMetadataJson(
+			jsonValue("TypeRef", "typeRef"),
+			{},
+			projectNote !== undefined || info !== undefined,
+			"format metadata",
+		),
+		tm: parseMetadataJson(
+			jsonValue("Tm", "tm"),
+			inactiveResource(),
+			projectNote !== undefined || info !== undefined,
+			"translation-memory reference",
+		),
+		tb: parseMetadataJson(
+			jsonValue("Tb", "tb"),
+			inactiveResource(),
+			projectNote !== undefined || info !== undefined,
+			"term-base reference",
+		),
+		editingState: parseMetadataJson(
+			jsonValue("EditingState", "editingState"),
+			{},
+			projectNote !== undefined || info !== undefined,
+			"editing state",
+		),
 	};
 }
 
@@ -625,6 +680,24 @@ function parseJsonOr<T>(value: string | undefined, fallback: T): T {
 		return parseSafeJson<T>(value);
 	} catch {
 		return fallback;
+	}
+}
+
+function parseMetadataJson<T>(
+	value: string | undefined,
+	fallback: T,
+	ownedByOpenTlc: boolean,
+	label: string,
+): T {
+	if (!value) return fallback;
+	try {
+		return parseSafeJson<T>(value);
+	} catch {
+		if (!ownedByOpenTlc) return fallback;
+		throw new SafeInputError(
+			"PROJECT_METADATA_INVALID",
+			`The Open TLC ${label} in this XLIFF file is malformed. Restore an undamaged project export or remove the complete Open TLC metadata block before importing it as third-party XLIFF.`,
+		);
 	}
 }
 

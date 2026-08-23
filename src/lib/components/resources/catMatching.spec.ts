@@ -141,11 +141,12 @@ describe("CAT resource matching", () => {
 		);
 	});
 
-	it("bounds retained sketches and keeps only the active language-pair index", () => {
+	it("retains compact sketches for every long candidate within an enforceable footprint and latency budget", () => {
 		const longText = `${"Long translation-memory source with Unicode العربية 日本語. ".repeat(12)}end`;
+		const candidateCount = 10_000;
 		const memory = {
 			persistenceRevision: 1,
-			terms: Array.from({ length: 6_200 }, (_, index) => ({
+			terms: Array.from({ length: candidateCount }, (_, index) => ({
 				source: { lang: "en", segment: `${longText} ${index}` },
 				target: [
 					{ lang: "de", segment: `Deutsch ${index}` },
@@ -155,14 +156,29 @@ describe("CAT resource matching", () => {
 		};
 		const german = prepareTranslationMemoryIndex(memory, "en", "de");
 		const stats = getPreparedTranslationMemoryIndexStats(german);
-		expect(stats.candidates).toBe(6_200);
-		expect(stats.sketchedCandidates).toBeLessThan(stats.candidates);
-		expect(stats.sketchBytes).toBeLessThanOrEqual(48 * 1024 * 1024);
+		expect(stats.candidates).toBe(candidateCount);
+		expect(stats.sketchedCandidates).toBe(stats.candidates);
+		expect(stats.sketchBytes).toBeLessThan(20 * 1024 * 1024);
+		expect(stats.normalizedTextBytes).toBe(0);
+		expect(stats.estimatedRetainedBytes).toBeLessThan(22 * 1024 * 1024);
 		expect(getCachedTranslationMemoryLanguagePairCount(memory)).toBe(1);
+		const started = performance.now();
+		expect(
+			searchForMatches(
+				memory,
+				`${longText} ${candidateCount - 1}`,
+				"en",
+				"de",
+			)[0],
+		).toMatchObject({
+			match: `Deutsch ${candidateCount - 1}`,
+			percentage: "100.00%",
+		});
+		expect(performance.now() - started).toBeLessThan(5_000);
 
 		prepareTranslationMemoryIndex(memory, "en", "fr");
 		expect(getCachedTranslationMemoryLanguagePairCount(memory)).toBe(1);
-	});
+	}, 20_000);
 
 	it("canonicalizes BCP 47 tags and prefers exact locales before base fallback", () => {
 		expect(canonicalizeLanguageTag("English (EN_us)")).toBe("en-US");

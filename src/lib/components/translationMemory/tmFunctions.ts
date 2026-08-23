@@ -4,12 +4,10 @@ import { bestLanguageMatches } from "$lib/components/resources/languageMatching"
 import { canonicalizeLanguageTag } from "$lib/components/resources/languageMatching";
 
 const LONG_SEGMENT_THRESHOLD = 500;
-// A bounded compact histogram prevents long-segment indexes from retaining
-// multi-gigabyte sketches. Uint16 saturation is sufficient for similarity
-// scoring; the per-index budget prevents unbounded retention.
-const SKETCH_BUCKETS = 2_048;
-const SKETCH_BYTES = SKETCH_BUCKETS * Uint16Array.BYTES_PER_ELEMENT * 2;
-const MAX_RETAINED_SKETCH_BYTES = 48 * 1024 * 1024;
+// Every long candidate retains a compact byte sketch. This removes the former
+// budget cliff where later candidates rebuilt Uint16 histograms on every query,
+// while halving each bucket's retained storage without changing its resolution.
+const SKETCH_BUCKETS = 1_024;
 const MAX_CACHED_LANGUAGE_PAIRS = 1;
 
 export function translationUnitValidationError(
@@ -27,8 +25,10 @@ export function translationUnitValidationError(
 }
 
 interface PreparedSegment {
-	text: string;
+	text?: string;
 	characterLength: number;
+	fingerprintA: number;
+	fingerprintB: number;
 	sketch?: OrderedTokenSketch;
 }
 
@@ -57,8 +57,8 @@ const translationMemoryIndexCache = new WeakMap<
 >();
 
 interface OrderedTokenSketch {
-	unigrams: Uint16Array;
-	bigrams: Uint16Array;
+	unigrams: Uint8Array;
+	bigrams: Uint8Array;
 	unigramCount: number;
 	bigramCount: number;
 }
@@ -69,15 +69,11 @@ export function getTranslationMemoryMatches(
 	segment: string,
 	threshold: number,
 ): { segment: string; match: string; percentage: string }[] {
-	let retainedSketchBytes = 0;
 	const candidates = sourceSegments
 		.map((source, index): PreparedTmCandidate | null => {
 			if (targetSegments[index] === undefined) return null;
 			const normalized = normalizeForMatch(source);
-			const retainSketch =
-				retainedSketchBytes + SKETCH_BYTES <= MAX_RETAINED_SKETCH_BYTES;
-			const prepared = prepareSegment(normalized, retainSketch);
-			if (prepared.sketch) retainedSketchBytes += SKETCH_BYTES;
+			const prepared = prepareSegment(normalized);
 			return {
 				source,
 				target: targetSegments[index],
@@ -144,7 +140,8 @@ export function matchPreparedTranslationMemoryIndex(
 	threshold: number,
 ): { segment: string; match: string; percentage: string }[] {
 	const safeThreshold = Math.max(0, Math.min(100, threshold));
-	const preparedQuery = prepareSegment(normalizeForMatch(segment));
+	const normalizedQuery = normalizeForMatch(segment);
+	const preparedQuery = prepareSegment(normalizedQuery);
 	const thresholdRatio = safeThreshold / 100;
 	const minimumLength =
 		thresholdRatio === 0
@@ -176,7 +173,17 @@ export function matchPreparedTranslationMemoryIndex(
 			) > maximumDistance
 		)
 			continue;
-		const similarity = preparedSimilarity(preparedQuery, candidate.prepared);
+		const matchingFingerprint =
+			preparedQuery.characterLength === candidate.prepared.characterLength &&
+			preparedQuery.fingerprintA === candidate.prepared.fingerprintA &&
+			preparedQuery.fingerprintB === candidate.prepared.fingerprintB;
+		// Fingerprints are only a cheap prefilter. Confirm the retained source on a
+		// possible exact match so a collision can never produce a false 100% score.
+		const similarity =
+			matchingFingerprint &&
+			normalizedQuery === normalizeForMatch(candidate.source)
+				? 100
+				: preparedSimilarity(preparedQuery, candidate.prepared);
 		if (similarity >= safeThreshold) {
 			matches.push({
 				segment: candidate.source,
@@ -234,20 +241,20 @@ function hashToken(token: string): number {
 }
 
 function orderedTokenSketch(value: string): OrderedTokenSketch {
-	const unigrams = new Uint16Array(SKETCH_BUCKETS);
-	const bigrams = new Uint16Array(SKETCH_BUCKETS);
+	const unigrams = new Uint8Array(SKETCH_BUCKETS);
+	const bigrams = new Uint8Array(SKETCH_BUCKETS);
 	let previous: number | undefined;
 	let unigramCount = 0;
 	let bigramCount = 0;
 	for (const match of value.matchAll(/[\p{L}\p{N}\p{M}_]+|[^\s]/gu)) {
 		const current = hashToken(match[0]);
 		const unigramBucket = current % SKETCH_BUCKETS;
-		if (unigrams[unigramBucket] < 0xffff) unigrams[unigramBucket]++;
+		if (unigrams[unigramBucket] < 0xff) unigrams[unigramBucket]++;
 		unigramCount++;
 		if (previous !== undefined) {
 			const pair = Math.imul(previous ^ 0x9e3779b9, 33) ^ current;
 			const bigramBucket = (pair >>> 0) % SKETCH_BUCKETS;
-			if (bigrams[bigramBucket] < 0xffff) bigrams[bigramBucket]++;
+			if (bigrams[bigramBucket] < 0xff) bigrams[bigramBucket]++;
 			bigramCount++;
 		}
 		previous = current;
@@ -256,8 +263,8 @@ function orderedTokenSketch(value: string): OrderedTokenSketch {
 }
 
 function multisetDice(
-	first: Uint16Array,
-	second: Uint16Array,
+	first: Uint8Array,
+	second: Uint8Array,
 	firstCount: number,
 	secondCount: number,
 ): number {
@@ -268,15 +275,28 @@ function multisetDice(
 	return (2 * intersection * 100) / (firstCount + secondCount);
 }
 
-function prepareSegment(text: string, retainSketch = true): PreparedSegment {
+function textFingerprints(text: string): [number, number] {
+	let first = 0x811c9dc5;
+	let second = 0x9e3779b9;
+	for (const character of text) {
+		const code = character.codePointAt(0) ?? 0;
+		first = Math.imul(first ^ code, 0x01000193);
+		second ^= code + 0x9e3779b9 + (second << 6) + (second >>> 2);
+	}
+	return [first >>> 0, second >>> 0];
+}
+
+function prepareSegment(text: string): PreparedSegment {
 	let characterLength = 0;
 	for (const _character of text) characterLength++;
+	const long = characterLength > LONG_SEGMENT_THRESHOLD;
+	const [fingerprintA, fingerprintB] = textFingerprints(text);
 	return {
-		text,
+		...(long ? {} : { text }),
 		characterLength,
-		...(retainSketch && characterLength > LONG_SEGMENT_THRESHOLD
-			? { sketch: orderedTokenSketch(text) }
-			: {}),
+		fingerprintA,
+		fingerprintB,
+		...(long ? { sketch: orderedTokenSketch(text) } : {}),
 	};
 }
 
@@ -284,15 +304,16 @@ function preparedSimilarity(
 	first: PreparedSegment,
 	second: PreparedSegment,
 ): number {
-	if (first.text === second.text) return 100;
 	const maxLength = Math.max(first.characterLength, second.characterLength);
 	if (maxLength === 0) return 100;
 	if (maxLength <= LONG_SEGMENT_THRESHOLD) {
-		const distance = levenshteinDistance(first.text, second.text);
+		const distance = levenshteinDistance(first.text ?? "", second.text ?? "");
 		return ((maxLength - distance) / maxLength) * 100;
 	}
-	const firstSketch = first.sketch ?? orderedTokenSketch(first.text);
-	const secondSketch = second.sketch ?? orderedTokenSketch(second.text);
+	const firstSketch = first.sketch;
+	const secondSketch = second.sketch;
+	if (!firstSketch || !secondSketch)
+		throw new Error("Long-segment TM candidates require retained sketches.");
 	const unigram = multisetDice(
 		firstSketch.unigrams,
 		secondSketch.unigrams,
@@ -305,10 +326,11 @@ function preparedSimilarity(
 		firstSketch.bigramCount,
 		secondSketch.bigramCount,
 	);
-	return Math.min(99.99, unigram * 0.35 + bigram * 0.65);
+	return Math.min(99.99, unigram * 0.2 + bigram * 0.8);
 }
 
 export function similarityPercentage(a: string, b: string): number {
+	if (a === b) return 100;
 	return preparedSimilarity(prepareSegment(a), prepareSegment(b));
 }
 
@@ -325,7 +347,6 @@ function buildTranslationMemoryIndex(
 ): PreparedTranslationMemoryIndex {
 	const candidates: PreparedTmCandidate[] = [];
 	let order = 0;
-	let retainedSketchBytes = 0;
 
 	for (const term of bestLanguageMatches(
 		tmData.terms,
@@ -340,10 +361,7 @@ function buildTranslationMemoryIndex(
 			(entry) => entry.lang,
 		)) {
 			const normalized = normalizeForMatch(sourceSegment);
-			const retainSketch =
-				retainedSketchBytes + SKETCH_BYTES <= MAX_RETAINED_SKETCH_BYTES;
-			const prepared = prepareSegment(normalized, retainSketch);
-			if (prepared.sketch) retainedSketchBytes += SKETCH_BYTES;
+			const prepared = prepareSegment(normalized);
 			candidates.push({
 				source: sourceSegment,
 				target: target.segment,
@@ -396,10 +414,18 @@ export function prepareTranslationMemoryIndex(
 
 export function getPreparedTranslationMemoryIndexStats(
 	index: PreparedTranslationMemoryIndex,
-): { candidates: number; sketchedCandidates: number; sketchBytes: number } {
+): {
+	candidates: number;
+	sketchedCandidates: number;
+	sketchBytes: number;
+	normalizedTextBytes: number;
+	estimatedRetainedBytes: number;
+} {
 	let sketchedCandidates = 0;
 	let sketchBytes = 0;
+	let normalizedTextBytes = 0;
 	for (const candidate of index.candidates) {
+		normalizedTextBytes += (candidate.prepared.text?.length ?? 0) * 2;
 		const sketch = candidate.prepared.sketch;
 		if (!sketch) continue;
 		sketchedCandidates++;
@@ -409,6 +435,12 @@ export function getPreparedTranslationMemoryIndexStats(
 		candidates: index.candidates.length,
 		sketchedCandidates,
 		sketchBytes,
+		normalizedTextBytes,
+		// References, numeric fields, and object slots vary by engine. Forty bytes
+		// per candidate is a conservative enforceable accounting allowance in
+		// addition to the exact typed-array and retained-string payloads.
+		estimatedRetainedBytes:
+			sketchBytes + normalizedTextBytes + index.candidates.length * 40,
 	};
 }
 

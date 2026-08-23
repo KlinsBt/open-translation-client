@@ -2,7 +2,7 @@
 
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-import type { UserData } from "$lib/types/types";
+import type { TypeRef, UserData } from "$lib/types/types";
 import { PROJECT_SCHEMA_VERSION } from "./persistenceMigrations";
 import { getFormatAdapter, detectFormatWithConfidence } from "./registry";
 import {
@@ -16,6 +16,7 @@ import {
 	ZipProjectMemberError,
 } from "./zipProject";
 import type { FormatImportResult } from "./types";
+import { createLegacyVisioFile } from "../../test/visioFixtures";
 
 const unicode = "Café e\u0301 — مرحبا 👩🏽‍💻 𐍈.";
 
@@ -216,6 +217,155 @@ describe("manifest-driven ZIP projects", () => {
 		expect(reimported.kind).toBe("segments");
 		if (reimported.kind === "segments")
 			expect(reimported.segments).toEqual(["Hallo", "Übersetzt: " + unicode]);
+	});
+
+	it("renames conversion output and its manifest entry before reopening the complete ZIP", async () => {
+		const legacy = createLegacyVisioFile("vsd", "Legacy source مرحبا");
+		const source = await batchFile(
+			[
+				{
+					path: "drawings/legacy.vsd",
+					format: "visio",
+					mimeType: "application/vnd.visio",
+				},
+			],
+			{
+				"drawings/legacy.vsd": new Uint8Array(await legacy.arrayBuffer()),
+				"opaque/readme.bin": new Uint8Array([0, 255, 12]),
+			},
+		);
+		const imported = await importZipProjectFile(
+			source,
+			{},
+			undefined,
+			getFormatAdapter,
+		);
+		if (imported.kind !== "segments") throw new Error("Expected segments");
+		const translated = await buildZipProjectTranslationPackage(
+			projectFrom(
+				imported,
+				imported.segments.map(() => "Sicher übersetzt مرحبا"),
+			),
+		);
+		const outputZip = await JSZip.loadAsync(await translated.arrayBuffer());
+		expect(outputZip.file("drawings/legacy.vsd")).toBeNull();
+		expect(outputZip.file("drawings/legacy.vdx")).not.toBeNull();
+		expect(
+			await outputZip.file("opaque/readme.bin")!.async("uint8array"),
+		).toEqual(new Uint8Array([0, 255, 12]));
+		const manifest = JSON.parse(
+			await outputZip.file(ZIP_PROJECT_MANIFEST_PATH)!.async("string"),
+		) as { members: Array<{ path: string; mimeType: string }> };
+		expect(manifest.members).toEqual([
+			expect.objectContaining({
+				path: "drawings/legacy.vdx",
+				mimeType: "application/xml;charset=utf-8",
+			}),
+		]);
+
+		const reopened = await importZipProjectFile(
+			new File([translated], "translated.zip", { type: "application/zip" }),
+			{},
+			undefined,
+			getFormatAdapter,
+		);
+		expect(reopened.kind === "segments" && reopened.segments).toContain(
+			"Sicher übersetzt مرحبا",
+		);
+	});
+
+	it("refuses a conversion path collision instead of overwriting another ZIP member", async () => {
+		const legacy = createLegacyVisioFile("vsd");
+		const source = await batchFile(
+			[
+				{
+					path: "legacy.vsd",
+					format: "visio",
+					mimeType: "application/vnd.visio",
+				},
+			],
+			{
+				"legacy.vsd": new Uint8Array(await legacy.arrayBuffer()),
+				"legacy.vdx": "opaque collision",
+			},
+		);
+		const imported = await importZipProjectFile(
+			source,
+			{},
+			undefined,
+			getFormatAdapter,
+		);
+		if (imported.kind !== "segments") throw new Error("Expected segments");
+		await expect(
+			buildZipProjectTranslationPackage(
+				projectFrom(
+					imported,
+					imported.segments.map(() => "Translated"),
+				),
+			),
+		).rejects.toThrow(/already exists/i);
+	});
+
+	it("renames a translated binary Workbench member to RTF instead of writing RTF bytes as DOC", async () => {
+		const source = await batchFile(
+			[
+				{
+					path: "jobs/workbench.doc",
+					format: "legacy-bilingual",
+					mimeType: "application/msword",
+				},
+			],
+			{
+				"jobs/workbench.doc":
+					'<?xml version="1.0"?><TRADOStag Version="2.0"><Body><Tu id="u1"><Tuv Lang="EN">Source</Tuv><Tuv Lang="DE">Target</Tuv></Tu></Body></TRADOStag>',
+			},
+		);
+		const imported = await importZipProjectFile(
+			source,
+			{},
+			undefined,
+			getFormatAdapter,
+		);
+		if (imported.kind !== "segments") throw new Error("Expected segments");
+		const stored = (
+			imported.typeRef as {
+				batchMembers: Array<{
+					typeRef: TypeRef;
+					segmentsMeta?: UserData["translationData"]["segmentsMeta"];
+				}>;
+			}
+		).batchMembers[0];
+		stored.typeRef = { profile: "workbench-ole", sourceExtension: "doc" };
+		stored.segmentsMeta = [
+			{
+				profile: "workbench-ole",
+				unitId: "workbench-ole-1",
+				originalSource: "Source",
+				originalTarget: "Target",
+				locked: false,
+				status: "100",
+			},
+		];
+		const translated = await buildZipProjectTranslationPackage(
+			projectFrom(imported, ["Übersetztes Ziel"]),
+		);
+		const outputZip = await JSZip.loadAsync(await translated.arrayBuffer());
+		expect(outputZip.file("jobs/workbench.doc")).toBeNull();
+		expect(outputZip.file("jobs/workbench.rtf")).not.toBeNull();
+		expect(
+			await outputZip.file("jobs/workbench.rtf")!.async("string"),
+		).toContain("\\rtf1");
+		const reopened = await importZipProjectFile(
+			new File([translated], "workbench-return.zip", {
+				type: "application/zip",
+			}),
+			{},
+			undefined,
+			getFormatAdapter,
+		);
+		expect(reopened.kind === "segments" && reopened.targetSegments?.[0]).toBe(
+			"Übersetztes Ziel",
+		);
 	});
 
 	it("reports every failure and only skips explicitly optional members", async () => {

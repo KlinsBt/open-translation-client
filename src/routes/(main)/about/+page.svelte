@@ -1,7 +1,10 @@
 <script lang="ts">
 	import DataStructureCard from "$lib/components/about/dataStructureCard.svelte";
 	import { onMount } from "svelte";
-	import { SUPPORT_FORMAT_GROUPS } from "$lib/formats/supportCatalog";
+	import {
+		FORMAT_WORKFLOW_COUNT,
+		SUPPORT_FORMAT_GROUPS,
+	} from "$lib/formats/supportCatalog";
 
 	const tableOfContents = [
 		{ id: "workflow", label: "How files are handled" },
@@ -97,7 +100,8 @@
 				Open Translation Client is a browser-based, open source CAT tool for
 				professional translators, learners and teams. It began as a master's
 				thesis project at Anhalt University of Applied Sciences in Germany and
-				has grown into a local-first editor with 44 registered format workflows.
+				has grown into a local-first editor with {FORMAT_WORKFLOW_COUNT} registered
+				format workflows.
 			</p>
 		</div>
 	</header>

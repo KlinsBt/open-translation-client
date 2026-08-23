@@ -67,7 +67,7 @@
 	import { createPersistedEditQueue } from "$lib/functions/saveData/persistedEditQueue";
 	import { withLoading } from "$lib/functions/uiHelpers";
 	import { VirtualSegmentSizeIndex } from "$lib/functions/virtualSegmentWindow";
-	import { constrainedExportPresentation } from "$lib/functions/outputGeneration/exportPresentation";
+	import { formatChangingExportPresentation } from "$lib/functions/outputGeneration/exportPresentation";
 
 	const ESTIMATED_SEGMENT_HEIGHT = 126;
 	const SEGMENT_GAP = 10;
@@ -141,8 +141,8 @@
 	let lastSelectedSegmentId: number = $state(0);
 	const primaryExportPresentation = $derived.by(() => {
 		const data = $singleUserData.translationData;
-		const constrained = constrainedExportPresentation(data);
-		if (constrained) return constrained;
+		const formatChanging = formatChangingExportPresentation(data);
+		if (formatChanging) return formatChanging;
 		if (data.type === "odf") {
 			const profile =
 				typeof data.typeRef === "object" &&

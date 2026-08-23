@@ -1074,11 +1074,13 @@ export async function buildLegacyBilingualTranslation(
 		const body = meta
 			.map(
 				(entry, index) =>
-					`{\\v \\{0\\>${escapeRtf(entry.originalSource)}\\<\\}100\\{\\>${escapeRtf(project.translationData.seg2[index] ?? "")}\\<0\\{}}\\par`,
+					`{\\v \\{0>${escapeRtf(entry.originalSource)}<\\}100\\{>${escapeRtf(project.translationData.seg2[index] ?? "")}<0\\{}}\\par`,
 			)
 			.join("\n");
+		const output = `{\\rtf1\\ansi\\deff0\n${body}\n}`;
+		parseWorkbenchRtf(output);
 		return {
-			blob: new Blob([`{\\rtf1\\ansi\\deff0\n${body}\n}`], {
+			blob: new Blob([output], {
 				type: "application/rtf",
 			}),
 			extension: "rtf",

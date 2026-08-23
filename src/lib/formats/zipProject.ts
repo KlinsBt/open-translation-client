@@ -7,7 +7,7 @@ import {
 	type TranslationUnit,
 } from "./documentModel";
 import { FORMAT_IDS, type FormatId } from "./formatIds";
-import { buildRoundTripFormatOutputBlob } from "./formatOutput";
+import { buildRoundTripFormatOutput } from "./formatOutput";
 import { normalizeImportOptions } from "./options";
 import { PROJECT_SCHEMA_VERSION } from "./persistenceMigrations";
 import { assertProjectExportQuality } from "./qualityAssurance";
@@ -519,6 +519,19 @@ function arraysEqual(
 	);
 }
 
+function extensionOfPath(path: string): string {
+	const name = path.split("/").at(-1) ?? path;
+	const dot = name.lastIndexOf(".");
+	return dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
+}
+
+function pathWithExtension(path: string, extension: string): string {
+	const slash = path.lastIndexOf("/");
+	const dot = path.lastIndexOf(".");
+	const base = dot > slash + 1 ? path.slice(0, dot) : path;
+	return `${base}.${extension}`;
+}
+
 function childProject(
 	parent: UserData,
 	member: StoredZipProjectMember,
@@ -599,19 +612,65 @@ export async function buildZipProjectTranslationPackage(
 	const zip = await JSZip.loadAsync(
 		await skeleton.source.originalFile.arrayBuffer(),
 	);
+	const manifestEntry = zip.file(ZIP_PROJECT_MANIFEST_PATH);
+	if (!manifestEntry)
+		throw new Error("ZIP project export requires its declared manifest.");
+	const rawManifest = parseSafeJson<unknown>(
+		await manifestEntry.async("string"),
+	);
+	if (!isPlainObject(rawManifest) || !Array.isArray(rawManifest.members))
+		throw new Error("ZIP project export found a malformed retained manifest.");
+	const outputManifest = {
+		...rawManifest,
+		members: rawManifest.members.map((entry) =>
+			isPlainObject(entry) ? { ...entry } : entry,
+		),
+	};
+	const occupiedPaths = new Set(
+		Object.values(zip.files)
+			.filter((entry) => !entry.dir)
+			.map((entry) => entry.name),
+	);
+	let manifestChanged = false;
 	for (const member of members) {
 		const targets = data.seg2.slice(
 			member.segmentStart,
 			member.segmentStart + member.segmentCount,
 		);
 		if (arraysEqual(targets, member.initialTargetSegments)) continue;
-		zip.file(
-			member.path,
-			await buildRoundTripFormatOutputBlob(
-				childProject(project, member, targets),
-			),
+		const output = await buildRoundTripFormatOutput(
+			childProject(project, member, targets),
 		);
+		const outputPath =
+			extensionOfPath(member.path) === output.extension
+				? member.path
+				: pathWithExtension(member.path, output.extension);
+		if (outputPath !== member.path) {
+			if (occupiedPaths.has(outputPath))
+				throw new Error(
+					`ZIP project conversion cannot rename “${member.path}” to “${outputPath}” because that path already exists. Rename one of the source members and import the batch again.`,
+				);
+			const manifestMember = outputManifest.members.find(
+				(entry) => isPlainObject(entry) && entry.path === member.path,
+			);
+			if (!isPlainObject(manifestMember))
+				throw new Error(
+					`ZIP project manifest member “${member.path}” is missing during export.`,
+				);
+			manifestMember.path = outputPath;
+			manifestMember.mimeType = output.mimeType;
+			zip.remove(member.path);
+			occupiedPaths.delete(member.path);
+			occupiedPaths.add(outputPath);
+			manifestChanged = true;
+		}
+		zip.file(outputPath, output.blob);
 	}
+	if (manifestChanged)
+		zip.file(
+			ZIP_PROJECT_MANIFEST_PATH,
+			`${JSON.stringify(outputManifest, null, 2)}\n`,
+		);
 	return zip.generateAsync({
 		type: "blob",
 		mimeType: "application/zip",

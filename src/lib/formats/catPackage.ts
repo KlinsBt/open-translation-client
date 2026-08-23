@@ -733,7 +733,7 @@ export async function importCatPackageFile(
 			packageVendor: profile.vendor,
 			packageMembers: memberReports,
 			exportPolicy: "return-package",
-			returnExtension: returnExtensionFor(file.name),
+			returnExtension: catReturnExtensionFor(file.name),
 			workflowWarnings: catPackageWorkflow(profile).steps,
 		},
 	};
@@ -758,7 +758,7 @@ export async function validateCatPackageFile(
 	}
 }
 
-function returnExtensionFor(fileName: string): string {
+export function catReturnExtensionFor(fileName: string): string {
 	const extension = extensionOf(fileName);
 	if (extension === "sdlppx") return "sdlrpx";
 	if (extension === "mqout") return "mqback";
@@ -888,7 +888,7 @@ export async function buildCatReturnPackage(project: UserData): Promise<{
 			? project.translationData.typeRef.returnExtension
 			: undefined;
 	const extension =
-		extensionFromTypeRef ?? returnExtensionFor(project.translationData.name);
+		extensionFromTypeRef ?? catReturnExtensionFor(project.translationData.name);
 	if (source && packageTargetsAreIdentity(project, combined))
 		return { blob: source, extension };
 	const memberIndexes = new Map<string, number[]>();

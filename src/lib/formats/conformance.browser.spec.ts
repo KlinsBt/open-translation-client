@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { FORMAT_ADAPTERS } from "./registry";
 import { FORMAT_CONFORMANCE_FIXTURES } from "../../test/formatConformanceFixtures";
 import {
-	outputFile,
 	projectFromConformanceImport,
 	snapshotExtraction,
 } from "../../test/formatConformance";
@@ -68,7 +67,9 @@ describe("browser adapter import/edit/export smoke tests", () => {
 				return;
 			}
 			const reimported = await importFixture(
-				outputFile(fixture, downloaded!),
+				new File([downloaded!], downloadName, {
+					type: downloaded!.type || fixture.mimeType,
+				}),
 				fixture.importOptions,
 			);
 			if (fixture.expectTranslatedTargetSegments) {
