@@ -1313,38 +1313,109 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
 
 ## Eighth independent follow-up audit
 
-- [ ] AUD-073 Make manifest-driven ZIP export profile-aware. Reject members that
+- [x] AUD-073 Make manifest-driven ZIP export profile-aware. Reject members that
       cannot preserve their declared path and format, or rename both the member
       and manifest entry atomically when a documented conversion changes the
       extension. Re-import the complete generated ZIP and cover legacy Visio and
       Workbench binary conversions so converted bytes are never mislabeled.
 
-- [ ] AUD-074 Describe the artifact actually downloaded for every primary export.
+  Completed 2026-08-24 and reviewer-confirmed in implementation commit `d4bc5d9`.
+  `formatOutput.ts`, `zipProject.ts`, and `legacyBilingual.ts` now propagate the
+  generated extension/MIME identity, rename manifest members atomically, reject
+  collisions, preserve opaque package resources, and validate generated
+  Workbench RTF before delivery. The `zipProject.spec.ts` regressions “renames
+  conversion output…”, “refuses a conversion path collision…”, and “renames a
+  translated binary Workbench member…” fail on the old extension-inference path
+  because it wrote VDX/RTF bytes under VSD/DOC names and left stale manifests.
+  They pass in the 93-file, 1,189-pass full unit gate. No remaining implementation
+  limitation is known; native-vendor release checks remain the documented matrix.
+
+- [x] AUD-074 Describe the artifact actually downloaded for every primary export.
       Cover CAT return-package extension changes and legacy bilingual conversions
       in presentation tests and the real export modal.
 
-- [ ] AUD-075 Reject malformed Open TLC-owned JSON metadata in XLIFF 1.2 and 2.x
+  Completed 2026-08-24 and reviewer-confirmed in `d4bc5d9`.
+  `exportPresentation.ts`, `catPackage.ts`, and `segments.svelte` now use the
+  generated CAT/legacy artifact identity. `exportPresentation.spec.ts` covers
+  SDLRPX, MQBACK, TXF, TPF, changed Workbench DOC, and unchanged identity output;
+  `catApplication.browser.spec.ts` verifies the actual MQBACK modal copy. These
+  fail on the old generic “original source format” claim. They pass in all 119
+  Chromium and all 119 Firefox browser tests. No known limitation remains.
+
+- [x] AUD-075 Reject malformed Open TLC-owned JSON metadata in XLIFF 1.2 and 2.x
       with an actionable safe-input error while continuing to accept ordinary
       third-party XLIFF that contains no Open TLC metadata.
 
-- [ ] AUD-076 Bound the complete retained TM search index, avoid rebuilding long-
+  Completed 2026-08-24 and reviewer-confirmed in `d4bc5d9`.
+  `safeInput.ts` and `streamingImporters.ts` now distinguish corrupt Open TLC
+  metadata from third-party notes. The `streaming.spec.ts` cases “rejects corrupt
+  Open TLC metadata…” for XLIFF 1.2/2.x and “accepts malformed JSON-like
+  third-party notes…” fail on the old silent-fallback behavior. They pass in the
+  full 1,189-test unit gate. No known limitation remains.
+
+- [x] AUD-076 Bound the complete retained TM search index, avoid rebuilding long-
       segment sketches on each query after the retained-sketch budget is reached,
       and enforce latency plus retained-byte regressions on a generated memory
       substantially larger than the former 6,200-entry test.
 
-- [ ] AUD-077 Remove roadmap and public workflow-count drift. Phase 5 status must
+  Completed 2026-08-24 and reviewer-confirmed in `d4bc5d9`.
+  `tmFunctions.ts` retains compact byte sketches for every long candidate, drops
+  duplicate normalized long text, verifies possible exact matches against the
+  source after fingerprint prefiltering, and keeps one language-pair cache.
+  `catMatching.spec.ts` generates 10,000 long entries and enforces all-candidate
+  coverage, under-22-MiB estimated retained data, under-five-second lookup, exact
+  Unicode output, and bounded caching. It fails on the former 48-MiB cliff and
+  per-query sketch rebuilding, and passes both focused 11/11 and full coverage.
+  The sketch metric remains an approximation for fuzzy ranking by design; exact
+  matches are collision-safe and no implementation defect is known.
+
+- [x] AUD-077 Remove roadmap and public workflow-count drift. Phase 5 status must
       agree with its checked tasks, and every public workflow count must derive
       from the shared support catalog.
 
-- [ ] AUD-078 Strengthen conformance coverage for profile-dependent output. Tests
+  Completed 2026-08-24 and reviewer-confirmed in `d4bc5d9`.
+  Phase 5 wording now reflects completion, and the About page derives its value
+  from `FORMAT_WORKFLOW_COUNT`. `supportCatalog.spec.ts` fails if the public page
+  regains a numeric hardcode. Registry/catalog tests pass, and a direct scan finds
+  68/68 roadmap checkbox lines checked with no unchecked roadmap task. No known
+  limitation remains.
+
+- [x] AUD-078 Strengthen conformance coverage for profile-dependent output. Tests
       must use the generated artifact's real extension and MIME type, cover
       conversion profiles rather than only one representative adapter fixture,
       and exercise the export modal's primary artifact copy.
 
-- [ ] AUD-079 Run focused regressions, the full lint/type/coverage/Chromium/build
+  Completed 2026-08-24 and reviewer-confirmed in `d4bc5d9`.
+  `formatConformance.ts`, `formatConformanceSuite.ts`, and
+  `conformance.browser.spec.ts` now validate/re-import the artifact under its
+  actual filename and MIME identity; ZIP conversion-profile tests and the real
+  CAT modal supply the profile coverage. The old harness falsely reused source
+  identity and therefore could not expose mislabeled conversion output. The
+  272-test focused conformance run and final unit/browser gates pass. No known
+  limitation remains.
+
+- [x] AUD-079 Run focused regressions, the full lint/type/coverage/Chromium/build
       gate, Firefox, available independent validators, dependency audits,
       roadmap/catalog consistency, diff checks, and clean-worktree review. Record
       exact evidence before closing this follow-up.
+
+  Completed 2026-08-24 and reviewer-confirmed after `d4bc5d9`. `npm run verify`
+  passed Prettier, ESLint, Svelte checking with 0 errors/warnings, 93 unit files
+  with 1,189 passed and 11 explicit conditional skips, all coverage thresholds
+  (85.18% statements, 74.79% branches, 92.13% functions, 86.61% lines), 18
+  Chromium files with 119/119 tests, the production build, and bundle budgets.
+  The same 18 files and 119/119 tests passed in Firefox.
+
+  `npm run test:external:available` passed 13 files with 121 tests and four
+  explicit skips. LibreOffice 25.8.2.2, FFmpeg n8.0/ffprobe, Poppler 25.10.0,
+  Qt qmllint 1.0, libxml2 2.15.1, and gettext 0.26 exercised every applicable
+  artifact. EPUBCheck, DITA-OT, pdfTeX, and windres are absent locally and remain
+  strict release-matrix requirements. Full and production-only `npm audit`
+  reported zero vulnerabilities. The roadmap is 68/68 checked, no file above
+  50 MiB exists outside dependencies/Git metadata, `git diff --check` passed,
+  and the implementation commit contained only the 21 audited files. The absent
+  optional validators are the only recorded local-environment limitation; no
+  remaining code defect from this audit is known.
 
 ## Checkbox closure protocol
 
