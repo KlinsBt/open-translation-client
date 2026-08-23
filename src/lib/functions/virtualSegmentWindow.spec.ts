@@ -23,13 +23,25 @@ describe("VirtualSegmentSizeIndex", () => {
 		expect(oversizedViewport.end - oversizedViewport.start).toBe(160);
 	});
 
-	it("preserves measured sizes while resizing around split and join edits", () => {
+	it("invalidates shifted measurements at split and join boundaries", () => {
 		const index = new VirtualSegmentSizeIndex(3, 100);
 		index.update(0, 175);
+		index.update(1, 240);
+		index.update(2, 360);
 		index.resize(4);
+		index.resetFrom(1);
 		expect(index.sizeAt(0)).toBe(175);
+		expect(index.sizeAt(1)).toBe(100);
+		expect(index.sizeAt(2)).toBe(100);
 		expect(index.sizeAt(3)).toBe(100);
+		expect(index.offsetFor(4)).toBe(475);
+
+		index.update(1, 220);
+		index.update(2, 330);
 		index.resize(2);
+		index.resetFrom(1);
+		expect(index.sizeAt(0)).toBe(175);
+		expect(index.sizeAt(1)).toBe(100);
 		expect(index.totalSize()).toBe(275);
 	});
 

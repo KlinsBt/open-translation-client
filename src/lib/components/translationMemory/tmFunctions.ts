@@ -4,7 +4,13 @@ import { bestLanguageMatches } from "$lib/components/resources/languageMatching"
 import { canonicalizeLanguageTag } from "$lib/components/resources/languageMatching";
 
 const LONG_SEGMENT_THRESHOLD = 500;
+// A bounded compact histogram prevents long-segment indexes from retaining
+// multi-gigabyte sketches. Uint16 saturation is sufficient for similarity
+// scoring; the per-index budget prevents unbounded retention.
 const SKETCH_BUCKETS = 2_048;
+const SKETCH_BYTES = SKETCH_BUCKETS * Uint16Array.BYTES_PER_ELEMENT * 2;
+const MAX_RETAINED_SKETCH_BYTES = 48 * 1024 * 1024;
+const MAX_CACHED_LANGUAGE_PAIRS = 1;
 
 export function translationUnitValidationError(
 	source: string,
@@ -51,8 +57,8 @@ const translationMemoryIndexCache = new WeakMap<
 >();
 
 interface OrderedTokenSketch {
-	unigrams: Uint32Array;
-	bigrams: Uint32Array;
+	unigrams: Uint16Array;
+	bigrams: Uint16Array;
 	unigramCount: number;
 	bigramCount: number;
 }
@@ -63,13 +69,19 @@ export function getTranslationMemoryMatches(
 	segment: string,
 	threshold: number,
 ): { segment: string; match: string; percentage: string }[] {
+	let retainedSketchBytes = 0;
 	const candidates = sourceSegments
 		.map((source, index): PreparedTmCandidate | null => {
 			if (targetSegments[index] === undefined) return null;
+			const normalized = normalizeForMatch(source);
+			const retainSketch =
+				retainedSketchBytes + SKETCH_BYTES <= MAX_RETAINED_SKETCH_BYTES;
+			const prepared = prepareSegment(normalized, retainSketch);
+			if (prepared.sketch) retainedSketchBytes += SKETCH_BYTES;
 			return {
 				source,
 				target: targetSegments[index],
-				prepared: prepareSegment(normalizeForMatch(source)),
+				prepared,
 				order: index,
 			};
 		})
@@ -222,18 +234,20 @@ function hashToken(token: string): number {
 }
 
 function orderedTokenSketch(value: string): OrderedTokenSketch {
-	const unigrams = new Uint32Array(SKETCH_BUCKETS);
-	const bigrams = new Uint32Array(SKETCH_BUCKETS);
+	const unigrams = new Uint16Array(SKETCH_BUCKETS);
+	const bigrams = new Uint16Array(SKETCH_BUCKETS);
 	let previous: number | undefined;
 	let unigramCount = 0;
 	let bigramCount = 0;
 	for (const match of value.matchAll(/[\p{L}\p{N}\p{M}_]+|[^\s]/gu)) {
 		const current = hashToken(match[0]);
-		unigrams[current % SKETCH_BUCKETS]++;
+		const unigramBucket = current % SKETCH_BUCKETS;
+		if (unigrams[unigramBucket] < 0xffff) unigrams[unigramBucket]++;
 		unigramCount++;
 		if (previous !== undefined) {
 			const pair = Math.imul(previous ^ 0x9e3779b9, 33) ^ current;
-			bigrams[(pair >>> 0) % SKETCH_BUCKETS]++;
+			const bigramBucket = (pair >>> 0) % SKETCH_BUCKETS;
+			if (bigrams[bigramBucket] < 0xffff) bigrams[bigramBucket]++;
 			bigramCount++;
 		}
 		previous = current;
@@ -242,8 +256,8 @@ function orderedTokenSketch(value: string): OrderedTokenSketch {
 }
 
 function multisetDice(
-	first: Uint32Array,
-	second: Uint32Array,
+	first: Uint16Array,
+	second: Uint16Array,
 	firstCount: number,
 	secondCount: number,
 ): number {
@@ -254,13 +268,13 @@ function multisetDice(
 	return (2 * intersection * 100) / (firstCount + secondCount);
 }
 
-function prepareSegment(text: string): PreparedSegment {
+function prepareSegment(text: string, retainSketch = true): PreparedSegment {
 	let characterLength = 0;
 	for (const _character of text) characterLength++;
 	return {
 		text,
 		characterLength,
-		...(characterLength > LONG_SEGMENT_THRESHOLD
+		...(retainSketch && characterLength > LONG_SEGMENT_THRESHOLD
 			? { sketch: orderedTokenSketch(text) }
 			: {}),
 	};
@@ -311,6 +325,7 @@ function buildTranslationMemoryIndex(
 ): PreparedTranslationMemoryIndex {
 	const candidates: PreparedTmCandidate[] = [];
 	let order = 0;
+	let retainedSketchBytes = 0;
 
 	for (const term of bestLanguageMatches(
 		tmData.terms,
@@ -324,10 +339,15 @@ function buildTranslationMemoryIndex(
 			targetLang,
 			(entry) => entry.lang,
 		)) {
+			const normalized = normalizeForMatch(sourceSegment);
+			const retainSketch =
+				retainedSketchBytes + SKETCH_BYTES <= MAX_RETAINED_SKETCH_BYTES;
+			const prepared = prepareSegment(normalized, retainSketch);
+			if (prepared.sketch) retainedSketchBytes += SKETCH_BYTES;
 			candidates.push({
 				source: sourceSegment,
 				target: target.segment,
-				prepared: prepareSegment(normalizeForMatch(sourceSegment)),
+				prepared,
 				order: order++,
 			});
 		}
@@ -366,10 +386,36 @@ export function prepareTranslationMemoryIndex(
 	const key = `${normalizedLanguageCacheKey(sourceLang)}\u0000${normalizedLanguageCacheKey(targetLang)}`;
 	let prepared = cached.byLanguagePair.get(key);
 	if (!prepared) {
+		if (cached.byLanguagePair.size >= MAX_CACHED_LANGUAGE_PAIRS)
+			cached.byLanguagePair.clear();
 		prepared = buildTranslationMemoryIndex(tmData, sourceLang, targetLang);
 		cached.byLanguagePair.set(key, prepared);
 	}
 	return prepared;
+}
+
+export function getPreparedTranslationMemoryIndexStats(
+	index: PreparedTranslationMemoryIndex,
+): { candidates: number; sketchedCandidates: number; sketchBytes: number } {
+	let sketchedCandidates = 0;
+	let sketchBytes = 0;
+	for (const candidate of index.candidates) {
+		const sketch = candidate.prepared.sketch;
+		if (!sketch) continue;
+		sketchedCandidates++;
+		sketchBytes += sketch.unigrams.byteLength + sketch.bigrams.byteLength;
+	}
+	return {
+		candidates: index.candidates.length,
+		sketchedCandidates,
+		sketchBytes,
+	};
+}
+
+export function getCachedTranslationMemoryLanguagePairCount(
+	tm: TmData,
+): number {
+	return translationMemoryIndexCache.get(tm)?.byLanguagePair.size ?? 0;
 }
 
 export function searchForMatches(

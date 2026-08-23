@@ -149,7 +149,7 @@
 	async function handleSaveFileDeletion(id: number) {
 		if (typeof id !== "number") return;
 		try {
-			await deleteTranslationFromIndexedDB(id);
+			await deleteTranslationFromIndexedDB(id, file.persistenceRevision ?? -1);
 			confirmDeletionWindow = false;
 			show = false;
 			notifyWarning("Project deleted");

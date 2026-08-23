@@ -1,4 +1,5 @@
 import type { UserData } from "$lib/types/types";
+import { neutralizeCsvFormula } from "$lib/formats/csv";
 import { buildSegmentDeliveryPdf } from "./outputGenerationPdf";
 
 export type ConvertedExportFormat =
@@ -40,7 +41,7 @@ function escapeHtml(value: string): string {
 }
 
 function csvCell(value: string | number): string {
-	return `"${String(value).replaceAll('"', '""')}"`;
+	return `"${neutralizeCsvFormula(String(value)).replaceAll('"', '""')}"`;
 }
 
 function rtfText(value: string): string {

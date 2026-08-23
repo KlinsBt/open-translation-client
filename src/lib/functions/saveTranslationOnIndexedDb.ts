@@ -1,6 +1,7 @@
 import type { Type, TypeRef, UserData } from "$lib/types/types";
 import {
 	loadTranslationsUserDataFromIndexedDB,
+	replaceTranslationOnIndexedDB,
 	updateTranslationOnIndexedDB,
 } from "./saveData/indexedDb";
 import {
@@ -32,8 +33,8 @@ export async function saveAndOpenNewFileWithTextString(
 	skeleton?: DocumentSkeleton,
 	filterOptions?: FormatOptionValues,
 ) {
-	let data: UserData[] = await loadTranslationsUserDataFromIndexedDB();
-	await saveNewTranslationToUserDataFromText(
+	const data: UserData[] = await loadTranslationsUserDataFromIndexedDB();
+	const singleData = await saveNewTranslationToUserDataFromText(
 		data,
 		temporarySaveName,
 		sourceLang,
@@ -46,9 +47,6 @@ export async function saveAndOpenNewFileWithTextString(
 		skeleton,
 		filterOptions,
 	);
-	data = await loadTranslationsUserDataFromIndexedDB();
-	const singleData = data[data.length - 1];
-	if (!singleData) throw new Error("No data found");
 	singleUserData.set(singleData);
 	translationIdSelected.set(singleData.id!);
 	seg1WordCount.set(getTotalWordCount(singleData.translationData.seg1));
@@ -70,8 +68,8 @@ export async function saveAndOpenNewFileWithStringArray(
 	filterOptions?: FormatOptionValues,
 	initialTargetSegments?: readonly string[],
 ) {
-	let data: UserData[] = await loadTranslationsUserDataFromIndexedDB();
-	await saveNewTranslationToUserDataFromArrayOfStrings(
+	const data: UserData[] = await loadTranslationsUserDataFromIndexedDB();
+	const singleData = await saveNewTranslationToUserDataFromArrayOfStrings(
 		data,
 		temporarySaveName,
 		sourceLang,
@@ -86,9 +84,6 @@ export async function saveAndOpenNewFileWithStringArray(
 		filterOptions,
 		initialTargetSegments,
 	);
-	data = await loadTranslationsUserDataFromIndexedDB();
-	const singleData = data[data.length - 1];
-	if (!singleData) throw new Error("No data found");
 	singleUserData.set(singleData);
 	translationIdSelected.set(singleData.id!);
 	seg1WordCount.set(getTotalWordCount(singleData.translationData.seg1));
@@ -100,10 +95,10 @@ export async function saveAndOpenNewFileWithStringArrayFromSaveFile(
 	fullData: UserData[],
 	userData: UserData,
 ) {
-	await saveNewTranslationToUserDataFromSaveFile(fullData, userData);
-	const data = await loadTranslationsUserDataFromIndexedDB();
-	const singleData = data[data.length - 1];
-	if (!singleData) throw new Error("No data found");
+	const singleData = await saveNewTranslationToUserDataFromSaveFile(
+		fullData,
+		userData,
+	);
 	singleUserData.set(singleData);
 	translationIdSelected.set(singleData.id!);
 	seg1WordCount.set(getTotalWordCount(singleData.translationData.seg1));
@@ -113,6 +108,15 @@ export async function saveAndOpenNewFileWithStringArrayFromSaveFile(
 
 export async function updateAndOpenNewFileWithStringArray(userData: UserData) {
 	await updateTranslationOnIndexedDB(userData);
+	singleUserData.set(userData);
+	translationIdSelected.set(userData.id!);
+	seg1WordCount.set(getTotalWordCount(userData.translationData.seg1));
+	seg2WordCount.set(getTotalWordCount(userData.translationData.seg2));
+	openMenu.set(false);
+}
+
+export async function replaceAndOpenProjectFromSaveFile(userData: UserData) {
+	await replaceTranslationOnIndexedDB(userData);
 	singleUserData.set(userData);
 	translationIdSelected.set(userData.id!);
 	seg1WordCount.set(getTotalWordCount(userData.translationData.seg1));

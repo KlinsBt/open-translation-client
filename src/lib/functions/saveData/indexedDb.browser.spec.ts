@@ -12,11 +12,36 @@ import {
 	loadTranslationsUserDataFromIndexedDB,
 	saveNewTbToIndexedDB,
 	saveNewTmToIndexedDB,
+	replaceTranslationOnIndexedDB,
 	updateTbOnIndexedDB,
 	updateTmOnIndexedDB,
 	updateTranslationOnIndexedDB,
 } from "./indexedDb";
 import { tbData, tmData } from "./stores.svelte";
+
+async function deleteCurrentProject(id: number): Promise<void> {
+	const current = (await loadTranslationsUserDataFromIndexedDB()).find(
+		(project) => project.id === id,
+	);
+	if (current)
+		await deleteTranslationFromIndexedDB(id, current.persistenceRevision ?? -1);
+}
+
+async function deleteCurrentTm(id: number): Promise<void> {
+	const current = (await loadTmDataFromIndexedDB()).find(
+		(memory) => memory.id === id,
+	);
+	if (current)
+		await deleteTmFromIndexedDB(id, current.persistenceRevision ?? -1);
+}
+
+async function deleteCurrentTb(id: number): Promise<void> {
+	const current = (await loadTbDataFromIndexedDB()).find(
+		(termBase) => termBase.id === id,
+	);
+	if (current)
+		await deleteTbFromIndexedDB(id, current.persistenceRevision ?? -1);
+}
 
 describe("transaction-complete browser persistence", () => {
 	it("reports an actionable error before an import exceeds browser quota", async () => {
@@ -86,8 +111,8 @@ describe("transaction-complete browser persistence", () => {
 				),
 			).toBe(true);
 
-			await deleteTmFromIndexedDB(tmId);
-			await deleteTbFromIndexedDB(tbId);
+			await deleteCurrentTm(tmId);
+			await deleteCurrentTb(tbId);
 			const repaired = (await loadTranslationsUserDataFromIndexedDB()).find(
 				({ id }) => id === projectId,
 			);
@@ -102,11 +127,11 @@ describe("transaction-complete browser persistence", () => {
 				active: false,
 			});
 		} finally {
-			await deleteTranslationFromIndexedDB(projectId);
+			await deleteCurrentProject(projectId);
 			if ((await loadTmDataFromIndexedDB()).some(({ id }) => id === tmId))
-				await deleteTmFromIndexedDB(tmId);
+				await deleteCurrentTm(tmId);
 			if ((await loadTbDataFromIndexedDB()).some(({ id }) => id === tbId))
-				await deleteTbFromIndexedDB(tbId);
+				await deleteCurrentTb(tbId);
 		}
 	});
 
@@ -152,8 +177,8 @@ describe("transaction-complete browser persistence", () => {
 				get(tbData).find(({ id }) => id === tbId)?.entries[0].terms[0].term,
 			).toBe("new term");
 		} finally {
-			await deleteTmFromIndexedDB(tmId);
-			await deleteTbFromIndexedDB(tbId);
+			await deleteCurrentTm(tmId);
+			await deleteCurrentTb(tbId);
 		}
 	});
 
@@ -208,7 +233,103 @@ describe("transaction-complete browser persistence", () => {
 			);
 			expect(restored?.translationData.seg2[0]).toBe("Saved in the first tab");
 		} finally {
-			await deleteTranslationFromIndexedDB(project.id);
+			await deleteCurrentProject(project.id);
+		}
+	});
+
+	it("rebases an explicitly confirmed backup replacement without weakening stale-save protection", async () => {
+		const project = makeUserData({ name: `replacement-${Date.now()}` });
+		project.id = Date.now() + 65_000;
+		try {
+			await updateTranslationOnIndexedDB(project);
+			const oldBackup = structuredClone(project);
+			const newerLocal = structuredClone(project);
+			newerLocal.translationData.seg2[0] = "Newer local value";
+			await updateTranslationOnIndexedDB(newerLocal);
+
+			oldBackup.translationData.seg2[0] = "Restored backup value";
+			await replaceTranslationOnIndexedDB(oldBackup);
+			const restored = (await loadTranslationsUserDataFromIndexedDB()).find(
+				({ id }) => id === project.id,
+			)!;
+			expect(restored.translationData.seg2[0]).toBe("Restored backup value");
+			expect(restored.persistenceRevision).toBe(
+				(newerLocal.persistenceRevision ?? 0) + 1,
+			);
+
+			newerLocal.translationData.seg2[0] = "Now stale again";
+			await expect(updateTranslationOnIndexedDB(newerLocal)).rejects.toThrow(
+				/changed in another tab/i,
+			);
+		} finally {
+			await deleteCurrentProject(project.id);
+		}
+	});
+
+	it("rejects stale project, TM, and TB deletions", async () => {
+		const seed = Date.now() + 72_000;
+		const project = makeUserData({ name: "Stale deletion" });
+		project.id = seed;
+		const tmId = seed + 1;
+		const tbId = seed + 2;
+		try {
+			await updateTranslationOnIndexedDB(project);
+			await saveNewTmToIndexedDB({
+				id: tmId,
+				name: "Delete-safe TM",
+				terms: [],
+			});
+			await saveNewTbToIndexedDB({
+				id: tbId,
+				name: "Delete-safe TB",
+				entries: [],
+			});
+			const staleProjectRevision = project.persistenceRevision!;
+			const staleTmRevision = (await loadTmDataFromIndexedDB()).find(
+				({ id }) => id === tmId,
+			)!.persistenceRevision!;
+			const staleTbRevision = (await loadTbDataFromIndexedDB()).find(
+				({ id }) => id === tbId,
+			)!.persistenceRevision!;
+
+			project.translationData.name = "Changed project";
+			await updateTranslationOnIndexedDB(project);
+			const changedTm = (await loadTmDataFromIndexedDB()).find(
+				({ id }) => id === tmId,
+			)!;
+			changedTm.name = "Changed TM";
+			await updateTmOnIndexedDB(changedTm);
+			const changedTb = (await loadTbDataFromIndexedDB()).find(
+				({ id }) => id === tbId,
+			)!;
+			changedTb.name = "Changed TB";
+			await updateTbOnIndexedDB(changedTb);
+
+			await expect(
+				deleteTranslationFromIndexedDB(project.id, staleProjectRevision),
+			).rejects.toThrow(/changed in another tab/i);
+			await expect(
+				deleteTmFromIndexedDB(tmId, staleTmRevision),
+			).rejects.toThrow(/translation memory.*another tab/i);
+			await expect(
+				deleteTbFromIndexedDB(tbId, staleTbRevision),
+			).rejects.toThrow(/term base.*another tab/i);
+
+			expect(
+				(await loadTranslationsUserDataFromIndexedDB()).some(
+					({ id }) => id === project.id,
+				),
+			).toBe(true);
+			expect(
+				(await loadTmDataFromIndexedDB()).some(({ id }) => id === tmId),
+			).toBe(true);
+			expect(
+				(await loadTbDataFromIndexedDB()).some(({ id }) => id === tbId),
+			).toBe(true);
+		} finally {
+			await deleteCurrentProject(project.id);
+			await deleteCurrentTm(tmId);
+			await deleteCurrentTb(tbId);
 		}
 	});
 
@@ -259,9 +380,9 @@ describe("transaction-complete browser persistence", () => {
 			).toBe("First TB tab");
 		} finally {
 			if ((await loadTmDataFromIndexedDB()).some(({ id }) => id === tmId))
-				await deleteTmFromIndexedDB(tmId);
+				await deleteCurrentTm(tmId);
 			if ((await loadTbDataFromIndexedDB()).some(({ id }) => id === tbId))
-				await deleteTbFromIndexedDB(tbId);
+				await deleteCurrentTb(tbId);
 		}
 	});
 
@@ -288,8 +409,8 @@ describe("transaction-complete browser persistence", () => {
 				({ id }) => id === tbId,
 			)!;
 
-			await deleteTmFromIndexedDB(tmId);
-			await deleteTbFromIndexedDB(tbId);
+			await deleteCurrentTm(tmId);
+			await deleteCurrentTb(tbId);
 
 			await expect(updateTranslationOnIndexedDB(staleProject)).rejects.toThrow(
 				/changed in another tab or was deleted/i,
@@ -307,7 +428,7 @@ describe("transaction-complete browser persistence", () => {
 			expect(repaired?.translationData.tm?.id).toBeNull();
 			expect(repaired?.translationData.tb?.id).toBeNull();
 		} finally {
-			await deleteTranslationFromIndexedDB(projectId);
+			await deleteCurrentProject(projectId);
 		}
 	});
 });

@@ -113,6 +113,7 @@ export async function saveNewTranslationToUserDataFromText(
 	};
 	await updateTranslationOnIndexedDB(data);
 	userData.set([...fullData, data]);
+	return data;
 }
 
 export async function saveNewTranslationToUserDataFromArrayOfStrings(
@@ -177,6 +178,7 @@ export async function saveNewTranslationToUserDataFromArrayOfStrings(
 	};
 	await updateTranslationOnIndexedDB(data);
 	userData.set([...fullData, data]);
+	return data;
 }
 
 export async function saveNewTranslationToUserDataFromSaveFile(
@@ -205,4 +207,5 @@ export async function saveNewTranslationToUserDataFromSaveFile(
 	}
 	await updateTranslationOnIndexedDB(savedData);
 	userData.set([...fullData, savedData]);
+	return savedData;
 }

@@ -250,6 +250,14 @@ export function isCsvFormulaInjection(value: string): boolean {
 	return /^[=+\-@\t\r\n＝＋－＠]/u.test(value);
 }
 
+/** Prefixes untrusted spreadsheet formula markers with an apostrophe so CSV
+ * consumers treat the cell as literal text. This is intentionally used for
+ * newly generated conversion CSVs; native CSV round trips preserve source data
+ * and surface a warning instead of silently changing it. */
+export function neutralizeCsvFormula(value: string): string {
+	return isCsvFormulaInjection(value) ? `'${value}` : value;
+}
+
 export function encodeCsvField(
 	value: string,
 	replacement: {

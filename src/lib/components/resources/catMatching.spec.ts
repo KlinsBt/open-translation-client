@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+	getCachedTranslationMemoryLanguagePairCount,
+	getPreparedTranslationMemoryIndexStats,
 	getTranslationMemoryMatches,
 	normalizeForMatch,
 	prepareTranslationMemoryIndex,
@@ -137,6 +139,29 @@ describe("CAT resource matching", () => {
 		expect(searchForMatches(memory, "Open", "en", "de")[0].match).toBe(
 			"Aufmachen",
 		);
+	});
+
+	it("bounds retained sketches and keeps only the active language-pair index", () => {
+		const longText = `${"Long translation-memory source with Unicode العربية 日本語. ".repeat(12)}end`;
+		const memory = {
+			persistenceRevision: 1,
+			terms: Array.from({ length: 6_200 }, (_, index) => ({
+				source: { lang: "en", segment: `${longText} ${index}` },
+				target: [
+					{ lang: "de", segment: `Deutsch ${index}` },
+					{ lang: "fr", segment: `Français ${index}` },
+				],
+			})),
+		};
+		const german = prepareTranslationMemoryIndex(memory, "en", "de");
+		const stats = getPreparedTranslationMemoryIndexStats(german);
+		expect(stats.candidates).toBe(6_200);
+		expect(stats.sketchedCandidates).toBeLessThan(stats.candidates);
+		expect(stats.sketchBytes).toBeLessThanOrEqual(48 * 1024 * 1024);
+		expect(getCachedTranslationMemoryLanguagePairCount(memory)).toBe(1);
+
+		prepareTranslationMemoryIndex(memory, "en", "fr");
+		expect(getCachedTranslationMemoryLanguagePairCount(memory)).toBe(1);
 	});
 
 	it("canonicalizes BCP 47 tags and prefers exact locales before base fallback", () => {

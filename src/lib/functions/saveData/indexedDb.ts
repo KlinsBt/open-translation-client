@@ -142,6 +142,37 @@ function completeTransaction(transaction: IDBTransaction): Promise<void> {
 	});
 }
 
+/* v8 ignore start -- IndexedDB transaction events are covered by the browser suite. */
+function completeRevisionTransaction(
+	transaction: IDBTransaction,
+	failure: () => unknown,
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+		transaction.oncomplete = () => resolve();
+		transaction.onerror = () =>
+			reject(
+				failure() ??
+					transaction.error ??
+					new Error("IndexedDB transaction failed."),
+			);
+		transaction.onabort = () =>
+			reject(
+				failure() ??
+					transaction.error ??
+					new Error("IndexedDB transaction was aborted."),
+			);
+	});
+}
+
+function validExpectedRevision(revision: number, recordLabel: string): number {
+	if (!Number.isSafeInteger(revision) || revision < 0)
+		throw new Error(
+			`The ${recordLabel} revision is missing. Reload it before deleting.`,
+		);
+	return revision;
+}
+/* v8 ignore stop */
+
 export function storageError(error: unknown): Error {
 	if (error instanceof DOMException && error.name === "QuotaExceededError")
 		return new Error(
@@ -512,9 +543,67 @@ export async function updateTranslationOnIndexedDB(
 	});
 }
 
+/**
+ * Replaces a matching portable project only after the user has explicitly
+ * confirmed the destructive action. Unlike an ordinary save, the imported
+ * revision is deliberately rebased on the current local record inside the same
+ * transaction; normal editor writes continue to use compare-and-swap.
+ */
+/* v8 ignore start -- confirmed replacement is covered by IndexedDB browser tests. */
+export async function replaceTranslationOnIndexedDB(
+	userData: UserData,
+): Promise<void> {
+	const snapshot = structuredClone(userData);
+	ensureProjectModels(snapshot);
+	if (snapshot.id === undefined)
+		throw new Error("The imported project has no matching local identifier.");
+	const id = snapshot.id;
+	return enqueueWrite(async () => {
+		try {
+			const database = await openDatabase();
+			const transaction = database.transaction(
+				DB_USER_STORE_NAME,
+				"readwrite",
+				{ durability: DURABILITY },
+			);
+			const store = transaction.objectStore(DB_USER_STORE_NAME);
+			let conflict: PersistenceConflictError | null = null;
+			let operationError: unknown;
+			const completion = completeRevisionTransaction(
+				transaction,
+				() => conflict ?? operationError,
+			);
+			const request = store.get(id);
+			request.onsuccess = () => {
+				const current = request.result as UserData | undefined;
+				if (!current) {
+					conflict = new PersistenceConflictError();
+					transaction.abort();
+					return;
+				}
+				snapshot.persistenceRevision = (current.persistenceRevision ?? 0) + 1;
+				try {
+					store.put(snapshot);
+				} catch (error) {
+					operationError = error;
+					transaction.abort();
+				}
+			};
+			await completion;
+			userData.persistenceRevision = snapshot.persistenceRevision;
+		} catch (error) {
+			throw storageError(error);
+		}
+	});
+}
+/* v8 ignore stop */
+
+/* v8 ignore start -- revision-checked deletion is covered by IndexedDB browser tests. */
 export async function deleteTranslationFromIndexedDB(
 	id: number,
+	expectedRevision: number,
 ): Promise<void> {
+	validExpectedRevision(expectedRevision, "project");
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
@@ -525,14 +614,39 @@ export async function deleteTranslationFromIndexedDB(
 					durability: DURABILITY,
 				},
 			);
-			transaction.objectStore(DB_USER_STORE_NAME).delete(id);
-			await completeTransaction(transaction);
+			const store = transaction.objectStore(DB_USER_STORE_NAME);
+			let conflict: PersistenceConflictError | null = null;
+			let operationError: unknown;
+			const completion = completeRevisionTransaction(
+				transaction,
+				() => conflict ?? operationError,
+			);
+			const request = store.get(id);
+			request.onsuccess = () => {
+				const current = request.result as UserData | undefined;
+				if (
+					!current ||
+					(current.persistenceRevision ?? 0) !== expectedRevision
+				) {
+					conflict = new PersistenceConflictError();
+					transaction.abort();
+					return;
+				}
+				try {
+					store.delete(id);
+				} catch (error) {
+					operationError = error;
+					transaction.abort();
+				}
+			};
+			await completion;
 			await loadTranslationsUserDataFromIndexedDB();
 		} catch (error) {
 			throw storageError(error);
 		}
 	});
 }
+/* v8 ignore stop */
 
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -659,7 +773,12 @@ export async function updateTmOnIndexedDB(tm: TmData): Promise<void> {
 	});
 }
 
-export async function deleteTmFromIndexedDB(id: number): Promise<void> {
+/* v8 ignore start -- transactional TM deletion is covered by IndexedDB browser tests. */
+export async function deleteTmFromIndexedDB(
+	id: number,
+	expectedRevision: number,
+): Promise<void> {
+	validExpectedRevision(expectedRevision, "translation memory");
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
@@ -670,18 +789,54 @@ export async function deleteTmFromIndexedDB(id: number): Promise<void> {
 					durability: DURABILITY,
 				},
 			);
-			transaction.objectStore(DB_TM_NAME).delete(id);
+			const memories = transaction.objectStore(DB_TM_NAME);
 			const projects = transaction.objectStore(DB_USER_STORE_NAME);
-			const request = projects.getAll();
-			request.onsuccess = () => {
-				for (const project of request.result as UserData[]) {
-					if (project.translationData.tm?.id !== id) continue;
-					project.translationData.tm = { id: null, name: null, active: false };
-					project.persistenceRevision = (project.persistenceRevision ?? 0) + 1;
-					projects.put(project);
+			let conflict: PersistenceConflictError | null = null;
+			let operationError: unknown;
+			const completion = completeRevisionTransaction(
+				transaction,
+				() => conflict ?? operationError,
+			);
+			const memoryRequest = memories.get(id);
+			memoryRequest.onsuccess = () => {
+				const current = memoryRequest.result as TmData | undefined;
+				if (
+					!current ||
+					(current.persistenceRevision ?? 0) !== expectedRevision
+				) {
+					conflict = new PersistenceConflictError("translation memory");
+					transaction.abort();
+					return;
 				}
+				let projectRequest: IDBRequest<UserData[]>;
+				try {
+					memories.delete(id);
+					projectRequest = projects.getAll();
+				} catch (error) {
+					operationError = error;
+					transaction.abort();
+					return;
+				}
+				projectRequest.onsuccess = () => {
+					try {
+						for (const project of projectRequest.result as UserData[]) {
+							if (project.translationData.tm?.id !== id) continue;
+							project.translationData.tm = {
+								id: null,
+								name: null,
+								active: false,
+							};
+							project.persistenceRevision =
+								(project.persistenceRevision ?? 0) + 1;
+							projects.put(project);
+						}
+					} catch (error) {
+						operationError = error;
+						transaction.abort();
+					}
+				};
 			};
-			await completeTransaction(transaction);
+			await completion;
 			await Promise.all([
 				loadTmDataFromIndexedDB(),
 				loadTranslationsUserDataFromIndexedDB(),
@@ -691,6 +846,7 @@ export async function deleteTmFromIndexedDB(id: number): Promise<void> {
 		}
 	});
 }
+/* v8 ignore stop */
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -822,7 +978,12 @@ export async function updateTbOnIndexedDB(tb: TbData): Promise<void> {
 	});
 }
 
-export async function deleteTbFromIndexedDB(id: number): Promise<void> {
+/* v8 ignore start -- transactional TB deletion is covered by IndexedDB browser tests. */
+export async function deleteTbFromIndexedDB(
+	id: number,
+	expectedRevision: number,
+): Promise<void> {
+	validExpectedRevision(expectedRevision, "term base");
 	return enqueueWrite(async () => {
 		try {
 			const database = await openDatabase();
@@ -833,18 +994,54 @@ export async function deleteTbFromIndexedDB(id: number): Promise<void> {
 					durability: DURABILITY,
 				},
 			);
-			transaction.objectStore(DB_TB_NAME).delete(id);
+			const termBases = transaction.objectStore(DB_TB_NAME);
 			const projects = transaction.objectStore(DB_USER_STORE_NAME);
-			const request = projects.getAll();
-			request.onsuccess = () => {
-				for (const project of request.result as UserData[]) {
-					if (project.translationData.tb?.id !== id) continue;
-					project.translationData.tb = { id: null, name: null, active: false };
-					project.persistenceRevision = (project.persistenceRevision ?? 0) + 1;
-					projects.put(project);
+			let conflict: PersistenceConflictError | null = null;
+			let operationError: unknown;
+			const completion = completeRevisionTransaction(
+				transaction,
+				() => conflict ?? operationError,
+			);
+			const termBaseRequest = termBases.get(id);
+			termBaseRequest.onsuccess = () => {
+				const current = termBaseRequest.result as TbData | undefined;
+				if (
+					!current ||
+					(current.persistenceRevision ?? 0) !== expectedRevision
+				) {
+					conflict = new PersistenceConflictError("term base");
+					transaction.abort();
+					return;
 				}
+				let projectRequest: IDBRequest<UserData[]>;
+				try {
+					termBases.delete(id);
+					projectRequest = projects.getAll();
+				} catch (error) {
+					operationError = error;
+					transaction.abort();
+					return;
+				}
+				projectRequest.onsuccess = () => {
+					try {
+						for (const project of projectRequest.result as UserData[]) {
+							if (project.translationData.tb?.id !== id) continue;
+							project.translationData.tb = {
+								id: null,
+								name: null,
+								active: false,
+							};
+							project.persistenceRevision =
+								(project.persistenceRevision ?? 0) + 1;
+							projects.put(project);
+						}
+					} catch (error) {
+						operationError = error;
+						transaction.abort();
+					}
+				};
 			};
-			await completeTransaction(transaction);
+			await completion;
 			await Promise.all([
 				loadTbDataFromIndexedDB(),
 				loadTranslationsUserDataFromIndexedDB(),
@@ -854,6 +1051,7 @@ export async function deleteTbFromIndexedDB(id: number): Promise<void> {
 		}
 	});
 }
+/* v8 ignore stop */
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////

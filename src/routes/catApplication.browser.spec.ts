@@ -38,6 +38,26 @@ import { toastStore } from "$lib/components/notifications/toastStore";
 
 let mounted: ReturnType<typeof mount> | null = null;
 
+async function deleteCurrentProject(id: number): Promise<void> {
+	const current = (await loadTranslationsUserDataFromIndexedDB()).find(
+		(project) => project.id === id,
+	);
+	if (current)
+		await deleteTranslationFromIndexedDB(id, current.persistenceRevision ?? -1);
+}
+
+async function deleteCurrentTm(id: number): Promise<void> {
+	const current = await getTmDataById(id);
+	if (current)
+		await deleteTmFromIndexedDB(id, current.persistenceRevision ?? -1);
+}
+
+async function deleteCurrentTb(id: number): Promise<void> {
+	const current = await getTbDataById(id);
+	if (current)
+		await deleteTbFromIndexedDB(id, current.persistenceRevision ?? -1);
+}
+
 function button(label: string): HTMLButtonElement {
 	const candidate = Array.from(document.querySelectorAll("button")).find(
 		(element) =>
@@ -390,7 +410,7 @@ describe("real CAT application route", () => {
 			expect(saved?.translationData.checked).toEqual([false]);
 		});
 
-		await deleteTranslationFromIndexedDB(project.id);
+		await deleteCurrentProject(project.id);
 	});
 
 	it("marks source and target text with independent language directions", async () => {
@@ -508,7 +528,7 @@ describe("real CAT application route", () => {
 			expect(saved?.translationData.checked).toEqual([false]);
 		});
 
-		await deleteTranslationFromIndexedDB(project.id);
+		await deleteCurrentProject(project.id);
 	});
 
 	it("enables TM+ only for complete bilingual units", async () => {
@@ -634,6 +654,105 @@ describe("real CAT application route", () => {
 		expect(failedAdd).toHaveBeenCalled();
 	});
 
+	it("replaces a matching project from an older portable backup after confirmation", async () => {
+		const current = makeUserData({
+			name: "Current local project",
+			seg1: ["Source"],
+			seg2: ["Original backup target"],
+			checked: [true],
+		});
+		current.id = Date.now() + 87_000;
+		await updateTranslationOnIndexedDB(current);
+		const oldBackup = structuredClone(current);
+		current.translationData.seg2[0] = "Newer local target";
+		await updateTranslationOnIndexedDB(current);
+		await loadTranslationsUserDataFromIndexedDB();
+
+		mounted = mount(SaveFileUpload, { target: document.body });
+		const input =
+			document.querySelector<HTMLInputElement>('input[type="file"]')!;
+		Object.defineProperty(input, "files", {
+			configurable: true,
+			value: [
+				new File([JSON.stringify(oldBackup)], "older-backup.json", {
+					type: "application/json",
+				}),
+			],
+		});
+		input.dispatchEvent(new Event("input", { bubbles: true }));
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Replace existing project"),
+		);
+		button("Replace existing project").click();
+		await eventuallyAsync(async () => {
+			const restored = (await loadTranslationsUserDataFromIndexedDB()).find(
+				({ id }) => id === current.id,
+			);
+			expect(restored?.translationData.seg2[0]).toBe("Original backup target");
+		});
+		expect(
+			get(toastStore).some((toast) =>
+				toast.message.includes("replaced from the portable backup"),
+			),
+		).toBe(true);
+		await deleteCurrentProject(current.id);
+	});
+
+	it("reports a failed confirmed replacement and leaves local data unchanged", async () => {
+		const current = makeUserData({
+			name: "Replacement failure",
+			seg1: ["Source"],
+			seg2: ["Keep this local target"],
+			checked: [true],
+		});
+		current.id = Date.now() + 88_000;
+		await updateTranslationOnIndexedDB(current);
+		const backup = structuredClone(current);
+		backup.translationData.seg2[0] = "Do not persist this backup";
+		await loadTranslationsUserDataFromIndexedDB();
+
+		mounted = mount(SaveFileUpload, { target: document.body });
+		const input =
+			document.querySelector<HTMLInputElement>('input[type="file"]')!;
+		Object.defineProperty(input, "files", {
+			configurable: true,
+			value: [
+				new File([JSON.stringify(backup)], "failed-replacement.json", {
+					type: "application/json",
+				}),
+			],
+		});
+		input.dispatchEvent(new Event("input", { bubbles: true }));
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Replace existing project"),
+		);
+		const failedPut = vi
+			.spyOn(IDBObjectStore.prototype, "put")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Quota reached", "QuotaExceededError");
+			});
+		button("Replace existing project").click();
+		await eventually(() =>
+			expect(
+				get(toastStore).some(
+					(toast) =>
+						toast.type === "error" && toast.message.includes("local storage"),
+				),
+			).toBe(true),
+		);
+		const unchanged = (await loadTranslationsUserDataFromIndexedDB()).find(
+			({ id }) => id === current.id,
+		);
+		expect(unchanged?.translationData.seg2[0]).toBe("Keep this local target");
+		expect(
+			get(toastStore).some((toast) =>
+				toast.message.includes("replaced from the portable backup"),
+			),
+		).toBe(false);
+		failedPut.mockRestore();
+		await deleteCurrentProject(current.id);
+	});
+
 	it("creates a validated text project through the real upload modal", async () => {
 		const projectName = `browser-project-${Date.now()}`;
 		openMenu.set(true);
@@ -690,7 +809,7 @@ describe("real CAT application route", () => {
 			(project) => project.translationData.name === projectName,
 		);
 		expect(saved?.translationData.seg1).toEqual(["Hello browser"]);
-		if (saved?.id !== undefined) await deleteTranslationFromIndexedDB(saved.id);
+		if (saved?.id !== undefined) await deleteCurrentProject(saved.id);
 	});
 
 	it("cancels stale upload detection on replacement and modal close", async () => {
@@ -899,6 +1018,106 @@ describe("real CAT application route", () => {
 		);
 	});
 
+	it("does not export after the latest edit fails to persist", async () => {
+		const project = makeUserData({
+			name: "blocked-stale-export",
+			seg1: ["Source"],
+			seg2: ["Persisted target"],
+			checked: [true],
+			locked: [false],
+			type: "text",
+			typeRef: "Source",
+		});
+		project.id = Date.now() + 93_000;
+		await updateTranslationOnIndexedDB(project);
+		singleUserData.set(project);
+		openMenu.set(false);
+		const download = vi
+			.spyOn(HTMLAnchorElement.prototype, "click")
+			.mockImplementation(() => undefined);
+		const failedPut = vi
+			.spyOn(IDBObjectStore.prototype, "put")
+			.mockImplementationOnce(() => {
+				throw new DOMException("Quota reached", "QuotaExceededError");
+			});
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector("textarea")).not.toBeNull(),
+		);
+		enterText(
+			document.querySelector<HTMLTextAreaElement>("textarea")!,
+			"Unsaved target",
+		);
+		await eventually(() =>
+			expect(
+				get(toastStore).some(
+					(toast) =>
+						toast.type === "error" && toast.message.includes("local storage"),
+				),
+			).toBe(true),
+		);
+
+		button("Export translation").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Export files"),
+		);
+		const plainText = Array.from(
+			document.querySelectorAll<HTMLElement>(".modal-action-card strong"),
+		).find((element) => element.textContent?.trim() === "Plain text")!;
+		(plainText.closest("button") as HTMLButtonElement).click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain(
+				"latest edit was not saved, so export was cancelled",
+			),
+		);
+		expect(download).not.toHaveBeenCalled();
+
+		failedPut.mockRestore();
+		download.mockRestore();
+		await deleteCurrentProject(project.id);
+	});
+
+	it("shows a user-visible warning for formula-like native CSV targets", async () => {
+		const project = makeUserData({
+			name: "formula-warning.csv",
+			seg1: ["Safe source"],
+			seg2: ['=HYPERLINK("https://example.invalid")'],
+			checked: [true],
+			locked: [false],
+			type: "csv",
+			typeRef: "Source",
+		});
+		project.id = Date.now() + 94_000;
+		singleUserData.set(project);
+		openMenu.set(false);
+		const download = vi
+			.spyOn(HTMLAnchorElement.prototype, "click")
+			.mockImplementation(() => undefined);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+
+		button("Export translation").click();
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Export files"),
+		);
+		document
+			.querySelector<HTMLButtonElement>(".modal-action-card.primary")!
+			.click();
+		await eventually(() =>
+			expect(
+				get(toastStore).some(
+					(toast) =>
+						toast.type === "warning" &&
+						toast.message.includes("formula-like target"),
+				),
+			).toBe(true),
+		);
+		expect(download).toHaveBeenCalled();
+		download.mockRestore();
+	});
+
 	it("edits the displayed TM record after filtering without corrupting another record", async () => {
 		const seed = Date.now();
 		const memory = {
@@ -938,7 +1157,7 @@ describe("real CAT application route", () => {
 			expect(document.querySelector("textarea")).toBeNull(),
 		);
 		expect(get(singleTmData).terms[0].source.segment).toBe("First source");
-		await deleteTmFromIndexedDB(seed);
+		await deleteCurrentTm(seed);
 	});
 
 	it("edits the displayed TB record after filtering without corrupting another record", async () => {
@@ -974,7 +1193,7 @@ describe("real CAT application route", () => {
 			expect(document.querySelector("textarea")).toBeNull(),
 		);
 		expect(get(singleTbData).entries[0].terms[0].term).toBe("First term");
-		await deleteTbFromIndexedDB(seed);
+		await deleteCurrentTb(seed);
 	});
 
 	it("keeps new TM units as local drafts until the complete unit is saved", async () => {
@@ -1006,7 +1225,7 @@ describe("real CAT application route", () => {
 				target: [{ lang: "de", segment: "مرحبا بالعالم" }],
 			});
 		});
-		await deleteTmFromIndexedDB(seed);
+		await deleteCurrentTm(seed);
 	});
 
 	it("keeps new TB terms as local drafts until language and value are complete", async () => {
@@ -1041,7 +1260,7 @@ describe("real CAT application route", () => {
 				term: "مصطلح",
 			});
 		});
-		await deleteTbFromIndexedDB(seed);
+		await deleteCurrentTb(seed);
 	});
 
 	it("does not persist a new TM target early and protects the final target", async () => {
@@ -1084,7 +1303,7 @@ describe("real CAT application route", () => {
 				{ lang: "fr", segment: "Cible — مرحبا" },
 			]);
 		});
-		await deleteTmFromIndexedDB(seed);
+		await deleteCurrentTm(seed);
 	});
 
 	it("keeps new TB notes local and refuses an empty note on save", async () => {
@@ -1127,7 +1346,7 @@ describe("real CAT application route", () => {
 				{ type: "", text: "Approved ✓" },
 			]);
 		});
-		await deleteTbFromIndexedDB(seed);
+		await deleteCurrentTb(seed);
 	});
 
 	it("keeps the project rename modal and snapshots unchanged after a quota failure", async () => {
@@ -1181,7 +1400,7 @@ describe("real CAT application route", () => {
 			get(toastStore).some((toast) => toast.message.includes("updated")),
 		).toBe(false);
 		failedPut.mockRestore();
-		await deleteTranslationFromIndexedDB(project.id);
+		await deleteCurrentProject(project.id);
 	});
 
 	it("does not publish a segment fill when its transaction aborts", async () => {
@@ -1227,7 +1446,7 @@ describe("real CAT application route", () => {
 			get(toastStore).some((toast) => toast.message.includes("Filled")),
 		).toBe(false);
 		failedPut.mockRestore();
-		await deleteTranslationFromIndexedDB(project.id);
+		await deleteCurrentProject(project.id);
 	});
 
 	it("persists the final queued edit through blur, page exit, route destruction, and project switching", async () => {
@@ -1280,8 +1499,8 @@ describe("real CAT application route", () => {
 			configurable: true,
 			value: "visible",
 		});
-		await deleteTranslationFromIndexedDB(first.id);
-		await deleteTranslationFromIndexedDB(second.id);
+		await deleteCurrentProject(first.id);
+		await deleteCurrentProject(second.id);
 	});
 
 	it("rolls back a failed TM edit and keeps the editor open", async () => {
@@ -1330,7 +1549,7 @@ describe("real CAT application route", () => {
 			get(toastStore).some((toast) => toast.message === "Entry saved"),
 		).toBe(false);
 		failedPut.mockRestore();
-		await deleteTmFromIndexedDB(seed);
+		await deleteCurrentTm(seed);
 	});
 
 	it("rolls back a failed TB edit and keeps the editor open", async () => {
@@ -1374,7 +1593,7 @@ describe("real CAT application route", () => {
 			get(toastStore).some((toast) => toast.message === "Entry saved"),
 		).toBe(false);
 		failedPut.mockRestore();
-		await deleteTbFromIndexedDB(seed);
+		await deleteCurrentTb(seed);
 	});
 
 	it("clears loading and remains navigable after an IndexedDB open failure", async () => {
@@ -1504,7 +1723,7 @@ describe("real CAT application route", () => {
 		expect(get(showLoading)).toBe(false);
 		expect(get(openMenu)).toBe(true);
 		expect(document.body.textContent).toContain("Your projects");
-		await deleteTranslationFromIndexedDB(project.id);
+		await deleteCurrentProject(project.id);
 	});
 
 	it("clears loading when TM and TB library reads fail", async () => {

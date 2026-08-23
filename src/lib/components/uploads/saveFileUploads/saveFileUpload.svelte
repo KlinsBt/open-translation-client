@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {
+		replaceAndOpenProjectFromSaveFile,
 		saveAndOpenNewFileWithStringArrayFromSaveFile,
-		updateAndOpenNewFileWithStringArray,
 	} from "$lib/functions/saveTranslationOnIndexedDb.js";
 	import DragAndDropHere from "$lib/components/svg/dragAndDrop.svelte";
 	import type { UserData } from "$lib/types/types.js";
@@ -100,11 +100,17 @@
 	}
 
 	async function updateExistingProjectWithSaveFile() {
-		const timestamp = new Date().valueOf().toString();
 		if (!saveData) return;
-		saveData.translationData.creationDate = timestamp;
-		await updateAndOpenNewFileWithStringArray(saveData);
-		showLoading.set(false);
+		await setLoadingAndRender();
+		try {
+			saveData.translationData.creationDate = new Date().valueOf().toString();
+			await replaceAndOpenProjectFromSaveFile(saveData);
+			notifySuccess("Existing project replaced from the portable backup.");
+		} catch (error) {
+			notifyError(safeInputMessage(error));
+		} finally {
+			showLoading.set(false);
+		}
 	}
 
 	function checkIfUniqueId(id: number): boolean {

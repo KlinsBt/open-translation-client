@@ -1209,6 +1209,108 @@ verify` passed formatting, ESLint, Svelte diagnostics with 0 errors/warnings,
   diff, generated-artifact, roadmap-checkbox, and clean-worktree checks passed.
   No remaining regression is known in the remediated behavior.
 
+## Seventh independent follow-up audit
+
+- [x] AUD-065 Make explicitly confirmed portable-project replacement rebase on
+      the current stored revision, report failures in the modal, and prove that
+      an older backup can replace the matching local project without weakening
+      ordinary compare-and-swap saves.
+
+  Completed 2026-08-23 in the commit containing this entry. A dedicated
+  `replaceTranslationOnIndexedDB` transaction now reads the current local
+  revision and rebases the user-confirmed imported snapshot atomically; normal
+  saves still reject stale revisions. The modal catches and reports replacement
+  failures. Browser tests restore an older same-ID backup over newer local data
+  and then prove the superseded copy remains stale.
+
+- [x] AUD-066 Neutralize formula-like cells in converted bilingual CSV output
+      and surface native CSV formula warnings to users rather than only the
+      developer console. Cover source and target values, Unicode, delimiters,
+      quoting, and every spreadsheet formula prefix.
+
+  Completed 2026-08-23. Converted CSV cells beginning with ASCII or full-width
+  `=`, `+`, `-`, `@`, tab, CR, or LF are prefixed as literal spreadsheet text
+  before RFC-style quoting. Native CSV round trips retain exact source content
+  but now show a visible warning. Unit and browser regressions cover malicious
+  source/target cells, quoting, Unicode, and the user-visible warning.
+
+- [x] AUD-067 Require expected revisions for project, TM, and TB deletion so a
+      stale tab cannot remove newer work. Keep resource-reference repair in the
+      same transaction and add stale-delete browser regressions.
+
+  Completed 2026-08-23. Project, TM, and TB deletion APIs now require the
+  revision shown to the caller and compare it inside their read/write
+  transaction. Resource deletion still repairs project references and advances
+  project revisions atomically. Browser tests update all three record types and
+  prove stale deletion fails without removing newer data.
+
+- [x] AUD-068 Return the exact persisted project from every creation helper and
+      open it by its generated identity instead of selecting the last database
+      record. Cover an interleaved cross-tab insertion.
+
+  Completed 2026-08-23. Text, segmented, and portable-project creation helpers
+  now return the exact object whose IndexedDB `add` assigned its ID; callers no
+  longer reload and guess the last key. Unit regressions inject a concurrent
+  project and verify every creation path opens only its own returned identity.
+
+- [x] AUD-069 Bound retained translation-memory index memory for very large long-
+      text memories while preserving Unicode matching quality and revision-aware
+      invalidation. Add an enforceable memory-footprint regression.
+
+  Completed 2026-08-23. Long-segment histograms use compact saturating counters,
+  retain at most 48 MiB of sketches for one active language pair, and compute an
+  uncached sketch only when a non-retained candidate is actually compared.
+  Existing ordering, multiplicity, Unicode, revision, and 10,000-entry tests
+  remain green; a generated 6,200-long-entry test enforces both the byte cap and
+  single-pair cache bound.
+
+- [x] AUD-070 Flush and validate the edit queue before every export, abort export
+      after quota or revision failures, and cover the blur/click race in a real
+      browser test.
+
+  Completed 2026-08-23. Every export path drains the edit queue first and checks
+  its durable health before creating a download. A failed save rolls back as
+  before, leaves the export modal retryable, and now blocks delivery with a
+  specific explanation. A real Chromium regression injects an IndexedDB quota
+  failure and proves no download click occurs.
+
+- [x] AUD-071 Invalidate shifted virtual-row measurements from the structural
+      edit boundary after split and join, preserving measurements only for rows
+      whose identity did not move. Cover variable-height offsets after both
+      operations.
+
+  Completed 2026-08-23. The virtual size index exposes `resetFrom`, and successful
+  split/join operations resize then invalidate measurements beginning at the
+  changed row. Variable-height tests prove preceding identities retain their
+  measurements while shifted rows return to the safe default after both edits.
+
+- [x] AUD-072 Run the full lint/type/coverage/Chromium/build gate, Firefox suite,
+      available independent validators, dependency audits, roadmap/catalog
+      consistency, diff checks, and clean-worktree review. Record exact evidence
+      before closing this follow-up.
+
+  Completed 2026-08-23. `npm run verify` passed Prettier, ESLint, Svelte checking
+  with 0 errors/warnings, 93 unit files with 1,176 passed and 11 explicit
+  conditional skips, all four coverage thresholds, 18 Chromium files with
+  118/118 tests, the production build, and bundle budgets. Coverage was 85.00%
+  statements, 74.55% branches, 92.09% functions, and 86.39% lines. The same 18
+  files and 118/118 tests passed in Firefox.
+
+  `npm run test:external:available` passed 13 files with 121 tests and four
+  explicit skips. LibreOffice 25.8.2.2, FFmpeg n8.0/ffprobe, Poppler 25.10.0,
+  Qt qmllint 1.0, libxml2 2.15.1, and gettext 0.26 exercised every applicable
+  artifact. EPUBCheck, DITA-OT, pdfTeX, and windres are absent locally and remain
+  strict release-matrix requirements. Full and production-only `npm audit`
+  reported zero vulnerabilities. Registry/catalog checks are included in the
+  green unit gate; the roadmap remains 68/68 checked, no files above 50 MiB were
+  found, and `git diff --check` passed.
+
+  The local WebKit attempt stopped before tests because this CachyOS host lacks
+  Playwright's ICU/XML/Flite runtime packages. Chromium and Firefox results are
+  application passes; WebKit remains covered by the checked-in Ubuntu browser
+  matrix that installs those dependencies. This host limitation is not recorded
+  as a WebKit pass.
+
 ## Checkbox closure protocol
 
 Before changing any reopened item to `[x]`, record directly beneath it:

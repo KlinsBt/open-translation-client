@@ -29,12 +29,23 @@ export class VirtualSegmentSizeIndex {
 		this.sizes = new Float64Array(nextCount);
 		this.sizes.fill(this.defaultSize);
 		this.sizes.set(previous.subarray(0, Math.min(previous.length, nextCount)));
-		this.tree = new Float64Array(nextCount + 1);
+		this.rebuildTree();
+	}
 
-		for (let index = 1; index <= nextCount; index += 1) {
+	/** Reset measurements at and after a structural edit boundary. Rows before
+	 * the boundary retain their identity; split/join shifts every row after it. */
+	resetFrom(index: number): void {
+		const start = Math.max(0, Math.min(this.count, Math.floor(index)));
+		this.sizes.fill(this.defaultSize, start);
+		this.rebuildTree();
+	}
+
+	private rebuildTree(): void {
+		this.tree = new Float64Array(this.count + 1);
+		for (let index = 1; index <= this.count; index += 1) {
 			this.tree[index] += this.sizes[index - 1];
 			const parent = index + (index & -index);
-			if (parent <= nextCount) this.tree[parent] += this.tree[index];
+			if (parent <= this.count) this.tree[parent] += this.tree[index];
 		}
 	}
 

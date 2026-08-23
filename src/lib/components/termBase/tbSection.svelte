@@ -117,7 +117,13 @@
 		if ($tbIdSelected === undefined) return;
 		await setLoadingAndRender();
 		try {
-			await deleteTbFromIndexedDB($tbIdSelected);
+			const selected = $tbData.find(({ id }) => id === $tbIdSelected);
+			if (!selected)
+				throw new Error("The selected term base no longer exists.");
+			await deleteTbFromIndexedDB(
+				$tbIdSelected,
+				selected.persistenceRevision ?? -1,
+			);
 			showDeletionConfirmationModal = false;
 			showTbxModal.set(false);
 			notifyInfo("Term Base deleted");

@@ -7,6 +7,7 @@ import {
 } from "$lib/formats/skeleton";
 import type { SupportedTextEncoding } from "$lib/formats/safeInput";
 import type { UserData } from "$lib/types/types";
+import { notifyWarning } from "$lib/components/notifications/toastStore";
 import { encodeTextBytes } from "./outputGenerationText";
 
 function csvReplacements(project: UserData): CsvFieldReplacement[] {
@@ -136,8 +137,8 @@ export async function generateCsvTranslation(project: UserData): Promise<void> {
 	assertProjectExportQuality(project);
 	const warnings = getCsvFormulaInjectionWarnings(project);
 	if (warnings.length > 0)
-		console.warn(
-			`CSV/TSV export contains ${warnings.length} target field(s) that spreadsheet software may interpret as formulas.`,
+		notifyWarning(
+			`CSV/TSV export preserved ${warnings.length} formula-like target field(s). Review them before opening the file in spreadsheet software.`,
 		);
 	const data = project.translationData;
 	const sourceName = data.skeleton?.source.name ?? "translation.csv";

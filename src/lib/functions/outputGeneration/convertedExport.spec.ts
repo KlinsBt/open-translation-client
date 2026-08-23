@@ -44,6 +44,38 @@ describe("converted translation exports", () => {
 		);
 	});
 
+	it("neutralizes every spreadsheet formula prefix in converted source and target cells", async () => {
+		const prefixes = [
+			"=",
+			"+",
+			"-",
+			"@",
+			"\t",
+			"\r",
+			"\n",
+			"＝",
+			"＋",
+			"－",
+			"＠",
+		];
+		const unsafe = structuredClone(project);
+		unsafe.translationData.seg1 = prefixes.map(
+			(prefix, index) => `${prefix}SOURCE_${index}`,
+		);
+		unsafe.translationData.seg2 = prefixes.map(
+			(prefix, index) => `${prefix}TARGET_${index}`,
+		);
+		unsafe.translationData.checked = prefixes.map(() => true);
+
+		const result = await buildConvertedTranslation(unsafe, "csv");
+		const csv = await result.blob.text();
+		for (const [index, prefix] of prefixes.entries()) {
+			expect(csv).toContain(`'${prefix}SOURCE_${index}`);
+			expect(csv).toContain(`'${prefix}TARGET_${index}`);
+		}
+		expect(csv).toContain('"1","\'=SOURCE_0","\'=TARGET_0"');
+	});
+
 	it("builds Unicode-safe RTF", async () => {
 		const result = await buildConvertedTranslation(project, "rtf");
 		const rtf = await result.blob.text();

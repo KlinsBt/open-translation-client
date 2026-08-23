@@ -255,12 +255,17 @@
 	);
 	let combineSelection: Set<number> = $state(new Set());
 	let persistenceFailureCount = 0;
+	let persistenceHealthy = true;
 	const projectEditQueue = createPersistedEditQueue<UserData>(
 		$singleUserData,
 		updateTranslationOnIndexedDB,
 		{
+			onCommit() {
+				persistenceHealthy = true;
+			},
 			onFailure(error, committed) {
 				persistenceFailureCount += 1;
+				persistenceHealthy = false;
 				singleUserData.set(committed);
 				seg1WordCount.set(getTotalWordCount(committed.translationData.seg1));
 				seg2WordCount.set(getTotalWordCount(committed.translationData.seg2));
@@ -328,6 +333,13 @@
 		return virtualSizeIndex.totalSize();
 	}
 
+	function resetVirtualMeasurementsFrom(index: number, count: number) {
+		virtualSizeIndex.resize(count);
+		virtualSizeIndex.resetFrom(index);
+		virtualRevision += 1;
+		refreshVirtualWindow();
+	}
+
 	function measureSegment(node: HTMLElement, index: number) {
 		let currentIndex = index;
 		const measure = () => {
@@ -383,6 +395,11 @@
 		exportError = null;
 		exportInProgress = true;
 		try {
+			await projectEditQueue.flush();
+			if (!persistenceHealthy)
+				throw new Error(
+					"The latest edit was not saved, so export was cancelled. Resolve the storage or concurrent-edit error and save again before exporting.",
+				);
 			await action();
 			pendingDeliveryExport = null;
 			showSaveFileModal = false;
@@ -616,6 +633,7 @@
 		}
 		const newUserData = { ...$singleUserData, translationData: result.data };
 		if (!(await persistCandidate(newUserData))) return;
+		resetVirtualMeasurementsFrom(idx, newUserData.translationData.seg2.length);
 		selectedSegmentId.set(idx + 1);
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
@@ -657,6 +675,10 @@
 
 		const newUserData = { ...$singleUserData, translationData: result.data };
 		if (!(await persistCandidate(newUserData))) return;
+		resetVirtualMeasurementsFrom(
+			selected[0],
+			newUserData.translationData.seg2.length,
+		);
 		seg1WordCount.set(getTotalWordCount(newUserData.translationData.seg1));
 		seg2WordCount.set(getTotalWordCount(newUserData.translationData.seg2));
 		combineSelection = new Set();

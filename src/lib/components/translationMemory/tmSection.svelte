@@ -120,7 +120,13 @@
 		if ($tmIdSelected === undefined) return;
 		await setLoadingAndRender();
 		try {
-			await deleteTmFromIndexedDB($tmIdSelected);
+			const selected = $tmData.find(({ id }) => id === $tmIdSelected);
+			if (!selected)
+				throw new Error("The selected translation memory no longer exists.");
+			await deleteTmFromIndexedDB(
+				$tmIdSelected,
+				selected.persistenceRevision ?? -1,
+			);
 			showDeletionConfirmationModal = false;
 			showTmxModal.set(false);
 			notifyInfo("Translation Memory deleted");
