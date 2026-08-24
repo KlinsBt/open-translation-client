@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 import { makeUserData } from "../../../test/fixtures";
 import { validateTbxFile } from "$lib/components/uploads/tbxUpload/tbxFileFunctions";
 import { validateTmxFile } from "$lib/components/uploads/tmxUpload/tmxFileFunctions";
-import {
-	extractXliff2_0Data,
-	validateXliff2_0Data,
-} from "$lib/components/uploads/saveFileUploads/saveFileFunctions";
+import { validateXliff2_0Data } from "$lib/components/uploads/saveFileUploads/saveFileFunctions";
+import { importXliffProjectStreaming } from "$lib/formats/streamingImporters";
 import { buildTextTranslation } from "../outputGeneration/outputGenerationText";
 import { buildTbx } from "./generateTbx3SaveFile";
 import { buildTmx } from "./generateTmxSaveFile1_4";
@@ -41,7 +39,7 @@ describe("translation output builders", () => {
 		expect(validateXliff2_0Data(doc)).toBe(true);
 	});
 
-	it("round-trips segment metadata and reversible join boundaries in XLIFF", () => {
+	it("round-trips segment metadata and reversible join boundaries through the production XLIFF importer", async () => {
 		const userData = makeUserData({
 			type: "json",
 			seg1: ["One. Two!"],
@@ -75,8 +73,13 @@ describe("translation output builders", () => {
 			},
 		});
 		const output = buildXliff2_0(userData);
-		const doc = new DOMParser().parseFromString(output, "application/xml");
-		const restored = extractXliff2_0Data(doc, true).translationData;
+		const restored = (
+			await importXliffProjectStreaming(
+				new File([output], "project.xlf", {
+					type: "application/xliff+xml",
+				}),
+			)
+		).data.translationData;
 
 		expect(restored.segmentsMeta).toEqual(
 			userData.translationData.segmentsMeta,
@@ -85,8 +88,8 @@ describe("translation output builders", () => {
 			userData.translationData.segmentJoinStates,
 		);
 		expect(restored.parsingTokens).toEqual([".", "!"]);
-		expect(restored.documentModel).toEqual(
-			userData.translationData.documentModel,
+		expect(restored.documentModel).toMatchObject(
+			userData.translationData.documentModel!,
 		);
 		expect(restored.skeleton).toEqual(userData.translationData.skeleton);
 		expect(restored.filterOptions).toEqual(

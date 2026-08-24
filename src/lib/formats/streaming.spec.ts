@@ -325,6 +325,44 @@ describe("streaming CAT interchange importers", () => {
 		});
 	});
 
+	it("rejects a structurally invalid embedded Open TLC document model", async () => {
+		const project = makeUserData({
+			type: "json",
+			documentModel: {
+				schemaVersion: 1,
+				id: "messages",
+				format: "json",
+				units: [
+					{
+						id: "message",
+						source: { fragments: [{ kind: "text", text: "Hello" }] },
+						target: { fragments: [{ kind: "text", text: "Hallo" }] },
+						state: "translated",
+						translatable: true,
+						contexts: [],
+						notes: [],
+					},
+				],
+			},
+			seg1: ["Hello"],
+			seg2: ["Hallo"],
+			checked: [false],
+		});
+		const corrupt = buildXliff2_0(project).replace(
+			/(<mda:meta type="editing_state">)[\s\S]*?(<\/mda:meta>)/,
+			'$1{"documentModel":{"schemaVersion":1}}$2',
+		);
+
+		await expect(
+			importXliffProjectStreaming(textFile(corrupt, "corrupt-model.xliff")),
+		).rejects.toMatchObject({
+			code: "PROJECT_METADATA_INVALID",
+			message: expect.stringMatching(
+				/embedded document metadata is malformed/i,
+			),
+		});
+	});
+
 	it("accepts malformed JSON-like third-party notes outside Open TLC metadata", async () => {
 		const generic = `<?xml version="1.0"?><xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2"><file original="vendor.txt" source-language="en" target-language="de" datatype="plaintext"><header><note from="Vendor">{not-json</note></header><body><trans-unit id="u1"><source>Hello</source><target>Hallo</target></trans-unit></body></file></xliff>`;
 		const result = await importXliffProjectStreaming(

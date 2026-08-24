@@ -45,6 +45,11 @@ import {
 	migrateTmData,
 	PROJECT_SCHEMA_VERSION,
 } from "./persistenceMigrations";
+import {
+	synchronizeNeutralDocument,
+	validateNeutralDocument,
+	type NeutralDocument,
+} from "./documentModel";
 
 export interface StreamingImportResult<T> {
 	data: T;
@@ -357,6 +362,14 @@ export async function importXliffProjectStreaming(
 		(state.name === "Unnamed Translation" || /^Translation\s/.test(state.name))
 			? fileNameWithoutExtension(file.name)
 			: state.name;
+	const restoredDocumentModel = restoreEmbeddedDocumentModel(
+		state,
+		documentModel,
+		normalizedType,
+		seg1,
+		seg2,
+		checked,
+	);
 	return {
 		data: migrateProjectData({
 			...(state.schemaVersion === undefined && state.hasOpenTlcMetadata
@@ -381,7 +394,7 @@ export async function importXliffProjectStreaming(
 				segmentsMeta: state.editingState.segmentsMeta,
 				segmentJoinStates: state.editingState.segmentJoinStates,
 				parsingTokens: state.editingState.parsingTokens,
-				documentModel: documentModel ?? state.editingState.documentModel,
+				documentModel: restoredDocumentModel,
 				skeleton: state.editingState.skeleton,
 				filterOptions: state.editingState.filterOptions,
 				tm: state.tm,
@@ -390,6 +403,58 @@ export async function importXliffProjectStreaming(
 		}),
 		metrics,
 	};
+}
+
+function restoreEmbeddedDocumentModel(
+	state: XliffHeaderState,
+	reconstructed: NeutralDocument | undefined,
+	format: Type,
+	seg1: string[],
+	seg2: string[],
+	checked: boolean[],
+): NeutralDocument | undefined {
+	const embedded = state.editingState.documentModel;
+	if (embedded === undefined) return reconstructed;
+	if (!state.hasOpenTlcMetadata)
+		throw new SafeInputError(
+			"PROJECT_METADATA_INVALID",
+			"Open TLC editing state was found outside recognized Open TLC metadata.",
+		);
+
+	let validation;
+	try {
+		if (!embedded || typeof embedded !== "object" || Array.isArray(embedded))
+			throw new TypeError("The embedded document model is not an object.");
+		validation = validateNeutralDocument(embedded as NeutralDocument);
+	} catch (error) {
+		throw new SafeInputError(
+			"PROJECT_METADATA_INVALID",
+			`Open TLC embedded document metadata is malformed: ${error instanceof Error ? error.message : "invalid document model"}`,
+		);
+	}
+	const document = embedded as NeutralDocument;
+	if (
+		!validation.valid ||
+		document.format !== format ||
+		document.units.length !== seg1.length
+	) {
+		const reason = !validation.valid
+			? validation.issues[0]?.message || "invalid document model"
+			: document.format !== format
+				? `format ${String(document.format)} does not match ${format}`
+				: `unit count ${document.units.length} does not match segment count ${seg1.length}`;
+		throw new SafeInputError(
+			"PROJECT_METADATA_INVALID",
+			`Open TLC embedded document metadata is malformed: ${reason}.`,
+		);
+	}
+
+	return synchronizeNeutralDocument(
+		document,
+		{ seg1, seg2, checked },
+		state.sourceLang,
+		state.targetLang,
+	);
 }
 
 interface XliffHeaderState {

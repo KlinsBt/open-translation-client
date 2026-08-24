@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest";
 import { makeUserData } from "../../../../test/fixtures";
 import { buildXliff2_0 } from "$lib/functions/saveFileGeneration/generateXliffSaveFile2_0";
 import { buildXliff1_2 } from "$lib/functions/saveFileGeneration/generateXliffSaveFile1_2";
+import { importXliffProjectStreaming } from "$lib/formats/streamingImporters";
 import {
-	extractXliff1_2Data,
-	extractXliff2_0Data,
 	getXliffVersion,
 	validateJsonData,
 	validateXliff1_2Data,
@@ -12,15 +11,17 @@ import {
 } from "./saveFileFunctions";
 
 describe("save-file validation", () => {
-	it("recognizes strict XLIFF 1.2 and its standard OpenTLC metadata note", () => {
-		const doc = new DOMParser().parseFromString(
-			buildXliff1_2(makeUserData()),
-			"application/xml",
-		);
+	it("recognizes strict XLIFF 1.2 and imports its OpenTLC metadata through the production path", async () => {
+		const xml = buildXliff1_2(makeUserData());
+		const doc = new DOMParser().parseFromString(xml, "application/xml");
 		expect(getXliffVersion(doc)).toBe(1.2);
 		expect(validateXliff1_2Data(doc)).toBe(true);
 
-		const extracted = extractXliff1_2Data(doc, true);
+		const extracted = (
+			await importXliffProjectStreaming(
+				new File([xml], "project.xlf", { type: "application/xliff+xml" }),
+			)
+		).data;
 		expect(extracted).toMatchObject({
 			id: 7,
 			translationData: {
@@ -34,15 +35,17 @@ describe("save-file validation", () => {
 		});
 	});
 
-	it("recognizes and extracts XLIFF 2.0 without swapping languages", () => {
-		const doc = new DOMParser().parseFromString(
-			buildXliff2_0(makeUserData()),
-			"application/xml",
-		);
+	it("recognizes and imports XLIFF 2.0 without swapping languages", async () => {
+		const xml = buildXliff2_0(makeUserData());
+		const doc = new DOMParser().parseFromString(xml, "application/xml");
 		expect(getXliffVersion(doc)).toBe(2);
 		expect(validateXliff2_0Data(doc)).toBe(true);
 
-		const extracted = extractXliff2_0Data(doc, true);
+		const extracted = (
+			await importXliffProjectStreaming(
+				new File([xml], "project.xlf", { type: "application/xliff+xml" }),
+			)
+		).data;
 		expect(extracted.translationData.sourceLang).toBe("en");
 		expect(extracted.translationData.targetLang).toBe("de");
 		expect(extracted.translationData.seg1).toEqual(["Hello & welcome."]);
