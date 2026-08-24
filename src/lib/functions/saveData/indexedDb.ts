@@ -255,8 +255,13 @@ function openDatabase(): Promise<IDBDatabase> {
 	if (databasePromise) return databasePromise;
 	const attempt = new Promise<IDBDatabase>((resolve, reject) => {
 		const request = indexedDB.open(DB_NAME, DB_VERSION);
+		let settled = false;
 
 		request.onupgradeneeded = (event) => {
+			if (settled) {
+				request.transaction?.abort();
+				return;
+			}
 			const db = (event.target as IDBOpenDBRequest).result;
 			if (!db.objectStoreNames.contains(DB_USER_STORE_NAME)) {
 				db.createObjectStore(DB_USER_STORE_NAME, {
@@ -279,21 +284,41 @@ function openDatabase(): Promise<IDBDatabase> {
 		};
 
 		request.onsuccess = (event) => {
-			db = (event.target as IDBOpenDBRequest).result;
-			db.onversionchange = () => {
-				db?.close();
-				db = null;
-				databasePromise = null;
+			const openedDatabase = (event.target as IDBOpenDBRequest).result;
+			if (settled) {
+				openedDatabase.close();
+				return;
+			}
+			settled = true;
+			db = openedDatabase;
+			openedDatabase.onversionchange = () => {
+				openedDatabase.close();
+				if (db === openedDatabase) {
+					db = null;
+					databasePromise = null;
+				}
 			};
-			resolve(db);
+			resolve(openedDatabase);
 		};
 
 		request.onerror = (event) => {
+			if (settled) return;
+			settled = true;
 			reportProductionError(
 				"IndexedDB open failed",
 				(event.target as IDBOpenDBRequest).error,
 			);
 			reject((event.target as IDBOpenDBRequest).error);
+		};
+
+		request.onblocked = () => {
+			if (settled) return;
+			settled = true;
+			const error = new Error(
+				"Local storage is still open in another Open TLC tab. Close other Open TLC tabs, then reload this page.",
+			);
+			reportProductionError("IndexedDB upgrade blocked", error);
+			reject(error);
 		};
 	});
 	databasePromise = attempt.catch((error) => {

@@ -84,6 +84,35 @@ describe("converted translation exports", () => {
 		expect(rtf).toContain("\\par");
 	});
 
+	it("normalizes CRLF and lone carriage returns in RTF text", async () => {
+		const multiline = structuredClone(project);
+		multiline.translationData.seg2 = ["First\r\nSecond\rThird"];
+		const result = await buildConvertedTranslation(multiline, "rtf");
+		const rtf = await result.blob.text();
+		expect(rtf.match(/\\line /g)).toHaveLength(2);
+		expect(rtf).not.toContain("\\u13?");
+	});
+
+	it("always creates a portable non-empty converted export filename", async () => {
+		const extensionOnly = structuredClone(project);
+		extensionOnly.translationData.name = ".txt";
+		expect(
+			(await buildConvertedTranslation(extensionOnly, "txt")).fileName,
+		).toBe("translation.txt");
+
+		const windowsReserved = structuredClone(project);
+		windowsReserved.translationData.name = "CON.docx";
+		expect(
+			(await buildConvertedTranslation(windowsReserved, "rtf")).fileName,
+		).toBe("translation-CON.rtf");
+
+		const trailingPunctuation = structuredClone(project);
+		trailingPunctuation.translationData.name = "Delivery. ";
+		expect(
+			(await buildConvertedTranslation(trailingPunctuation, "html")).fileName,
+		).toBe("Delivery.html");
+	});
+
 	it("builds a valid DOCX package containing translated text", async () => {
 		const result = await buildConvertedTranslation(project, "docx");
 		const zip = await JSZip.loadAsync(await result.blob.arrayBuffer());

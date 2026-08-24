@@ -59,6 +59,9 @@ const translationMemoryIndexCache = new WeakMap<
 interface OrderedTokenSketch {
 	unigrams: Uint8Array;
 	bigrams: Uint8Array;
+	/** Exact counts for the exceptional buckets that exceed byte capacity. */
+	unigramOverflow?: Map<number, number>;
+	bigramOverflow?: Map<number, number>;
 	unigramCount: number;
 	bigramCount: number;
 }
@@ -243,6 +246,8 @@ function hashToken(token: string): number {
 function orderedTokenSketch(value: string): OrderedTokenSketch {
 	const unigrams = new Uint8Array(SKETCH_BUCKETS);
 	const bigrams = new Uint8Array(SKETCH_BUCKETS);
+	let unigramOverflow: Map<number, number> | undefined;
+	let bigramOverflow: Map<number, number> | undefined;
 	let previous: number | undefined;
 	let unigramCount = 0;
 	let bigramCount = 0;
@@ -250,28 +255,59 @@ function orderedTokenSketch(value: string): OrderedTokenSketch {
 		const current = hashToken(match[0]);
 		const unigramBucket = current % SKETCH_BUCKETS;
 		if (unigrams[unigramBucket] < 0xff) unigrams[unigramBucket]++;
+		else {
+			unigramOverflow ??= new Map();
+			unigramOverflow.set(
+				unigramBucket,
+				(unigramOverflow.get(unigramBucket) ?? 0xff) + 1,
+			);
+		}
 		unigramCount++;
 		if (previous !== undefined) {
 			const pair = Math.imul(previous ^ 0x9e3779b9, 33) ^ current;
 			const bigramBucket = (pair >>> 0) % SKETCH_BUCKETS;
 			if (bigrams[bigramBucket] < 0xff) bigrams[bigramBucket]++;
+			else {
+				bigramOverflow ??= new Map();
+				bigramOverflow.set(
+					bigramBucket,
+					(bigramOverflow.get(bigramBucket) ?? 0xff) + 1,
+				);
+			}
 			bigramCount++;
 		}
 		previous = current;
 	}
-	return { unigrams, bigrams, unigramCount, bigramCount };
+	return {
+		unigrams,
+		bigrams,
+		...(unigramOverflow ? { unigramOverflow } : {}),
+		...(bigramOverflow ? { bigramOverflow } : {}),
+		unigramCount,
+		bigramCount,
+	};
 }
 
 function multisetDice(
 	first: Uint8Array,
 	second: Uint8Array,
+	firstOverflow: ReadonlyMap<number, number> | undefined,
+	secondOverflow: ReadonlyMap<number, number> | undefined,
 	firstCount: number,
 	secondCount: number,
 ): number {
 	if (firstCount + secondCount === 0) return 100;
 	let intersection = 0;
+	if (!firstOverflow && !secondOverflow) {
+		for (let index = 0; index < first.length; index++)
+			intersection += Math.min(first[index], second[index]);
+		return (2 * intersection * 100) / (firstCount + secondCount);
+	}
 	for (let index = 0; index < first.length; index++)
-		intersection += Math.min(first[index], second[index]);
+		intersection += Math.min(
+			firstOverflow?.get(index) ?? first[index],
+			secondOverflow?.get(index) ?? second[index],
+		);
 	return (2 * intersection * 100) / (firstCount + secondCount);
 }
 
@@ -317,12 +353,16 @@ function preparedSimilarity(
 	const unigram = multisetDice(
 		firstSketch.unigrams,
 		secondSketch.unigrams,
+		firstSketch.unigramOverflow,
+		secondSketch.unigramOverflow,
 		firstSketch.unigramCount,
 		secondSketch.unigramCount,
 	);
 	const bigram = multisetDice(
 		firstSketch.bigrams,
 		secondSketch.bigrams,
+		firstSketch.bigramOverflow,
+		secondSketch.bigramOverflow,
 		firstSketch.bigramCount,
 		secondSketch.bigramCount,
 	);
@@ -418,11 +458,15 @@ export function getPreparedTranslationMemoryIndexStats(
 	candidates: number;
 	sketchedCandidates: number;
 	sketchBytes: number;
+	overflowEntries: number;
+	overflowBytes: number;
 	normalizedTextBytes: number;
 	estimatedRetainedBytes: number;
 } {
 	let sketchedCandidates = 0;
 	let sketchBytes = 0;
+	let overflowMaps = 0;
+	let overflowEntries = 0;
 	let normalizedTextBytes = 0;
 	for (const candidate of index.candidates) {
 		normalizedTextBytes += (candidate.prepared.text?.length ?? 0) * 2;
@@ -430,17 +474,30 @@ export function getPreparedTranslationMemoryIndexStats(
 		if (!sketch) continue;
 		sketchedCandidates++;
 		sketchBytes += sketch.unigrams.byteLength + sketch.bigrams.byteLength;
+		for (const overflow of [sketch.unigramOverflow, sketch.bigramOverflow]) {
+			if (!overflow) continue;
+			overflowMaps++;
+			overflowEntries += overflow.size;
+		}
 	}
+	// Map layout is engine-specific. These deliberately conservative allowances
+	// keep the diagnostic honest when adversarial repetition creates overflows.
+	const overflowBytes = overflowMaps * 64 + overflowEntries * 40;
 	return {
 		candidates: index.candidates.length,
 		sketchedCandidates,
 		sketchBytes,
+		overflowEntries,
+		overflowBytes,
 		normalizedTextBytes,
 		// References, numeric fields, and object slots vary by engine. Forty bytes
 		// per candidate is a conservative enforceable accounting allowance in
 		// addition to the exact typed-array and retained-string payloads.
 		estimatedRetainedBytes:
-			sketchBytes + normalizedTextBytes + index.candidates.length * 40,
+			sketchBytes +
+			overflowBytes +
+			normalizedTextBytes +
+			index.candidates.length * 40,
 	};
 }
 

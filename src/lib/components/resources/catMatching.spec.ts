@@ -65,6 +65,34 @@ describe("CAT resource matching", () => {
 		).toBeLessThan(100);
 	});
 
+	it("keeps exact overflow counts for highly repetitive long TM segments", () => {
+		const source = `${"alpha ".repeat(1_000)}end`;
+		const nearMatch = `${"alpha ".repeat(999)}beta end`;
+		expect(similarityPercentage(source, nearMatch)).toBeGreaterThan(99);
+		expect(
+			getTranslationMemoryMatches([source], ["translated"], nearMatch, 95),
+		).toMatchObject([{ match: "translated" }]);
+
+		const changedMultiplicity = `${"alpha ".repeat(500)}${"beta ".repeat(500)}end`;
+		expect(similarityPercentage(source, changedMultiplicity)).toBeLessThan(80);
+
+		const index = prepareTranslationMemoryIndex(
+			{
+				terms: [
+					{
+						source: { lang: "en", segment: source },
+						target: [{ lang: "de", segment: "translated" }],
+					},
+				],
+			},
+			"en",
+			"de",
+		);
+		const stats = getPreparedTranslationMemoryIndexStats(index);
+		expect(stats.overflowEntries).toBeGreaterThan(0);
+		expect(stats.overflowBytes).toBeGreaterThan(0);
+	});
+
 	it("normalizes combining marks and treats punctuation as ordered evidence", () => {
 		expect(
 			getTranslationMemoryMatches(

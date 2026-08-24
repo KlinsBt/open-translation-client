@@ -17,10 +17,15 @@ export interface ConvertedExportFile {
 
 function projectBaseName(project: UserData): string {
 	const name = project.translationData.name.trim() || "translation";
-	return name
+	const sanitized = name
 		.replace(/\.[a-z0-9]{1,8}$/i, "")
 		.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+		.replace(/[. ]+$/g, "")
 		.trim();
+	if (!sanitized) return "translation";
+	if (/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(sanitized))
+		return `translation-${sanitized}`;
+	return sanitized;
 }
 
 function languageCode(language: string): string {
@@ -46,7 +51,7 @@ function csvCell(value: string | number): string {
 
 function rtfText(value: string): string {
 	let output = "";
-	for (const character of value) {
+	for (const character of value.replace(/\r\n?/g, "\n")) {
 		if (character === "\\" || character === "{" || character === "}") {
 			output += `\\${character}`;
 			continue;

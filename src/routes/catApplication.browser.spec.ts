@@ -1653,6 +1653,48 @@ describe("real CAT application route", () => {
 		).resolves.toBeDefined();
 	});
 
+	it("reports a blocked IndexedDB upgrade instead of loading forever", async () => {
+		closeIndexedDbConnection();
+		userData.set([]);
+		openMenu.set(true);
+		const diagnostic = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		const request = {} as IDBOpenDBRequest;
+		const blockedOpen = vi
+			.spyOn(IDBFactory.prototype, "open")
+			.mockImplementationOnce(() => {
+				queueMicrotask(() =>
+					request.onblocked?.(
+						new IDBVersionChangeEvent("blocked", {
+							oldVersion: 2,
+							newVersion: 3,
+						}),
+					),
+				);
+				return request;
+			});
+		mounted = mount(AppRoute, { target: document.body });
+
+		await eventually(() =>
+			expect(
+				get(toastStore).some((toast) =>
+					toast.message.includes("Close other Open TLC tabs"),
+				),
+			).toBe(true),
+		);
+		expect(get(showLoading)).toBe(false);
+		expect(document.body.textContent).toContain("Your projects");
+		expect(diagnostic).toHaveBeenCalledWith(
+			"[Open TLC] IndexedDB upgrade blocked (Error)",
+		);
+		blockedOpen.mockRestore();
+		diagnostic.mockRestore();
+		await expect(
+			loadTranslationsUserDataFromIndexedDB(),
+		).resolves.toBeDefined();
+	});
+
 	it("clears loading after project read and migration failures", async () => {
 		await loadTranslationsUserDataFromIndexedDB();
 		userData.set([]);
