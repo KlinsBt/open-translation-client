@@ -1,7 +1,7 @@
 .resource-workspace,
 .resource-editor-shell {
 	box-sizing: border-box;
-	width: min(1240px, calc(100vw - 3rem));
+	width: calc(100% - 3rem);
 	margin: 0 auto;
 	padding: 2.5rem 0 4rem;
 	color: #173947;
@@ -337,7 +337,7 @@
 
 .resource-editor-toolbar {
 	display: flex;
-	width: min(100%, 1040px);
+	width: 100%;
 	margin: 0 auto 1rem;
 }
 

@@ -11,6 +11,8 @@ import TmxUpload from "$lib/components/uploads/tmxUpload/tmxUpload.svelte";
 import TbxUpload from "$lib/components/uploads/tbxUpload/tbxUpload.svelte";
 import SaveFileUpload from "$lib/components/uploads/saveFileUploads/saveFileUpload.svelte";
 import {
+	editTb,
+	editTm,
 	openMenu,
 	selectedSegmentId,
 	singleTbData,
@@ -66,6 +68,16 @@ function button(label: string): HTMLButtonElement {
 	if (!(candidate instanceof HTMLButtonElement))
 		throw new Error(`Button ${label} was not found.`);
 	return candidate;
+}
+
+function expectViewportFilling(selector: string): void {
+	const element = document.querySelector<HTMLElement>(selector);
+	if (!element) throw new Error(`${selector} was not found.`);
+	const bounds = element.getBoundingClientRect();
+	const viewportWidth = document.documentElement.clientWidth;
+	expect(bounds.width).toBeGreaterThanOrEqual(viewportWidth - 64);
+	expect(bounds.left).toBeLessThanOrEqual(32);
+	expect(viewportWidth - bounds.right).toBeLessThanOrEqual(32);
 }
 
 function enterText(
@@ -172,12 +184,90 @@ async function eventuallyAsync(assertion: () => Promise<void>): Promise<void> {
 afterEach(async () => {
 	if (mounted) await unmount(mounted);
 	mounted = null;
+	editTm.set(false);
+	editTb.set(false);
 	document.body.replaceChildren();
 	for (const toast of get(toastStore)) toastStore.remove(toast.id);
 	vi.restoreAllMocks();
 });
 
 describe("real CAT application route", () => {
+	it("fills the viewport in project, TM, and TB library and editor states", async () => {
+		openMenu.set(true);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector(".dashboard")).not.toBeNull(),
+		);
+		expectViewportFilling(".overview-inner");
+		expectViewportFilling(".dashboard");
+		await unmount(mounted);
+		mounted = null;
+		document.body.replaceChildren();
+
+		editTm.set(false);
+		mounted = mount(TmSection, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector(".resource-workspace")).not.toBeNull(),
+		);
+		expectViewportFilling(".resource-workspace");
+		await unmount(mounted);
+		mounted = null;
+		document.body.replaceChildren();
+
+		singleTmData.set({
+			id: Date.now(),
+			name: "Full-width memory",
+			terms: [
+				{
+					source: { lang: "en", segment: "Wide source" },
+					target: [{ lang: "de", segment: "Breites Ziel" }],
+				},
+			],
+		});
+		editTm.set(true);
+		mounted = mount(TmSection, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector(".resource-editor-content")).not.toBeNull(),
+		);
+		expectViewportFilling(".resource-editor-shell");
+		expectViewportFilling(".resource-editor-toolbar");
+		expectViewportFilling(".resource-editor-content");
+		await unmount(mounted);
+		mounted = null;
+		document.body.replaceChildren();
+
+		editTb.set(false);
+		mounted = mount(TbSection, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector(".resource-workspace")).not.toBeNull(),
+		);
+		expectViewportFilling(".resource-workspace");
+		await unmount(mounted);
+		mounted = null;
+		document.body.replaceChildren();
+
+		singleTbData.set({
+			id: Date.now() + 1,
+			name: "Full-width terminology",
+			entries: [
+				{
+					terms: [
+						{ lang: "en", term: "wide", notes: [] },
+						{ lang: "de", term: "breit", notes: [] },
+					],
+				},
+			],
+		});
+		editTb.set(true);
+		mounted = mount(TbSection, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector(".resource-editor-content")).not.toBeNull(),
+		);
+		expectViewportFilling(".resource-editor-shell");
+		expectViewportFilling(".resource-editor-toolbar");
+		expectViewportFilling(".resource-editor-content");
+	});
+
 	it("opens the project modal with focus containment and closes it with Escape", async () => {
 		openMenu.set(true);
 		mounted = mount(AppRoute, { target: document.body });

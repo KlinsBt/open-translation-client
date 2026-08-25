@@ -58,7 +58,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1.25rem 3rem;
-		width: min(1240px, calc(100% - 3rem));
+		width: calc(100% - 3rem);
 		min-height: 5.5rem;
 		margin: 0 auto;
 		padding: 0.85rem 0;

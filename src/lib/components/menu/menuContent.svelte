@@ -303,7 +303,7 @@
 	.dashboard {
 		display: grid;
 		gap: 1.5rem;
-		width: min(1240px, calc(100vw - 3rem));
+		width: calc(100% - 3rem);
 		padding: 2.5rem 0 4rem;
 		color: #173947;
 	}
@@ -792,7 +792,7 @@
 
 	@media (max-width: 760px) {
 		.dashboard {
-			width: min(100% - 1.5rem, 1240px);
+			width: calc(100% - 1.5rem);
 			padding-top: 1.5rem;
 		}
 
