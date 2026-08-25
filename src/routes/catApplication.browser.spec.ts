@@ -556,6 +556,26 @@ describe("real CAT application route", () => {
 			expect(get(singleUserData).translationData.checked[0]).toBe(false);
 			expect(get(singleUserData).translationData.locked[0]).toBe(false);
 		});
+		const source = firstSegment.querySelector<HTMLElement>(".source-select")!;
+		const sourceText = Array.from(source.childNodes).find(
+			(node) =>
+				node.nodeType === Node.TEXT_NODE && node.textContent?.includes("Alpha"),
+		)!;
+		const splitSelection = document.createRange();
+		splitSelection.setStart(sourceText, 5);
+		splitSelection.collapse(true);
+		window.getSelection()!.removeAllRanges();
+		window.getSelection()!.addRange(splitSelection);
+		source.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+		await tick();
+		const splitButton =
+			firstSegment.querySelector<HTMLButtonElement>(".split-btn")!;
+		expect(splitButton.disabled).toBe(false);
+		splitButton.getAnimations().forEach((animation) => animation.finish());
+		expect(getComputedStyle(splitButton).backgroundColor).toBe(
+			"rgb(44, 127, 152)",
+		);
+		expect(getComputedStyle(splitButton).color).toBe("rgb(255, 255, 255)");
 
 		firstTarget = document.querySelector<HTMLTextAreaElement>(
 			'[data-segment-id="0"] textarea',

@@ -393,7 +393,7 @@
 				<span>→</span>
 			</button>
 			<button
-				class="tm-btn save split-btn"
+				class="tm-btn split-btn"
 				onclick={(event) => {
 					event.stopPropagation();
 					splitAtCaret();
@@ -624,6 +624,18 @@
 		border-color: #3b9fba;
 		background: #3b9fba;
 		color: white;
+	}
+
+	button.split-btn {
+		border-color: #2c7f98;
+		background: #2c7f98;
+		color: white;
+	}
+
+	button.split-btn:disabled {
+		border-color: #b5d3da;
+		background: rgba(255, 255, 255, 0.8);
+		color: #276d82;
 	}
 
 	.translate-btn:hover:not(:disabled),
