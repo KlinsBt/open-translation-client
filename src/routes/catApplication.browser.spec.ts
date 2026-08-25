@@ -80,6 +80,23 @@ function expectViewportFilling(selector: string): void {
 	expect(viewportWidth - bounds.right).toBeLessThanOrEqual(32);
 }
 
+function expectInlineResourceTitleActions(): void {
+	const format = document.querySelector<HTMLElement>(
+		".resource-editor-title-actions .resource-editor-format",
+	);
+	const back = document.querySelector<HTMLElement>(
+		".resource-editor-title-actions .resource-editor-back",
+	);
+	if (!format || !back)
+		throw new Error("Resource title actions were not found.");
+	const formatBounds = format.getBoundingClientRect();
+	const backBounds = back.getBoundingClientRect();
+	const formatCenter = formatBounds.top + formatBounds.height / 2;
+	const backCenter = backBounds.top + backBounds.height / 2;
+	expect(Math.abs(formatCenter - backCenter)).toBeLessThanOrEqual(1);
+	expect(formatBounds.right).toBeLessThan(backBounds.left);
+}
+
 function enterText(
 	element: HTMLInputElement | HTMLTextAreaElement,
 	value: string,
@@ -235,6 +252,7 @@ describe("real CAT application route", () => {
 			".resource-editor-titlebar .resource-editor-title-actions .resource-editor-back",
 		);
 		expect(tmBackButton?.textContent).toContain("Back to memories");
+		expectInlineResourceTitleActions();
 		tmBackButton?.click();
 		await eventually(() =>
 			expect(document.querySelector(".resource-workspace")).not.toBeNull(),
@@ -276,6 +294,7 @@ describe("real CAT application route", () => {
 			".resource-editor-titlebar .resource-editor-title-actions .resource-editor-back",
 		);
 		expect(tbBackButton?.textContent).toContain("Back to term bases");
+		expectInlineResourceTitleActions();
 		tbBackButton?.click();
 		await eventually(() =>
 			expect(document.querySelector(".resource-workspace")).not.toBeNull(),

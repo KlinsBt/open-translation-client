@@ -14,7 +14,7 @@
 	gap: 1.5rem;
 }
 
-.resource-editor-titlebar > div {
+.resource-editor-title-copy {
 	display: grid;
 	gap: 0.3rem;
 }

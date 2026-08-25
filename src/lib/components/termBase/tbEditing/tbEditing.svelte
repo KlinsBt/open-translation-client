@@ -241,7 +241,7 @@
 
 <section class="resource-editor-content">
 	<header class="resource-editor-titlebar">
-		<div>
+		<div class="resource-editor-title-copy">
 			<p class="resource-editor-eyebrow">Terminology editor</p>
 			<h2 class="tb-name">{localTbData.name}</h2>
 			<p class="resource-editor-summary">
