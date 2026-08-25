@@ -1190,12 +1190,9 @@
 {/snippet}
 
 {#if showTmTbModal}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		role="presentation"
 		class="modal-element-global {showTmTbModal ? '' : 'close-modal-global'}"
-		onclick={() => (showTmTbModal = false)}
 	>
 		<Modal
 			title="Language resources"
@@ -1206,12 +1203,9 @@
 		/>
 	</div>
 {:else if showSaveFileModal}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		role="presentation"
 		class="modal-element-global {showSaveFileModal ? '' : 'close-modal-global'}"
-		onclick={() => (showSaveFileModal = false)}
 	>
 		<Modal
 			title={pendingDeliveryExport ? "Translation QA warning" : "Export files"}
@@ -1225,12 +1219,9 @@
 		/>
 	</div>
 {:else if showTmAddModal}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		role="presentation"
 		class="modal-element-global {showTmAddModal ? '' : 'close-modal-global'}"
-		onclick={closeTmAddModal}
 	>
 		<Modal
 			title={$editTm ? "Edit translation memory" : "Add translation memory"}
@@ -1240,12 +1231,9 @@
 		/>
 	</div>
 {:else if showTbAddModal}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		role="presentation"
 		class="modal-element-global {showTbAddModal ? '' : 'close-modal-global'}"
-		onclick={closeTbAddModal}
 	>
 		<Modal
 			title={$editTb ? "Edit term base" : "Add term base"}

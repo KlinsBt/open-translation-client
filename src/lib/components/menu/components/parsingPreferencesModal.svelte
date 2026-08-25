@@ -301,13 +301,7 @@
 {/snippet}
 
 {#if show}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div
-		role="presentation"
-		class="modal-element-global"
-		onclick={() => (show = false)}
-	>
+	<div role="presentation" class="modal-element-global">
 		<Modal
 			title="Parsing preferences"
 			description="Manage segmentation tokens and reusable SRX 2.0 profiles."

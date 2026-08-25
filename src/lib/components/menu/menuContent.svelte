@@ -96,13 +96,7 @@
 {/snippet}
 
 {#if showUploadModal}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div
-		role="presentation"
-		class="modal-element-global"
-		onclick={() => (showUploadModal = false)}
-	>
+	<div role="presentation" class="modal-element-global">
 		<Modal
 			title="Import project"
 			description="Restore a portable Open TLC project from this device."

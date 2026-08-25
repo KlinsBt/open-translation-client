@@ -348,6 +348,23 @@ describe("real CAT application route", () => {
 		await tick();
 		expect(document.querySelector('[role="dialog"]')).toBeNull();
 		await eventually(() => expect(document.activeElement).toBe(opener));
+
+		const importOpener = button("Import project");
+		importOpener.click();
+		await eventually(() =>
+			expect(document.querySelector('[role="dialog"]')).not.toBeNull(),
+		);
+		const importDialog =
+			document.querySelector<HTMLElement>('[role="dialog"]')!;
+		importDialog.parentElement!.click();
+		await tick();
+		expect(document.querySelector('[role="dialog"]')).toBe(importDialog);
+		importDialog
+			.querySelector<HTMLButtonElement>('button[aria-label="Close dialog"]')!
+			.click();
+		await eventually(() =>
+			expect(document.querySelector('[role="dialog"]')).toBeNull(),
+		);
 	});
 
 	it("preserves text-editing shortcuts, expands navigation, enforces locks, and warns on incomplete export", async () => {

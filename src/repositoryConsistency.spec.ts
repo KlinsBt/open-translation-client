@@ -109,14 +109,27 @@ describe("repository consistency", () => {
 		expect(modalHosts.length).toBeGreaterThan(0);
 		for (const { file, source } of modalHosts) {
 			const modalTags = source.match(/<Modal\b[\s\S]*?\/>/g) ?? [];
+			const backdropTags =
+				source.match(/<div\b(?=[^>]*class="modal-element-global)[^>]*>/gs) ??
+				[];
 			expect(
 				modalTags,
 				`${file} should render each Modal as a complete tag`,
+			).not.toHaveLength(0);
+			expect(
+				backdropTags,
+				`${file} should place modals on the shared backdrop`,
 			).not.toHaveLength(0);
 			for (const tag of modalTags) {
 				expect(tag, `${file} modals must expose a close action`).toContain(
 					"onClose=",
 				);
+			}
+			for (const tag of backdropTags) {
+				expect(
+					tag,
+					`${file} modal backdrops must not dismiss dialogs`,
+				).not.toMatch(/on(?:click|mousedown|pointerdown)=/);
 			}
 
 			expect(
