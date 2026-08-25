@@ -16,6 +16,8 @@
 	import { persistedSnapshot } from "$lib/functions/saveData/persistenceContract";
 	import { tmDataValidationError } from "$lib/components/resources/resourceDataValidation";
 
+	let { onBack }: { onBack?: () => void } = $props();
+
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
 	let segmentsContainer: HTMLElement | null = null;
@@ -273,7 +275,17 @@
 					: "units"}
 			</p>
 		</div>
-		<span class="resource-editor-format">TMX</span>
+		<div class="resource-editor-title-actions">
+			<span class="resource-editor-format">TMX</span>
+			{#if onBack}
+				<button
+					class="resource-editor-back resource-secondary-action"
+					onclick={onBack}
+				>
+					← Back to memories
+				</button>
+			{/if}
+		</div>
 	</header>
 
 	<div class="tm-editing-container resource-editor-panel">

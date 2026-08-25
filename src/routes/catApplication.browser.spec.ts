@@ -230,8 +230,15 @@ describe("real CAT application route", () => {
 			expect(document.querySelector(".resource-editor-content")).not.toBeNull(),
 		);
 		expectViewportFilling(".resource-editor-shell");
-		expectViewportFilling(".resource-editor-toolbar");
 		expectViewportFilling(".resource-editor-content");
+		const tmBackButton = document.querySelector<HTMLButtonElement>(
+			".resource-editor-titlebar .resource-editor-title-actions .resource-editor-back",
+		);
+		expect(tmBackButton?.textContent).toContain("Back to memories");
+		tmBackButton?.click();
+		await eventually(() =>
+			expect(document.querySelector(".resource-workspace")).not.toBeNull(),
+		);
 		await unmount(mounted);
 		mounted = null;
 		document.body.replaceChildren();
@@ -264,8 +271,15 @@ describe("real CAT application route", () => {
 			expect(document.querySelector(".resource-editor-content")).not.toBeNull(),
 		);
 		expectViewportFilling(".resource-editor-shell");
-		expectViewportFilling(".resource-editor-toolbar");
 		expectViewportFilling(".resource-editor-content");
+		const tbBackButton = document.querySelector<HTMLButtonElement>(
+			".resource-editor-titlebar .resource-editor-title-actions .resource-editor-back",
+		);
+		expect(tbBackButton?.textContent).toContain("Back to term bases");
+		tbBackButton?.click();
+		await eventually(() =>
+			expect(document.querySelector(".resource-workspace")).not.toBeNull(),
+		);
 	});
 
 	it("opens the project modal with focus containment and closes it with Escape", async () => {

@@ -516,14 +516,6 @@
 	</div>
 {:else}
 	<div class="resource-editor-shell">
-		<div class="resource-editor-toolbar">
-			<button
-				class="resource-secondary-action"
-				onclick={() => editTm.set(false)}
-			>
-				← Back to memories
-			</button>
-		</div>
-		<TmEditing />
+		<TmEditing onBack={() => editTm.set(false)} />
 	</div>
 {/if}

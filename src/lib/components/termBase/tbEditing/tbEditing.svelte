@@ -16,6 +16,8 @@
 	import { persistedSnapshot } from "$lib/functions/saveData/persistenceContract";
 	import { tbDataValidationError } from "$lib/components/resources/resourceDataValidation";
 
+	let { onBack }: { onBack?: () => void } = $props();
+
 	const AMOUNT_OF_SEGMENTS_TO_LOAD = 150;
 	let visibleSegmentsCount = $state(150); // Initial number of segments to display when loading the page
 	let segmentsContainer: HTMLElement | null = null;
@@ -248,7 +250,17 @@
 					: "units"}
 			</p>
 		</div>
-		<span class="resource-editor-format">TBX</span>
+		<div class="resource-editor-title-actions">
+			<span class="resource-editor-format">TBX</span>
+			{#if onBack}
+				<button
+					class="resource-editor-back resource-secondary-action"
+					onclick={onBack}
+				>
+					← Back to term bases
+				</button>
+			{/if}
+		</div>
 	</header>
 
 	<div class="tb-editing-container resource-editor-panel">

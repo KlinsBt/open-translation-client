@@ -51,7 +51,7 @@
 
 .resource-header-actions button,
 .resource-empty button,
-.resource-editor-toolbar button {
+.resource-editor-back {
 	min-height: 2.65rem;
 	border-radius: 0.55rem;
 	padding: 0.65rem 1rem;
@@ -81,7 +81,7 @@
 
 .resource-header-actions button:hover,
 .resource-empty button:hover,
-.resource-editor-toolbar button:hover {
+.resource-editor-back:hover {
 	transform: translateY(-1px);
 }
 
@@ -333,12 +333,6 @@
 
 .resource-editor-shell {
 	padding-top: 1.5rem;
-}
-
-.resource-editor-toolbar {
-	display: flex;
-	width: 100%;
-	margin: 0 auto 1rem;
 }
 
 @media (max-width: 760px) {

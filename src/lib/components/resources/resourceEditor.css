@@ -8,6 +8,7 @@
 
 .resource-editor-titlebar {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: flex-end;
 	justify-content: space-between;
 	gap: 1.5rem;
@@ -55,6 +56,18 @@
 	font-size: 0.7rem;
 	font-weight: 850;
 	letter-spacing: 0.08em;
+}
+
+.resource-editor-title-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.65rem;
+	margin-left: auto;
+}
+
+.resource-editor-back {
+	white-space: nowrap;
 }
 
 .resource-editor-panel {

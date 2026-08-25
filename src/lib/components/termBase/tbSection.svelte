@@ -515,14 +515,6 @@
 	</div>
 {:else}
 	<div class="resource-editor-shell">
-		<div class="resource-editor-toolbar">
-			<button
-				class="resource-secondary-action"
-				onclick={() => editTb.set(false)}
-			>
-				← Back to term bases
-			</button>
-		</div>
-		<TbEditing />
+		<TbEditing onBack={() => editTb.set(false)} />
 	</div>
 {/if}
