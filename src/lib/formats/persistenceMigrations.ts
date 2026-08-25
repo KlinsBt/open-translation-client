@@ -1,7 +1,7 @@
 import { FORMAT_IDS, type FormatId } from "./formatIds";
 import type { TbData, TmData, UserData } from "$lib/types/types";
 
-export const PROJECT_SCHEMA_VERSION = 3;
+export const PROJECT_SCHEMA_VERSION = 4;
 export const TM_SCHEMA_VERSION = 2;
 export const TB_SCHEMA_VERSION = 2;
 
@@ -45,6 +45,7 @@ const PROJECT_MIGRATIONS: Readonly<Record<number, Migration>> = {
 				? record.persistenceRevision
 				: 0,
 	}),
+	3: (record) => ({ ...record, schemaVersion: 4 }),
 };
 
 const TM_MIGRATIONS: Readonly<Record<number, Migration>> = {
@@ -131,7 +132,7 @@ export function migrateProjectData(input: unknown): UserData {
 			seg1,
 			seg2,
 			checked,
-			locked,
+			locked: locked.map((isLocked, index) => isLocked || checked[index]),
 			type: type as FormatId,
 			typeRef:
 				typeof translation.typeRef === "string" || isRecord(translation.typeRef)

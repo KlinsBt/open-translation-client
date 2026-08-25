@@ -407,6 +407,10 @@ describe("real CAT application route", () => {
 		)!;
 		const segmentBounds = firstSegment.getBoundingClientRect();
 		const confirmBounds = confirm.getBoundingClientRect();
+		const fillBounds = fill.getBoundingClientRect();
+		const sourceActionsBounds = firstSegment
+			.querySelector<HTMLElement>(".left-buttons-container")!
+			.getBoundingClientRect();
 		if (document.documentElement.clientWidth > 760) {
 			expect(
 				Math.abs(
@@ -423,9 +427,12 @@ describe("real CAT application route", () => {
 			Math.abs(
 				confirmBounds.top +
 					confirmBounds.height / 2 -
-					(segmentBounds.top + segmentBounds.height / 2),
+					(fillBounds.top + fillBounds.height / 2),
 			),
 		).toBeLessThanOrEqual(1);
+		expect(
+			confirmBounds.left - sourceActionsBounds.right,
+		).toBeGreaterThanOrEqual(4);
 		for (const actionName of ["Lock all", "Fill empty"]) {
 			const action = button(actionName);
 			const icon = action.querySelector<SVGElement>("svg")!;
@@ -540,6 +547,19 @@ describe("real CAT application route", () => {
 		await eventually(() =>
 			expect(get(singleUserData).translationData.locked[0]).toBe(false),
 		);
+		firstSegment
+			.querySelector<HTMLButtonElement>('[data-segment-action="confirm"]')!
+			.click();
+		await eventually(() => {
+			expect(get(singleUserData).translationData.checked[0]).toBe(true);
+			expect(get(singleUserData).translationData.locked[0]).toBe(true);
+		});
+		const unlockConfirmed = dispatchEditorShortcut(firstSegment, "KeyL", "l");
+		expect(unlockConfirmed.defaultPrevented).toBe(true);
+		await eventually(() => {
+			expect(get(singleUserData).translationData.checked[0]).toBe(false);
+			expect(get(singleUserData).translationData.locked[0]).toBe(false);
+		});
 
 		firstTarget = document.querySelector<HTMLTextAreaElement>(
 			'[data-segment-id="0"] textarea',
@@ -703,13 +723,11 @@ describe("real CAT application route", () => {
 		const fill = segment.querySelector<HTMLButtonElement>(
 			'[data-segment-action="fill"]',
 		)!;
+		const emptyConfirm = segmentButton("Confirm");
 		expect(fill.disabled).toBe(false);
-
-		segmentButton("Confirm").click();
-		await eventually(() =>
-			expect(document.body.textContent).toContain(
-				"Add a target translation before confirming this segment.",
-			),
+		expect(emptyConfirm.disabled).toBe(true);
+		expect(emptyConfirm.title).toBe(
+			"Add a target translation before confirming this segment",
 		);
 		expect(get(singleUserData).translationData.checked).toEqual([false]);
 
@@ -718,14 +736,19 @@ describe("real CAT application route", () => {
 		}
 		await eventually(() => expect(fill.disabled).toBe(true));
 		expect(fill.title).toBe("The target already contains text");
+		await eventually(() =>
+			expect(segmentButton("Confirm").disabled).toBe(false),
+		);
 		segmentButton("Confirm").click();
 		await eventuallyAsync(async () => {
 			expect(get(singleUserData).translationData.checked).toEqual([true]);
+			expect(get(singleUserData).translationData.locked).toEqual([true]);
 			const saved = (await loadTranslationsUserDataFromIndexedDB()).find(
 				(candidate) => candidate.id === project.id,
 			);
 			expect(saved?.translationData.seg2).toEqual(["Target"]);
 			expect(saved?.translationData.checked).toEqual([true]);
+			expect(saved?.translationData.locked).toEqual([true]);
 		});
 		const confirmedButton = segmentButton("Confirmed");
 		expect(confirmedButton).not.toBeDisabled();
@@ -738,31 +761,44 @@ describe("real CAT application route", () => {
 		expect(getComputedStyle(confirmedButton, "::before").content).toContain(
 			"✓",
 		);
-
-		segment
-			.querySelector<HTMLButtonElement>('[aria-label="Lock segment"]')!
-			.click();
-		await eventually(() => {
-			expect(get(singleUserData).translationData.locked).toEqual([true]);
-			expect(get(singleUserData).translationData.checked).toEqual([true]);
-		});
 		expect(segment.querySelector("textarea")).toBeNull();
 
+		segment
+			.querySelector<HTMLButtonElement>('[aria-label="Unlock segment"]')!
+			.click();
+		await eventually(() => {
+			expect(get(singleUserData).translationData.locked).toEqual([false]);
+			expect(get(singleUserData).translationData.checked).toEqual([false]);
+		});
+		expect(segment.querySelector("textarea")).not.toBeNull();
+
+		segmentButton("Confirm").click();
+		await eventually(() => {
+			expect(get(singleUserData).translationData.checked).toEqual([true]);
+			expect(get(singleUserData).translationData.locked).toEqual([true]);
+		});
+		segmentButton("Confirmed").click();
+		await eventually(() => {
+			expect(get(singleUserData).translationData.checked).toEqual([false]);
+			expect(get(singleUserData).translationData.locked).toEqual([true]);
+		});
 		segment
 			.querySelector<HTMLButtonElement>('[aria-label="Unlock segment"]')!
 			.click();
 		await eventually(() =>
 			expect(get(singleUserData).translationData.locked).toEqual([false]),
 		);
-		segmentButton("Confirmed").click();
-		await eventually(() =>
-			expect(get(singleUserData).translationData.checked).toEqual([false]),
-		);
 
 		segmentButton("Confirm").click();
-		await eventually(() =>
-			expect(get(singleUserData).translationData.checked).toEqual([true]),
-		);
+		await eventually(() => {
+			expect(get(singleUserData).translationData.checked).toEqual([true]);
+			expect(get(singleUserData).translationData.locked).toEqual([true]);
+		});
+		button("Unlock all").click();
+		await eventually(() => {
+			expect(get(singleUserData).translationData.checked).toEqual([false]);
+			expect(get(singleUserData).translationData.locked).toEqual([false]);
+		});
 		enterText(
 			segment.querySelector<HTMLTextAreaElement>("textarea")!,
 			"Edited target",
@@ -881,9 +917,17 @@ describe("real CAT application route", () => {
 			(candidate) => candidate.textContent?.trim() === "Confirm",
 		) as HTMLButtonElement;
 		confirm.click();
-		await eventually(() =>
-			expect(get(singleUserData).translationData.checked).toEqual([true]),
-		);
+		await eventually(() => {
+			expect(get(singleUserData).translationData.checked).toEqual([true]);
+			expect(get(singleUserData).translationData.locked).toEqual([true]);
+		});
+		segment
+			.querySelector<HTMLButtonElement>('[aria-label="Unlock segment"]')!
+			.click();
+		await eventually(() => {
+			expect(get(singleUserData).translationData.checked).toEqual([false]);
+			expect(get(singleUserData).translationData.locked).toEqual([false]);
+		});
 		document.querySelector<HTMLButtonElement>(".tb-sub-container")!.click();
 		await eventuallyAsync(async () => {
 			const saved = (await loadTranslationsUserDataFromIndexedDB()).find(

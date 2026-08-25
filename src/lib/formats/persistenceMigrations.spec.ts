@@ -106,6 +106,22 @@ describe("persisted data migrations", () => {
 		).toEqual(["translated", "initial"]);
 	});
 
+	it("locks confirmed segments while preserving independent manual locks", () => {
+		const project = makeUserData({
+			seg1: ["Confirmed", "Manual lock", "Open"],
+			seg2: ["Bestätigt", "Gesperrt", "Offen"],
+			checked: [true, false, false],
+			locked: [false, true, false],
+		});
+		project.schemaVersion = 3;
+
+		const migrated = migrateProjectData(project);
+
+		expect(migrated.schemaVersion).toBe(PROJECT_SCHEMA_VERSION);
+		expect(migrated.translationData.checked).toEqual([true, false, false]);
+		expect(migrated.translationData.locked).toEqual([true, true, false]);
+	});
+
 	it("is deterministic and idempotent for current project data", () => {
 		const once = migrateProjectData(makeUserData());
 		const twice = migrateProjectData(once);
@@ -191,7 +207,7 @@ describe("persisted data migrations", () => {
 			makeUserData({
 				seg1: ["One ", "two"],
 				seg2: ["Eins ", "zwei"],
-				checked: [true, false],
+				checked: [false, false],
 			}),
 		);
 		project.translationData = combineSegmentData(
@@ -206,7 +222,7 @@ describe("persisted data migrations", () => {
 		expect(split.restoredJoinBoundary).toBe(true);
 		expect(split.data.seg1).toEqual(["One ", "two"]);
 		expect(split.data.seg2).toEqual(["Eins ", "zwei"]);
-		expect(split.data.checked).toEqual([true, false]);
+		expect(split.data.checked).toEqual([false, false]);
 		expect(split.data.locked).toEqual([false, false]);
 	});
 

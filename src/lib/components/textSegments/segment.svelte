@@ -127,10 +127,14 @@
 
 	async function toggleLockSegment() {
 		const nextLocked = !locked;
-		const updated = await commitProjectMutation(
-			(project) => (project.translationData.locked[id] = nextLocked),
-		);
-		if (updated) locked = nextLocked;
+		const updated = await commitProjectMutation((project) => {
+			project.translationData.locked[id] = nextLocked;
+			if (!nextLocked) project.translationData.checked[id] = false;
+		});
+		if (updated) {
+			locked = nextLocked;
+			if (!nextLocked) confirmed = false;
+		}
 	}
 
 	async function toggleSegmentConfirmation() {
@@ -139,10 +143,14 @@
 			return;
 		}
 		const nextConfirmed = !confirmed;
-		const updated = await commitProjectMutation(
-			(project) => (project.translationData.checked[id] = nextConfirmed),
-		);
-		if (updated) confirmed = nextConfirmed;
+		const updated = await commitProjectMutation((project) => {
+			project.translationData.checked[id] = nextConfirmed;
+			if (nextConfirmed) project.translationData.locked[id] = true;
+		});
+		if (updated) {
+			confirmed = nextConfirmed;
+			if (nextConfirmed) locked = true;
+		}
 	}
 
 	async function fillTargetSegmentText() {
@@ -448,10 +456,13 @@
 		class:confirmed
 		data-segment-action="confirm"
 		onclick={toggleSegmentConfirmation}
+		disabled={!textSegment2.trim()}
 		aria-pressed={confirmed}
-		title={confirmed
-			? "Mark this segment as needing review"
-			: "Confirm this translated segment"}
+		title={!textSegment2.trim()
+			? "Add a target translation before confirming this segment"
+			: confirmed
+				? "Mark this segment as needing review"
+				: "Confirm and lock this translated segment"}
 	>
 		{confirmed ? "Confirmed" : "Confirm"}
 	</button>
@@ -584,7 +595,7 @@
 		gap: 0.35rem;
 		position: absolute;
 		top: 0.55rem;
-		right: 0.65rem;
+		right: 3.5rem;
 		z-index: 3;
 	}
 
@@ -623,27 +634,28 @@
 	}
 
 	.translate-btn:disabled,
-	.tm-btn:disabled {
+	.tm-btn:disabled,
+	.confirm-btn:disabled {
 		cursor: not-allowed;
 		opacity: 0.45;
 	}
 
 	.confirm-btn {
 		position: absolute;
-		top: 50%;
+		top: 0.55rem;
 		left: 50%;
 		z-index: 5;
 		min-height: 1.85rem;
 		padding-inline: 0.62rem;
 		background: #f8fcfd;
 		box-shadow: 0 2px 8px rgba(21, 72, 88, 0.1);
-		transform: translate(-50%, -50%);
+		transform: translateX(-50%);
 	}
 
 	.confirm-btn:hover:not(:disabled) {
 		border-color: #6faebb;
 		background: white;
-		transform: translate(-50%, -50%);
+		transform: translateX(-50%);
 	}
 
 	.confirm-btn.confirmed {
@@ -771,7 +783,11 @@
 		.confirm-btn:hover:not(:disabled) {
 			left: auto;
 			right: 0.65rem;
-			transform: translateY(-50%);
+			transform: none;
+		}
+
+		.left-buttons-container {
+			right: 6rem;
 		}
 	}
 
@@ -781,6 +797,11 @@
 		}
 
 		.left-buttons-container {
+			right: 5.75rem;
+		}
+
+		.confirm-btn,
+		.confirm-btn:hover:not(:disabled) {
 			right: 0.45rem;
 		}
 	}

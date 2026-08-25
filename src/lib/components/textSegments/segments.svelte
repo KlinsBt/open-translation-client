@@ -343,6 +343,7 @@
 
 	function measureSegment(node: HTMLElement, index: number) {
 		let currentIndex = index;
+		let pendingFrame: number | undefined;
 		const measure = () => {
 			const measured = node.getBoundingClientRect().height + SEGMENT_GAP;
 			if (virtualSizeIndex.update(currentIndex, measured)) {
@@ -350,15 +351,23 @@
 				refreshVirtualWindow();
 			}
 		};
-		const observer = new ResizeObserver(measure);
+		const scheduleMeasure = () => {
+			if (pendingFrame !== undefined) return;
+			pendingFrame = requestAnimationFrame(() => {
+				pendingFrame = undefined;
+				measure();
+			});
+		};
+		const observer = new ResizeObserver(scheduleMeasure);
 		observer.observe(node);
-		queueMicrotask(measure);
+		queueMicrotask(scheduleMeasure);
 		return {
 			update(nextIndex: number) {
 				currentIndex = nextIndex;
-				measure();
+				scheduleMeasure();
 			},
 			destroy() {
+				if (pendingFrame !== undefined) cancelAnimationFrame(pendingFrame);
 				observer.disconnect();
 			},
 		};
@@ -374,9 +383,20 @@
 
 	onMount(() => {
 		refreshVirtualWindow();
-		const observer = new ResizeObserver(refreshVirtualWindow);
+		let pendingFrame: number | undefined;
+		const scheduleRefresh = () => {
+			if (pendingFrame !== undefined) return;
+			pendingFrame = requestAnimationFrame(() => {
+				pendingFrame = undefined;
+				refreshVirtualWindow();
+			});
+		};
+		const observer = new ResizeObserver(scheduleRefresh);
 		if (segmentsContainer) observer.observe(segmentsContainer);
-		return () => observer.disconnect();
+		return () => {
+			if (pendingFrame !== undefined) cancelAnimationFrame(pendingFrame);
+			observer.disconnect();
+		};
 	});
 
 	function exportFailureMessage(error: unknown): string {
@@ -509,6 +529,8 @@
 		newUserData.translationData.locked = newUserData.translationData.locked.map(
 			() => false,
 		);
+		newUserData.translationData.checked =
+			newUserData.translationData.checked.map(() => false);
 		await persistCandidate(newUserData);
 	}
 
@@ -558,6 +580,8 @@
 		const newUserData = structuredClone($singleUserData);
 		newUserData.translationData.locked[idx] =
 			!newUserData.translationData.locked[idx];
+		if (!newUserData.translationData.locked[idx])
+			newUserData.translationData.checked[idx] = false;
 		if (!(await persistCandidate(newUserData))) return;
 		notifyInfo(
 			`Segment ${idx + 1} ${newUserData.translationData.locked[idx] ? "locked" : "unlocked"}`,
