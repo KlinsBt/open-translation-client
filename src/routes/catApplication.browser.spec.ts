@@ -317,6 +317,10 @@ describe("real CAT application route", () => {
 		await eventually(() =>
 			expect(dialog.contains(document.activeElement)).toBe(true),
 		);
+		const backdrop = dialog.parentElement!;
+		backdrop.click();
+		await tick();
+		expect(document.querySelector('[role="dialog"]')).toBe(dialog);
 		expect(document.querySelectorAll("[inert]").length).toBeGreaterThan(0);
 		const dropZone = dialog.querySelector<HTMLElement>('[role="button"]')!;
 		const activateDropZone = new KeyboardEvent("keydown", {
