@@ -264,6 +264,13 @@ describe("real CAT application route", () => {
 		);
 		expect(document.body.textContent).toContain("0% complete");
 		expect(firstSegment.textContent).toContain("Confirm");
+		for (const actionName of ["Lock all", "Fill empty"]) {
+			const action = button(actionName);
+			const icon = action.querySelector<SVGElement>("svg")!;
+			expect(icon).not.toBeNull();
+			expect(getComputedStyle(icon).fill).toBe(getComputedStyle(action).color);
+			expect(icon.getBoundingClientRect().width).toBeGreaterThan(0);
+		}
 
 		const textarea = document.querySelector("textarea")!;
 		expect(getComputedStyle(textarea).backgroundColor).not.toBe(

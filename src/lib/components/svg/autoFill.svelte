@@ -16,7 +16,9 @@
 
 <style>
 	svg {
-		fill: var(--color-theme-7);
+		display: block;
+		flex: 0 0 auto;
+		fill: currentColor;
 		width: 16px;
 		height: 16px;
 	}
