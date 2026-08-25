@@ -477,6 +477,8 @@
 
 <style>
 	.segment {
+		--read-only-surface: #e6f2f4;
+
 		position: relative;
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -617,13 +619,13 @@
 		display: flex;
 		align-items: flex-start;
 		min-height: 6.25rem;
-		background: #f4fbfc;
+		background: var(--read-only-surface);
 		color: #214a5a;
 	}
 
 	.left.target-field {
 		border-radius: 0 0.7rem 0.7rem 0;
-		background: #f4fbfc;
+		background: var(--read-only-surface);
 		color: #214a5a;
 		line-height: 1.55;
 	}
