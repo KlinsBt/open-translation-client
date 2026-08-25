@@ -627,8 +627,8 @@
 	}
 
 	button.split-btn {
-		border-color: #2c7f98;
-		background: #2c7f98;
+		border-color: #ad5f5f;
+		background: #ad5f5f;
 		color: white;
 	}
 

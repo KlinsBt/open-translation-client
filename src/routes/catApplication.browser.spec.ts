@@ -573,7 +573,7 @@ describe("real CAT application route", () => {
 		expect(splitButton.disabled).toBe(false);
 		splitButton.getAnimations().forEach((animation) => animation.finish());
 		expect(getComputedStyle(splitButton).backgroundColor).toBe(
-			"rgb(44, 127, 152)",
+			"rgb(173, 95, 95)",
 		);
 		expect(getComputedStyle(splitButton).color).toBe("rgb(255, 255, 255)");
 
