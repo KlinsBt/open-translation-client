@@ -251,10 +251,21 @@ describe("real CAT application route", () => {
 			(element) => element.textContent?.trim().startsWith("Fill"),
 		) as HTMLButtonElement;
 		expect(fill.disabled).toBe(true);
+		expect(firstSegment.classList.contains("segment-locked")).toBe(true);
+		const lockedTarget =
+			firstSegment.querySelector<HTMLElement>(".target-field")!;
+		const sourceField =
+			firstSegment.querySelector<HTMLElement>(".source-text")!;
+		expect(getComputedStyle(lockedTarget).backgroundColor).toBe(
+			getComputedStyle(sourceField).backgroundColor,
+		);
 		expect(document.body.textContent).toContain("0% complete");
 		expect(firstSegment.textContent).toContain("Confirm");
 
 		const textarea = document.querySelector("textarea")!;
+		expect(getComputedStyle(textarea).backgroundColor).not.toBe(
+			getComputedStyle(lockedTarget).backgroundColor,
+		);
 		const browserFind = new KeyboardEvent("keydown", {
 			key: "f",
 			ctrlKey: true,

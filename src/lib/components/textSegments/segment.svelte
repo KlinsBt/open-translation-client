@@ -331,6 +331,7 @@
 	tabindex="0"
 	class:selected={isSelected}
 	class:combine-selected={combineSelected}
+	class:segment-locked={locked}
 	onclick={activateSegment}
 	onfocus={activateSegment}
 >
@@ -448,7 +449,7 @@
 
 	{#if locked}
 		<p
-			class="field left target-field"
+			class="field left target-field locked-target"
 			lang={targetLang}
 			dir={rightToLeftTargetLang ? "rtl" : "ltr"}
 		>
@@ -622,9 +623,13 @@
 
 	.left.target-field {
 		border-radius: 0 0.7rem 0.7rem 0;
-		background: white;
-		color: #263f48;
+		background: #f4fbfc;
+		color: #214a5a;
 		line-height: 1.55;
+	}
+
+	.segment-locked .locked-target {
+		box-shadow: inset 1px 0 0 #cbdfe4;
 	}
 
 	.source-text {
