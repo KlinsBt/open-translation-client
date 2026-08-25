@@ -608,6 +608,9 @@ describe("real CAT application route", () => {
 		)!;
 
 		const joinButton = button("Join selected");
+		expect(
+			joinButton.querySelector('[data-icon="join-segments"]'),
+		).not.toBeNull();
 		expect(joinButton.disabled).toBe(true);
 		const secondCheckbox = document.querySelector<HTMLInputElement>(
 			'[data-segment-id="1"] .combine-toggle-checkbox',

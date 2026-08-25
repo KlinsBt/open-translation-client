@@ -3,6 +3,7 @@
 	import Segment from "./segment.svelte";
 	import AutoFill from "../svg/autoFill.svelte";
 	import DocLock from "../svg/docLock.svelte";
+	import JoinSegments from "../svg/joinSegments.svelte";
 	import SaveFile from "../svg/saveFile.svelte";
 	import RightArrow from "../svg/rightArrow.svelte";
 	import Export from "../svg/export2.svelte";
@@ -1372,6 +1373,7 @@
 					: "Join selected consecutive segments (Ctrl/Cmd+Alt+J)"}
 				disabled={combineSelection.size < 2}
 			>
+				<JoinSegments />
 				Join selected
 			</button>
 		</div>
