@@ -407,7 +407,6 @@ describe("real CAT application route", () => {
 		)!;
 		const segmentBounds = firstSegment.getBoundingClientRect();
 		const confirmBounds = confirm.getBoundingClientRect();
-		const fillBounds = fill.getBoundingClientRect();
 		const sourceActionsBounds = firstSegment
 			.querySelector<HTMLElement>(".left-buttons-container")!
 			.getBoundingClientRect();
@@ -425,9 +424,7 @@ describe("real CAT application route", () => {
 		}
 		expect(
 			Math.abs(
-				confirmBounds.top +
-					confirmBounds.height / 2 -
-					(fillBounds.top + fillBounds.height / 2),
+				confirmBounds.top + confirmBounds.height / 2 - segmentBounds.top,
 			),
 		).toBeLessThanOrEqual(1);
 		expect(
