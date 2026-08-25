@@ -68,6 +68,7 @@
 	import { withLoading } from "$lib/functions/uiHelpers";
 	import { VirtualSegmentSizeIndex } from "$lib/functions/virtualSegmentWindow";
 	import { formatChangingExportPresentation } from "$lib/functions/outputGeneration/exportPresentation";
+	import { resolveEditorShortcut } from "$lib/functions/editorShortcuts";
 
 	const ESTIMATED_SEGMENT_HEIGHT = 126;
 	const SEGMENT_GAP = 10;
@@ -690,41 +691,30 @@
 	}
 
 	async function handleKeydown(event: KeyboardEvent) {
-		const target = event.target;
-		if (
-			target instanceof HTMLElement &&
-			(target.matches("input, textarea, select") || target.isContentEditable)
-		)
-			return;
-		if ((!event.ctrlKey && !event.metaKey) || !event.altKey) return;
+		const command = resolveEditorShortcut(event);
+		if (!command || document.querySelector('[role="dialog"]')) return;
 
-		switch (event.key.toLowerCase()) {
-			case "arrowdown":
-				event.preventDefault();
+		event.preventDefault();
+		switch (command) {
+			case "next-segment":
 				await selectSegmentByOffset(1);
 				break;
-			case "arrowup":
-				event.preventDefault();
+			case "previous-segment":
 				await selectSegmentByOffset(-1);
 				break;
-			case "l":
-				event.preventDefault();
+			case "toggle-lock":
 				await toggleLockCurrentSegment();
 				break;
-			case "m":
-				event.preventDefault();
-				toggleTmTbModal();
+			case "open-resources":
+				await toggleTmTbModal();
 				break;
-			case "f":
-				event.preventDefault();
+			case "fill-segment":
 				await fillCurrentSegment();
 				break;
-			case "e":
-				event.preventDefault();
+			case "split-segment":
 				await splitCurrentSegment();
 				break;
-			case "j":
-				event.preventDefault();
+			case "join-segments":
 				await combineWithNextSegment();
 				break;
 		}

@@ -76,6 +76,30 @@ function enterText(
 	element.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function dispatchEditorShortcut(
+	target: EventTarget,
+	code: string,
+	key: string,
+	options: { metaKey?: boolean; altGraph?: boolean } = {},
+): KeyboardEvent {
+	const event = new KeyboardEvent("keydown", {
+		code,
+		key,
+		ctrlKey: !options.metaKey,
+		metaKey: options.metaKey ?? false,
+		altKey: true,
+		bubbles: true,
+		cancelable: true,
+	});
+	if (options.altGraph) {
+		Object.defineProperty(event, "getModifierState", {
+			value: (modifier: string) => modifier === "AltGraph",
+		});
+	}
+	target.dispatchEvent(event);
+	return event;
+}
+
 function setInputFile(input: HTMLInputElement, file: File) {
 	Object.defineProperty(input, "files", {
 		configurable: true,
@@ -282,6 +306,125 @@ describe("real CAT application route", () => {
 		await eventually(() =>
 			expect(document.body.textContent).not.toContain("Export files"),
 		);
+	});
+
+	it("runs every advertised editor shortcut from the focused target field without stealing AltGr or modal input", async () => {
+		const project = makeUserData({
+			name: "Keyboard shortcuts",
+			seg1: ["Alpha one", "Beta two", "Gamma three"],
+			seg2: ["", "Zwei", "Drei"],
+			checked: [false, false, false],
+			locked: [false, false, false],
+		});
+		project.id = Date.now();
+		await updateTranslationOnIndexedDB(project);
+		singleUserData.set(project);
+		tmData.set([]);
+		tbData.set([]);
+		selectedSegmentId.set(0);
+		openMenu.set(false);
+		mounted = mount(AppRoute, { target: document.body });
+		await eventually(() =>
+			expect(document.querySelector('[data-segment-id="0"]')).not.toBeNull(),
+		);
+
+		let firstTarget = document.querySelector<HTMLTextAreaElement>(
+			'[data-segment-id="0"] textarea',
+		)!;
+		firstTarget.focus();
+		const altGraph = dispatchEditorShortcut(firstTarget, "KeyE", "€", {
+			altGraph: true,
+		});
+		expect(altGraph.defaultPrevented).toBe(false);
+		expect(get(singleUserData).translationData.seg1).toHaveLength(3);
+
+		const fill = dispatchEditorShortcut(firstTarget, "KeyF", "f");
+		expect(fill.defaultPrevented).toBe(true);
+		await eventually(() =>
+			expect(get(singleUserData).translationData.seg2[0]).toBe("Alpha one"),
+		);
+
+		const lock = dispatchEditorShortcut(firstTarget, "KeyL", "l");
+		expect(lock.defaultPrevented).toBe(true);
+		await eventually(() =>
+			expect(get(singleUserData).translationData.locked[0]).toBe(true),
+		);
+		const firstSegment = document.querySelector<HTMLElement>(
+			'[data-segment-id="0"]',
+		)!;
+		const unlock = dispatchEditorShortcut(firstSegment, "KeyL", "l");
+		expect(unlock.defaultPrevented).toBe(true);
+		await eventually(() =>
+			expect(get(singleUserData).translationData.locked[0]).toBe(false),
+		);
+
+		firstTarget = document.querySelector<HTMLTextAreaElement>(
+			'[data-segment-id="0"] textarea',
+		)!;
+		firstTarget.focus();
+		const next = dispatchEditorShortcut(firstTarget, "ArrowDown", "ArrowDown");
+		expect(next.defaultPrevented).toBe(true);
+		await eventually(() => expect(get(selectedSegmentId)).toBe(1));
+		let secondTarget = document.querySelector<HTMLTextAreaElement>(
+			'[data-segment-id="1"] textarea',
+		)!;
+		secondTarget.focus();
+		expect(document.activeElement).toBe(secondTarget);
+
+		const previous = dispatchEditorShortcut(
+			secondTarget,
+			"ArrowUp",
+			"ArrowUp",
+			{ metaKey: true },
+		);
+		expect(previous.defaultPrevented).toBe(true);
+		await eventually(() => expect(get(selectedSegmentId)).toBe(0));
+		firstTarget = document.querySelector<HTMLTextAreaElement>(
+			'[data-segment-id="0"] textarea',
+		)!;
+		dispatchEditorShortcut(firstTarget, "ArrowDown", "ArrowDown");
+		await eventually(() => expect(get(selectedSegmentId)).toBe(1));
+		secondTarget = document.querySelector<HTMLTextAreaElement>(
+			'[data-segment-id="1"] textarea',
+		)!;
+
+		const join = dispatchEditorShortcut(secondTarget, "KeyJ", "j");
+		expect(join.defaultPrevented).toBe(true);
+		await eventually(() =>
+			expect(get(singleUserData).translationData.seg1).toHaveLength(2),
+		);
+		const boundary = document.querySelector<HTMLElement>(
+			'[data-segment-id="1"] .join-boundary-marker',
+		)!;
+		expect(boundary).not.toBeNull();
+		boundary.click();
+		const split = dispatchEditorShortcut(boundary, "KeyE", "e");
+		expect(split.defaultPrevented).toBe(true);
+		await eventually(() =>
+			expect(get(singleUserData).translationData.seg1).toEqual([
+				"Alpha one",
+				"Beta two",
+				"Gamma three",
+			]),
+		);
+
+		const resources = dispatchEditorShortcut(window, "KeyM", "m");
+		expect(resources.defaultPrevented).toBe(true);
+		await eventually(() =>
+			expect(document.body.textContent).toContain("Language resources"),
+		);
+		const beforeModalShortcut = get(singleUserData).translationData.seg2[2];
+		const blockedBehindModal = dispatchEditorShortcut(window, "KeyF", "f");
+		expect(blockedBehindModal.defaultPrevented).toBe(false);
+		expect(get(singleUserData).translationData.seg2[2]).toBe(
+			beforeModalShortcut,
+		);
+		window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+		await eventually(() =>
+			expect(document.body.textContent).not.toContain("Language resources"),
+		);
+
+		await deleteCurrentProject(project.id);
 	});
 
 	it("keeps the editor DOM bounded while navigating a very large project", async () => {
