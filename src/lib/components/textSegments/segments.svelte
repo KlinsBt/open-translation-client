@@ -1345,16 +1345,6 @@
 				<DocLock />
 				{allSegmentsLocked ? "Unlock all" : "Lock all"}
 			</button>
-			<button
-				class="bulk-action"
-				onclick={splitCurrentSegment}
-				title="Split current segment at source caret (Ctrl/Cmd+Alt+E)"
-				disabled={!pendingSplitOffsets.has(
-					$selectedSegmentId ?? lastSelectedSegmentId ?? 0,
-				)}
-			>
-				Split selected
-			</button>
 			<button class="bulk-action" onclick={() => fillAllEmptySegments()}>
 				<AutoFill />
 				Fill empty

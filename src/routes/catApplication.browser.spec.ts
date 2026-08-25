@@ -264,6 +264,16 @@ describe("real CAT application route", () => {
 		);
 		expect(document.body.textContent).toContain("0% complete");
 		expect(firstSegment.textContent).toContain("Confirm");
+		expect(
+			Array.from(document.querySelectorAll(".segment-actions button")).some(
+				(action) => action.textContent?.trim() === "Split selected",
+			),
+		).toBe(false);
+		expect(
+			Array.from(firstSegment.querySelectorAll("button")).some(
+				(action) => action.textContent?.trim() === "Split",
+			),
+		).toBe(true);
 		for (const actionName of ["Lock all", "Fill empty"]) {
 			const action = button(actionName);
 			const icon = action.querySelector<SVGElement>("svg")!;
