@@ -410,6 +410,9 @@ describe("real CAT application route", () => {
 		const sourceActionsBounds = firstSegment
 			.querySelector<HTMLElement>(".left-buttons-container")!
 			.getBoundingClientRect();
+		const lockBounds = firstSegment
+			.querySelector<HTMLElement>(".toggle-container")!
+			.getBoundingClientRect();
 		if (document.documentElement.clientWidth > 760) {
 			expect(
 				Math.abs(
@@ -419,14 +422,10 @@ describe("real CAT application route", () => {
 				),
 			).toBeLessThanOrEqual(1);
 		} else {
-			expect(segmentBounds.right - confirmBounds.right).toBeGreaterThan(0);
-			expect(segmentBounds.right - confirmBounds.right).toBeLessThanOrEqual(16);
+			expect(confirmBounds.right).toBeLessThanOrEqual(lockBounds.left - 4);
 		}
-		expect(
-			Math.abs(
-				confirmBounds.top + confirmBounds.height / 2 - segmentBounds.top,
-			),
-		).toBeLessThanOrEqual(1);
+		expect(confirmBounds.top).toBeGreaterThanOrEqual(segmentBounds.top);
+		expect(confirmBounds.top - segmentBounds.top).toBeLessThanOrEqual(5);
 		expect(
 			confirmBounds.left - sourceActionsBounds.right,
 		).toBeGreaterThanOrEqual(4);

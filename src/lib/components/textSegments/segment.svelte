@@ -642,14 +642,14 @@
 
 	.confirm-btn {
 		position: absolute;
-		top: 0;
+		top: 0.2rem;
 		left: 50%;
 		z-index: 5;
 		min-height: 1.85rem;
 		padding-inline: 0.62rem;
 		background: #f8fcfd;
 		box-shadow: 0 2px 8px rgba(21, 72, 88, 0.1);
-		transform: translate(-50%, -50%);
+		transform: translateX(-50%);
 		transition:
 			border-color 0.18s ease,
 			background-color 0.18s ease,
@@ -660,7 +660,7 @@
 	.confirm-btn:hover:not(:disabled) {
 		border-color: #6faebb;
 		background: white;
-		transform: translate(-50%, -50%);
+		transform: translateX(-50%);
 	}
 
 	.confirm-btn.confirmed {
@@ -787,27 +787,18 @@
 		.confirm-btn,
 		.confirm-btn:hover:not(:disabled) {
 			left: auto;
-			right: 0.65rem;
-			transform: translateY(-50%);
+			right: 3rem;
+			transform: none;
 		}
 
 		.left-buttons-container {
-			right: 6rem;
+			right: 8rem;
 		}
 	}
 
 	@media (max-width: 460px) {
 		.field {
 			padding-inline: 0.75rem;
-		}
-
-		.left-buttons-container {
-			right: 5.75rem;
-		}
-
-		.confirm-btn,
-		.confirm-btn:hover:not(:disabled) {
-			right: 0.45rem;
 		}
 	}
 </style>
