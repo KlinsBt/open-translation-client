@@ -477,7 +477,7 @@
 
 <style>
 	.segment {
-		--read-only-surface: #e6f2f4;
+		--read-only-surface: #dcecf0;
 
 		position: relative;
 		display: grid;

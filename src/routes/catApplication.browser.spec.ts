@@ -257,7 +257,7 @@ describe("real CAT application route", () => {
 		const sourceField =
 			firstSegment.querySelector<HTMLElement>(".source-text")!;
 		expect(getComputedStyle(sourceField).backgroundColor).toBe(
-			"rgb(230, 242, 244)",
+			"rgb(220, 236, 240)",
 		);
 		expect(getComputedStyle(lockedTarget).backgroundColor).toBe(
 			getComputedStyle(sourceField).backgroundColor,
