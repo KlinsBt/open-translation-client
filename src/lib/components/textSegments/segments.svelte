@@ -650,11 +650,12 @@
 	async function combineWithNextSegment() {
 		if (!$singleUserData) return;
 
-		let selected = Array.from(combineSelection.values()).sort((a, b) => a - b);
+		const selected = Array.from(combineSelection.values()).sort(
+			(a, b) => a - b,
+		);
 		if (selected.length < 2) {
-			const current =
-				selected[0] ?? $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
-			selected = [current, current + 1];
+			notifyError("Select at least two segments before joining them.");
+			return;
 		}
 		if (
 			selected.some(
@@ -1306,7 +1307,7 @@
 					<p>
 						<strong>Ctrl/Cmd + Alt + J:</strong>
 						<br />
-						<span>Join selected segments or current + next</span>
+						<span>Join two or more selected segments</span>
 					</p>
 				</div>
 			</button>
@@ -1359,8 +1360,10 @@
 			<button
 				class="bulk-action"
 				onclick={combineWithNextSegment}
-				title="Join selected segments or current + next (Ctrl/Cmd+Alt+J)"
-				disabled={$singleUserData.translationData.seg1.length < 2}
+				title={combineSelection.size < 2
+					? "Select at least two segments using the checkboxes"
+					: "Join selected consecutive segments (Ctrl/Cmd+Alt+J)"}
+				disabled={combineSelection.size < 2}
 			>
 				Join selected
 			</button>

@@ -419,11 +419,34 @@ describe("real CAT application route", () => {
 			'[data-segment-id="1"] textarea',
 		)!;
 
+		const joinButton = button("Join selected");
+		expect(joinButton.disabled).toBe(true);
+		const secondCheckbox = document.querySelector<HTMLInputElement>(
+			'[data-segment-id="1"] .combine-toggle-checkbox',
+		)!;
+		secondCheckbox.click();
+		await tick();
+		expect(joinButton.disabled).toBe(true);
+
+		const rejectedJoin = dispatchEditorShortcut(secondTarget, "KeyJ", "j");
+		expect(rejectedJoin.defaultPrevented).toBe(true);
+		await tick();
+		expect(get(singleUserData).translationData.seg1).toHaveLength(3);
+
+		const thirdCheckbox = document.querySelector<HTMLInputElement>(
+			'[data-segment-id="2"] .combine-toggle-checkbox',
+		)!;
+		thirdCheckbox.click();
+		await eventually(() => expect(joinButton.disabled).toBe(false));
+		secondTarget = document.querySelector<HTMLTextAreaElement>(
+			'[data-segment-id="1"] textarea',
+		)!;
 		const join = dispatchEditorShortcut(secondTarget, "KeyJ", "j");
 		expect(join.defaultPrevented).toBe(true);
 		await eventually(() =>
 			expect(get(singleUserData).translationData.seg1).toHaveLength(2),
 		);
+		await eventually(() => expect(button("Join selected").disabled).toBe(true));
 		const boundary = document.querySelector<HTMLElement>(
 			'[data-segment-id="1"] .join-boundary-marker',
 		)!;
