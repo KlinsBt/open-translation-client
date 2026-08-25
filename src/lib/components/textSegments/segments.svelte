@@ -564,16 +564,6 @@
 		);
 	}
 
-	async function confirmAllTranslatedSegments() {
-		if (!$singleUserData) return;
-		const newUserData = structuredClone($singleUserData);
-		newUserData.translationData.checked = newUserData.translationData.seg2.map(
-			(target) => target.trim().length > 0,
-		);
-		if (!(await persistCandidate(newUserData))) return;
-		notifySuccess("All translated segments confirmed");
-	}
-
 	async function fillCurrentSegment() {
 		if (!$singleUserData) return;
 		const idx = $selectedSegmentId ?? lastSelectedSegmentId ?? 0;
@@ -1349,13 +1339,6 @@
 			<button class="bulk-action" onclick={() => fillAllEmptySegments()}>
 				<AutoFill />
 				Fill empty
-			</button>
-			<button
-				class="bulk-action"
-				onclick={confirmAllTranslatedSegments}
-				title="Confirm every segment that currently has target text"
-			>
-				Confirm translated
 			</button>
 			<button
 				class="bulk-action"

@@ -389,6 +389,11 @@ describe("real CAT application route", () => {
 		expect(firstSegment.textContent).toContain("Confirm");
 		expect(
 			Array.from(document.querySelectorAll(".segment-actions button")).some(
+				(action) => action.textContent?.trim() === "Confirm translated",
+			),
+		).toBe(false);
+		expect(
+			Array.from(document.querySelectorAll(".segment-actions button")).some(
 				(action) => action.textContent?.trim() === "Split selected",
 			),
 		).toBe(false);
@@ -397,6 +402,30 @@ describe("real CAT application route", () => {
 				(action) => action.textContent?.trim() === "Split",
 			),
 		).toBe(true);
+		const confirm = firstSegment.querySelector<HTMLElement>(
+			'[data-segment-action="confirm"]',
+		)!;
+		const segmentBounds = firstSegment.getBoundingClientRect();
+		const confirmBounds = confirm.getBoundingClientRect();
+		if (document.documentElement.clientWidth > 760) {
+			expect(
+				Math.abs(
+					confirmBounds.left +
+						confirmBounds.width / 2 -
+						(segmentBounds.left + segmentBounds.width / 2),
+				),
+			).toBeLessThanOrEqual(1);
+		} else {
+			expect(segmentBounds.right - confirmBounds.right).toBeGreaterThan(0);
+			expect(segmentBounds.right - confirmBounds.right).toBeLessThanOrEqual(16);
+		}
+		expect(
+			Math.abs(
+				confirmBounds.top +
+					confirmBounds.height / 2 -
+					(segmentBounds.top + segmentBounds.height / 2),
+			),
+		).toBeLessThanOrEqual(1);
 		for (const actionName of ["Lock all", "Fill empty"]) {
 			const action = button(actionName);
 			const icon = action.querySelector<SVGElement>("svg")!;
@@ -671,6 +700,10 @@ describe("real CAT application route", () => {
 				throw new Error(`Segment button ${label} was not found.`);
 			return candidate;
 		};
+		const fill = segment.querySelector<HTMLButtonElement>(
+			'[data-segment-action="fill"]',
+		)!;
+		expect(fill.disabled).toBe(false);
 
 		segmentButton("Confirm").click();
 		await eventually(() =>
@@ -683,6 +716,8 @@ describe("real CAT application route", () => {
 		for (const value of ["T", "Tar", "Target"]) {
 			enterText(segment.querySelector<HTMLTextAreaElement>("textarea")!, value);
 		}
+		await eventually(() => expect(fill.disabled).toBe(true));
+		expect(fill.title).toBe("The target already contains text");
 		segmentButton("Confirm").click();
 		await eventuallyAsync(async () => {
 			expect(get(singleUserData).translationData.checked).toEqual([true]);
@@ -692,7 +727,17 @@ describe("real CAT application route", () => {
 			expect(saved?.translationData.seg2).toEqual(["Target"]);
 			expect(saved?.translationData.checked).toEqual([true]);
 		});
-		expect(segmentButton("Confirmed")).not.toBeDisabled();
+		const confirmedButton = segmentButton("Confirmed");
+		expect(confirmedButton).not.toBeDisabled();
+		expect(confirmedButton.classList.contains("confirmed")).toBe(true);
+		await eventually(() =>
+			expect(getComputedStyle(confirmedButton).backgroundColor).toBe(
+				"rgb(234, 246, 239)",
+			),
+		);
+		expect(getComputedStyle(confirmedButton, "::before").content).toContain(
+			"✓",
+		);
 
 		segment
 			.querySelector<HTMLButtonElement>('[aria-label="Lock segment"]')!

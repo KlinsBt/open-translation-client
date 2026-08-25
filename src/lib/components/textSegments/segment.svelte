@@ -372,8 +372,14 @@
 		<div class="left-buttons-container">
 			<button
 				class="translate-btn"
+				data-segment-action="fill"
 				onclick={() => fillTargetSegmentText()}
-				disabled={locked}
+				disabled={locked || textSegment2 !== ""}
+				title={locked
+					? "Unlock this segment before filling it"
+					: textSegment2 !== ""
+						? "The target already contains text"
+						: "Copy the source text into the empty target"}
 			>
 				Fill
 				<span>→</span>
@@ -401,16 +407,6 @@
 				onclick={() => addTranslationUnit(textSegment1, textSegment2)}
 			>
 				TM<span>+</span>
-			</button>
-			<button
-				class="tm-btn save"
-				class:confirmed
-				onclick={toggleSegmentConfirmation}
-				title={confirmed
-					? "Mark this segment as needing review"
-					: "Confirm this translated segment"}
-			>
-				{confirmed ? "Confirmed" : "Confirm"}
 			</button>
 		</div>
 		<span class="segment-number-inner">{id + 1}.</span>
@@ -446,6 +442,19 @@
 			{/each}
 		</p>
 	</div>
+
+	<button
+		class="confirm-btn"
+		class:confirmed
+		data-segment-action="confirm"
+		onclick={toggleSegmentConfirmation}
+		aria-pressed={confirmed}
+		title={confirmed
+			? "Mark this segment as needing review"
+			: "Confirm this translated segment"}
+	>
+		{confirmed ? "Confirmed" : "Confirm"}
+	</button>
 
 	{#if locked}
 		<p
@@ -580,7 +589,9 @@
 	}
 
 	.translate-btn,
-	.tm-btn {
+	.tm-btn,
+	.confirm-btn {
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.2rem;
@@ -605,14 +616,46 @@
 	}
 
 	.translate-btn:hover:not(:disabled),
-	.tm-btn:hover:not(:disabled) {
+	.tm-btn:hover:not(:disabled),
+	.confirm-btn:hover:not(:disabled) {
 		transform: translateY(-1px);
 		filter: brightness(1.05);
 	}
 
+	.translate-btn:disabled,
 	.tm-btn:disabled {
 		cursor: not-allowed;
 		opacity: 0.45;
+	}
+
+	.confirm-btn {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		z-index: 5;
+		min-height: 1.85rem;
+		padding-inline: 0.62rem;
+		background: #f8fcfd;
+		box-shadow: 0 2px 8px rgba(21, 72, 88, 0.1);
+		transform: translate(-50%, -50%);
+	}
+
+	.confirm-btn:hover:not(:disabled) {
+		border-color: #6faebb;
+		background: white;
+		transform: translate(-50%, -50%);
+	}
+
+	.confirm-btn.confirmed {
+		border-color: #9cccb1;
+		background: #eaf6ef !important;
+		color: #2d7350 !important;
+	}
+
+	.confirm-btn.confirmed::before {
+		content: "✓";
+		font-size: 0.72rem;
+		font-weight: 900;
 	}
 
 	.left {
@@ -722,6 +765,13 @@
 		.combine-toggle-checkbox {
 			left: 0.55rem;
 			top: -0.5rem;
+		}
+
+		.confirm-btn,
+		.confirm-btn:hover:not(:disabled) {
+			left: auto;
+			right: 0.65rem;
+			transform: translateY(-50%);
 		}
 	}
 
