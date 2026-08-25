@@ -22,6 +22,12 @@ if (unknownBrowsers.length > 0)
 	);
 const browserInstances = requestedBrowsers.map((browser) => ({
 	browser: browser as SupportedBrowser,
+	// Vitest pages in one browser instance share the same origin and therefore
+	// the same IndexedDB database. WebKit aborts concurrent transactions that
+	// clone retained Blob/package resources across those pages. Keep its files
+	// sequential so the matrix exercises the real persistence path reliably;
+	// Chromium and Firefox can retain their faster parallel execution.
+	fileParallelism: browser !== "webkit",
 	...(browser === "chromium" && chromiumPath
 		? {
 				provider: playwright({

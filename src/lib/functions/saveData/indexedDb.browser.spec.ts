@@ -45,20 +45,24 @@ async function deleteCurrentTb(id: number): Promise<void> {
 
 describe("transaction-complete browser persistence", () => {
 	it("reports an actionable error before an import exceeds browser quota", async () => {
-		const original = navigator.storage.estimate;
-		Object.defineProperty(navigator.storage, "estimate", {
+		const storageDescriptor = Object.getOwnPropertyDescriptor(
+			navigator,
+			"storage",
+		);
+		Object.defineProperty(navigator, "storage", {
 			configurable: true,
-			value: async () => ({ quota: 10_000_000, usage: 9_500_000 }),
+			value: {
+				estimate: async () => ({ quota: 10_000_000, usage: 9_500_000 }),
+			},
 		});
 		try {
 			await expect(assertLocalStorageCapacity(2_000_000)).rejects.toThrow(
 				/local storage.*available/,
 			);
 		} finally {
-			Object.defineProperty(navigator.storage, "estimate", {
-				configurable: true,
-				value: original,
-			});
+			if (storageDescriptor)
+				Object.defineProperty(navigator, "storage", storageDescriptor);
+			else delete (navigator as { storage?: StorageManager }).storage;
 		}
 	});
 
